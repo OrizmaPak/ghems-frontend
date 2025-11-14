@@ -270,12 +270,12 @@ header {
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    padding-top: 1rem;
+    padding-top: 0.5rem;
     margin-left: clamp(0.25rem, 1vw, 1rem);
 }
 
 .glass-sidebar #hoverer {
-    padding-bottom: 2rem;
+    padding-bottom: 1rem;
 }
 
 .sidebar-identity {
@@ -297,6 +297,7 @@ header {
 
 #navigation {
     transition: width 0.4s ease;
+    padding-bottom: 1.25rem;
 }
 
 #navigation.show {
@@ -316,7 +317,7 @@ header {
     border-right: none;
     border-radius: 999px;
     padding: 0.7rem 1.1rem;
-    color: #e5e7eb;
+    color: #1f2937;
     letter-spacing: 0.08em;
     font-size: 0.78rem;
     border: none;
@@ -369,7 +370,7 @@ header {
 
 #navigation .navitem-child {
     font-size: 0.75rem;
-    color: #cbd5f5;
+    color: #1f2937;
     border-left: none;
     padding: 0.35rem 0.4rem 0.35rem 1.2rem;
     border-radius: 999px;
@@ -531,6 +532,23 @@ header {
 }
 
 @media (max-width: 640px) {
+    .portal-brand-meta {
+        display: none;
+    }
+
+    .portal-persona {
+        display: none;
+    }
+
+    header {
+        padding-inline: 0.85rem;
+    }
+
+    .glass-header {
+        padding-inline: 1rem;
+        border-radius: 22px;
+    }
+
     .portal-chip {
         min-width: auto;
         width: 100%;
