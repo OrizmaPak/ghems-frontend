@@ -296,16 +296,27 @@ header {
 }
 
 #navigation {
-    transition: width 0.4s ease;
+    transition: width 0.4s ease, transform 0.4s ease;
     padding-bottom: 1.25rem;
 }
 
-#navigation.show {
-    width: 0 !important;
+/* Mobile & tablet: width controls slide-in menu */
+@media (max-width: 1279px) {
+    #navigation.show {
+        width: 0 !important;
+    }
+
+    #navigation:not(.show) {
+        width: clamp(230px, 80vw, 320px);
+    }
 }
 
-#navigation:not(.show) {
-    width: clamp(230px, 20vw, 300px);
+/* Desktop: keep width reserved; collapse uses transform */
+@media (min-width: 1280px) {
+    #navigation.show,
+    #navigation:not(.show) {
+        width: clamp(230px, 20vw, 300px);
+    }
 }
 
 #navigation .nav-item {
@@ -314,11 +325,11 @@ header {
 }
 
 #navigation .navitem-title {
-    border-right: none;
-    border-radius: 999px;
-    padding: 0.6rem 1.05rem;
-    color: var(--color-text-primary);
-    letter-spacing: 0.18em;
+      border-right: none;
+      border-radius: 999px;
+      padding: 0.6rem 1.05rem;
+      color: #157cd0;
+      letter-spacing: 0.18em;
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -370,10 +381,10 @@ header {
     box-shadow: none;
 }
 
-#navigation .navitem-child {
-    font-size: 0.72rem;
-    color: #475569;
-    border-left: none;
+  #navigation .navitem-child {
+      font-size: 0.72rem;
+      color: #157cd0;
+      border-left: none;
     padding: 0.3rem 0.4rem 0.3rem 1.2rem;
     border-radius: 999px;
     position: relative;
@@ -754,6 +765,7 @@ table {
 
 #arcontainer {
     padding: 1rem;
+    z-index: 50;
 }
 
 .glass-flyout {

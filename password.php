@@ -43,6 +43,7 @@
                     <div class="flex gap-3 3xl:gap-1 flex-col md:flex-row items-center mt-10">
                         <button id="submit" type="button" class="w-full md:w-max rounded-full text-white text-sm capitalize bg-gradient-to-tr from-emerald-400 via-emerald-500 to-primary-g px-8  py-3 lg:py-2shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                             <div class="btnloader" style="display: none;" ></div>
+                            <span class="text-lg">⟲</span>
                             <span>Reset</span>
                         </button>
                         <a href="./login" class="w-full md:w-max rounded-full text-gray-600 text-sm capitalize bg-white px-6  py-3 lg:py-2 shadow-sm font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">

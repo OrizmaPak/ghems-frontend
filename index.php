@@ -115,9 +115,9 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
             </header>
 
             <section class="app-layout">
-                <div class="xl:flex h-screen relative">
+                <div class="lg:flex h-screen relative">
                     <!-- navigation --> 
-                    <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 xl:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto glass-sidebar">
+                    <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 lg:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto glass-sidebar">
                         <div id="hoverer" class="overflow-y-auto overflow-x-hidden h-full px-2">
                         <div class="flex flex-col w-5/6 m-auto items-start py-5 sticky top-0 sidebar-identity">
                             <span class="font-medium text-[9px] text-blue font-mont mt-1"><?php echo $_SESSION["hemsemail"]?></span>
@@ -365,7 +365,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             </ul>
                         </div>
                     </nav>
-                    <section class=" flex flex-col justify-between pb-6 px-5 w-full xl:px-1 xl:w-[86%] content-scaffold">
+                    <section class=" flex flex-col justify-between pb-6 px-5 w-full lg:px-1 lg:w-[86%] content-scaffold">
                         <!-- content area -->
                         <div  class="overflow-y-auto overflow-x-hidden h-full w-full content-scroll">
                             <div class=" w-full mx-auto mt-1 p-5 xl:px-10 workspace-canvas" id="workspace">
@@ -379,7 +379,11 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                     </section>
                     
                     
-                    <div id="arcontainer" class="fixed w-screen h-screen bg-[#00000042] top-0 left-[100%] flex justify-end transition-all duration-[0.5s]">
+                </div>
+                
+            </section>
+
+            <div id="arcontainer" class="fixed w-screen h-screen bg-[#00000042] top-0 left-[100%] flex justify-end transition-all duration-[0.5s]">
                             <button type="button" id="aropener" class="absolute !text-xs top-20 left-[-75px] shadow text-white bg-gradient-to-r opacity-[0.7] from-cyan-400 via-cyan-500 to-green-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-lg text-sm pl-3 pr-5 py-2.5 text-center me-2 mb-2">Available <br/> Rooms</button>
                         <div id="arshadow" class="w-full max-w-[300px] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative glass-flyout">
                             <button type="button" id="arremover" class="absolute text-xs top-7 left-[-25px] shadow text-white opacity-[0.8] bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2"> X</button>
@@ -399,11 +403,6 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             </div>
                         </div>
                     </div>
-                
-                
-                </div>
-                
-            </section>
 
         </div>
     </main>

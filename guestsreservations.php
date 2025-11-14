@@ -615,9 +615,10 @@
                                         </button>
                                     </div>
                                                  <button onclick="did('guestsreservations').click()" type="button" class="m-auto w-full h-[35px] md:w-max text-white text-sm capitalize bg-red-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                                    <div class="btnloader" style="display: none;"></div>
-                                                    <span>Reset</span> 
-                                                </button>
+                                                      <div class="btnloader" style="display: none;"></div>
+                                                      <span class="text-lg">⟲</span>
+                                                      <span>Reset</span> 
+                                                  </button>
                                                  <button id="submit" type="button" class="m-auto w-full h-[35px] md:w-max text-white text-sm capitalize bg-blue-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Submit</span> 

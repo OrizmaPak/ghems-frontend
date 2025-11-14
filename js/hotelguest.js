@@ -333,6 +333,7 @@ function appendguestform(){
                                                 <div class="flex justify-end mt-5 gap-4 h-fit">
                                                  <button onclick="did('hotelguest').click()" type="button" class="w-full h-[35px] md:w-max text-white text-sm capitalize bg-red-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
+                                                    <span class="text-lg">⟲</span>
                                                     <span>Reset</span> 
                                                 </button>
                                                  <button id="submitguestmodal" onclick="submitguestform('true')" type="button" class="w-full h-[35px] md:w-max text-white text-sm capitalize bg-blue-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
