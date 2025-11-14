@@ -419,6 +419,76 @@ header {
     gap: clamp(1.25rem, 2vw, 2.5rem);
 }
 
+.dashboard-shell {
+    padding-top: 0.75rem;
+}
+
+.dashboard-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.dashboard-lower {
+    align-items: stretch;
+}
+
+.glass-analytic-panel {
+    border-radius: 22px;
+    border: 1px solid rgba(149, 186, 235, 0.6);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(231, 241, 255, 0.9));
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+    -webkit-backdrop-filter: blur(calc(var(--blur-backdrop) * 0.6));
+    backdrop-filter: blur(calc(var(--blur-backdrop) * 0.6));
+}
+
+.metric-card {
+    display: flex;
+    align-items: center;
+    padding: 1.1rem 1.25rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(233, 240, 255, 0.82));
+    border: 1px solid rgba(149, 186, 235, 0.45);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.metric-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 120% -10%, rgba(144, 187, 237, 0.25), transparent 55%);
+    pointer-events: none;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 26px 60px rgba(15, 23, 42, 0.18);
+    border-color: rgba(127, 180, 255, 0.7);
+}
+
+.metric-card .material-symbols-outlined {
+    font-size: 30px;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.metric-value {
+    display: inline-block;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
 @media (max-width: 1024px) {
     .portal-header {
         flex-direction: column;
