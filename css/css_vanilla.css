@@ -264,12 +264,12 @@ header {
 }
 
 .glass-sidebar {
-    background: radial-gradient(circle at top left, #020617 0, #020617 55%, #020617 100%) !important;
-    border-right: none;
-    border-radius: 28px;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(233, 241, 255, 0.92)) !important;
+    border-right: 1px solid rgba(149, 171, 206, 0.45);
+    border-radius: 24px;
+    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: blur(var(--blur-backdrop));
+    backdrop-filter: blur(var(--blur-backdrop));
     padding-top: 0.5rem;
     margin-left: clamp(0.25rem, 1vw, 1rem);
 }
@@ -316,12 +316,14 @@ header {
 #navigation .navitem-title {
     border-right: none;
     border-radius: 999px;
-    padding: 0.7rem 1.1rem;
-    color: #1f2937;
-    letter-spacing: 0.08em;
-    font-size: 0.78rem;
+    padding: 0.6rem 1.05rem;
+    color: var(--color-text-primary);
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
     border: none;
-    background: transparent;
+    background: rgba(249, 250, 251, 0.7);
     position: relative;
     overflow: hidden;
     transition: background-color var(--transition-base), color var(--transition-base), transform var(--transition-base);
@@ -331,7 +333,7 @@ header {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 70%);
+    background: radial-gradient(circle at top left, rgba(127, 180, 255, 0.35), transparent 70%);
     opacity: 0;
     transition: var(--transition-base);
 }
@@ -342,18 +344,18 @@ header {
 }
 
 #navigation .navitem-title span:first-child {
-    color: #9fb3ff;
+    color: #7fb4ff;
 }
 
 #navigation .navitem-title span:last-child {
-    font-size: 0.78rem;
-    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
 }
 
 #navigation .navitem-title:hover {
-    color: #f9fafb;
-    background: rgba(15, 23, 42, 0.9);
+    color: #0b1120;
+    background: rgba(219, 234, 254, 0.95);
     transform: translateX(2px);
 }
 
@@ -362,17 +364,17 @@ header {
 }
 
 #navigation .active > .navitem-title {
-    color: #f9fafb !important;
-    background: linear-gradient(135deg, #1d4ed8, #312e81) !important;
+    color: #0b1120 !important;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe) !important;
     border-color: transparent !important;
     box-shadow: none;
 }
 
 #navigation .navitem-child {
-    font-size: 0.75rem;
-    color: #1f2937;
+    font-size: 0.72rem;
+    color: #475569;
     border-left: none;
-    padding: 0.35rem 0.4rem 0.35rem 1.2rem;
+    padding: 0.3rem 0.4rem 0.3rem 1.2rem;
     border-radius: 999px;
     position: relative;
     display: block;
@@ -388,7 +390,7 @@ header {
     width: 6px;
     height: 6px;
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.85);
+    background: rgba(148, 163, 184, 0.9);
     transition: background-color var(--transition-base), transform var(--transition-base);
 }
 
@@ -398,8 +400,8 @@ header {
 
 #navigation .navitem-child:hover,
 #navigation .navitem-child.navitem-child-active {
-    color: #f9fafb !important;
-    background: rgba(30, 64, 175, 0.5);
+    color: #0b1120 !important;
+    background: rgba(219, 234, 254, 0.95);
     padding-left: 1.4rem;
     transform: translateX(2px);
 }
@@ -540,8 +542,17 @@ header {
         display: none;
     }
 
+    .portal-avatar {
+        display: none;
+    }
+
     header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
         padding-inline: 0.85rem;
+        z-index: 40;
     }
 
     .glass-header {
@@ -557,6 +568,10 @@ header {
     .portal-icon-btn {
         width: 40px;
         height: 40px;
+    }
+
+    .app-layout {
+        margin-top: 4.25rem;
     }
 }
 
@@ -638,7 +653,7 @@ textarea {
     background: rgba(255, 255, 255, 0.55);
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-sm);
-    padding: 0.625rem 0.85rem;
+    padding: 0.625rem 1.15rem;
     font-size: 0.85rem;
     color: var(--color-text-primary);
     transition: var(--transition-base);

@@ -567,19 +567,33 @@ async function openRoute(url) {
                         // Get the title attribute of the page element, if it exists
                         let title = pageElement.getAttribute('title');
                         if (title) {
-                            el.innerHTML = `<div class="flex flex-col lg:flex-row gap-2">
-                                                    <p class="font-medium">Note!<br/></p> 
-                                                    ${title}  
-                                                    <button onclick="document.getElementById('${page}').click()" type="button" class="scale-[0.7] btn !bg-red-400 text-white ml-4">
-                                                        <div class="btnloader" style="display: none;"></div>
-                                                        <span>Reset</span> 
-                                                    </button>
+                            el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
+                                                <p class="font-medium">Note!<br/></p> 
+                                                <div class="flex-1 text-sm">
+                                                    ${title}
+                                                </div>  
+                                                <button onclick="document.getElementById('${page}').click()" type="button" class="btn !bg-red-400 text-white ml-auto flex items-center justify-center rounded-full w-9 h-9 shadow-sm hover:shadow-md transition-all duration-150">
+                                                    <div class="btnloader" style="display: none;"></div>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                                    </svg>
+                                                </button>
                                             </div>`;
                         } else {
-                            el.innerHTML = `<div class="flex flex-col lg:flex-row gap-2"><p class="font-medium">Note!<br/></p> Title attribute is missing. <button onclick="document.getElementById('${page}').click()" type="button" class="scale-[0.7] btn !bg-red-400 text-white ml-4">
-                        <div class="btnloader" style="display: none;"></div>
-                        <span>Reset</span> 
-                    </button></div>`;
+                            el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
+                                                <p class="font-medium">Note!<br/></p>
+                                                <div class="flex-1 text-sm">
+                                                    Title attribute is missing.
+                                                </div>
+                                                <button onclick="document.getElementById('${page}').click()" type="button" class="btn !bg-red-400 text-white ml-auto flex items-center justify-center rounded-full w-9 h-9 shadow-sm hover:shadow-md transition-all duration-150">
+                                                    <div class="btnloader" style="display: none;"></div>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>`;
                         }
                 
                         // Prepend the alert element to the workspace
