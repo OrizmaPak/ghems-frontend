@@ -11,7 +11,6 @@ if($_SESSION["role"] !== "SUPERADMIN"){
 ?>
 
 
-
        <section class="animate__animated animate__fadeIn">
                             <p class="page-title">
                                 <span>Access Control</span>
