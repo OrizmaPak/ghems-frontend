@@ -610,7 +610,48 @@ async function openRoute(url) {
     }
 }
 
+function openPageDescriptionModal() {
+    try {
+        if (typeof Swal === 'undefined') return;
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const page = searchParams.get('r');
+        if (!page) return;
+
+        const menu = document.getElementById(page);
+        if (!menu) return;
+
+        const description = menu.getAttribute('title') || 'No description available for this page.';
+        const label = (menu.textContent || '').trim() || 'Page Description';
+
+        Swal.fire({
+            title: `${label} - Details`,
+            text: description,
+            icon: 'info',
+            confirmButtonText: 'Close'
+        });
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 let timer;
+
+function attachPageDescriptionTrigger() {
+    try {
+        const resetButtons = document.querySelectorAll('.btn-reset');
+        resetButtons.forEach(button => {
+            const trigger = button.querySelector('span.text-lg:not(.material-symbols-outlined)');
+            if (trigger && !trigger.dataset.pageDescriptionBound) {
+                trigger.dataset.pageDescriptionBound = '1';
+                trigger.style.cursor = 'pointer';
+                trigger.addEventListener('click', openPageDescriptionModal);
+            }
+        });
+    } catch (error) {
+        console.log(error);
+    }
+}
 
 function intializePageJavascript() {
     let searchParams = new URLSearchParams(window.location.search)
@@ -618,6 +659,7 @@ function intializePageJavascript() {
     try {
         clearInterval(timer)
         timer = null;
+        attachPageDescriptionTrigger()
         timer = setTimeout(() => window?.[startingFunction]?.(), 1000)
     }
     catch(e) {}

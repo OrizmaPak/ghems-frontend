@@ -14,6 +14,10 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#051937">
+    <meta name="description" content="Guest Harmony Engine Management System - Hotel management system for guest operations, inventory, and financial management">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./images/icon-192x192.png">
     <title>User | Hems</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="./css/style.js"></script>
@@ -365,7 +369,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             </ul>
                         </div>
                     </nav>
-                    <section class=" flex flex-col justify-between pb-6 px-5 w-full lg:px-1 lg:w-[86%] content-scaffold">
+                    <section class="flex flex-col justify-between pb-6 px-5 w-full lg:px-1 lg:flex-1 lg:min-w-0 content-scaffold">
                         <!-- content area -->
                         <div  class="overflow-y-auto overflow-x-hidden h-full w-full content-scroll">
                             <div class=" w-full mx-auto mt-1 p-5 xl:px-10 workspace-canvas" id="workspace">
@@ -432,9 +436,24 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
     <script src="./js/oreutil.js"></script>
     <script src="./js/router.js"></script>
     <script src="./js/index.js"></script>
+    <script src="./js/pwa-install.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 
 </html>

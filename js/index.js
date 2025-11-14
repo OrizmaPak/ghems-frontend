@@ -98,16 +98,38 @@ window.onload = function() {
     
     // NOTIFICATION FUNCTION
     // approverequisitionActive()
-    
-    document.getElementById('searchavailableroom').addEventListener('keyup', e=>{for (var i = 0; i < document.getElementById('availableroomcontainer').children.length; i++) {
-        var label = document.getElementById('availableroomcontainer').children[i].querySelector('label');
-        var email = label.textContent.trim().toLowerCase();
-        if (email.includes(document.getElementById('searchavailableroom').value.toLowerCase())) {
-            document.getElementById('availableroomcontainer').children[i].style.display = 'block'; // Show the matching child
-        } else {
-            document.getElementById('availableroomcontainer').children[i].style.display = 'none'; // Hide non-matching children
+
+    const searchAvailableRoomInput = document.getElementById('searchavailableroom')
+    const availableRoomContainer = document.getElementById('availableroomcontainer')
+
+    if (searchAvailableRoomInput && availableRoomContainer) {
+        const filterAvailableRooms = () => {
+            const query = searchAvailableRoomInput.value.toLowerCase()
+            const children = availableRoomContainer.children
+
+            for (let i = 0; i < children.length; i++) {
+                const label = children[i].querySelector('label')
+                const text = label ? label.textContent.trim().toLowerCase() : ''
+
+                if (!query || text.includes(query)) {
+                    children[i].style.display = 'block'
+                } else {
+                    children[i].style.display = 'none'
+                }
+            }
         }
-    }})
+
+        searchAvailableRoomInput.addEventListener('keyup', filterAvailableRooms)
+        searchAvailableRoomInput.addEventListener('change', filterAvailableRooms)
+
+        const searchButton = document.querySelector('.search-box .btn-search')
+        if (searchButton) {
+            searchButton.addEventListener('click', e => {
+                e.preventDefault()
+                filterAvailableRooms()
+            })
+        }
+    }
 
 }
 
@@ -218,9 +240,31 @@ async function getoccupiedroom(){
     else return notification('No records for available rooms retrieved')
 }
 
-document.getElementById('aropener').addEventListener('click', e=>{document.getElementById('arcontainer').classList.add('!left-[0%]');runavailablerooms()})
-document.getElementById('arremover').addEventListener('click', e=>document.getElementById('arcontainer').classList.remove('!left-[0%]'))
-document.getElementById('arcontainer').addEventListener('click', e=>{e.stopPropagation();if(e.target.id === 'arcontainer')document.getElementById('arcontainer').classList.remove('!left-[0%]')})
+const availableRoomOpener = document.getElementById('aropener')
+const availableRoomRemover = document.getElementById('arremover')
+const availableRoomContainerOverlay = document.getElementById('arcontainer')
+
+if (availableRoomOpener && availableRoomContainerOverlay) {
+    availableRoomOpener.addEventListener('click', () => {
+        availableRoomContainerOverlay.classList.add('!left-[0%]')
+        runavailablerooms()
+    })
+}
+
+if (availableRoomRemover && availableRoomContainerOverlay) {
+    availableRoomRemover.addEventListener('click', () => {
+        availableRoomContainerOverlay.classList.remove('!left-[0%]')
+    })
+}
+
+if (availableRoomContainerOverlay) {
+    availableRoomContainerOverlay.addEventListener('click', e => {
+        e.stopPropagation()
+        if (e.target.id === 'arcontainer') {
+            availableRoomContainerOverlay.classList.remove('!left-[0%]')
+        }
+    })
+}
 
 function recalldatalist(stock=''){
     hemsuserlist()

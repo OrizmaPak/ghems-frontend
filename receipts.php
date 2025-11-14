@@ -68,7 +68,8 @@
                                             <label for="default-checkbox" class="ms-2 text-sm font-medium text-black">Distribute payment for all rooms</label>
                                         </div>
                                         <div class="flex justify-end gap-6">
-                                            <button onclick="did('receipts').click()" type="button" class="m-auto w-full h-[35px] md:w-max text-white text-sm capitalize bg-red-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                            <button onclick="did('receipts').click()" type="button" class="m-auto w-full h-[35px] md:w-max text-white text-sm capitalize bg-red-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3 btn-reset">
+                                                        <span class="material-symbols-outlined text-lg">restart_alt</span>
                                                         <div class="btnloader" style="display: none;"></div>
                                                         <span class="text-lg">⟲</span>
                                                         <span>Reset</span> 

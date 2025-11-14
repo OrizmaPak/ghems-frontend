@@ -73,7 +73,8 @@
                                             <textarea type="text" name="description " id="description" class="form-control"  ></textarea>
                                         </div>
                                         <div class="flex justify-end gap-6 items-end">
-                                            <button onclick="did('posreceipt').click()" type="button" class="w-full h-[35px] md:w-max text-white text-sm capitalize bg-red-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                            <button onclick="did('posreceipt').click()" type="button" class="w-full h-[35px] md:w-max text-white text-sm capitalize bg-red-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3 btn-reset">
+                                                        <span class="material-symbols-outlined text-lg">restart_alt</span>
                                                         <div class="btnloader" style="display: none;"></div>
                                                         <span class="text-lg">⟲</span>
                                                         <span>Reset</span> 

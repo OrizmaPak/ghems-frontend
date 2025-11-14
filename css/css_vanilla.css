@@ -73,6 +73,10 @@ textarea {
     font-family: var(--font-base);
 }
 
+input{
+    padding-left: 10px;
+}
+
 body::-webkit-scrollbar {
     width: 8px;
 }
@@ -84,6 +88,150 @@ body::-webkit-scrollbar-track {
 body::-webkit-scrollbar-thumb {
     background: rgba(134, 163, 206, 0.45);
     border-radius: 999px;
+}
+
+/* PWA Install Prompt Styles */
+.pwa-install-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+}
+
+.pwa-install-modal.pwa-install-show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+.pwa-install-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 25, 55, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.pwa-install-content {
+    position: relative;
+    background: var(--surface-strong);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: var(--shadow-card);
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    border: 1px solid var(--color-border-light);
+}
+
+.pwa-install-modal.pwa-install-show .pwa-install-content {
+    transform: scale(1) translateY(0);
+}
+
+.pwa-install-icon {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, rgba(159, 202, 255, 0.2), rgba(127, 180, 255, 0.15));
+    border-radius: 50%;
+}
+
+.pwa-install-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 0.75rem;
+    font-family: var(--font-base);
+}
+
+.pwa-install-description {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    font-family: var(--font-base);
+}
+
+.pwa-install-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pwa-install-btn-primary {
+    background: linear-gradient(135deg, #051937 0%, #1a3d6b 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-base);
+    box-shadow: 0 4px 12px rgba(5, 25, 55, 0.2);
+}
+
+.pwa-install-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(5, 25, 55, 0.3);
+}
+
+.pwa-install-btn-primary:active {
+    transform: translateY(0);
+}
+
+.pwa-install-btn-secondary {
+    background: transparent;
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border-light);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-family: var(--font-base);
+}
+
+.pwa-install-btn-secondary:hover {
+    background: var(--surface-muted);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-strong);
+}
+
+@media (max-width: 480px) {
+    .pwa-install-content {
+        padding: 2rem 1.5rem;
+    }
+    
+    .pwa-install-title {
+        font-size: 1.25rem;
+    }
+    
+    .pwa-install-description {
+        font-size: 0.875rem;
+    }
 }
 
 main.app-shell {
@@ -311,11 +459,23 @@ header {
     }
 }
 
-/* Desktop: keep width reserved; collapse uses transform */
+/* Desktop: collapse frees sidebar space for content */
 @media (min-width: 1280px) {
-    #navigation.show,
-    #navigation:not(.show) {
+    #navigation {
         width: clamp(230px, 20vw, 300px);
+    }
+
+    #navigation.show {
+        width: 0;
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: 0;
+        border: none;
+        overflow: hidden;
+    }
+
+    #navigation.show + .content-scaffold {
+        flex: 1 1 100%;
     }
 }
 
@@ -355,7 +515,7 @@ header {
 }
 
 #navigation .navitem-title span:first-child {
-    color: #7fb4ff;
+    color: #157cd0;
 }
 
 #navigation .navitem-title span:last-child {
@@ -365,7 +525,7 @@ header {
 }
 
 #navigation .navitem-title:hover {
-    color: #0b1120;
+    color: #157cd0;
     background: rgba(219, 234, 254, 0.95);
     transform: translateX(2px);
 }
@@ -375,7 +535,7 @@ header {
 }
 
 #navigation .active > .navitem-title {
-    color: #0b1120 !important;
+    color: #157cd0 !important;
     background: linear-gradient(135deg, #dbeafe, #bfdbfe) !important;
     border-color: transparent !important;
     box-shadow: none;
@@ -411,7 +571,7 @@ header {
 
 #navigation .navitem-child:hover,
 #navigation .navitem-child.navitem-child-active {
-    color: #0b1120 !important;
+    color: #157cd0 !important;
     background: rgba(219, 234, 254, 0.95);
     padding-left: 1.4rem;
     transform: translateX(2px);
@@ -545,6 +705,27 @@ header {
 }
 
 @media (max-width: 640px) {
+    .portal-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .portal-control {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        width: auto;
+        gap: 0.5rem;
+    }
+
+    .portal-icon-stack {
+        width: auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+    }
+
     .portal-brand-meta {
         display: none;
     }
@@ -583,6 +764,11 @@ header {
 
     .app-layout {
         margin-top: 4.25rem;
+    }
+
+    #navigation {
+        top: 4.25rem;
+        height: calc(100% - 4.25rem);
     }
 }
 
