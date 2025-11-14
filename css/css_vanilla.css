@@ -39,6 +39,32 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+body::before,
+body::after {
+    content: '';
+    position: fixed;
+    z-index: -1;
+    filter: blur(90px);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+body::before {
+    width: 480px;
+    height: 480px;
+    top: -120px;
+    right: 5%;
+    background: radial-gradient(circle, rgba(158, 196, 255, 0.55), rgba(247, 250, 255, 0));
+}
+
+body::after {
+    width: 400px;
+    height: 400px;
+    bottom: -80px;
+    left: 6%;
+    background: radial-gradient(circle, rgba(119, 209, 255, 0.42), rgba(247, 250, 255, 0));
+}
+
 body,
 button,
 input,
@@ -64,6 +90,14 @@ main.app-shell {
     background: transparent;
 }
 
+header {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    padding: clamp(0.5rem, 1vw, 1rem) clamp(1rem, 2vw, 2rem);
+    background: radial-gradient(circle at 80% -40%, rgba(167, 207, 255, 0.25), transparent 55%);
+}
+
 .cp {
     cursor: pointer;
 }
@@ -75,14 +109,136 @@ main.app-shell {
 }
 
 .glass-header {
-    padding: 1rem 1.5rem;
-    background: var(--surface-strong) !important;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border-light);
-    box-shadow: var(--shadow-soft);
+    padding: 0.65rem 1.5rem;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(233, 242, 255, 0.6)) !important;
+    border-radius: 999px;
+    border: 1px solid rgba(144, 187, 237, 0.4);
+    box-shadow: 0 25px 80px rgba(15, 23, 42, 0.12);
     -webkit-backdrop-filter: blur(var(--blur-backdrop));
     backdrop-filter: blur(var(--blur-backdrop));
+    gap: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.portal-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(1rem, 2vw, 3rem);
+}
+
+.portal-brand {
+    display: flex;
+    align-items: center;
     gap: 1rem;
+    position: relative;
+}
+
+.portal-brand::after {
+    content: '';
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    inset: 50% auto auto -40px;
+    transform: translateY(-50%);
+    background: radial-gradient(circle, rgba(127, 180, 255, 0.25), transparent 60%);
+    z-index: -1;
+}
+
+.portal-brand-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+}
+
+.portal-brand-meta span:last-child {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    color: var(--color-text-primary);
+}
+
+.portal-control {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(1rem, 2vw, 3rem);
+}
+
+.portal-persona {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.portal-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(149, 186, 235, 0.35);
+    background: rgba(255, 255, 255, 0.75);
+    min-width: 150px;
+}
+
+.portal-chip-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--color-text-muted);
+}
+
+.portal-chip-value {
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    color: var(--color-text-primary);
+}
+
+.portal-icon-stack {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.portal-icon-btn {
+    height: 44px;
+    width: 44px;
+    border-radius: 14px !important;
+    border: 1px solid rgba(154, 195, 255, 0.4) !important;
+    background: rgba(153, 204, 255, 0.18) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: var(--color-text-primary) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.portal-icon-btn:hover {
+    box-shadow: 0 10px 25px rgba(127, 180, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.portal-icon-btn span {
+    font-size: 19px !important;
+}
+
+.portal-icon-btn .badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #ff6b6b;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.55rem;
+    padding: 0 0.25rem;
+    line-height: 1.2;
 }
 
 .glass-header button {
@@ -108,17 +264,48 @@ main.app-shell {
 }
 
 .glass-sidebar {
-    background: linear-gradient(180deg, var(--surface-strong), var(--surface-muted)) !important;
-    border-right: 1px solid var(--color-border-light);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    -webkit-backdrop-filter: blur(var(--blur-backdrop));
-    backdrop-filter: blur(var(--blur-backdrop));
-    padding-top: 1.25rem;
+    background: linear-gradient(200deg, rgba(255, 255, 255, 0.78), rgba(230, 240, 255, 0.52)) !important;
+    border-right: 1px solid rgba(144, 187, 237, 0.35);
+    border-radius: 32px;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15);
+    -webkit-backdrop-filter: blur(calc(var(--blur-backdrop) * 0.7));
+    backdrop-filter: blur(calc(var(--blur-backdrop) * 0.7));
+    padding-top: 1rem;
+    margin-left: clamp(0.25rem, 1vw, 1rem);
 }
 
 .glass-sidebar #hoverer {
     padding-bottom: 2rem;
+}
+
+.sidebar-identity {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(149, 186, 235, 0.4) !important;
+    border-radius: 22px;
+    padding: 1.5rem 1rem !important;
+    gap: 0.65rem;
+}
+
+.sidebar-identity img {
+    filter: drop-shadow(0 10px 15px rgba(15, 23, 42, 0.2));
+}
+
+.sidebar-identity span[name="user_role"] {
+    background: rgba(127, 180, 255, 0.9);
+    border-radius: 999px;
+    padding: 0.15rem 0.65rem;
+}
+
+#navigation {
+    transition: width 0.4s ease;
+}
+
+#navigation.show {
+    width: 0 !important;
+}
+
+#navigation:not(.show) {
+    width: clamp(230px, 20vw, 300px);
 }
 
 #navigation .nav-item {
@@ -131,10 +318,27 @@ main.app-shell {
     border-radius: var(--radius-sm);
     padding: 0.65rem 1rem;
     color: var(--color-text-muted);
-    letter-spacing: 0.04em;
-    font-size: 0.8rem;
-    border: 1px solid transparent;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    border: 1px solid rgba(149, 186, 235, 0.15);
+    background: rgba(233, 242, 255, 0.28);
+    position: relative;
+    overflow: hidden;
     transition: var(--transition-base);
+}
+
+#navigation .navitem-title::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(127, 180, 255, 0.15), transparent 80%);
+    opacity: 0;
+    transition: var(--transition-base);
+}
+
+#navigation .navitem-title > * {
+    position: relative;
+    z-index: 1;
 }
 
 #navigation .navitem-title span:first-child {
@@ -149,9 +353,12 @@ main.app-shell {
 
 #navigation .navitem-title:hover {
     color: var(--color-text-primary);
-    background: rgba(144, 187, 237, 0.16);
-    border-color: rgba(144, 187, 237, 0.4);
-    box-shadow: inset 0 0 0 1px rgba(144, 187, 237, 0.25);
+    border-color: rgba(144, 187, 237, 0.6);
+    box-shadow: inset 0 0 0 1px rgba(144, 187, 237, 0.35);
+}
+
+#navigation .navitem-title:hover::after {
+    opacity: 1;
 }
 
 #navigation .active > .navitem-title {
@@ -211,6 +418,38 @@ main.app-shell {
     display: flex;
     flex-direction: column;
     gap: clamp(1.25rem, 2vw, 2.5rem);
+}
+
+@media (max-width: 1024px) {
+    .portal-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .portal-control {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .portal-icon-stack {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .portal-chip {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .portal-icon-btn {
+        width: 40px;
+        height: 40px;
+    }
 }
 
 .page-title {

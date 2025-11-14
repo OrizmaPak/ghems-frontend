@@ -60,46 +60,53 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
         <input type="hidden" name="" id="your_companyemail" value="<?php echo $_SESSION["companyemail"]?>" readonly>
         <div class="h-full">
             <header>
-                <div class="flex items-center bg-white border-b border-gray-200/50 glass-header">
-                    <span
-                        class="xl:w-[250px] font-bold text-base block py-3 pl-5 selection:bg-white uppercase font-heebo text-primary-g">He<span
-                            class="text-gray-400">ms</span></span>
-                    <div class="flex-1 flex items-center justify-end xl:justify-between">
-                        <button id="toggler"
-                            class="flex items-center justify-center h-7 w-7 rounded hover:bg-primary transition ease-linear duration-300 text-gray-400">
-                            <span class="material-symbols-outlined">menu</span>
-                        </button>
-                        <span class="flex items-center">
-                            <a href="?r=resolve_ticket"class="relative w-max" id="user_notification" style="display:none">
-                                <button title="notification" class=" flex items-center justify-center h-7 w-7 rounded hover:bg-primary transition ease-linear duration-300 text-gray-500">
-                                    <span class="material-symbols-outlined" style="font-size:19px">notifications</span>
-                                </button>
+                <div class="glass-header portal-header">
+                    <div class="portal-brand">
+                        <span
+                            class="xl:w-[250px] font-bold text-base block py-3 pl-5 selection:bg-white uppercase font-heebo text-primary-g">He<span
+                                class="text-gray-400">ms</span></span>
+                        <div class="portal-brand-meta">
+                            <span>Guest Harmony Engine</span>
+                            <span><?php echo $_SESSION["companyname"] ?? 'Hotel Ops' ?></span>
+                        </div>
+                    </div>
+                    <div class="portal-control">
+                        <div class="portal-persona">
+                            <div class="portal-chip">
+                                <span class="portal-chip-label">Operator</span>
+                                <span class="portal-chip-value" name="user_name">Loading...</span>
+                            </div>
+                            <div class="portal-chip">
+                                <span class="portal-chip-label">Role</span>
+                                <span class="portal-chip-value" name="user_role">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="portal-icon-stack">
+                            <button id="toggler"
+                                class="portal-icon-btn flex items-center justify-center transition ease-linear duration-300 text-gray-500">
+                                <span class="material-symbols-outlined">menu</span>
+                            </button>
+                            <a href="?r=resolve_ticket" class="portal-icon-btn relative" id="user_notification" style="display:none">
+                                <span class="material-symbols-outlined">notifications</span>
                                 <span class="rounded-full flex items-center justify-center bg-primary-g text-white absolute" style="display:none;position:absolute;top:3px;left:3px;height:7px;width:7px;"></span>
                             </a>
-                            <span class="relative px-1 order-first flex gap-2 xl:order-last">
-                                <button onclick="notificationpanel()" title="logout" class="qq flex relative items-center justify-center h-7 w-7 rounded hover:bg-primary transition ease-linear duration-300 text-gray-500">
-                                    <span class="qq material-symbols-outlined" style="font-size:19px">notifications</span><p id="notification_badge_count" class="qq hidden absolute shadow-lg top-[-4px] right-[3px] px-1 rounded-full text-xs bg-[blue] text-white">0</p>
+                            <div class="relative flex items-center qq">
+                                <button onclick="notificationpanel()" title="notifications" class="portal-icon-btn qq flex items-center justify-center">
+                                    <span class="qq material-symbols-outlined">notifications</span>
+                                    <p id="notification_badge_count" class="qq badge hidden">0</p>
                                 </button>
-                                <div id="notificationpanel"  class="qq overflow-auto transition-all text-center px-3 rounded-md absolute flex gap-4 flex-col z-[500] top-10 left-[-220px] w-[250px] h-[400px] !h-[0px] bg-[white] shadow">
+                                <div id="notificationpanel"  class="qq overflow-auto transition-all text-center px-3 rounded-md absolute flex gap-4 flex-col z-[500] top-12 right-0 w-[250px] h-[400px] !h-[0px] bg-[white] shadow">
                                     <p class="font-semibold qq mt-3">Notification</p>
                                     <hr class="qq opacity-[0.5]"/>
                                     <p class="qq font-normal text-xs">Your Attention needed!!</p>
                                     <div id="notification_content_holder">
-                                        <!--<div name="notification_approvenotification" class="qq flex justify-between border rounded-md p-2">-->
-                                        <!--    <div class="qq flex flex-col gap-2">-->
-                                        <!--        <p class="qq font-semibold text-sm text-left">Requisition</p>-->
-                                        <!--        <p class="qq font-normal text-xs ">Items needs approval.</p>-->
-                                        <!--    </div>-->
-                                        <!--    <p class="qq my-auto bg-blue-500 px-1 text-xs rounded-full text-white">1</p>-->
-                                        <!--</div>-->
                                     </div>
-                                    
                                 </div>
-                                <button onclick="logoff()" title="logout" class="flex items-center justify-center h-7 w-7 rounded hover:bg-primary transition ease-linear duration-300 text-gray-500">
-                                    <span class="material-symbols-outlined" style="font-size:19px">power_settings_new</span>
-                                </button>
-                            </span>
-                        </span>
+                            </div>
+                            <button onclick="logoff()" title="logout" class="portal-icon-btn flex items-center justify-center text-gray-500">
+                                <span class="material-symbols-outlined">power_settings_new</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -109,7 +116,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                     <!-- navigation --> 
                     <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 xl:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto glass-sidebar">
                         <div id="hoverer" class="overflow-y-auto overflow-x-hidden h-full px-2">
-                        <div class="flex flex-col w-5/6 m-auto items-center py-5 sticky top-0 bg-white border-b border-gray-200/50">
+                        <div class="flex flex-col w-5/6 m-auto items-center py-5 sticky top-0 sidebar-identity">
                             <span class="w-[50px] h-auto lg:w-[60px] rounded-full overflow-hidden">
                                 <img src="./images/default-avatar.png" alt="user Avater" class="w-full h-auto object-center">
                             </span>
