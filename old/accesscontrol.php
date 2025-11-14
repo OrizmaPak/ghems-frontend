@@ -4,12 +4,11 @@ if(!isset($_SESSION["user_id"]) || !isset($_SESSION["user_id"]))
 {
 	header('Location: login.php');
 }
-if($_SESSION["role"] !== "SUPERADMIN"){
+if($_SESSION["role"] !== "SUPERADMIN"){ 
     header('Location: index.php');
 }
 
 ?>
-
 
 
        <section class="animate__animated animate__fadeIn">

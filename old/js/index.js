@@ -55,12 +55,13 @@ window.onload = function() {
     window.addEventListener('popstate', resolveUrlPage);
 
     const toggler = document.getElementById('toggler')
+    const navigation = document.getElementById('navigation')
     if(toggler) toggler.addEventListener('click', toggleNavigation)
 
-    if(!isDeviceMobile()) {
-        const navigation =  document.getElementById('navigation')
+    if(!isDeviceMobile() && navigation) {
         navigation.classList.add('show')
     }
+    syncNavigationState()
 
     Array.from(document.querySelectorAll('#navigation .nav-item > span')).forEach( nav => {
         nav.addEventListener('click', () => {
@@ -538,16 +539,16 @@ function checkAccountForVerification() {
 
 function toggleNavigation() {
     const navigation =  document.getElementById('navigation')
-    if(navigation){
-        if(navigation.classList.contains('show')) {
-            navigation.style.width = isDeviceMobile() ? '250px' : (80/100 * screen.availWidth ) + 'px'
-            navigation.classList.remove('show')
-        }
-        else {
-            navigation.style.width = '0'
-            navigation.classList.add('show')
-        }
-    }
+    if(!navigation) return
+    navigation.classList.toggle('show')
+    navigation.style.removeProperty('width')
+    syncNavigationState()
+}
+
+function syncNavigationState() {
+    const navigation = document.getElementById('navigation')
+    if(!navigation) return
+    document.body.classList.toggle('nav-collapsed', navigation.classList.contains('show'))
 }
 
 function isDeviceMobile() {

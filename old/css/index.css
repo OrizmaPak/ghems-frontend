@@ -1,6 +1,7 @@
 /*
 ! tailwindcss v3.3.5 | MIT License | https://tailwindcss.com
 */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 /*
 1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
@@ -3772,4 +3773,371 @@ button:disabled {
     .pshow {
         display: block;
     }
+}
+
+
+/* ====================================================================== */
+/* Polaris Glass UI                                                       */
+/* ====================================================================== */
+:root {
+  --nav-width-desktop: clamp(270px, 20vw, 320px);
+  --polaris-bg: #f5f7fb;
+  --polaris-gradient: radial-gradient(140% 140% at 0% 0%, #e9f0ff 0%, #ffffff 48%, #f5f9ff 100%);
+  --polaris-primary: #5d8fff;
+  --polaris-primary-soft: #d6e4ff;
+  --polaris-ink: #16223c;
+  --polaris-muted: #6b758a;
+  --polaris-card: rgba(255, 255, 255, 0.95);
+  --polaris-card-soft: rgba(255, 255, 255, 0.78);
+  --polaris-border: rgba(93, 143, 255, 0.2);
+  --polaris-shadow: 0 35px 90px rgba(15, 32, 84, 0.12);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Montserrat', 'Poppins', 'Heebo', sans-serif !important;
+  font-size: 15.5px;
+  background: var(--polaris-gradient);
+  color: var(--polaris-ink);
+  letter-spacing: 0.01em;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  min-height: 100vh;
+  padding: clamp(1rem, 2vw, 2.5rem);
+  position: relative;
+  background: transparent !important;
+  transition: padding-left 0.4s ease;
+}
+
+main > .h-full {
+  background: var(--polaris-card);
+  border-radius: 36px;
+  border: 1px solid var(--polaris-border);
+  box-shadow: var(--polaris-shadow);
+  padding: clamp(1rem, 1.5vw, 2rem);
+  min-height: calc(100vh - clamp(2rem, 4vw, 3rem));
+  backdrop-filter: blur(24px);
+}
+
+header {
+  position: relative;
+  z-index: 20;
+}
+
+header > div {
+  background: var(--polaris-card);
+  border-radius: 28px;
+  border: 1px solid var(--polaris-border);
+  box-shadow: 0 25px 60px rgba(13, 30, 66, 0.08);
+  padding-left: clamp(1rem, 2vw, 2.25rem);
+  padding-right: clamp(1rem, 2vw, 2.25rem);
+  color: var(--polaris-ink);
+}
+
+header button,
+header a,
+header span {
+  color: inherit;
+}
+
+header button {
+  border-radius: 999px !important;
+  border: 1px solid transparent;
+  transition: border-color 0.25s ease, background 0.25s ease, color 0.25s ease;
+}
+
+header button:hover {
+  background: rgba(93, 143, 255, 0.12) !important;
+  border-color: rgba(93, 143, 255, 0.35);
+  color: var(--polaris-ink);
+}
+
+#navigation {
+  position: fixed !important;
+  top: clamp(78px, 12vh, 120px);
+  left: clamp(16px, 3vw, 32px);
+  bottom: clamp(20px, 8vh, 36px);
+  width: min(320px, 85vw);
+  border-radius: 32px;
+  background: var(--polaris-card);
+  border: 1px solid var(--polaris-border);
+  box-shadow: var(--polaris-shadow);
+  padding-bottom: 2rem;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+  backdrop-filter: blur(28px);
+  z-index: 60;
+}
+
+#navigation #hoverer {
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+#navigation.show {
+  transform: translateX(calc(-100% - 40px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.nav-collapsed #navigation {
+  box-shadow: 0 35px 80px rgba(15, 32, 84, 0.08);
+}
+
+@media (min-width: 1280px) {
+  #navigation {
+    width: var(--nav-width-desktop) !important;
+  }
+
+  main {
+    padding-left: calc(var(--nav-width-desktop) + clamp(1.75rem, 2vw, 3rem));
+  }
+
+  body.nav-collapsed main {
+    padding-left: clamp(1.75rem, 2vw, 3rem);
+  }
+}
+
+@media (max-width: 1279px) {
+  #navigation {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    border-radius: 0;
+  }
+
+  main {
+    padding-left: clamp(1rem, 4vw, 1.5rem) !important;
+    padding-right: clamp(1rem, 4vw, 1.5rem) !important;
+  }
+}
+
+.nav-item {
+  border-radius: 22px;
+  margin-bottom: 0.45rem;
+  overflow: hidden;
+}
+
+.navitem-title {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--polaris-muted);
+  transition: color 0.3s ease, background 0.3s ease, transform 0.3s ease;
+}
+
+.navitem-title:hover {
+  background: rgba(93, 143, 255, 0.12);
+  color: var(--polaris-ink);
+  transform: translateX(4px);
+}
+
+.navitem-title > span:nth-child(2) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.navitem-child {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.035em;
+  padding: 0.35rem 0 0.35rem 1.3rem;
+  color: rgba(22, 34, 56, 0.6);
+  border-left: 2px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+.navitem-child:hover {
+  color: var(--polaris-ink);
+  border-left-color: rgba(93, 143, 255, 0.45);
+  transform: translateX(6px);
+}
+
+.navitem-child-active {
+  color: var(--polaris-primary) !important;
+  border-left-color: var(--polaris-primary);
+  font-weight: 600;
+}
+
+#navigation .active {
+  background: rgba(93, 143, 255, 0.15) !important;
+}
+
+.material-symbols-outlined {
+  color: currentColor;
+  transition: color 0.3s ease;
+}
+
+body :where(.bg-white, .bg-gray-50, .bg-gray-100, .bg-slate-50, .bg-\[#fafafa\]) {
+  background: var(--polaris-card-soft) !important;
+  border-radius: 26px;
+  border: 1px solid var(--polaris-border) !important;
+  box-shadow: var(--polaris-shadow);
+}
+
+body :where(.border, .border-b, .border-l, .border-r, .border-t) {
+  border-color: rgba(19, 35, 85, 0.08) !important;
+}
+
+.bg-primary-g {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(207, 224, 255, 0.95)) !important;
+  color: var(--polaris-ink) !important;
+  border: 1px solid rgba(93, 143, 255, 0.25) !important;
+  box-shadow: 0 18px 40px rgba(93, 143, 255, 0.18);
+}
+
+.bg-primary\/10 {
+  background: rgba(145, 170, 219, 0.18) !important;
+}
+
+.text-primary-g,
+.group:hover .group-hover\:text-primary-g {
+  color: var(--polaris-primary) !important;
+}
+
+.focus\:border-primary-g:focus {
+  border-color: var(--polaris-primary) !important;
+  box-shadow: 0 0 0 3px rgba(93, 143, 255, 0.25) !important;
+}
+
+.btn {
+  border-radius: 999px !important;
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(120deg, #edf1ff, #dfe8ff) !important;
+  color: var(--polaris-ink) !important;
+  padding: 0.9rem 2.75rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: 0 20px 45px rgba(68, 94, 165, 0.25) !important;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(93, 143, 255, 0.35) !important;
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+select,
+textarea,
+.form-control {
+  border-radius: 16px !important;
+  border: 1px solid rgba(22, 36, 69, 0.08) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  padding: 0.7rem 1rem !important;
+  font-size: 0.95rem !important;
+  color: var(--polaris-ink) !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+input:not([type=checkbox]):not([type=radio]):not([type=hidden]):focus,
+select:focus,
+textarea:focus,
+.form-control:focus {
+  border-color: var(--polaris-primary) !important;
+  box-shadow: 0 12px 30px rgba(93, 143, 255, 0.18);
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+::placeholder {
+  color: rgba(22, 34, 56, 0.45) !important;
+  letter-spacing: 0.06em;
+}
+
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100%;
+}
+
+table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+table thead th {
+  background: rgba(237, 241, 255, 0.95) !important;
+  color: var(--polaris-ink) !important;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(93, 143, 255, 0.25) !important;
+}
+
+table tbody tr {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(22, 34, 56, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+table tbody tr:nth-child(odd) {
+  background: rgba(241, 245, 255, 0.85);
+}
+
+table tbody tr:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 30px rgba(15, 33, 88, 0.08);
+}
+
+table td,
+table th {
+  padding: clamp(0.85rem, 1vw, 1.1rem) !important;
+}
+
+.table-content {
+  background: var(--polaris-card);
+  border-radius: 26px;
+  border: 1px solid var(--polaris-border);
+  box-shadow: var(--polaris-shadow);
+  padding: clamp(1rem, 1.5vw, 1.75rem);
+}
+
+.page-title {
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  color: var(--polaris-ink);
+  border-bottom: 2px solid rgba(93, 143, 255, 0.25);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.2rem 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(93, 143, 255, 0.25);
+  background: rgba(93, 143, 255, 0.12);
+  color: var(--polaris-ink);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(145, 170, 219, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(93, 143, 255, 0.55);
+  border-radius: 999px;
 }
