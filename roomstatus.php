@@ -54,68 +54,26 @@
                                                 <!--    <span>Export Excel</span> -->
                                                 <!--</button> -->
                                             </div>
-                                    <div id="roomstatusview  overflow-visible" class="">
-                                <div class="table-content  overflow-visible">
-                                    <div id="roomer" class="flex p-3 gap-4 justify-center rounded bg-white shadow flex-wrap overflow-visible">
-                                        
-                                        <!--<div class="w-full h-fit p-7 bg-white">-->
-                                        <!--    <hr/>-->
-                                        <!--        <div class="flex flex-col lg:flex-row flex-wrap gap-4">-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">roomname:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">Building:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">category:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">floor:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">roomnumber:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">roomstatus:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">floor:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">room status description:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">description:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">image:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex flex-col min-w-[200px]">-->
-                                        <!--                <label for="logoname" class="control-label !font-bold">image:</label>-->
-                                        <!--                <p class="control-label">Loading...</p>-->
-                                        <!--            </div>-->
-                                        <!--            <div class="p-2 flex gap-4 min-w-[200px]">-->
-                                        <!--                <button class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>-->
-                                        <!--                <button class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>-->
-                                        <!--            </div>-->
-                                        <!--        </div>-->
-                                        <!--    <hr/>-->
-                                        <!--</div>-->
-                                        
+                                    <div id="roomstatusview" class="overflow-visible">
+                                <div class="table-content overflow-visible">
+                                    <div id="roomer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6 bg-gradient-to-br from-gray-50/50 via-white/30 to-gray-50/50 backdrop-blur-sm rounded-2xl shadow-inner">
+                                        <!-- Room cards will be dynamically inserted here -->
                                     </div>
                                 </div>
                                 <div class="table-status"></div>
+                            </div>
+                            
+                            <!-- Room Image Modal -->
+                            <div id="roomImageModal" onclick="if(event.target.id == 'roomImageModal')this.classList.add('hidden')" class="z-[100] w-screen h-screen fixed bg-black/70 backdrop-blur-sm top-0 left-0 p-10 overflow-auto hidden">
+                                <div class="animate__animated animate__fadeIn w-full max-w-5xl bg-white rounded-2xl shadow-2xl m-auto relative p-8">
+                                    <div class="w-full flex justify-between items-center mb-6">
+                                        <h3 class="text-2xl font-bold text-gray-800" id="roomImageModalTitle">Room Images</h3>
+                                        <span class="material-symbols-outlined text-red-500 cp hover:scale-[1.3] transition-all text-3xl" onclick="did('roomImageModal').classList.add('hidden')">close</span>
+                                    </div>
+                                    <div id="roomImageModalContent" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- Images will be inserted here -->
+                                    </div>
+                                </div>
                             </div> 
                             
                             <div id="modalreceipt" onclick="if(event.target.id == 'modalreceipt')this.classList.add('hidden')" class="z-[100] w-screen h-screen fixed bg-[#5a5a5a3e] top-0 left-0 p-10 overflow-auto hidden">
@@ -264,4 +222,92 @@
         }
         @-webkit-keyframes slide-fwd-center{0%{-webkit-transform:translateZ(0);transform:translateZ(0)}100%{-webkit-transform:translateZ(160px);transform:translateZ(160px)}}@keyframes slide-fwd-center{0%{-webkit-transform:translateZ(0);transform:translateZ(0)}100%{-webkit-transform:translateZ(160px);transform:translateZ(160px)}}
         .slide-fwd-center{-webkit-animation:slide-fwd-center .45s cubic-bezier(.25,.46,.45,.94) infinite alternate-reverse forwards;animation:slide-fwd-center .45s cubic-bezier(.25,.46,.45,.94) infinite alternate-reverse forwards}
+        
+        /* Futuristic Room Status Card Animations */
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+        }
+        
+        .room-status-card {
+            position: relative;
+        }
+        
+        .room-status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            padding: 2px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .room-status-card:hover::before {
+            opacity: 1;
+        }
+        
+        /* Smooth scrollbar for room container */
+        #roomer::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        #roomer::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        
+        #roomer::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        #roomer::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        /* Glassmorphism effect enhancement */
+        .backdrop-blur-xl {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        
+        /* Button hover effects */
+        .group\/btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .group\/btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Image modal styles */
+        #roomImageModal img {
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        #roomImageModal img:hover {
+            transform: scale(1.05);
+        }
     </style>

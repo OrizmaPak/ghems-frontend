@@ -4,6 +4,7 @@ let totaldebitnumber
 async function addgltransactionActive() {
     const form = document.querySelector('#addgltransactionform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', addgltransactionFormSubmitHandler)
+    if(form.querySelector('#reset')) form.querySelector('#reset').addEventListener('click', addgltransactionFormResetHandler)
     datasource = []
     await fetchaddgltransaction()
     totalcreditnumber = 0
@@ -136,6 +137,16 @@ async function onaddgltransactionTableDataSignal() {
     )
     .join('')
     injectPaginatatedTable(rows)
+}
+
+function addgltransactionFormResetHandler() {
+    document.querySelector('#addgltransactionform').reset();
+    did('gltdebitcontainer').innerHTML = ''
+    did('gltcreditcontainer').innerHTML = ''
+    totalcreditnumber = 0
+    totaldebitnumber = 0
+    document.getElementById('glttotalcredit').value = ''
+    document.getElementById('glttotaldebit').value = ''
 }
 
 async function addgltransactionFormSubmitHandler() {

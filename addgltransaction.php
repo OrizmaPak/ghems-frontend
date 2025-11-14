@@ -104,7 +104,11 @@
                                         <div></div>
                                         <div></div>
                                         
-                                        <div class="flex justify-end mt-5">
+                                        <div class="flex justify-end gap-3 mt-5">
+                                            <button id="reset" type="button" class="btn flex items-center gap-2">
+                                                <span class="material-symbols-outlined" style="font-size: 18px;">refresh</span>
+                                                <span>Reset</span>
+                                            </button>
                                              <button id="submit" type="button" class="btn">
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Submit</span>

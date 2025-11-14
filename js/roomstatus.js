@@ -117,93 +117,262 @@ async function fetchallroomstatus() {
         //                                 </div>
         // `).join('')
         did('roomer').innerHTML = map.map((data, i)=>{
+            // Determine status colors and gradients
+            let statusConfig = {
+                'AVAILABLE': {
+                    gradient: 'from-emerald-500 via-green-500 to-teal-500',
+                    bgGradient: 'from-emerald-50/90 via-green-50/90 to-teal-50/90',
+                    borderColor: 'border-emerald-400/50',
+                    statusColor: 'text-emerald-700',
+                    statusBg: 'bg-emerald-100/80',
+                    icon: 'check_circle',
+                    pulse: 'animate-pulse'
+                },
+                'OCCUPIED': {
+                    gradient: 'from-red-500 via-rose-500 to-pink-500',
+                    bgGradient: 'from-red-50/90 via-rose-50/90 to-pink-50/90',
+                    borderColor: 'border-red-400/50',
+                    statusColor: 'text-red-700',
+                    statusBg: 'bg-red-100/80',
+                    icon: 'person',
+                    pulse: ''
+                },
+                'RESERVED': {
+                    gradient: 'from-amber-500 via-orange-500 to-yellow-500',
+                    bgGradient: 'from-amber-50/90 via-orange-50/90 to-yellow-50/90',
+                    borderColor: 'border-amber-400/50',
+                    statusColor: 'text-amber-700',
+                    statusBg: 'bg-amber-100/80',
+                    icon: 'event',
+                    pulse: ''
+                }
+            };
+            let config = statusConfig[data.roomstatus] || statusConfig['AVAILABLE'];
             
         return`
-             <div class="w-[200px] h-fit pt-2 px-3 
-                    ${data.roomstatus == 'AVAILABLE' ? `bg-green-300`: ''} 
-                    ${data.roomstatus == 'OCCUPIED' ? `bg-red-300`: ''} 
-                    ${data.roomstatus == 'RESERVED' ? `bg-orange-300`: ''} 
-                    border overflow-visible rounded shadow-md">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <div class="flex w-full justify-between items-center min-w-[100px]">
-                                                        <label for="logoname" class="control-label hidden !font-bold">room status:</label>
-                                                        <p class="control-label text-lg
-                                                         ${data.roomstatus == 'AVAILABLE' ? `text-green-800`: ''} 
-                                                         ${data.roomstatus == 'OCCUPIED' ? `text-red-800`: ''} 
-                                                         ${data.roomstatus == 'RESERVED' ? `text-orange-800`: ''} 
-                                                         " title="${data.roomstatusdescription} ${data.description}"
-                                                         >${data.roomstatus}</p>
-                                                        <div class="flex w-full justify-center gap-2 items-center min-w-[100px]">
-                                                            <label for="logoname" class="control-label !font-bold">room:</label>
-                                                            <p class="control-label text-lg text-white">${data.roomnumber}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex flex-col min-w-[100px] text-xs">
-                                                        <label for="logoname" class="control-label !font-bold">room name:</label>
-                                                        <p class="control-label">${data.roomname}</p>
-                                                    </div>
-                                                    <div class="flex gap-1">
-                                                        <div class="flex flex-col min-w-[100px] text-xs">
-                                                            <label for="logoname" class="control-label !font-bold">Building:</label>
-                                                            <p class="control-label">${data.building}</p>
-                                                        </div>
-                                                        <div class="flex flex-col min-w-[100px] text-xs">
-                                                            <label for="logoname" class="control-label !font-bold">floor:</label>
-                                                            <p class="control-label">${data.floor}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                    <div class="flex w-full justify-between items-end mt-3 min-w-[100px]">
-                                                        ${data.roomstatus == 'AVAILABLE' ? `<button title="Check In" onclick="sessionStorage.setItem('roomsetting', '${data.categoryid}_${data.roomnumber}');did('checkin').click()" type="button" class="mx-1 btn-sm text-white bg-[#2BAD5D] hover:bg-[#2BAD5D]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-2 mb-2">
-                                                        <span class="material-symbols-outlined slide-fwd-center">check</span>
-                                                        </button>
-                                                        <button title="Reserve this room" onclick="sessionStorage.setItem('roomsetting', '${data.categoryid}_${data.roomnumber}');did('guestsreservations').click()" type="button" class="mx-1 btn-sm text-white bg-[#AD522B] hover:bg-[#AD522B]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-2 mb-2">
-                                                        <span class="material-symbols-outlined slide-fwd-center shadow-lg">keep_public</span>
-                                                        </button>` : ''}
-                                                        
-                                                        ${data.roomstatus == 'OCCUPIED' ? `<button title="Check out" type="button" class="mx-1 btn-sm text-white bg-[#AD2B2B] hover:bg-[#AD2B2B]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-1 mb-1">
-                                                        <span class="material-symbols-outlined slide-fwd-center shadow-lg">logout</span>
-                                                        </button>
-                                                        <button type="button" title="View Check In" class="mx-1 btn-sm text-white bg-[#2B7FAD] hover:bg-[#2B7FAD]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-1 mb-1">
-                                                        <span class="material-symbols-outlined slide-fwd-center shadow-lg">visibility</span>
-                                                        </button>` : ''}
-                                                        
-                                                        ${data.roomstatus == 'RESERVED' ? `<button onclick="viewroomreservationcheckin('${data.reservationid}', this)" title="View Reservation" type="button" class="mx-1 btn-sm text-white bg-[#2B7FAD] hover:bg-[#2B7FAD]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-1 mb-1">
-                                                        <span class="material-symbols-outlined slide-fwd-center shadow-lg">Visibility</span>
-                                                        </button>
-                                                        <button type="button"  onclick="sessionStorage.setItem('checkinfromsomewhere', '${data.reservationid}');did('reservationcheckin').click()" title="Check In" class="mx-1 btn-sm text-white bg-[#2BAD5D] hover:bg-[#2BAD5D]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-1 mb-1">
-                                                        <span class="material-symbols-outlined slide-fwd-center shadow-lg">check</span>
-                                                        </button>
-                                                        <button type="button" title="Cancel Reservation" class="mx-1 btn-sm text-white bg-[#AD2B2B] hover:bg-[#AD2B2B]/90  font-medium text-sm px-1 py-0.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-1 mb-1">
-                                                        <span class="material-symbols-outlined slide-fwd-center shadow-lg">close</span>
-                                                        </button>` : ''}
-                                                        
-                                                        <div class="tooltip underline flex mx-auto w-fit text-xs items-end mb-[10px]">View Images
-                                                            <div class="tooltiptext overflow-visible !w-fit">
-                                                            <div class="flex overflow-visible">
-                                                                <div class="p-2 flex flex-col min-w-[200px]">
-                                                                    <label for="logoname" class="control-label !font-bold">room: ${data.roomnumber}</label>
-                                                                    <p class="control-label"><img src="../images/${data.imageurl1}" class="w-[200px] h-[200px] hover:scale-[2] transition-all" /></p>
-                                                                </div>
-                                                                <div class="p-2 flex flex-col min-w-[200px]">
-                                                                    <label for="logoname" class="control-label !font-bold">room: ${data.roomnumber}</label>
-                                                                    <p class="control-label"><img src="../images/${data.imageurl2}" class="w-[200px] h-[200px] hover:scale-[2] transition-all" /></p>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex justify-center w-full overflow-visible">
-                                                                <button class="btn btn-sm p-1 text-xs"  onclick="openmodalforoccupancy('${data.roomnumber}')">Room Transactions</button>
-                                                            </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                <div class="p-2 flex gap-4 w-full hidden justify-end">
-                                                    <button title="check-In" onclick="viewroomdetails('${data.roomnumber}')" class="material-symbols-outlined slide-fwd-center rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-                                                    <button title="Check-Out" class="${data.roomstatus == 'OCCUPIED' ? '' : 'hidden '}material-symbols-outlined slide-fwd-center rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">exit_to_app</button>
-                                                </div>
-                                        </div>
+             <div class="room-status-card group relative w-full max-w-[320px] h-auto min-h-[420px] 
+                    bg-gradient-to-br ${config.bgGradient}
+                    backdrop-blur-xl bg-white/70
+                    border ${config.borderColor} border-2
+                    rounded-2xl shadow-xl overflow-hidden
+                    transition-all duration-500 ease-out
+                    hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1
+                    ${data.roomstatus == 'AVAILABLE' ? 'hover:border-emerald-500' : ''}
+                    ${data.roomstatus == 'OCCUPIED' ? 'hover:border-red-500' : ''}
+                    ${data.roomstatus == 'RESERVED' ? 'hover:border-amber-500' : ''}
+                    animate-fade-in"
+                    style="animation-delay: ${i * 0.05}s">
+                    
+                    <!-- Status Badge Top Right -->
+                    <div class="absolute top-4 right-4 z-10">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-gradient-to-r ${config.gradient} rounded-full blur-md opacity-60 ${config.pulse}"></div>
+                            <div class="relative ${config.statusBg} backdrop-blur-sm px-4 py-1.5 rounded-full border ${config.borderColor} border-2 shadow-lg">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm ${config.statusColor}">${config.icon}</span>
+                                    <span class="text-xs font-bold ${config.statusColor} uppercase tracking-wide">${data.roomstatus}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Room Image Section -->
+                    <div class="relative h-48 w-full overflow-hidden bg-gradient-to-br ${config.gradient}">
+                        <div class="absolute inset-0 bg-black/20"></div>
+                        <img src="../images/${data.imageurl1 || 'emptyrooom.png'}" 
+                             alt="${data.roomname}" 
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                             onerror="this.src='../images/emptyrooom.png'">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                        
+                        <!-- Room Number Badge -->
+                        <div class="absolute bottom-4 left-4 right-4">
+                            <div class="bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-xl border border-white/50">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Room Number</p>
+                                        <p class="text-2xl font-bold ${config.statusColor} mt-1">${data.roomnumber}</p>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg">
+                                        <span class="material-symbols-outlined text-white text-2xl">meeting_room</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Section -->
+                    <div class="p-5 space-y-4">
+                        <!-- Room Name -->
+                        <div class="space-y-1">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">hotel</span>
+                                Room Name
+                            </p>
+                            <p class="text-lg font-bold text-gray-800">${data.roomname || 'N/A'}</p>
+                        </div>
+                        
+                        <!-- Room Details Grid -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/50 shadow-sm hover:shadow-md transition-all">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">business</span>
+                                    Building
+                                </p>
+                                <p class="text-sm font-bold text-gray-800">${data.building || 'N/A'}</p>
+                            </div>
+                            <div class="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/50 shadow-sm hover:shadow-md transition-all">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">layers</span>
+                                    Floor
+                                </p>
+                                <p class="text-sm font-bold text-gray-800">${data.floor || 'N/A'}</p>
+                            </div>
+                            ${data.roomcategory ? `
+                            <div class="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/50 shadow-sm hover:shadow-md transition-all col-span-2">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">category</span>
+                                    Category
+                                </p>
+                                <p class="text-sm font-bold text-gray-800">${data.roomcategory}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Status Description -->
+                        ${data.roomstatusdescription ? `
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/50">
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">info</span>
+                                Status Details
+                            </p>
+                            <p class="text-sm text-gray-700 leading-relaxed">${data.roomstatusdescription}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-2 pt-2">
+                            ${data.roomstatus == 'AVAILABLE' ? `
+                                <button onclick="sessionStorage.setItem('roomsetting', '${data.categoryid}_${data.roomnumber}');did('checkin').click()" 
+                                        type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">check_circle</span>
+                                    <span>Check In</span>
+                                </button>
+                                <button onclick="sessionStorage.setItem('roomsetting', '${data.categoryid}_${data.roomnumber}');did('guestsreservations').click()" 
+                                        type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">event</span>
+                                    <span>Reserve</span>
+                                </button>
+                            ` : ''}
+                            
+                            ${data.roomstatus == 'OCCUPIED' ? `
+                                <button type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">logout</span>
+                                    <span>Check Out</span>
+                                </button>
+                                <button type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <span>View</span>
+                                </button>
+                            ` : ''}
+                            
+                            ${data.roomstatus == 'RESERVED' ? `
+                                <button onclick="viewroomreservationcheckin('${data.reservationid}', this)" 
+                                        type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <span>View</span>
+                                </button>
+                                <button onclick="sessionStorage.setItem('checkinfromsomewhere', '${data.reservationid}');did('reservationcheckin').click()" 
+                                        type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">check_circle</span>
+                                    <span>Check In</span>
+                                </button>
+                                <button type="button" 
+                                        class="flex-1 group/btn bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">close</span>
+                                    <span>Cancel</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- View Images & Transactions -->
+                        <div class="flex gap-2 pt-2 border-t border-gray-200/50">
+                            <button onclick="openRoomImageModal('${data.roomnumber}', '../images/${data.imageurl1}', '../images/${data.imageurl2}')" 
+                                    class="flex-1 group/btn bg-white/80 hover:bg-white backdrop-blur-sm text-gray-700 hover:text-gray-900 font-medium text-xs px-3 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-1.5 border border-gray-200/50">
+                                <span class="material-symbols-outlined text-base">photo_library</span>
+                                <span>Images</span>
+                            </button>
+                            <button onclick="openmodalforoccupancy('${data.roomnumber}')" 
+                                    class="flex-1 group/btn bg-white/80 hover:bg-white backdrop-blur-sm text-gray-700 hover:text-gray-900 font-medium text-xs px-3 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-1.5 border border-gray-200/50">
+                                <span class="material-symbols-outlined text-base">receipt_long</span>
+                                <span>Transactions</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Shine Effect on Hover -->
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    </div>
+                </div>
         `}).join('')
     }
     else return notification('No records retrieved')
+}
+
+// Function to open room image modal
+function openRoomImageModal(roomNumber, imageUrl1, imageUrl2) {
+    const modal = did('roomImageModal');
+    const modalTitle = did('roomImageModalTitle');
+    const modalContent = did('roomImageModalContent');
+    
+    modalTitle.textContent = `Room ${roomNumber} - Images`;
+    
+    let imagesHtml = '';
+    
+    if (imageUrl1 && imageUrl1 !== '-' && imageUrl1 !== '../images/-') {
+        imagesHtml += `
+            <div class="space-y-2">
+                <p class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Image 1</p>
+                <img src="${imageUrl1}" 
+                     alt="Room ${roomNumber} - Image 1" 
+                     class="w-full h-auto rounded-xl shadow-lg cursor-pointer hover:shadow-2xl transition-all"
+                     onclick="window.open('${imageUrl1}', '_blank')"
+                     onerror="this.src='../images/emptyrooom.png'">
+            </div>
+        `;
+    }
+    
+    if (imageUrl2 && imageUrl2 !== '-' && imageUrl2 !== '../images/-') {
+        imagesHtml += `
+            <div class="space-y-2">
+                <p class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Image 2</p>
+                <img src="${imageUrl2}" 
+                     alt="Room ${roomNumber} - Image 2" 
+                     class="w-full h-auto rounded-xl shadow-lg cursor-pointer hover:shadow-2xl transition-all"
+                     onclick="window.open('${imageUrl2}', '_blank')"
+                     onerror="this.src='../images/emptyrooom.png'">
+            </div>
+        `;
+    }
+    
+    if (!imagesHtml) {
+        imagesHtml = `
+            <div class="col-span-2 text-center py-12">
+                <span class="material-symbols-outlined text-6xl text-gray-400 mb-4">image_not_supported</span>
+                <p class="text-gray-500 text-lg">No images available for this room</p>
+            </div>
+        `;
+    }
+    
+    modalContent.innerHTML = imagesHtml;
+    modal.classList.remove('hidden');
 }
 
 async function viewroomreservationcheckin(id, btn){
