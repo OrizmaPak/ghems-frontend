@@ -106,6 +106,9 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             <button onclick="logoff()" title="logout" class="portal-icon-btn flex items-center justify-center text-gray-500">
                                 <span class="material-symbols-outlined">power_settings_new</span>
                             </button>
+                            <span class="portal-avatar w-[34px] h-[34px] lg:w-[40px] lg:h-[40px] rounded-full overflow-hidden">
+                                <img src="./images/default-avatar.png" alt="user avatar" class="w-full h-full object-cover">
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -116,13 +119,8 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                     <!-- navigation --> 
                     <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 xl:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto glass-sidebar">
                         <div id="hoverer" class="overflow-y-auto overflow-x-hidden h-full px-2">
-                        <div class="flex flex-col w-5/6 m-auto items-center py-5 sticky top-0 sidebar-identity">
-                            <span class="w-[50px] h-auto lg:w-[60px] rounded-full overflow-hidden">
-                                <img src="./images/default-avatar.png" alt="user Avater" class="w-full h-auto object-center">
-                            </span>
-                            <span class="font-extrabold text-normal font-mont capitalize mt-2" name="user_name">Loading...</span>
-                            <span class="rounded-full text-white text-3xs font-bold capitalize bg-blue-500 px-2 py-0.5 text-center" name="user_role">Loading...</span>
-                            <span class="font-medium text-[9px] text-blue font-mont mt-2"><?php echo $_SESSION["hemsemail"]?></span>
+                        <div class="flex flex-col w-5/6 m-auto items-start py-5 sticky top-0 sidebar-identity">
+                            <span class="font-medium text-[9px] text-blue font-mont mt-1"><?php echo $_SESSION["hemsemail"]?></span>
                         </div>
                             <ul id="navigationcontainer" class="font-poppins mt-5">
                                 <li class="nav-item"> 
