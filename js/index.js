@@ -537,15 +537,27 @@ function checkAccountForVerification() {
 }
 
 function toggleNavigation() {
-    const navigation =  document.getElementById('navigation')
-    if(navigation){
-        if(navigation.classList.contains('show')) {
-            navigation.style.width = isDeviceMobile() ? '250px' : (80/100 * screen.availWidth ) + 'px'
-            navigation.classList.remove('show')
-        }
-        else {
-            navigation.style.width = '0'
-            navigation.classList.add('show')
+    const navigation = document.getElementById('navigation')
+    if (navigation) {
+        const isDesktop = isDeviceMobile()
+        const isCollapsed = navigation.classList.contains('show')
+
+        if (isDesktop) {
+            // Desktop: keep layout width, slide sidebar in/out
+            if (isCollapsed) {
+                navigation.style.transform = 'translateX(0)'
+            } else {
+                navigation.style.transform = 'translateX(-100%)'
+            }
+            navigation.classList.toggle('show')
+        } else {
+            // Mobile / tablet: use width for slide-in menu
+            if (isCollapsed) {
+                navigation.style.width = (80 / 100 * screen.availWidth) + 'px'
+            } else {
+                navigation.style.width = '0'
+            }
+            navigation.classList.toggle('show')
         }
     }
 }
