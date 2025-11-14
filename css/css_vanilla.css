@@ -264,12 +264,12 @@ header {
 }
 
 .glass-sidebar {
-    background: linear-gradient(200deg, rgba(255, 255, 255, 0.78), rgba(230, 240, 255, 0.52)) !important;
-    border-right: 1px solid rgba(144, 187, 237, 0.35);
-    border-radius: 32px;
-    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15);
-    -webkit-backdrop-filter: blur(calc(var(--blur-backdrop) * 0.7));
-    backdrop-filter: blur(calc(var(--blur-backdrop) * 0.7));
+    background: radial-gradient(circle at top left, #020617 0, #020617 55%, #020617 100%) !important;
+    border-right: none;
+    border-radius: 28px;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     padding-top: 1rem;
     margin-left: clamp(0.25rem, 1vw, 1rem);
 }
@@ -314,23 +314,23 @@ header {
 
 #navigation .navitem-title {
     border-right: none;
-    border-radius: var(--radius-sm);
-    padding: 0.65rem 1rem;
-    color: #111827;
+    border-radius: 999px;
+    padding: 0.7rem 1.1rem;
+    color: #e5e7eb;
     letter-spacing: 0.08em;
     font-size: 0.78rem;
-    border: 1px solid rgba(149, 186, 235, 0.15);
-    background: rgba(233, 242, 255, 0.28);
+    border: none;
+    background: transparent;
     position: relative;
     overflow: hidden;
-    transition: var(--transition-base);
+    transition: background-color var(--transition-base), color var(--transition-base), transform var(--transition-base);
 }
 
 #navigation .navitem-title::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, rgba(127, 180, 255, 0.15), transparent 80%);
+    background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 70%);
     opacity: 0;
     transition: var(--transition-base);
 }
@@ -341,7 +341,7 @@ header {
 }
 
 #navigation .navitem-title span:first-child {
-    color: var(--color-accent-strong);
+    color: #9fb3ff;
 }
 
 #navigation .navitem-title span:last-child {
@@ -351,9 +351,9 @@ header {
 }
 
 #navigation .navitem-title:hover {
-    color: var(--color-text-primary);
-    border-color: rgba(144, 187, 237, 0.6);
-    box-shadow: inset 0 0 0 1px rgba(144, 187, 237, 0.35);
+    color: #f9fafb;
+    background: rgba(15, 23, 42, 0.9);
+    transform: translateX(2px);
 }
 
 #navigation .navitem-title:hover::after {
@@ -361,19 +361,34 @@ header {
 }
 
 #navigation .active > .navitem-title {
-    color: var(--color-text-primary) !important;
-    background: rgba(144, 187, 237, 0.22) !important;
-    border-color: rgba(144, 187, 237, 0.55) !important;
-    box-shadow: 0 10px 35px rgba(125, 170, 229, 0.25);
+    color: #f9fafb !important;
+    background: linear-gradient(135deg, #1d4ed8, #312e81) !important;
+    border-color: transparent !important;
+    box-shadow: none;
 }
 
 #navigation .navitem-child {
-    font-size: 0.78rem;
-    color: #111827;
-    border-left: 1px solid transparent;
-    padding: 0.2rem 0.4rem;
-    border-radius: var(--radius-sm);
-    transition: var(--transition-base);
+    font-size: 0.75rem;
+    color: #cbd5f5;
+    border-left: none;
+    padding: 0.35rem 0.4rem 0.35rem 1.2rem;
+    border-radius: 999px;
+    position: relative;
+    display: block;
+    transition: background-color var(--transition-base), color var(--transition-base), transform var(--transition-base), padding var(--transition-base);
+}
+
+#navigation .navitem-child::before {
+    content: '';
+    position: absolute;
+    left: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.85);
+    transition: background-color var(--transition-base), transform var(--transition-base);
 }
 
 #navigation .navitem-child + .navitem-child {
@@ -382,10 +397,16 @@ header {
 
 #navigation .navitem-child:hover,
 #navigation .navitem-child.navitem-child-active {
-    color: var(--color-text-primary) !important;
-    border-left-color: rgba(144, 187, 237, 0.65);
-    background: rgba(144, 187, 237, 0.16);
-    padding-left: 0.75rem;
+    color: #f9fafb !important;
+    background: rgba(30, 64, 175, 0.5);
+    padding-left: 1.4rem;
+    transform: translateX(2px);
+}
+
+#navigation .navitem-child:hover::before,
+#navigation .navitem-child.navitem-child-active::before {
+    background: #e5e7eb;
+    transform: translateY(-50%) scale(1.15);
 }
 
 .content-scaffold {

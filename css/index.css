@@ -3773,3 +3773,11 @@ button:disabled {
         display: block;
     }
 }
+
+/* Base padding for form fields */
+input,
+select,
+textarea {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
