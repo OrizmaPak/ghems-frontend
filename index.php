@@ -49,7 +49,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
 </head>
 
 <body>
-    <main class="h-screen bg-primary/10">
+    <main class="h-screen bg-primary/10 app-shell">
         <input type="hidden" name="location_id" id="location_id" value="<?php echo $_SESSION["location_id"]?>" readonly>
         <input type="hidden" name="your_email" id="your_email" value="<?php echo $_SESSION["hemsemail"]?>" readonly>
         <input type="hidden" name="" id="your_role" value="<?php echo $_SESSION["role"]?>" readonly>
@@ -60,7 +60,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
         <input type="hidden" name="" id="your_companyemail" value="<?php echo $_SESSION["companyemail"]?>" readonly>
         <div class="h-full">
             <header>
-                <div class="flex items-center bg-white border-b border-gray-200/50">
+                <div class="flex items-center bg-white border-b border-gray-200/50 glass-header">
                     <span
                         class="xl:w-[250px] font-bold text-base block py-3 pl-5 selection:bg-white uppercase font-heebo text-primary-g">He<span
                             class="text-gray-400">ms</span></span>
@@ -104,10 +104,10 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                 </div>
             </header>
 
-            <section>
+            <section class="app-layout">
                 <div class="xl:flex h-screen relative">
                     <!-- navigation --> 
-                    <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 xl:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto">
+                    <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 xl:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto glass-sidebar">
                         <div id="hoverer" class="overflow-y-auto overflow-x-hidden h-full px-2">
                         <div class="flex flex-col w-5/6 m-auto items-center py-5 sticky top-0 bg-white border-b border-gray-200/50">
                             <span class="w-[50px] h-auto lg:w-[60px] rounded-full overflow-hidden">
@@ -360,10 +360,10 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             </ul>
                         </div>
                     </nav>
-                    <section class=" flex flex-col justify-between pb-6 px-5 w-full xl:px-1 xl:w-[86%]">
+                    <section class=" flex flex-col justify-between pb-6 px-5 w-full xl:px-1 xl:w-[86%] content-scaffold">
                         <!-- content area -->
-                        <div  class="overflow-y-auto overflow-x-hidden h-full w-full">
-                            <div class=" w-full mx-auto mt-1 p-5 xl:px-10" id="workspace">
+                        <div  class="overflow-y-auto overflow-x-hidden h-full w-full content-scroll">
+                            <div class=" w-full mx-auto mt-1 p-5 xl:px-10 workspace-canvas" id="workspace">
                                 
                             </div>
                         </div>
@@ -376,7 +376,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                     
                     <div id="arcontainer" class="fixed w-screen h-screen bg-[#00000042] top-0 left-[100%] flex justify-end transition-all duration-[0.5s]">
                             <button type="button" id="aropener" class="absolute !text-xs top-20 left-[-75px] shadow text-white bg-gradient-to-r opacity-[0.7] from-cyan-400 via-cyan-500 to-green-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-lg text-sm pl-3 pr-5 py-2.5 text-center me-2 mb-2">Available <br/> Rooms</button>
-                        <div id="arshadow" class="w-full max-w-[300px] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative">
+                        <div id="arshadow" class="w-full max-w-[300px] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative glass-flyout">
                             <button type="button" id="arremover" class="absolute text-xs top-7 left-[-25px] shadow text-white opacity-[0.8] bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2"> X</button>
                             <p class="text-center text-[black] font-bold">AVAILABLE ROOMS GOES HERE</p>
                             
