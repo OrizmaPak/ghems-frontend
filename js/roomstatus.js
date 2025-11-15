@@ -150,7 +150,7 @@ async function fetchallroomstatus() {
             let config = statusConfig[data.roomstatus] || statusConfig['AVAILABLE'];
             
         return`
-             <div class="room-status-card group relative w-full max-w-[320px] h-auto min-h-[420px] 
+             <div class="room-status-card group relative w-full max-w-[320px] h-auto
                     bg-gradient-to-br ${config.bgGradient}
                     backdrop-blur-xl bg-white/70
                     border ${config.borderColor} border-2
@@ -161,7 +161,8 @@ async function fetchallroomstatus() {
                     ${data.roomstatus == 'OCCUPIED' ? 'hover:border-red-500' : ''}
                     ${data.roomstatus == 'RESERVED' ? 'hover:border-amber-500' : ''}
                     animate-fade-in"
-                    style="animation-delay: ${i * 0.05}s">
+                    style="animation-delay: ${i * 0.05}s"
+                    id="room-card-${data.roomnumber}">
                     
                     <!-- Status Badge Top Right -->
                     <div class="absolute top-4 right-4 z-10">
@@ -176,8 +177,15 @@ async function fetchallroomstatus() {
                         </div>
                     </div>
                     
-                    <!-- Room Image Section -->
-                    <div class="relative h-48 w-full overflow-hidden bg-gradient-to-br ${config.gradient}">
+                    <!-- Collapse/Expand Toggle Button -->
+                    <button onclick="toggleRoomCard('${data.roomnumber}')" 
+                            class="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border-2 ${config.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group/toggle hover:scale-110"
+                            id="toggle-btn-${data.roomnumber}">
+                        <span class="material-symbols-outlined text-gray-700 transition-transform duration-300" id="toggle-icon-${data.roomnumber}">expand_more</span>
+                    </button>
+                    
+                    <!-- Room Image Section (Always Visible) -->
+                    <div class="relative h-32 room-image-collapsed overflow-hidden bg-gradient-to-br ${config.gradient} transition-all duration-500">
                         <div class="absolute inset-0 bg-black/20"></div>
                         <img src="../images/${data.imageurl1 || 'emptyrooom.png'}" 
                              alt="${data.roomname}" 
@@ -185,24 +193,51 @@ async function fetchallroomstatus() {
                              onerror="this.src='../images/emptyrooom.png'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                         
-                        <!-- Room Number Badge -->
-                        <div class="absolute bottom-4 left-4 right-4">
-                            <div class="bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-xl border border-white/50">
+                        <!-- Room Number Badge (Collapsed View) -->
+                        <div class="absolute bottom-3 left-3 right-3">
+                            <div class="bg-white/95 backdrop-blur-md rounded-xl px-3 py-2 shadow-xl border border-white/50">
                                 <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Room Number</p>
-                                        <p class="text-2xl font-bold ${config.statusColor} mt-1">${data.roomnumber}</p>
+                                    <div class="flex-1">
+                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Room ${data.roomnumber}</p>
+                                        <p class="text-lg font-bold ${config.statusColor}">${data.roomname || 'N/A'}</p>
                                     </div>
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg">
-                                        <span class="material-symbols-outlined text-white text-2xl">meeting_room</span>
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg">
+                                        <span class="material-symbols-outlined text-white text-xl">meeting_room</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Content Section -->
-                    <div class="p-5 space-y-4">
+                    <!-- Expanded Image Section (Hidden when collapsed) -->
+                    <div class="room-details-expanded hidden">
+                        <div class="relative h-48 w-full overflow-hidden bg-gradient-to-br ${config.gradient}">
+                            <div class="absolute inset-0 bg-black/20"></div>
+                            <img src="../images/${data.imageurl1 || 'emptyrooom.png'}" 
+                                 alt="${data.roomname}" 
+                                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                 onerror="this.src='../images/emptyrooom.png'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                            
+                            <!-- Room Number Badge (Expanded View) -->
+                            <div class="absolute bottom-4 left-4 right-4">
+                                <div class="bg-white/95 backdrop-blur-md rounded-xl px-4 py-3 shadow-xl border border-white/50">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Room Number</p>
+                                            <p class="text-2xl font-bold ${config.statusColor} mt-1">${data.roomnumber}</p>
+                                        </div>
+                                        <div class="w-12 h-12 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg">
+                                            <span class="material-symbols-outlined text-white text-2xl">meeting_room</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Section (Collapsible) -->
+                    <div class="room-details-expanded hidden p-5 space-y-4">
                         <!-- Room Name -->
                         <div class="space-y-1">
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
@@ -324,6 +359,43 @@ async function fetchallroomstatus() {
         `}).join('')
     }
     else return notification('No records retrieved')
+}
+
+// Function to toggle room card expand/collapse
+function toggleRoomCard(roomNumber) {
+    const card = did(`room-card-${roomNumber}`);
+    const toggleIcon = did(`toggle-icon-${roomNumber}`);
+    if (!card || !toggleIcon) return;
+    
+    const expandedSections = card.querySelectorAll('.room-details-expanded');
+    const collapsedImage = card.querySelector('.room-image-collapsed');
+    
+    // Check if currently expanded (check first expanded section)
+    const isExpanded = expandedSections.length > 0 && !expandedSections[0].classList.contains('hidden');
+    
+    if (isExpanded) {
+        // Collapse: Hide expanded sections, show collapsed image
+        expandedSections.forEach(section => {
+            section.classList.add('hidden');
+        });
+        if (collapsedImage) {
+            collapsedImage.classList.remove('hidden');
+        }
+        toggleIcon.style.transform = 'rotate(0deg)';
+        toggleIcon.textContent = 'expand_more';
+        card.style.minHeight = 'auto';
+    } else {
+        // Expand: Show expanded sections, hide collapsed image
+        expandedSections.forEach(section => {
+            section.classList.remove('hidden');
+        });
+        if (collapsedImage) {
+            collapsedImage.classList.add('hidden');
+        }
+        toggleIcon.style.transform = 'rotate(180deg)';
+        toggleIcon.textContent = 'expand_less';
+        card.style.minHeight = '420px';
+    }
 }
 
 // Function to open room image modal

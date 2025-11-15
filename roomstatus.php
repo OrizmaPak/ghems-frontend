@@ -310,4 +310,39 @@
         #roomImageModal img:hover {
             transform: scale(1.05);
         }
+        
+        /* Collapsible room card animations */
+        .room-details-expanded {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        
+        .room-details-expanded.hidden {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin: 0;
+        }
+        
+        .room-details-expanded:not(.hidden) {
+            max-height: 2000px;
+            opacity: 1;
+        }
+        
+        .room-image-collapsed {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .room-image-collapsed.hidden {
+            display: none;
+        }
+        
+        .room-status-card {
+            transition: min-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .room-status-card [id^="toggle-icon-"] {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
     </style>
