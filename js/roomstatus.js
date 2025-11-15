@@ -164,78 +164,58 @@ async function fetchallroomstatus() {
                     style="animation-delay: ${i * 0.05}s"
                     id="room-card-${data.roomnumber}">
                     
-                    <!-- Status Badge Top Right -->
-                    <div class="absolute top-4 right-4 z-10">
-                        <div class="relative">
-                            <div class="absolute inset-0 bg-gradient-to-r ${config.gradient} rounded-full blur-md opacity-60 ${config.pulse}"></div>
-                            <div class="relative ${config.statusBg} backdrop-blur-sm px-4 py-1.5 rounded-full border ${config.borderColor} border-2 shadow-lg">
-                                <div class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-sm ${config.statusColor}">${config.icon}</span>
-                                    <span class="text-xs font-bold ${config.statusColor} uppercase tracking-wide">${data.roomstatus}</span>
-                                </div>
+                    <!-- Card Header (always visible, no overlap) -->
+                    <div class="flex items-start justify-between px-3.5 pt-3 pb-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md ring-2 ring-white/60">
+                                <span class="material-symbols-outlined text-white text-base">${config.icon}</span>
                             </div>
+                            <div class="min-w-0">
+                                <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.16em]">
+                                    Room ${data.roomnumber}
+                                </p>
+                                <p class="text-sm font-semibold text-slate-900 truncate max-w-[150px]">
+                                    ${data.roomname || 'No room name set'}
+                                </p>
+                                <p class="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <span class="material-symbols-outlined text-[13px] leading-none">business</span>
+                                    <span class="truncate max-w-[140px]">
+                                        ${data.building || '-'} • Floor ${data.floor || '-'}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${config.statusBg} ${config.statusColor} border border-white/70 shadow-sm">
+                                <span class="material-symbols-outlined text-[14px] leading-none">${config.icon}</span>
+                                <span class="leading-none">${data.roomstatus}</span>
+                            </span>
+                            <button onclick="toggleRoomCard('${data.roomnumber}')"
+                                    id="toggle-btn-${data.roomnumber}"
+                                    class="mt-0.5 inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/90 border border-slate-200 shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200">
+                                <span class="material-symbols-outlined text-[18px] text-slate-600" id="toggle-icon-${data.roomnumber}">expand_more</span>
+                            </button>
                         </div>
                     </div>
                     
-                    <!-- Collapse/Expand Toggle Button -->
-                    <button onclick="toggleRoomCard('${data.roomnumber}')" 
-                            class="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border-2 ${config.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group/toggle hover:scale-110"
-                            id="toggle-btn-${data.roomnumber}">
-                        <span class="material-symbols-outlined text-gray-700 transition-transform duration-300" id="toggle-icon-${data.roomnumber}">expand_more</span>
-                    </button>
+                    <!-- Divider -->
+                    <div class="px-3.5">
+                        <div class="h-px w-full bg-gradient-to-r from-transparent via-slate-200/70 to-transparent"></div>
+                    </div>
                     
-                    <!-- Room Image Section (Always Visible) -->
-                    <div class="relative h-32 room-image-collapsed overflow-hidden bg-gradient-to-br ${config.gradient} transition-all duration-500">
+                    <!-- Room Image Section (visual accent in collapsed view) -->
+                    <div class="relative mt-2 h-24 room-image-collapsed overflow-hidden rounded-xl mx-3 bg-gradient-to-br ${config.gradient} transition-all duration-500">
                         <div class="absolute inset-0 bg-black/20"></div>
                         <img src="../images/${data.imageurl1 || 'emptyrooom.png'}" 
                              alt="${data.roomname}" 
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                              onerror="this.src='../images/emptyrooom.png'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                        
-                        <!-- Room Summary Capsule (Collapsed View) -->
-                        <div class="absolute bottom-3 left-3 right-3">
-                            <div class="bg-white/95 backdrop-blur-md rounded-2xl px-3.5 py-2.5 shadow-xl border border-white/60">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="flex-1 space-y-1">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <p class="text-[11px] font-semibold text-slate-900 tracking-wide flex items-center gap-1">
-                                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-sm"></span>
-                                                Room ${data.roomnumber}
-                                            </p>
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${config.statusBg} ${config.statusColor} border border-white/70 shadow-sm">
-                                                <span class="material-symbols-outlined text-[14px] leading-none">${config.icon}</span>
-                                                <span class="leading-none">${data.roomstatus}</span>
-                                            </span>
-                                        </div>
-                                        <p class="text-[11px] text-slate-700 font-medium truncate">${data.roomname || 'No room name set'}</p>
-                                        <div class="flex items-center gap-2 text-[10px] text-slate-500">
-                                            <span class="inline-flex items-center gap-1 min-w-0">
-                                                <span class="material-symbols-outlined text-[13px] leading-none">business</span>
-                                                <span class="truncate max-w-[80px]">${data.building || '-'}</span>
-                                            </span>
-                                            <span class="h-1 w-1 rounded-full bg-slate-300/80"></span>
-                                            <span class="inline-flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-[13px] leading-none">layers</span>
-                                                <span>${data.floor || '-'}</span>
-                                            </span>
-                                        </div>
-                                        <div class="flex items-center gap-1 pt-0.5">
-                                            <span class="h-1.5 w-6 rounded-full bg-emerald-100/80 ${data.roomstatus == 'AVAILABLE' ? 'bg-emerald-400 shadow-inner' : ''}"></span>
-                                            <span class="h-1.5 w-6 rounded-full bg-rose-100/80 ${data.roomstatus == 'OCCUPIED' ? 'bg-rose-400 shadow-inner' : ''}"></span>
-                                            <span class="h-1.5 w-6 rounded-full bg-amber-100/80 ${data.roomstatus == 'RESERVED' ? 'bg-amber-400 shadow-inner' : ''}"></span>
-                                        </div>
-                                    </div>
-                                    <div class="flex flex-col items-center gap-1">
-                                        <div class="w-9 h-9 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg ring-2 ring-white/70">
-                                            <span class="material-symbols-outlined text-white text-lg">meeting_room</span>
-                                        </div>
-                                        <p class="text-[9px] uppercase tracking-wide text-white/80 bg-slate-900/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10">
-                                            View
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="absolute bottom-2 left-2 flex items-center gap-2 text-[10px] text-white/90">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 border border-white/30">
+                                <span class="material-symbols-outlined text-[16px] leading-none">meeting_room</span>
+                            </span>
+                            <span class="font-semibold tracking-wide">#${data.roomnumber}</span>
                         </div>
                     </div>
                     
