@@ -804,6 +804,26 @@ header {
     box-shadow: var(--shadow-card) !important;
 }
 
+/* Subtle entrance animation for room status cards */
+.animate-fade-in {
+    animation: room-status-fade-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes room-status-fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(-1px) scale(1.01);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 button {
     transition: var(--transition-base);
     border-radius: var(--radius-sm);

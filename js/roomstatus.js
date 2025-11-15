@@ -193,16 +193,46 @@ async function fetchallroomstatus() {
                              onerror="this.src='../images/emptyrooom.png'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                         
-                        <!-- Room Number Badge (Collapsed View) -->
+                        <!-- Room Summary Capsule (Collapsed View) -->
                         <div class="absolute bottom-3 left-3 right-3">
-                            <div class="bg-white/95 backdrop-blur-md rounded-xl px-3 py-2 shadow-xl border border-white/50">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex-1">
-                                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Room ${data.roomnumber}</p>
-                                        <p class="text-lg font-bold ${config.statusColor}">${data.roomname || 'N/A'}</p>
+                            <div class="bg-white/95 backdrop-blur-md rounded-2xl px-3.5 py-2.5 shadow-xl border border-white/60">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex-1 space-y-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-[11px] font-semibold text-slate-900 tracking-wide flex items-center gap-1">
+                                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-sm"></span>
+                                                Room ${data.roomnumber}
+                                            </p>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${config.statusBg} ${config.statusColor} border border-white/70 shadow-sm">
+                                                <span class="material-symbols-outlined text-[14px] leading-none">${config.icon}</span>
+                                                <span class="leading-none">${data.roomstatus}</span>
+                                            </span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-700 font-medium truncate">${data.roomname || 'No room name set'}</p>
+                                        <div class="flex items-center gap-2 text-[10px] text-slate-500">
+                                            <span class="inline-flex items-center gap-1 min-w-0">
+                                                <span class="material-symbols-outlined text-[13px] leading-none">business</span>
+                                                <span class="truncate max-w-[80px]">${data.building || '-'}</span>
+                                            </span>
+                                            <span class="h-1 w-1 rounded-full bg-slate-300/80"></span>
+                                            <span class="inline-flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[13px] leading-none">layers</span>
+                                                <span>${data.floor || '-'}</span>
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-1 pt-0.5">
+                                            <span class="h-1.5 w-6 rounded-full bg-emerald-100/80 ${data.roomstatus == 'AVAILABLE' ? 'bg-emerald-400 shadow-inner' : ''}"></span>
+                                            <span class="h-1.5 w-6 rounded-full bg-rose-100/80 ${data.roomstatus == 'OCCUPIED' ? 'bg-rose-400 shadow-inner' : ''}"></span>
+                                            <span class="h-1.5 w-6 rounded-full bg-amber-100/80 ${data.roomstatus == 'RESERVED' ? 'bg-amber-400 shadow-inner' : ''}"></span>
+                                        </div>
                                     </div>
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg">
-                                        <span class="material-symbols-outlined text-white text-xl">meeting_room</span>
+                                    <div class="flex flex-col items-center gap-1">
+                                        <div class="w-9 h-9 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg ring-2 ring-white/70">
+                                            <span class="material-symbols-outlined text-white text-lg">meeting_room</span>
+                                        </div>
+                                        <p class="text-[9px] uppercase tracking-wide text-white/80 bg-slate-900/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10">
+                                            View
+                                        </p>
                                     </div>
                                 </div>
                             </div>
