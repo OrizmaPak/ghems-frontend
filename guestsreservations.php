@@ -463,7 +463,7 @@
                                             <input type="file" name="imageurl" id="imageurl" class="bg-white form-control !p-2" onchange="previewImage('imageurl', 'imagePreview2')">
                                         </div>
                                          <div id="modalformone" onclick="if(event.target.id == 'modalformone')this.classList.add('hidden')" class="z-[100] w-screen h-screen flex justify-center items-center fixed bg-[#5a5a5a3e] top-0 left-0 p-4 sm:p-10 overflow-auto hidden">
-                                            <div id="viewformtoedit" class="animate__animated animate__fadeIn w-full max-w-[80%] max-h-[90vh] overflow-y-auto relative bg-[white] p-6 sm:p-10 rounded-lg shadow-lg">
+                                            <div id="viewformtoedit" class="animate__animated animate__fadeIn w-full sm:w-auto max-w-xl sm:max-w-2xl max-h-[90vh] overflow-y-auto relative bg-[white] p-6 sm:p-10 rounded-lg shadow-lg">
                                              <div class="w-full flex justify-end">
                                             <span class="material-symbols-outlined text-red-500 cp hover:scale-[1.3] transition-all" onclick="did('modalformone').classList.add('hidden')">close</span>
                                         </div>
