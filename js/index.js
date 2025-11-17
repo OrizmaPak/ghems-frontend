@@ -65,7 +65,22 @@ window.onload = function() {
     Array.from(document.querySelectorAll('#navigation .nav-item > span')).forEach( nav => {
         nav.addEventListener('click', () => {
             if(nav.nextElementSibling?.tagName.toLocaleLowerCase() == 'ul') {
-                if(nav.parentElement.classList.contains('expand')) {
+                const isCurrentlyExpanded = nav.parentElement.classList.contains('expand');
+                
+                // Collapse all other expanded dropdowns
+                document.querySelectorAll('#navigation .nav-item.expand').forEach( expandedNav => {
+                    if(expandedNav !== nav.parentElement) {
+                        expandedNav.style.maxHeight = '36px';
+                        expandedNav.classList.remove('expand');
+                        const expandedNavSpan = expandedNav.querySelector('span');
+                        if(expandedNavSpan && expandedNavSpan.querySelectorAll('.material-symbols-outlined')[1]) {
+                            expandedNavSpan.querySelectorAll('.material-symbols-outlined')[1].style.transform = 'rotate(0deg)';
+                        }
+                    }
+                });
+                
+                // Toggle the clicked dropdown
+                if(isCurrentlyExpanded) {
                     nav.parentElement.style.maxHeight = '36px';
                     nav.parentElement.classList.remove('expand')
                     nav.querySelectorAll('.material-symbols-outlined')[1].style.transform = 'rotate(0deg)'
