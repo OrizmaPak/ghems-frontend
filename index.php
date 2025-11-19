@@ -121,12 +121,12 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
             <section class="app-layout">
                 <div class="lg:flex h-screen relative">
                     <!-- navigation --> 
-                    <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 lg:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-14 overflow-auto glass-sidebar">
+                    <nav id="navigation" class="fixed top-0 left-0 z-40 lg:relative lg:z-0 w-4/5 lg:w-[250px] h-full bg-white border-r-2 border-gray-200/50 pb-32 overflow-auto glass-sidebar">
                         <div id="hoverer" class="overflow-y-auto overflow-x-hidden h-full px-2">
                         <div class="flex flex-col w-5/6 m-auto items-start py-5 sticky top-0 sidebar-identity">
                             <span class="font-medium text-[9px] text-blue font-mont mt-1"><?php echo $_SESSION["hemsemail"]?></span>
                         </div>
-                            <ul id="navigationcontainer" class="font-poppins mt-5">
+                            <ul id="navigationcontainer" class="font-poppins mt-5 pb-20">
                                 <li class="nav-item"> 
                                     <span class="navitem-title group  text-[#292929]" title="Hotel financial overview" id="dashboard">
                                         <span class="material-symbols-outlined group-hover:text-primary-g"
