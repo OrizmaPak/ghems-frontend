@@ -18,7 +18,7 @@ async function fetchuseractivity(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-            did('email').innerHTML = `<option>-- Select User --</option>`
+            did('email').innerHTML = `<option value="">-- Select User --</option>`
             did('email').innerHTML += request.data.map(data=>`<option value='${data.email}'>${data.firstname} ${data.lastname} ${data.othernames}</option>`)
                 // datasource = request.data
                 // resolvePagination(datasource, onuseractivityTableDataSignal)
