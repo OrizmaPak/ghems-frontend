@@ -7,7 +7,7 @@
                                         <div class="form-group">
                                             <label for="logoname" class="control-label">Personnel</label>
                                             <select name="email" id="email" class="form-control">
-                                                <option>-- Select User --</option>
+                                                <option value="">-- Select User --</option>
                                             </select>
                                         </div>
                                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
