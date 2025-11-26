@@ -184,6 +184,18 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
     }
  }
 
+// Normalizes the fetchinventorylist response into a flat list of items
+function normalizeInventoryItems(data) {
+    if (!Array.isArray(data)) return []
+    const isWrapped = data.some(entry => entry && typeof entry === 'object' && 'item' in entry)
+    if (!isWrapped) return data
+    return data.reduce((acc, curr) => {
+        if (Array.isArray(curr?.item)) acc.push(...curr.item)
+        else if (curr?.item) acc.push(curr.item)
+        return acc
+    }, [])
+}
+
 
 // THIS CODE IS TO MAKE SURE ALL DEPARTURE DATE TIME IS SET TO 12:00:00
 function setDepartureTimetotwelveoclock() {

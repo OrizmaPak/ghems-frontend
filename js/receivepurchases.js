@@ -129,8 +129,9 @@ async function requisititemviewpurchases(id) {
     let request = await httpRequest2('../controllers/fetchinventorylist', null, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
-            if(request.data.length) {
-                receivepurchasesitem = request.data
+            const items = normalizeInventoryItems(request.data)
+            if(items.length) {
+                receivepurchasesitem = items
                 populateReqSelect2()
             }
     }

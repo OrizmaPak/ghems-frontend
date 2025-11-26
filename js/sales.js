@@ -123,19 +123,20 @@ async function populatesalesitems(id) {
     let request = await httpRequest2('../controllers/fetchinventorylist', id ? getparamm() : null, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
+        const items = normalizeInventoryItems(request.data)
         if(!id){
-            if(request.data.length) {
+            if(items.length) {
                 // datasource = request.data
                 let x = document.getElementsByClassName('itemer')
                 for(let i=0;i<x.length;i++){
                     if(x[i].children.length < 2){
-                        x[i].innerHTML += request.data.map(data=>`<option value="${data.itemid}">${data.itemname}</option>`)
+                        x[i].innerHTML += items.map(data=>`<option value="${data.itemid}">${data.itemname}</option>`)
                     }
                 }
             }
         }else{
-             salesid = request.data[0].id
-            populateData(request.data[0])
+             salesid = items[0]?.id
+            if(items[0])populateData(items[0])
         }
     }
     else return notification('No records retrieved')

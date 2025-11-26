@@ -222,7 +222,8 @@ async function getpayabless() {
 async function getinventory() {
     let request = await httpRequest2('../controllers/fetchinventorylist', null, null, 'json')
     if(request.status) {
-        receiveablelength = formatNumber(request.data.length)
+        const items = normalizeInventoryItems(request.data)
+        receiveablelength = formatNumber(items.length)
         if(document.getElementById('dashinventory'))document.getElementById('dashinventory').textContent = receiveablelength
     }
     else return notification('No records retrieved')
@@ -484,11 +485,11 @@ async function hemsitemslist() {
     let request = await httpRequest('../controllers/fetchinventorylist')
     request = JSON.parse(request)
     if(request.status) {
-        if(request.data.length) {
-            // rumcat = request.data
-            document.getElementById('hems_itemslist').innerHTML = request.data.map(data=>`<option>${data.itemname.trim()}</option>`).join('')
-            document.getElementById('hems_itemslist_getid').innerHTML = request.data.map(data=>`<option value="${data.itemname.trim()}">${data.itemid.trim()}</option>`).join('')
-            document.getElementById('hems_itemslist_getname').innerHTML = request.data.map(data=>`<option value="${data.itemid.trim()}">${data.itemname.trim()}</option>`).join('')
+        const items = normalizeInventoryItems(request.data)
+        if(items.length) {
+            document.getElementById('hems_itemslist').innerHTML = items.map(data=>`<option>${data.itemname.trim()}</option>`).join('')
+            document.getElementById('hems_itemslist_getid').innerHTML = items.map(data=>`<option value="${data.itemname.trim()}">${data.itemid.trim()}</option>`).join('')
+            document.getElementById('hems_itemslist_getname').innerHTML = items.map(data=>`<option value="${data.itemid.trim()}">${data.itemname.trim()}</option>`).join('')
         }
     }
     else return notification('No records retrieved')

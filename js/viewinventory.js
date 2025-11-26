@@ -19,14 +19,15 @@ async function fetchviewinventorys(id) {
     let request = await httpRequest2('../controllers/fetchinventorylist', id ? getparamm() : null, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
+        const items = normalizeInventoryItems(request.data)
         if(!id){
-            if(request.data.length) {
-                datasource = request.data
+            if(items.length) {
+                datasource = items
                 resolvePagination(datasource, onviewinventoryTableDataSignal)
             }
         }else{
-             viewinventoryid = request.data[0].id
-            populateData(request.data[0])
+             viewinventoryid = items[0]?.id
+            if(items[0])populateData(items[0])
         }
     }
     else return notification('No records retrieved')
@@ -94,9 +95,10 @@ async function viewinventoryFormSubmitHandler(itemid='') {
     let request = await httpRequest2('../controllers/fetchinventorylist', payload(), document.querySelector('#viewinventoryform #submit'))
     if(!itemid)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
+        const items = normalizeInventoryItems(request.data)
         if(!itemid){
-            if(request.data.length) {
-                datasource = request.data
+            if(items.length) {
+                datasource = items
                 resolvePagination(datasource, onviewinventoryTableDataSignal)
                 did('modalform').classList.add('hidden')
                 return notification(request.message, 1);
@@ -104,7 +106,8 @@ async function viewinventoryFormSubmitHandler(itemid='') {
         }else{
              viewinventoryid = itemid
             //  console.log(request.data.filter(data=>data.id==id))
-            populateData(request.data.filter(data=>data.itemid==itemid)[0], ['imageurl'])
+            const selected = items.find(data=>data.itemid==itemid)
+            if(selected)populateData(selected, ['imageurl'])
         }
     }
     else return notification('No records retrieved')

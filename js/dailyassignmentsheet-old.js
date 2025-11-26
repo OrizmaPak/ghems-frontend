@@ -40,8 +40,9 @@ async function runpopulateitemassignment(id) {
     }
     let request = await httpRequest2('../controllers/fetchinventorylist', id ? getparamm() : null, null, 'json')
     if(request.status) {
-            if(request.data.length) {
-                did('assignmentitems').innerHTML = request.data.filter(data=>data.applyto == 'NOT FOR SALE').map(dat=>`<option>${dat.itemname} || ${dat.itemid}</option>`).join('')
+            const items = normalizeInventoryItems(request.data)
+            if(items.length) {
+                did('assignmentitems').innerHTML = items.filter(data=>data.applyto == 'NOT FOR SALE').map(dat=>`<option>${dat.itemname} || ${dat.itemid}</option>`).join('')
             }
     }
     else return notification('No records retrieved')

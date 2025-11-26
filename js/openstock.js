@@ -39,15 +39,16 @@ async function fetchopenstocks(id) {
                                                 <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
                                             </tr>`
     if(request.status) {
+        const items = normalizeInventoryItems(request.data)
         if(!id){
-            if(request.data.length) {
-                datasource = request.data
+            if(items.length) {
+                datasource = items
                 
                 // resolvePagination(datasource, onopenstockTableDataSignal)
             }
         }else{
-             openstockid = request.data[0].id
-            populateData(request.data[0])
+             openstockid = items[0]?.id
+            if(items[0])populateData(items[0])
         }
     }
     else return notification('No records retrieved')
