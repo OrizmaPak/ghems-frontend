@@ -201,17 +201,11 @@ async function reqstockbalance2 (itemid, id, direct=false){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
         const location = document.getElementById('salespointnamemainstore') ? did('salespointnamemainstore').value : ''
-        if(!location){
-            notification('Please select a location before choosing items.', 0)
-            return null
-        }
         paramstr.append('location', location)
         paramstr.append('salespoint', location)
         return paramstr
     }
-    const params = getparamm()
-    if(!params)return
-    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', params, null, 'json')
+    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
             // if(request.data.length) {
