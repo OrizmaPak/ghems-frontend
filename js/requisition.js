@@ -192,8 +192,8 @@ async function reqstockbalance2 (itemid, id){
      function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid) 
-        const location = document.getElementById('salespointname') ? did('salespointname').value : ''
-        paramstr.append('location', location)
+        // const location = document.getElementById('salespointname') ? did('salespointname').value : ''
+        // paramstr.append('location', location)
         console.log('store:', store, 'default_department:', default_department, 'did(salespointname).value:', did('salespointname').value)
         if(!store)param.append('salespoint', did('salespointname').value)
         if(store)param.append('salespoint', default_department)    
