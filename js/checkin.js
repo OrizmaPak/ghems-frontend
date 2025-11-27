@@ -1493,6 +1493,57 @@ function removeguestsreservations(ref){
 
 
 async function oncheckinTableDataSignal() {
+    const totalDeposit = datasource.reduce((sum, data) => sum + Number(data.reservations?.amountpaid ?? 0), 0);
+    const totalRates = datasource.reduce((sum, data) => {
+        if (!data.roomgeustrow || !data.roomgeustrow.length) return sum;
+        const roomTotal = data.roomgeustrow.reduce((roomSum, row) => roomSum + Number(row.roomdata?.roomrate ?? 0), 0);
+        return sum + roomTotal;
+    }, 0);
+
+    if (document.getElementById('tabledata')) {
+        const existingSummary = document.getElementById('autodetails');
+        if (existingSummary) existingSummary.remove(); // prevent duplicate cards when the table re-renders
+
+        const container = document.getElementById('tabledata').parentElement.parentElement;
+        container.insertAdjacentHTML('afterbegin', `
+        <!-- component -->
+        <div id="autodetails" class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
+            <div class="sm:flex sm:space-x-4">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+                    <div class="bg-white p-5">
+                        <div class="sm:flex sm:items-start">
+                            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                                <h3 class="text-sm leading-6 font-medium text-gray-400">Total Initial Deposit</h3>
+                                <p class="text-3xl font-bold text-black opacity-[0.7]">${formatNumber(totalDeposit)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+                    <div class="bg-white p-5">
+                        <div class="sm:flex sm:items-start">
+                            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                                <h3 class="text-sm leading-6 font-medium text-gray-400">Total Rates</h3>
+                                <p class="text-3xl font-bold text-black opacity-[0.7]">${formatNumber(totalRates)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="inline-block hidden align-bottom bg-white rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+                    <div class="bg-white p-5">
+                        <div class="sm:flex sm:items-start">
+                            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                                <h3 class="text-sm leading-6 font-medium text-gray-400">Avg. Click Rate</h3>
+                                <p class="text-3xl font-bold text-black">24.57%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `);
+    }
+
     let rows = getSignaledDatasource().map((item, index) => {
     let x =0;
     let r =0
@@ -1509,46 +1560,6 @@ async function oncheckinTableDataSignal() {
             if(item.roomgeustrow[i].roomdata.roomrate)r = Number(item.roomgeustrow[i].roomdata.roomrate)+r
         }
     }
-    if (document.getElementById('tabledata')) {
-  const container = document.getElementById('tabledata').parentElement.parentElement;
-  container.insertAdjacentHTML('afterbegin', `
-    <!-- component -->
-<div id="autodetails" class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
-    <div class="sm:flex sm:space-x-4">
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
-            <div class="bg-white p-5">
-                <div class="sm:flex sm:items-start">
-                    <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
-                        <h3 class="text-sm leading-6 font-medium text-gray-400">Total Initial Deposit</h3>
-                        <p class="text-3xl font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.reservations.amountpaid),0))}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
-            <div class="bg-white p-5">
-                <div class="sm:flex sm:items-start">
-                    <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
-                        <h3 class="text-sm leading-6 font-medium text-gray-400">Total Rates</h3>
-                        <p class="text-3xl font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+r,0))}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="inline-block hidden align-bottom bg-white rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
-            <div class="bg-white p-5">
-                <div class="sm:flex sm:items-start">
-                    <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
-                        <h3 class="text-sm leading-6 font-medium text-gray-400">Avg. Click Rate</h3>
-                        <p class="text-3xl font-bold text-black">24.57%</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-  `);
-}
     return ` 
     <tr> 
         <td>${index + 1 }</td> 
