@@ -186,14 +186,15 @@ function requisitiontotalcount(){
     console.log('qty:', totalqty, 'totalcost:', totalcost)
     document.getElementById('rptotalorder').textContent = formatCurrency(totalqty*totalcost)
 }
-
+  
 
 async function reqstockbalance2 (itemid, id){
      function getparamm(){
         let paramstr = new FormData()
-        paramstr.append('itemid', itemid)
+        paramstr.append('itemid', itemid) 
         const location = document.getElementById('salespointname') ? did('salespointname').value : ''
         paramstr.append('location', location)
+        console.log('store:', store, 'default_department:', default_department, 'did(salespointname).value:', did('salespointname').value)
         if(!store)param.append('salespoint', did('salespointname').value)
         if(store)param.append('salespoint', default_department)    
         return paramstr
