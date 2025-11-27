@@ -192,12 +192,13 @@ async function reqstockbalance2 (itemid, id){
      function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
-        const location = document.getElementById('salespointname1') ? did('salespointname1').value : ''
+        const location = document.getElementById('salespointname') ? did('salespointname').value : ''
         if(!location){
-            notification('Please select a destination before choosing items.', 0)
+            notification('Please select a source before choosing items.', 0)
             return null
         }
         paramstr.append('location', location)
+        paramstr.append('salespoint', location)
         return paramstr
     }
     const params = getparamm()

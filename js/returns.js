@@ -195,6 +195,7 @@ async function returnsstockbalance2 (itemid, id){
             return null
         }
         paramstr.append('location', location)
+        paramstr.append('salespoint', location)
         return paramstr
     }
     const params = getparamm()

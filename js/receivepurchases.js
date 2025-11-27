@@ -206,6 +206,7 @@ async function reqstockbalance2 (itemid, id, direct=false){
             return null
         }
         paramstr.append('location', location)
+        paramstr.append('salespoint', location)
         return paramstr
     }
     const params = getparamm()
