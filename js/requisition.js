@@ -199,6 +199,7 @@ async function reqstockbalance2 (itemid, id){
         if(store)param.append('salespoint', default_department)    
         return paramstr
     }
+    console.log('store:', store, 'default_department:', default_department, 'did(salespointname).value:', did('salespointname').value)
     let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
