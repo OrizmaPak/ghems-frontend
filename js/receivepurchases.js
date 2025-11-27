@@ -202,7 +202,9 @@ async function reqstockbalance2 (itemid, id, direct=false){
         paramstr.append('itemid', itemid)
         const location = document.getElementById('salespointnamemainstore') ? did('salespointnamemainstore').value : ''
         paramstr.append('location', location)
-        paramstr.append('salespoint', location)
+        console.log('store:', store, 'default_department:', default_department, 'did(salespointname).value:', did('salespointname').value)
+        if(!store)param.append('salespoint', did('salespointname').value)
+        if(store)param.append('salespoint', default_department)    
         return paramstr
     }
     let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
