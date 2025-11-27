@@ -51,8 +51,10 @@ window.onload = function() {
     entername()
     recalldatalist()
     checkAccountForVerification()
+    syncHeaderHeight()
     runpermissioncheck('state')
     window.addEventListener('popstate', resolveUrlPage);
+    window.addEventListener('resize', syncHeaderHeight);
 
     const toggler = document.getElementById('toggler')
     if(toggler) toggler.addEventListener('click', toggleNavigation)
@@ -594,6 +596,15 @@ function checkAccountForVerification() {
         let domElement = document.querySelector('main')
         domElement.firstElementChild.insertBefore(div, domElement.firstElementChild.firstElementChild)
     }
+}
+
+function syncHeaderHeight() {
+    const header = document.querySelector('header')
+    if (!header) return
+
+    // Include any banners inserted before the header by using offsetTop plus its own height
+    const totalHeight = Math.max(header.offsetTop + header.offsetHeight, 72)
+    document.documentElement.style.setProperty('--header-height', `${totalHeight}px`)
 }
 
 function toggleNavigation() {
