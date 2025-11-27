@@ -630,12 +630,7 @@ header {
     }
 
     .app-layout {
-        margin-top: 4.25rem;
-    }
-
-    #navigation {
-        top: 4.25rem;
-        height: calc(100% - 4.25rem);
+        margin-top: calc(var(--header-height) + 1rem);
     }
 }
 

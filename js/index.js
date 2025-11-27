@@ -9,6 +9,10 @@ let userpermission
 let allratecodes
 const default_department = 'Main Store'
 
+if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual'
+}
+
 function formatCurrency(amount) {
   // Use the Intl.NumberFormat object for currency formatting
   const formatter = new Intl.NumberFormat('en-NG', {
@@ -44,6 +48,7 @@ async function getAllUsers(id='user') {
 }
 
 window.onload = function() {
+    window.scrollTo(0, 0)
     runPermissions()
     rundashboard()
     runavailablerooms()
