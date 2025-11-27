@@ -41,13 +41,20 @@ async function fetchstockhistorysitems(store='') {
     }
     let request = await httpRequest2('../controllers/fetchinventorybyclass', getparamm(), document.querySelector('#stockhistoryform #submit'), 'json')
     if(request.status) {
-                did('itemid').innerHTML = `<option value="">-- Select Item --</option>`
-                did('itemid').innerHTML += request.data.data.map(dat=>`<option value="${dat.itemid}">${dat.itemname}</option>`).join('')
-            }else{
-                did('itemid').innerHTML = `<option value="">No Item</option>`
-                return notification(request.message, 0)
-                
-            }
+        // API now returns data.data = [{ item: [ { ...fields } ] }]
+        const dataArray = Array.isArray(request.data?.data) ? request.data.data : []
+        const items = dataArray.flatMap(entry => Array.isArray(entry.item) ? entry.item : []).filter(Boolean)
+        if(!items.length){
+            did('itemid').innerHTML = `<option value="">No Item</option>`
+            return notification('No items available', 0)
+        }
+        did('itemid').innerHTML = `<option value="">-- Select Item --</option>`
+        did('itemid').innerHTML += items.map(dat=>`<option value="${dat.itemid}">${dat.itemname}</option>`).join('')
+    }else{
+        did('itemid').innerHTML = `<option value="">No Item</option>`
+        return notification(request.message, 0)
+        
+    }
 }
 
 async function removestockhistory(id) {
