@@ -7,7 +7,7 @@ async function requisitionActive() {
     did('locationfrom').addEventListener('change', e=>{
         if(!did('locationfrom').value)did('tabledata').classList.add('hidden')
         if(did('locationfrom').value)did('tabledata').classList.remove('hidden')
-    })
+    }) 
     datasource = []
     await requisititem()
     await fetchrequisition()
@@ -140,10 +140,17 @@ async function reqstockbalance (itemid, id){
      function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
-        paramstr.append('location', did('locationfrom').value)
+        const location = did('locationfrom').value
+        if(!location){
+            notification('Please select a source location first.', 0)
+            return null
+        }
+        paramstr.append('location', location)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
+    const params = getparamm()
+    if(!params)return
+    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', params, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
             // if(request.data.length) {

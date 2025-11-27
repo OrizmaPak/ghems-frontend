@@ -6,7 +6,7 @@ async function receivepurchasesActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receivepurchasesFormSubmitHandler)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     did('reference').addEventListener('change', e=>checkreferenceforreceivepurchase())
-    datasource = []
+    datasource = [] 
     await requisititemviewpurchases()
     await fetchreceivepurchases()
     setTimeout(()=>{
@@ -200,10 +200,17 @@ async function reqstockbalance2 (itemid, id, direct=false){
      function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
-        paramstr.append('location', document.getElementById('salespointnamemainstore') ? did('salespointnamemainstore').value : '')
+        const location = document.getElementById('salespointnamemainstore') ? did('salespointnamemainstore').value : ''
+        if(!location){
+            notification('Please select a location before choosing items.', 0)
+            return null
+        }
+        paramstr.append('location', location)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
+    const params = getparamm()
+    if(!params)return
+    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', params, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
             // if(request.data.length) {

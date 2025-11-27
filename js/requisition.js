@@ -9,7 +9,7 @@ async function requisitionActive() {
         // if(!did('salespointname').value)did('tabledata').classList.add('hidden')
         // if(did('salespointname').value)did('tabledata').classList.remove('hidden');
         requisititemrequisition()
-    })
+    }) 
     datasource = []
     // if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>())
     await requisititemrequisition('store')
@@ -192,10 +192,17 @@ async function reqstockbalance2 (itemid, id){
      function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
-        paramstr.append('location', document.getElementById('salespointname1') ? did('salespointname1').value : '')
+        const location = document.getElementById('salespointname1') ? did('salespointname1').value : ''
+        if(!location){
+            notification('Please select a destination before choosing items.', 0)
+            return null
+        }
+        paramstr.append('location', location)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
+    const params = getparamm()
+    if(!params)return
+    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', params, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
             // if(request.data.length) {

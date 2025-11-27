@@ -7,7 +7,7 @@ async function purchaseorderActive() {
     datasource = []
     await requisititempurchaseorder()
     await fetchpurchaseorder()
-    setTimeout(()=>{
+    setTimeout(()=>{ 
         if(sessionStorage.getItem('purchaseordereditrequest')){
        let data =  sessionStorage.getItem('purchaseordereditrequest')
       sessionStorage.removeItem('purchaseordereditrequest')
@@ -103,10 +103,17 @@ async function reqstockbalance (itemid, id, location=''){
      function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
-        paramstr.append('location', location)
+        const resolvedLocation = location || (typeof default_department !== 'undefined' ? default_department : '')
+        if(!resolvedLocation){
+            notification('No location selected or configured for stock balance lookup.', 0)
+            return null
+        }
+        paramstr.append('location', resolvedLocation)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
+    const params = getparamm()
+    if(!params)return
+    let request = await httpRequest2('../controllers/fetchitembalanceinlocation', params, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
             // if(request.data.length) {
