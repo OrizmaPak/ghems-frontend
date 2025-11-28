@@ -1502,6 +1502,7 @@ async function oncheckinTableDataSignal() {
 
     if (document.getElementById('tabledata')) {
         const existingSummary = document.getElementById('autodetails');
+        if(document.getElementById('autodetails'))document.getElementById('autodetails').remove();
         if (existingSummary) existingSummary.remove(); // prevent duplicate cards when the table re-renders
 
         const container = document.getElementById('tabledata').parentElement.parentElement;
