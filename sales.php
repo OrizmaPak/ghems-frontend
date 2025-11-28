@@ -168,7 +168,7 @@
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Amount</label>
-                                                    <input autocomplete="off" type="number" disabled name="" id="amount-1" class="form-control comp ammount" placeholder="">
+                                                    <input autocomplete="off" type="number" disabled name="" id="amount-1" class="form-control ammount" placeholder="">
                                                 </td>
                                                 <td>
                                                     <button onclick="event.preventDefault();removesalesrow('919')" class="material-symbols-outlined rounded-full bg-red-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>

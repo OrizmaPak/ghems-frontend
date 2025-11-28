@@ -9,7 +9,10 @@ function validateForm(formm, ids=null) {
         for(let i=0;i<ids.length;i++){
             console.log('validation',ids[i])
             if(ids[i] && form.querySelector(`#${ids[i]}`)){
-            if(controlHasValue(form, `#${ids[i]}`))controls.push([form.querySelector(`#${ids[i]}`), `${form.querySelector(`#${ids[i]}`).previousElementSibling.textContent ? form.querySelector(`#${ids[i]}`).previousElementSibling.textContent : ids[i]} is required`])
+                const element = form.querySelector(`#${ids[i]}`)
+                // Skip disabled fields or hidden fields (offsetParent is null when element or parent is hidden)
+                if(element.disabled || element.offsetParent === null) continue
+                if(controlHasValue(form, `#${ids[i]}`))controls.push([element, `${element.previousElementSibling && element.previousElementSibling.textContent ? element.previousElementSibling.textContent : ids[i]} is required`])
             }
         }
     }
