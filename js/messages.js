@@ -28,7 +28,7 @@ async function fetchmessages(id) {
             runoptioner(document.getElementsByClassName('updater')[0])
              messagesid = request.data[0].id
             populateData(request.data[0], ['document'])
-            // document.getElementById('messagefrom').value = request.data[0].messagefrom +' || '+ request.data[0].messagefrom
+            document.getElementById('messagefrom').value = request.data[0].messagefrom || ''
         }
     }
     else return notification('No records retrieved')
@@ -104,13 +104,13 @@ async function messagesFormSubmitHandler() {
         ['id', messagesid],
         ['photofilename', showFileName('document')],
         ['userphotoname', getFile('document')],
-        // ['messagefrom', document.getElementById('messagefrom').value.split('||')[1].trim()]
+        ['messagefrom', document.getElementById('messagefrom').value]
     ] 
     : 
      [
         ['photofilename', showFileName('document')],
         ['userphotoname', getFile('document')],
-        // ['messagefrom', document.getElementById('messagefrom').value.split('||')[1].trim()]
+        ['messagefrom', document.getElementById('messagefrom').value]
      ]
     )
     let request = await httpRequest2('../controllers/messages', payload, document.querySelector('#messagesform #submit'))

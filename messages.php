@@ -35,7 +35,7 @@
                                             </div>
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">message from</label>
-                                                <input type="text" class="form-control comp">
+                                                <input type="text" name="messagefrom" id="messagefrom" class="form-control comp" placeholder="Enter Message From">
                                             </div>
                                         </div>
                                         <div class="grid grid-cols-1  lg:grid-cols-2 gap-10">
