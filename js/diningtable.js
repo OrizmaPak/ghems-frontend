@@ -1,4 +1,26 @@
 let diningtableid
+
+// Ensure SweetAlert buttons are always visible
+function ensureSwalButtonsVisible() {
+    if (!document.getElementById('swal-button-fix')) {
+        const style = document.createElement('style');
+        style.id = 'swal-button-fix';
+        style.textContent = `
+            .swal2-actions button {
+                opacity: 1 !important;
+                visibility: visible !important;
+                display: inline-block !important;
+            }
+            .swal2-confirm, .swal2-cancel {
+                opacity: 1 !important;
+                visibility: visible !important;
+                display: inline-block !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
 async function diningtableActive() {
     const form = document.querySelector('#diningtableform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', diningtableFormSubmitHandler)
@@ -30,23 +52,27 @@ async function fetchdiningtable(id) {
 }
 
 async function removediningtable(id) {
+    // Ensure buttons are always visible
+    ensureSwalButtonsVisible();
+    
     // Ask for confirmation
-    Swal.fire({
-  title: 'Are you sure?',
-  text: "You won't be able to revert this!",
-  icon: 'warning',
-  showCancelButton: true,
-  confirmButtonColor: '#3085d6',
-  cancelButtonColor: '#d33',
-  confirmButtonText: 'Yes, delete it!'
-}).then((result) => {
-  if (result.isConfirmed) {
-  } else {
-    // Optional: Code to execute if the user cancels the edit
-    return console.log('Delete canceled');
-  }
-});
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        buttonsStyling: true,
+        allowOutsideClick: false,
+        allowEscapeKey: true
+    });
 
+    if (!result.isConfirmed) {
+        return;
+    }
 
     function getparamm() {
         let paramstr = new FormData();
@@ -84,22 +110,26 @@ async function diningtableFormSubmitHandler() {
     if(!validateForm('diningtableform', getIdFromCls('comp'))) return
     
     if(diningtableid){
-            Swal.fire({
-  title: 'Are you sure?',
-  text: "You Are About to update a dining table!",
-  icon: 'warning',
-  showCancelButton: true,
-  confirmButtonColor: '#3085d6',
-  cancelButtonColor: '#d33',
-  confirmButtonText: 'Yes, Update it!'
-}).then((result) => {
-  if (result.isConfirmed) {
-  } else {
-    // Optional: Code to execute if the user cancels the edit
-    return console.log('Delete canceled');
-  }
-});
-
+        // Ensure buttons are always visible
+        ensureSwalButtonsVisible();
+        
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You Are About to update a dining table!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, Update it!',
+            cancelButtonText: 'Cancel',
+            buttonsStyling: true,
+            allowOutsideClick: false,
+            allowEscapeKey: true
+        });
+        
+        if (!result.isConfirmed) {
+            return;
+        }
     }
     
     let payload
