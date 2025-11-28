@@ -770,64 +770,64 @@ async function printsalesreceiptsales(ref, room=''){
                                         <span class="text-gray-400">Receipt No.:</span>
                                         <span>${request.data[0].reference}</span>
                                       </p>
-                                      ${request.data[0].ownerid < 0 ? '' : `<p class="flex justify-between">
-                                        <span clas="text-gray-400">Room / CC::</span>
-                                        <span>${request.data[0].ownerid}</span>
-                                      </p>`}
+                                      ${(request.data[0].owner && request.data[0].owner !== '-1' && request.data[0].owner !== '-1' && Number(request.data[0].owner) >= 0) || (request.data[0].ownerid && request.data[0].ownerid !== '-1' && Number(request.data[0].ownerid) >= 0) ? `<p class="flex justify-between">
+                                        <span class="text-gray-400">Room / CC:</span>
+                                        <span>${request.data[0].owner || request.data[0].ownerid || ''}</span>
+                                      </p>` : ''}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Total Amount:</span>
-                                        <span class="">${formatNumber(request.data[0].totalamount)}</span>
+                                        <span class="">${formatNumber(request.data[0].totalamount || 0)}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Amount Paid:</span>
-                                        <span>${formatNumber(request.data[0].amountreceived)}</span>
+                                        <span>${formatNumber(request.data[0].amountpaid || request.data[0].amountreceived || 0)}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Payment Method:</span>
-                                        <span>${request.data[0].paymentmethod}</span>
+                                        <span>${request.data[0].paymentmethod || ''}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Transaction Date:</span>
                                         <span>${specialformatDateTime(request.data[0].transactiondate)}</span>
                                       </p>
                                     </div>
-                                    <div class="flex flex-col gap-3 pb-6 pt-2 text-xs w-full">
-                                      <table class="w-full text-left">
+                                    <div class="flex flex-col gap-3 pb-6 pt-2 text-[10px] w-full overflow-x-auto">
+                                      <table class="w-full text-left border-collapse" style="font-size: 10px;">
                                         <thead>
-                                          ${!rm ? `<tr>
-                                            <th class="min-w-[44px] py-2">s/n</th>
-                                            <th class="min-w-[44px] py-2">Product</th>
-                                            <th class="min-w-[44px] py-2">QTY</th>
-                                            <th class="min-w-[44px] py-2">Price</th>
-                                            <th class="min-w-[44px] py-2">Total</th>
-                                          </tr>` : `<tr>
-                                                <th>item</th>
-                                                <th>debit</th>
-                                                <th>credit</th>
-                                                <th>balance</th>
+                                          ${!rm ? `<tr class="border-b">
+                                            <th class="py-1 px-1 text-left" style="min-width: 25px; max-width: 30px;">s/n</th>
+                                            <th class="py-1 px-1 text-left" style="min-width: 80px; max-width: 120px;">Product</th>
+                                            <th class="py-1 px-1 text-right" style="min-width: 35px; max-width: 45px;">QTY</th>
+                                            <th class="py-1 px-1 text-right" style="min-width: 50px; max-width: 70px;">Price</th>
+                                            <th class="py-1 px-1 text-right" style="min-width: 60px; max-width: 80px;">Total</th>
+                                          </tr>` : `<tr class="border-b">
+                                                <th class="py-1 px-1 text-left" style="font-size: 10px;">item</th>
+                                                <th class="py-1 px-1 text-right" style="font-size: 10px;">debit</th>
+                                                <th class="py-1 px-1 text-right" style="font-size: 10px;">credit</th>
+                                                <th class="py-1 px-1 text-right" style="font-size: 10px;">balance</th>
                                           </tr>`}
                                         </thead>
                                         <tbody>
                                             ${!rm && request.data.length > 0 && request.data[0].ttype != 'ROOMS' 
                                               ? request.data.map((dat, i) => {tt=tt+(Number(dat.qty) * Number(dat.cost)); return`
-                                                  <tr>
-                                                      <td class="min-w-[44px] py-2">${i+1}</td>
-                                                      <td class="min-w-[44px] py-2">${dat.itemname}</td> 
-                                                      <td class="min-w-[44px] py-2">${formatNumber(dat.qty)}</td>
-                                                      <td class="min-w-[44px] py-2">${formatNumber(dat.cost)}</td>
-                                                      <td class="min-w-[44px] py-2">${formatNumber(Number(dat.qty) * Number(dat.cost))}</td>
+                                                  <tr class="border-b">
+                                                      <td class="py-1 px-1" style="font-size: 10px;">${i+1}</td>
+                                                      <td class="py-1 px-1" style="font-size: 10px; word-break: break-word; max-width: 120px;">${dat.itemname || ''}</td> 
+                                                      <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(dat.qty || 0)}</td>
+                                                      <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(dat.cost || 0)}</td>
+                                                      <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(Number(dat.qty || 0) * Number(dat.cost || 0))}</td>
                                                   </tr>
                                                 `}).join('') 
                                               : ''}
                                             
                                             ${!rm && request.data.length > 0 && request.data[0].ttype != 'ROOMS'
                                               ? `
-                                                  <tr>
-                                                      <td>TOTAL</td>
-                                                      <td></td>
-                                                      <td></td>
-                                                      <td></td>
-                                                      <td class="aftertotal" style="width: 20px"></td>
+                                                  <tr class="border-t-2 border-gray-800 font-bold">
+                                                      <td class="py-1 px-1" style="font-size: 10px;">TOTAL</td>
+                                                      <td class="py-1 px-1" style="font-size: 10px;"></td>
+                                                      <td class="py-1 px-1" style="font-size: 10px;"></td>
+                                                      <td class="py-1 px-1" style="font-size: 10px;"></td>
+                                                      <td class="py-1 px-1 text-right aftertotal" style="font-size: 10px;"></td>
                                                   </tr>
                                                 `
                                               : ''}
