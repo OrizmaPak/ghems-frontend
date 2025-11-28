@@ -257,29 +257,29 @@ async function printsalesreceiptpos(ref, room=''){
         let request = await httpRequest2(`../controllers/${!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
         if(request.status){
            html =  request.data.transactions.map((item, index)=>{
-                                                            tt=tt+(Number(item.debit)-Number(item.credit))
+                                                            tt=tt+(Number(item.debit || 0)-Number(item.credit || 0))
                                                             // S/N	ITEM	DEBIT	CREDIT	BALANCE
                                                             if(index == 0 )return`
-                                                                <tr>
-                                                                    <td colspan="3"><p class="text-bold text-md">Balance Brought Forward:</p></td>
-                                                                    <td><p class="text-bold text-xl">${formatNumber(request.data.balance)}</p></td>
+                                                                <tr class="border-b">
+                                                                    <td colspan="3" class="py-1 px-1" style="font-size: 10px;"><p class="text-bold">Balance Brought Forward:</p></td>
+                                                                    <td class="py-1 px-1 text-right" style="font-size: 10px;"><p class="text-bold">${formatNumber(request.data.balance || 0)}</p></td>
                                                                 </tr>
                                                             `
                                                             return `
-                                                                <tr>
-                                                                    <td class="!text-xs">${item.description}</td>
-                                                                    <td class="!text-xs">${formatNumber(item.debit, 0)}</td>
-                                                                    <td class="!text-xs">${formatNumber(item.credit, 0)}</td>
-                                                                    <td class="!text-xs">${formatNumber(tt, 0)}</td>
+                                                                <tr class="border-b">
+                                                                    <td class="py-1 px-1" style="font-size: 10px; word-break: break-word;">${item.description || ''}</td>
+                                                                    <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(item.debit || 0, 0)}</td>
+                                                                    <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(item.credit || 0, 0)}</td>
+                                                                    <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(tt, 0)}</td>
                                                                 </tr>
                                                             `
                                                         }).join('')
           html += `
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td class="text-bold">Total:</td>
-                        <td>${formatNumber(tt)}</td>
+                    <tr class="border-t-2 border-gray-800 font-bold">
+                        <td class="py-1 px-1" style="font-size: 10px;"></td>
+                        <td class="py-1 px-1" style="font-size: 10px;"></td>
+                        <td class="py-1 px-1 text-right" style="font-size: 10px;">Total:</td>
+                        <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(tt)}</td>
                     </tr>
                 `
         }
@@ -295,72 +295,70 @@ async function printsalesreceiptpos(ref, room=''){
                                         <span class="text-gray-400">Receipt No.:</span>
                                         <span>${data.saleentry.reference}</span>
                                       </p>
-                                      ${data.saleentry.ownerid < 0 ? '' : `<p class="flex justify-between">
-                                        <span clas="text-gray-400">Room / CC::</span>
+                                      ${(data.saleentry.ownerid && data.saleentry.ownerid !== '-1' && Number(data.saleentry.ownerid) >= 0) ? `<p class="flex justify-between">
+                                        <span class="text-gray-400">Room / CC:</span>
                                         <span>${data.saleentry.ownerid}</span>
-                                      </p>`}
+                                      </p>` : ''}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Total Amount:</span>
-                                        <span>${formatNumber(data.saleentry.servicecharge)}</span>
+                                        <span class="">${formatNumber(data.saleentry.servicecharge || data.saleentry.totalamount || 0)}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Amount Paid:</span>
-                                        <span>${formatNumber(data.amountreceived)}</span>
+                                        <span>${formatNumber(data.amountreceived || data.saleentry.amountpaid || 0)}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Payment Method:</span>
-                                        <span>${data.saleentry.paymentmethod}</span>
+                                        <span>${data.saleentry.paymentmethod || ''}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Transaction Date:</span>
                                         <span>${specialformatDateTime(data.saleentry.transactiondate)}</span>
                                       </p>
                                     </div>
-                                    <div class="flex flex-col gap-3 pb-6 pt-2 text-xs w-full">
-                                      <table class="w-full text-left">
+                                    <div class="flex flex-col gap-3 pb-6 pt-2 text-[10px] w-full overflow-x-auto">
+                                      <table class="w-full text-left border-collapse" style="font-size: 10px;">
                                         <thead>
-                                          ${!rm ? `<tr>
-                                            <th class="min-w-[14px] py-2">s/n</th>
-                                            <th class="min-w-[64px] py-2">Product</th>
-                                            <th class="min-w-[14px] py-2">QTY</th>
-                                            <th class="min-w-[44px] py-2">Price</th>
-                                            <th class="min-w-[44px] py-2">Total</th>
-                                          </tr>` : `<tr>
-                                                <th>item</th>
-                                                <th>debit</th>
-                                                <th>credit</th>
-                                                <th>balance</th>
+                                          ${!rm ? `<tr class="border-b">
+                                            <th class="py-1 px-1 text-left" style="min-width: 25px; max-width: 30px;">s/n</th>
+                                            <th class="py-1 px-1 text-left" style="min-width: 80px; max-width: 120px;">Product</th>
+                                            <th class="py-1 px-1 text-right" style="min-width: 35px; max-width: 45px;">QTY</th>
+                                            <th class="py-1 px-1 text-right" style="min-width: 50px; max-width: 70px;">Price</th>
+                                            <th class="py-1 px-1 text-right" style="min-width: 60px; max-width: 80px;">Total</th>
+                                          </tr>` : `<tr class="border-b">
+                                                <th class="py-1 px-1 text-left" style="font-size: 10px;">item</th>
+                                                <th class="py-1 px-1 text-right" style="font-size: 10px;">debit</th>
+                                                <th class="py-1 px-1 text-right" style="font-size: 10px;">credit</th>
+                                                <th class="py-1 px-1 text-right" style="font-size: 10px;">balance</th>
                                           </tr>`}
                                         </thead>
                                         <tbody>
-                                            ${!rm && data.saledetail.length > 0 && data.saleentry.ttype != 'ROOMS' 
-                                              ? data.saledetail.map((dat, i) => `
-                                                  <tr>
-                                                      <td class="min-w-[44px] py-2">${i+1}</td>
-                                                      <td class="min-w-[44px] py-2">${dat.itemname}</td>
-                                                      <td class="min-w-[44px] py-2">${formatNumber(dat.qty)}</td>
-                                                      <td class="min-w-[44px] py-2">${formatNumber(dat.cost)}</td>
-                                                      <td class="min-w-[44px] py-2">${formatNumber(Number(dat.qty) * Number(dat.cost))}</td>
+                                            ${!rm && data.saledetail && data.saledetail.length > 0 && data.saleentry.ttype != 'ROOMS' 
+                                              ? data.saledetail.map((dat, i) => {tt=tt+(Number(dat.qty || 0) * Number(dat.cost || 0)); return`
+                                                  <tr class="border-b">
+                                                      <td class="py-1 px-1" style="font-size: 10px;">${i+1}</td>
+                                                      <td class="py-1 px-1" style="font-size: 10px; word-break: break-word; max-width: 120px;">${dat.itemname || ''}</td> 
+                                                      <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(dat.qty || 0)}</td>
+                                                      <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(dat.cost || 0)}</td>
+                                                      <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(Number(dat.qty || 0) * Number(dat.cost || 0))}</td>
                                                   </tr>
-                                                `).join('') 
+                                                `}).join('') 
                                               : ''}
                                             
-                                            ${!rm && data.saledetail.length > 0 && data.saleentry.ttype != 'ROOMS'
+                                            ${!rm && data.saledetail && data.saledetail.length > 0 && data.saleentry.ttype != 'ROOMS'
                                               ? `
-                                                  <tr>
-                                                      <td></td>
-                                                      <td></td>
-                                                      <td></td>
-                                                      <td>TOTAL</td>
-                                                      <td style="width: 20px">${formatNumber(data.saleentry.credit)}</td>
+                                                  <tr class="border-t-2 border-gray-800 font-bold">
+                                                      <td class="py-1 px-1" style="font-size: 10px;">TOTAL</td>
+                                                      <td class="py-1 px-1" style="font-size: 10px;"></td>
+                                                      <td class="py-1 px-1" style="font-size: 10px;"></td>
+                                                      <td class="py-1 px-1" style="font-size: 10px;"></td>
+                                                      <td class="py-1 px-1 text-right aftertotal" style="font-size: 10px;"></td>
                                                   </tr>
                                                 `
                                               : ''}
                                               
                                               ${
-                                                  rm ? `${
-                                                    html
-                                                  }` : ''
+                                                  rm ? html : ''
                                               }
 
                                         </tbody>
@@ -371,6 +369,10 @@ async function printsalesreceiptpos(ref, room=''){
                                         <p class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"><path fill="#000" d="M11.05 14.95L9.2 16.8c-.39.39-1.01.39-1.41.01-.11-.11-.22-.21-.33-.32a28.414 28.414 0 01-2.79-3.27c-.82-1.14-1.48-2.28-1.96-3.41C2.24 8.67 2 7.58 2 6.54c0-.68.12-1.33.36-1.93.24-.61.62-1.17 1.15-1.67C4.15 2.31 4.85 2 5.59 2c.28 0 .56.06.81.18.26.12.49.3.67.56l2.32 3.27c.18.25.31.48.4.7.09.21.14.42.14.61 0 .24-.07.48-.21.71-.13.23-.32.47-.56.71l-.76.79c-.11.11-.16.24-.16.4 0 .08.01.15.03.23.03.08.06.14.08.2.18.33.49.76.93 1.28.45.52.93 1.05 1.45 1.58.1.1.21.2.31.3.4.39.41 1.03.01 1.43zM21.97 18.33a2.54 2.54 0 01-.25 1.09c-.17.36-.39.7-.68 1.02-.49.54-1.03.93-1.64 1.18-.01 0-.02.01-.03.01-.59.24-1.23.37-1.92.37-1.02 0-2.11-.24-3.26-.73s-2.3-1.15-3.44-1.98c-.39-.29-.78-.58-1.15-.89l3.27-3.27c.28.21.53.37.74.48.05.02.11.05.18.08.08.03.16.04.25.04.17 0 .3-.06.41-.17l.76-.75c.25-.25.49-.44.72-.56.23-.14.46-.21.71-.21.19 0 .39.04.61.13.22.09.45.22.7.39l3.31 2.35c.26.18.44.39.55.64.1.25.16.5.16.78z"></path></svg>${did('your_companyphone').value}</p>
                                       </div>
                                     </div>`
+        let y = document.getElementsByClassName('aftertotal')
+        if(y.length > 0)for(let i=0;i<y.length;i++){
+            y[i].innerHTML = formatNumber(tt)
+        }
         did('salesreportposmodal').classList.add('hidden')
         did('receiptsalesmodal').classList.remove('hidden')
     // }else{

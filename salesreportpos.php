@@ -74,7 +74,7 @@
                                     
                                         <div class="">
                                 <div class="w-full flex flex-col items-center">
-                                    <div class="w-80 rounded bg-gray-50 px-6 pt-8 shadow-lg" id="displaydetails">
+                                    <div class="w-full max-w-md rounded bg-gray-50 px-4 pt-6 shadow-lg overflow-x-auto" id="displaydetails" style="min-width: 320px;">
                                         <!--<img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Tailwind_CSS_Logo.svg" alt="chippz" class="mx-auto w-16 py-4" />-->
                                         <!--<div class="flex flex-col justify-center items-center gap-2">-->
                                         <!--    <h4 class="font-semibold">Business Name</h4>-->
