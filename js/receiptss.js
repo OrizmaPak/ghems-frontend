@@ -159,7 +159,7 @@ function openreceiptmodal(id){
                                 <h3 class="text-xl font-bold"> Payment: </h3>
                                 <ul class="text-md font-semibold text-grey-400 px-1">
                                     <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Date:</p> <span>${String(formatDate(data.transactiondate.split(' ')[0])).toUpperCase()}</span></li>
-                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Total paid:</p> <p>${formatCurrency(data.debit)}</p></li>
+                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Total paid:</p> <p>${formatCurrency(data.credittotal || data.credit || 0)}</p></li>
                                 </ul>
                                 
                         		
@@ -176,7 +176,7 @@ function openreceiptmodal(id){
                         				<div class="flex justify-between">
                         					<div class="text-xl text-gray-600 text-right flex-1">Total&nbsp;Paid&nbsp;Amount</div>
                         					<div class="text-right w-40">
-                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatCurrency(data.debit)}</div>
+                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatCurrency(data.credittotal || data.credit || 0)}</div>
                         					</div>
                         				</div>
                         			</div>

@@ -7,7 +7,8 @@ async function posreceiptActive() {
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplytoreceipt());
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     datasource = [];
-    await fetchposreceipt()
+    // Don't fetch on initial load - wait for user to submit form with dates
+    // await fetchposreceipt()
 }
 
 function handlesalesapplytoreceipt (){
@@ -56,12 +57,17 @@ async function fetchposreceipt(id) {
         return paramstr
     }
     let request = await httpRequest2('../controllers/fetchreceipts', getparamm(), document.querySelector('#submitview'), 'json')
-    if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
-         datasource = request.data
-        resolvePagination(datasource, onposreceiptTableDataSignal)
+        if(request.data && request.data.length > 0) {
+            datasource = request.data
+            resolvePagination(datasource, onposreceiptTableDataSignal)
+        } else {
+            document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
+        }
+    } else {
+        document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
+        return notification('No records retrieved', 0)
     }
-    else return notification('No records retrieved')
 }
 
 async function fetchposreceipter(ref) {
