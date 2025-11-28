@@ -1143,6 +1143,16 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
             if(did('checkoutformfilter'))populateData(request.data[0].reservations, [], [], 'checkoutformfilter')
             let x = JSON.stringify(request.data[0])
             populaterestcheckindata(x)
+            // Prefill payment details from the first invoice record (if available)
+            const invoice = request.data[0]?.invoicedata?.[0]
+            if(invoice){
+                if(did('bankname') && invoice.bankname) did('bankname').value = invoice.bankname
+                if(did('otherdetails') && invoice.tlog){
+                    const tlogParts = String(invoice.tlog).split('|')
+                    const detail = tlogParts.length > 1 ? tlogParts[1] : ''
+                    did('otherdetails').value = detail
+                }
+            }
             if(did('reassignroomsform'))disablefortransfer(reassignroom)
             // document.getElementById('foundby').value = request.data[0].foundbyname+' || '+request.data[0].foundby
         }
