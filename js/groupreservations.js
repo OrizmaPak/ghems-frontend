@@ -463,9 +463,15 @@ async function groupreservationsFormSubmitHandler(id) {
     let request = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, document.querySelector('#groupreservationsform #submit'))
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
-            if(request.data.length) {
-                datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id != '0')
+            const filteredData = request.data
+                .filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED')
+                .filter(data=>data.reservations.group_id != '0')
+            if(filteredData.length) {
+                datasource = filteredData
                 resolvePagination(datasource, ongroupreservationsTableDataSignal)
+            } else {
+                datasource = []
+                document.getElementById('tabledata').innerHTML = `No records found for the selected filters`
             }
     }
     else return notification('No records retrieved')
