@@ -83,6 +83,23 @@ async function onreceiptsTableDataSignal() {
 function openreceiptmodal(id){
     document.getElementById('modalreceipt').classList.remove('hidden')
     let data = datasource.filter(data=>data.id == id)[0];
+    
+    // Check if data exists
+    if(!data) {
+        notification('Receipt data not found', 0);
+        document.getElementById('modalreceipt').classList.add('hidden');
+        return;
+    }
+    
+    // Safe helper functions to handle null/undefined values
+    const safeString = (val) => val != null ? String(val) : '';
+    const safeUpper = (val) => val != null ? String(val).toUpperCase() : '';
+    const safeDate = (val) => {
+        if(!val) return '';
+        const datePart = val.includes(' ') ? val.split(' ')[0] : val;
+        return formatDate(datePart);
+    };
+    
     did('invoicecontainerr').innerHTML = `
                             <div class="rounded-lg">
                         
@@ -91,14 +108,14 @@ function openreceiptmodal(id){
                         				<div class="mb-2 md:mb-1 md:flex items-center">
                         					<label class="w-32 text-gray-800 block font-bold text-sm uppercase tracking-wide">Invoice No.</label>
                         					<div class="flex-1">
-                        					<input value="${data.reference}" id="invoiceno" readonly class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-48 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500"  type="text" placeholder="eg. #INV-100001">
+                        					<input value="${safeString(data.reference)}" id="invoiceno" readonly class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-48 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500"  type="text" placeholder="eg. #INV-100001">
                         					</div>
                         				</div>
                         
                         				<div class="mb-2 md:mb-1 md:flex items-center">
                         					<label class="w-32 text-gray-800 block font-bold text-sm uppercase tracking-wide">Invoice Date</label>
                         					<div class="flex-1">
-                        					<input value="${formatDate(data.transactiondate.split(' ')[0])}" readonly class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-48 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500 js-datepicker" type="text" placeholder="eg. 17 Feb, 2020">
+                        					<input value="${safeDate(data.transactiondate)}" readonly class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-48 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500 js-datepicker" type="text" placeholder="eg. 17 Feb, 2020">
                         					</div>
                         				</div>
                         
@@ -142,15 +159,15 @@ function openreceiptmodal(id){
                         		<div class="flex flex-wrap justify-between mb-8">
                         			<div class="w-full md:w-1/3 mb-2 md:mb-0">
                         				<label class="text-gray-800 block mb-1 font-bold text-sm uppercase tracking-wide">Bill To:</label>
-                        				<input id="rbillto" value="${data.ownerid.toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
-                        				<input id="rroomnumber" value="${String(data.description).toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company address" >
-                        				<input id="rpaymentmenthod" value="${String(data.paymentmethod).toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Additional info" >
+                        				<input id="rbillto" value="${safeUpper(data.ownerid)}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
+                        				<input id="rroomnumber" value="${safeUpper(data.description)}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company address" >
+                        				<input id="rpaymentmenthod" value="${safeUpper(data.paymentmethod)}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Additional info" >
                         			</div>
                         			<div class="w-full md:w-1/3">
                         				<label class="text-gray-800 block mb-1 font-bold text-sm uppercase tracking-wide">From:</label>
                         				<input value="Hems Limited" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Your company name" >
                         
-                        				<input value="${String(data.accountnumber)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Your company address" >
+                        				<input value="${safeString(data.accountnumber)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Your company address" >
                         
                         				<input class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Additional info" >
                         			</div>
@@ -158,7 +175,7 @@ function openreceiptmodal(id){
                                 
                                 <h3 class="text-xl font-bold"> Payment: </h3>
                                 <ul class="text-md font-semibold text-grey-400 px-1">
-                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Date:</p> <span>${String(formatDate(data.transactiondate.split(' ')[0])).toUpperCase()}</span></li>
+                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Date:</p> <span>${safeDate(data.transactiondate) ? safeDate(data.transactiondate).toUpperCase() : ''}</span></li>
                                     <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Total paid:</p> <p>${formatCurrency(data.credittotal || data.credit || 0)}</p></li>
                                 </ul>
                                 
