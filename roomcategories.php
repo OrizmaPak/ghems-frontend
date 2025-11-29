@@ -15,6 +15,8 @@
                                                 <option value=''>-- Select Category Type --</option>
                                                 <option>GUEST ROOM</option>
                                                 <option>HALL</option>
+                                                <option>ROOM</option>
+                                                <option>SUITE</option>
                                             </select>
                                         </div>
                                         <div class="form-group">
