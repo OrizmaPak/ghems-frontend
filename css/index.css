@@ -1608,6 +1608,16 @@ select.form-control {
   transition-timing-function: linear;
 }
 
+.pagination .pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #6b7280;
+}
+
 .pagination #pagination-numbers button:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(209 213 219 );

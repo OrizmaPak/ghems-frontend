@@ -14,7 +14,7 @@ function addglaccountrunEdit(){
     if(!sessionStorage.getItem('viewglaccountedit'))return
     let x = JSON.parse(sessionStorage.getItem('viewglaccountedit'))
     sessionStorage.removeItem('viewglaccountedit')
-    populateData(x[0])
+    populateData(x[0], [], [], 'addglaccountform')
     addglaccountid = x[0].id
     did('deleteglaccountsubmit').classList.remove('hidden')
     document.querySelector('#addglaccountform #submit').textContent = 'Update'
@@ -53,7 +53,7 @@ async function fetchaddglaccount(id) {
             }
         }else{
              addglaccountid = request.data[0].id
-            populateData(request.data[0])
+            populateData(request.data[0], [], [], 'addglaccountform')
         }
     }
     else return notification('No records retrieved')

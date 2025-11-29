@@ -6,8 +6,8 @@
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-2 gap-6">
                                         <div class="form-group">
-                                            <label for="logoname" class="control-label">department</label>
-                                            <input type="text" list="hems_departmentlist"  onchange="checkdatalist(this)"  name="department" id="department" class="form-control comp">
+                                            <label for="logoname" class="control-label">department (type to select)</label>
+                                            <input type="text" list="hems_departmentlist"  onchange="checkdatalist(this)"  name="department" id="department" class="form-control comp" placeholder="Type to select department">
                                         </div>
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-2 gap-6">
                                         <div class="form-group">

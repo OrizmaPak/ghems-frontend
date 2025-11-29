@@ -358,12 +358,38 @@ function getSignaledPaginationNumbers() {
 }
 
 async function getPaginationNumbers (){
-    let str = ''
     pageCount = Math.ceil(datasource.length / paginationLimit);
-    for (let i = 1; i <= pageCount; i++) {
-      str += `<button class="pagination-number" type="button" aria-label="Page ${i}" page-index="${i}">${i}</button>`;
+    const maxNumbersToShow = 7; // keep pagination compact
+    const buildButton = (page) => `<button class="pagination-number" type="button" aria-label="Page ${page}" page-index="${page}">${page}</button>`;
+    const ellipsis = `<span class="pagination-ellipsis">...</span>`;
+
+    // Show all buttons when total pages are few
+    if (pageCount <= maxNumbersToShow) {
+        let str = ''
+        for (let i = 1; i <= pageCount; i++) str += buildButton(i);
+        return str
     }
-    return str
+
+    // Always show first and last page, and a sliding window around the current page
+    const pages = [1];
+    const windowSize = 2;
+    let start = Math.max(2, currentPage - windowSize);
+    let end = Math.min(pageCount - 1, currentPage + windowSize);
+
+    // Keep the window size consistent near the edges
+    if (currentPage <= windowSize + 1) {
+        end = 1 + windowSize * 2;
+    }
+    if (currentPage >= pageCount - windowSize) {
+        start = pageCount - windowSize * 2;
+    }
+
+    if (start > 2) pages.push(ellipsis);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < pageCount - 1) pages.push(ellipsis);
+    pages.push(pageCount);
+
+    return pages.map(p => typeof p === 'number' ? buildButton(p) : p).join('')
 };
 
 function addPaginationStatus() {

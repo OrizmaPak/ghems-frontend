@@ -4,7 +4,17 @@ async function workorderActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', workorderFormSubmitHandler)
     datasource = []
     await putusersvalue('requestedby')
+    await populateWorkorderDepartments()
     await fetchworkorder()
+}
+
+async function populateWorkorderDepartments() {
+    const datalist = did('hems_departmentlist')
+    if(!datalist) return
+    let request = await httpRequest2('../controllers/fetchdepartments', null, null, 'json')
+    if(request?.status && Array.isArray(request.data)) {
+        datalist.innerHTML = request.data.map(dep=>`<option>${dep.department} || ${dep.id}</option>`).join('')
+    }
 }
 
 async function fetchworkorder(id) {
