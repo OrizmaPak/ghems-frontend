@@ -2,9 +2,25 @@ let reservetableid
 async function reservetableActive() {
     const form = document.querySelector('#reservetableform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', reservetableFormSubmitHandler)
+    setReservationDateFloor()
     datasource = []
     await fetchtablenumber()
     await fetchreservetable()
+}
+
+function setReservationDateFloor() {
+    const dateInput = document.getElementById('reservationdate')
+    if(!dateInput) return
+    const today = new Date().toISOString().split('T')[0]
+    dateInput.setAttribute('min', today)
+    dateInput.addEventListener('change', () => {
+        if(dateInput.value && dateInput.value < today) {
+            notification('Reservation date cannot be in the past', 0)
+            dateInput.value = today
+        }
+        const entryDate = document.getElementById('entrydate')
+        if(entryDate) entryDate.value = dateInput.value
+    })
 }
 
 async function fetchtablenumber() {
