@@ -2,7 +2,7 @@ let reversalid
 async function reversalActive() {
     const formsales = document.querySelector('#reversesalesform')
     if(formsales.querySelector('#submit')) formsales.querySelector('#submit').addEventListener('click', reversesalesformSubmitHandler)
-    const formreceipt = document.querySelector('#reversesalesform')
+    const formreceipt = document.querySelector('#reversereceiptform')
     if(formreceipt.querySelector('#submit')) formreceipt.querySelector('#submit').addEventListener('click', reversereceiptformSubmitHandler)
     datasource = []
     // await fetchreversal()
