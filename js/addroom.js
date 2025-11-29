@@ -40,8 +40,12 @@ async function fetchaddroom(id) {
                 resolvePagination(datasource, onaddroomTableDataSignal)
             }
         }else{
-             addroomid = request.data[0].id
-            populateData(request.data[0], ['imageurl1', 'imageurl2'])
+            // Some endpoints return the full list even when id is supplied, so pick the matching record.
+            const record = (request.data || []).find(item => String(item.id) === String(id)) || request.data[0]
+            if(!record) return notification('No records retrieved')
+            addroomid = record.id
+            // Populate the form including description and the two room images.
+            populateData(record, ['imageurl1', 'imageurl2'], [], 'addroomform')
         }
     }
     else return notification('No records retrieved')
