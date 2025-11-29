@@ -40,7 +40,7 @@ async function fetchviewreversereceiptform() {
     const tbody = document.getElementById('tabledata2')
     tbody.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Table is empty</td></tr>`
 
-    let request = await httpRequest2('../controllers/fetchreversedreceipts', getparamm(), document.querySelector('#viewreversereceiptform #submit'), 'json')
+    let request = await httpRequest2('../controllers/fetchreversedreceipt', getparamm(), document.querySelector('#viewreversereceiptform #submit'), 'json')
     if(request?.status && Array.isArray(request.data) && request.data.length) {
         receiptDatasource = request.data
         tbody.innerHTML = request.data.map((item, index)=>`

@@ -1,6 +1,6 @@
 let viewreversalsid
 async function viewreversalsActive() {
-    if(document.querySelector('#viewreversepaymentform #submit')) document.querySelector('#viewreversepaymentform #submit').addEventListener('click', fetchviewreversepayment)
+    if(document.querySelector('#viewreversepaymentform #submitviewreversepayment')) document.querySelector('#viewreversepaymentform #submitviewreversepayment').addEventListener('click', fetchviewreversepayment)
     if(document.querySelector('#viewreversereceivepurchasesform #submit')) document.querySelector('#viewreversereceivepurchasesform #submit').addEventListener('click', fetchviewreversereceivepurchasesform)
     datasource = []
     fetchviewreversepayment();
@@ -13,7 +13,7 @@ async function fetchviewreversepayment() {
         let paramstr = new FormData(document.getElementById('viewreversepaymentform'));
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchreversedpayments', getparamm(), document.querySelector('#viewreversepaymentform #submit'), 'json');
+    let request = await httpRequest2('../controllers/fetchreversedpayments', getparamm(), document.querySelector('#viewreversepaymentform #submitviewreversepayment'), 'json');
     document.getElementById('tabledata').innerHTML = `No records retrieved`;
     if(request.status) {
                 datasource = request.data
