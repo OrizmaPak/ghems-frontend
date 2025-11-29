@@ -207,7 +207,7 @@ async function onroomcleaningchecklistTableDataSignal() {
                             </tr>
                     `)
                         
-                    }).join('')
+                    }).join('')}
                 </tbody>
             </table>
         </td>
