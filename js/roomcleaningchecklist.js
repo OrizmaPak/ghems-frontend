@@ -1,5 +1,25 @@
 let roomcleaningchecklistid
 let roomcleaningchecklistitem
+// Safely parse checklist items regardless of whether they arrive as a JSON string or array
+const normalizeChecklistItems = (items) => {
+    if (!items) return [];
+    if (Array.isArray(items)) return items;
+    try {
+        return JSON.parse(items);
+    } catch (e) {
+        console.log('Unable to parse checklist items', items);
+        return [];
+    }
+}
+
+// Resolve a human-readable label from a checklist item entry
+const getChecklistItemLabel = (item) => {
+    if (item == null) return '';
+    if (typeof item === 'string') return item;
+    if (typeof item === 'object') return item.item || item.name || item.label || item.value || '';
+    return `${item}`;
+}
+
 async function roomcleaningchecklistActive() {
     runCount('s/n')
     const form = document.querySelector('#roomcleaningchecklistform')
@@ -20,10 +40,19 @@ async function populatechecklister(id=''){
     let request = await httpRequest2('../controllers/fetchchecklistitems', id ? getparamm() : null, null, 'json')
     if(request.status) {
             if(request.data.length) {
-                did('checklistitemscontainer').innerHTML = request.data.map(dat=>`<div id="cont_${dat.id}" class="flex w-full items-center cp ps-4 h-fit border pr-3 border-gray-200 rounded w-fit">
-                                                    <input id="bordered-checkbox-${dat.id}" onchange="checklistaction('${dat.id}', '${dat.item}')" type="checkbox" value=""  class="cp bordered-checkboxxa w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ">
-                                                    <label for="bordered-checkbox-${dat.id}" name="${dat.item}" class="w-full py-4 ms-2 cp text-sm font-medium text-black">${dat.item}</label>
-                                                </div>`).join('')
+                did('checklistitemscontainer').innerHTML = request.data.map(dat=>{
+                    const label = getChecklistItemLabel(dat.item);
+                    return `<div id="cont_${dat.id}" class="flex w-full items-center cp ps-4 h-fit border pr-3 border-gray-200 rounded w-fit">
+                                                    <input id="bordered-checkbox-${dat.id}" data-item-id="${dat.id}" data-item-label="${label.replace(/\"/g, '&quot;')}" type="checkbox" value=""  class="cp bordered-checkboxxa w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ">
+                                                    <label for="bordered-checkbox-${dat.id}" data-item-label="${label.replace(/\"/g, '&quot;')}" class="w-full py-4 ms-2 cp text-sm font-medium text-black">${label}</label>
+                                                </div>`
+                }).join('')
+                // Bind change handlers after rendering to avoid inline string coercion issues
+                document.querySelectorAll('#checklistitemscontainer input[type="checkbox"]').forEach(box=>{
+                    box.addEventListener('change', (ev)=>{
+                        checklistaction(ev.target.dataset.itemId, ev.target.dataset.itemLabel)
+                    })
+                })
             }
     }
     else return notification('No records retrieved')
@@ -93,16 +122,18 @@ function addroomcleaningrow(){
 async function fetchroomcleaningchecklist(id='') {
     if(id){
         const item = datasource.filter(item => item.id == id)[0];
-        let x = JSON.parse(item.items);
-        console.log(x)
+        let x = normalizeChecklistItems(item.items);
         did('rccupdatechecklist').click()
         did('checklistitemscontainer').innerHTML = 'Loading...'
         did('tabledat').innerHTML = ''
         await populatechecklister()
-        for(let i=0;i<x.length;i++){
-            document.getElementsByName(`${x[i].item}`)[0].previousElementSibling.click()
-            if(x[i].answer == 'YES')document.getElementsByName(`${x[i].item}_name`)[0].click()
-        }
+        x.forEach(entry=>{
+            const label = getChecklistItemLabel(entry.item);
+            const checkbox = Array.from(document.querySelectorAll('#checklistitemscontainer input[data-item-label]')).find(el=>el.dataset.itemLabel === label);
+            if(!checkbox) return;
+            checkbox.checked = true;
+            checklistaction(checkbox.dataset.itemId, label, entry.answer);
+        })
     }
     
     // scrollToTop('scrolldiv')
@@ -161,22 +192,22 @@ async function onroomcleaningchecklistTableDataSignal() {
         <td>
             <table>
                 <tbody>
-                    ${JSON.parse(item.items).map((data, i)=>{
+                    ${normalizeChecklistItems(item.items).map((data, i)=>{
+                    const label = getChecklistItemLabel(data.item);
                     if(i<3)return(`
                             <tr>
                                 <td>${i+1}</td>
-                                <td>${data.item}</td>
+                                <td>${label}</td>
                                 <td>${data.answer}</td>
                             </tr>
                     `)
                     if(i==3)return(`
                             <tr>
-                                <td colspan="2"  onclick="fetchroomcleaningchecklistview('${item.id}')"  class="text-xs text-[green]">Click to view the remaining ${JSON.parse(item.items).length-3}</td>
+                                <td colspan="2"  onclick="fetchroomcleaningchecklistview('${item.id}')"  class="text-xs text-[green]">Click to view the remaining ${normalizeChecklistItems(item.items).length-3}</td>
                             </tr>
                     `)
                         
                     }).join('')
-                    }
                 </tbody>
             </table>
         </td>
@@ -199,12 +230,12 @@ function fetchroomcleaningchecklistview(id){
     did('roomcleaningchecklistmodal').classList.remove('hidden')
     const item = datasource.filter(item => item.id == id)[0];
     let y = item;
-    let x = JSON.parse(item.items);
-    console.log(x)
+    let x = normalizeChecklistItems(item.items);
     document.getElementById('tabledatarcc').innerHTML = `${x.map((item, i)=>{
+        const label = getChecklistItemLabel(item.item);
         return ` <tr><td id="rowrcc_${id}" class="">${i+1}</td>
-                                        <input type="text" value="${item.item}" class="itemer1 hidden" />
-                                        <td>${item.item}</td>
+                                        <input type="text" value="${label}" class="itemer1 hidden" />
+                                        <td>${label}</td>
                                         <td >
                                             <div class="flex items-center my-3">
                                                  <span class="ms-3 text-sm font-medium text-red-900 mr-2">No</span>
