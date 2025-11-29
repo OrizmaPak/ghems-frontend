@@ -57,6 +57,28 @@ async function removemanagesupplier(id) {
     
 }
 
+function resetManageSupplierFormFields() {
+    const form = document.querySelector('#managesupplierform')
+    if(!form) return
+    form.querySelectorAll('input, select, textarea').forEach(control => {
+        if(control.tagName === 'SELECT') control.selectedIndex = 0
+        else if(['checkbox', 'radio'].includes(control.type)) control.checked = false
+        else control.value = ''
+    })
+    form.querySelectorAll('.control-error')?.forEach(node => node.remove())
+    managesupplierid = ''
+}
+
+function resetManageSupplierView() {
+    resetManageSupplierFormFields()
+    const manageNavItem = document.getElementById('managesupplier')
+    if(manageNavItem) {
+        manageNavItem.click()
+        return
+    }
+    fetchmanagesupplier()
+}
+
 
 async function onmanagesupplierTableDataSignal() {
     let rows = getSignaledDatasource().map((item, index) => `
@@ -90,16 +112,10 @@ async function managesupplierFormSubmitHandler() {
     let request = await httpRequest2('../controllers/supplierscript', payload, document.querySelector('#managesupplierform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
-        // Clear the entire form after successful submission
-        document.querySelector('#managesupplierform').reset();
-        managesupplierid = ''
-        fetchmanagesupplier();
+        resetManageSupplierView()
         return
     }
-    // Clear the form even on error
-    document.querySelector('#managesupplierform').reset();
-    managesupplierid = ''
-    fetchmanagesupplier();
+    resetManageSupplierView()
     return notification(request.message, 0);
 }
 
