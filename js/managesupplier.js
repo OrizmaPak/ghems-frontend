@@ -26,6 +26,9 @@ async function fetchmanagesupplier(id) {
         }else{
              managesupplierid = id
             populateData(request.data.data.filter(data=>data.id==id)[0])
+            // Scroll to the top of the form when edit button is clicked
+            scrollToTop()
+            document.querySelector('#managesupplierform').scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
     }
     else return notification('No records retrieved')
@@ -87,12 +90,15 @@ async function managesupplierFormSubmitHandler() {
     let request = await httpRequest2('../controllers/supplierscript', payload, document.querySelector('#managesupplierform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
+        // Clear the entire form after successful submission
         document.querySelector('#managesupplierform').reset();
+        managesupplierid = ''
         fetchmanagesupplier();
-        managesupplierid =''
         return
     }
+    // Clear the form even on error
     document.querySelector('#managesupplierform').reset();
+    managesupplierid = ''
     fetchmanagesupplier();
     return notification(request.message, 0);
 }
