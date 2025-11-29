@@ -17,13 +17,13 @@ async function fetchviewreversesalesform() {
         return paramstr
     }
     let request = await httpRequest2('../controllers/fetchreversedsales', getparamm(), document.querySelector('#viewreversesalesform #submit'), 'json')
-    document.getElementById('tabledata1').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Table is empty</td></tr>`
+    document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Table is empty</td></tr>`
     if(request.status) {
         if(request.data && request.data.length) {
             datasource = request.data
             resolvePagination(datasource, onviewreversalTableDataSignal)
         } else {
-            document.getElementById('tabledata1').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
+            document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
             return notification(request.message || 'No records retrieved', 0)
         }
     }
@@ -68,8 +68,8 @@ async function onviewreversalTableDataSignal() {
     </tr>`
     )
     .join('')
-    // Inject into tabledata1 instead of tabledata
-    document.getElementById('tabledata1').innerHTML = rows
+    // Inject into the main table tbody
+    document.getElementById('tabledata').innerHTML = rows
     addPaginationStatus()
     handleActivePageNumber();
     handlePageButtonsStatus()

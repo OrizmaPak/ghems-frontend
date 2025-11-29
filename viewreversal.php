@@ -49,7 +49,7 @@
                                                 <th>ACTION</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="tabledata1">
+                                    <tbody id="tabledata">
                                            <tr>
                                                 <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
                                             </tr>
