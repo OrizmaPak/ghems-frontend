@@ -91,7 +91,28 @@ async function workorderFormSubmitHandler() {
     
     let payload
 
-    payload = getFormData2(document.querySelector('#workorderform'), workorderid ? [['id', workorderid],['requestedby', did('requestedby').value.split('||')[1].trim()],['department', did('department').value.split('||')[1].trim()]] : null)
+    const getSplitValue = (value) => {
+        if(!value) return ''
+        if(value.includes('||')) return value.split('||')[1].trim()
+        return value.trim()
+    }
+
+    const formatDateTimeLocal = (value) => {
+        if(!value) return value
+        // Convert "YYYY-MM-DDTHH:MM" to "YYYY-MM-DD HH:MM:00" for backend consistency
+        return value.replace('T', ' ') + (value.split(':').length === 2 ? ':00' : '')
+    }
+
+    const additional = [
+        ['requestedby', getSplitValue(did('requestedby')?.value)],
+        ['department', getSplitValue(did('department')?.value)],
+        ['entrydate', formatDateTimeLocal(did('entrydate')?.value)],
+        ['dateneeded', formatDateTimeLocal(did('dateneeded')?.value)]
+    ]
+
+    if(workorderid) additional.unshift(['id', workorderid])
+
+    payload = getFormData2(document.querySelector('#workorderform'), additional)
     let request = await httpRequest2('../controllers/workorder', payload, document.querySelector('#workorderform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);

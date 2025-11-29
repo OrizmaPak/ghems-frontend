@@ -614,15 +614,11 @@ function openPageDescriptionModal() {
     try {
         if (typeof Swal === 'undefined') return;
 
-        const searchParams = new URLSearchParams(window.location.search);
-        const page = searchParams.get('r');
-        if (!page) return;
+        const meta = getCurrentRouteMeta();
+        if (!meta) return;
 
-        const menu = document.getElementById(page);
-        if (!menu) return;
-
-        const description = menu.getAttribute('title') || 'No description available for this page.';
-        const label = (menu.textContent || '').trim() || 'Page Description';
+        const description = meta.description || 'No description available for this page.';
+        const label = meta.label || 'Page Description';
 
         Swal.fire({
             title: `${label} - Details`,
@@ -635,13 +631,56 @@ function openPageDescriptionModal() {
     }
 }
 
+function getCurrentRouteMeta() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const page = searchParams.get('r');
+    if (!page) return null;
+
+    const menu = document.getElementById(page);
+    if (!menu) return null;
+
+    return {
+        description: menu.getAttribute('title') || '',
+        label: (menu.textContent || '').trim()
+    };
+}
+
+function getTruncatedText(text, limit = 50) {
+    if (!text) return '';
+    if (text.length <= limit) return text;
+    return `${text.slice(0, limit).trimEnd()}...`;
+}
+
 let timer;
 
 function attachPageDescriptionTrigger() {
     try {
+        const meta = getCurrentRouteMeta();
+        const previewText = getTruncatedText(meta?.description || meta?.label || '', 50) || '?';
         const resetButtons = document.querySelectorAll('.btn-reset');
         resetButtons.forEach(button => {
-            const trigger = button.querySelector('span.text-lg:not(.material-symbols-outlined)');
+            let trigger = button.querySelector('span.text-lg:not(.material-symbols-outlined)');
+            let icon = button.querySelector('.material-symbols-outlined');
+
+            if (!icon) {
+                icon = document.createElement('span');
+                icon.className = 'material-symbols-outlined text-lg';
+                icon.textContent = 'restart_alt';
+                button.prepend(icon);
+            } else if (!icon.textContent.trim()) {
+                icon.textContent = 'restart_alt';
+            }
+            icon.setAttribute('aria-hidden', 'true');
+
+            if (!trigger) {
+                trigger = document.createElement('span');
+                trigger.className = 'text-lg';
+                const loader = button.querySelector('.btnloader');
+                button.insertBefore(trigger, loader || button.lastElementChild);
+            }
+
+            trigger.textContent = previewText;
+            trigger.title = meta?.description || meta?.label || '';
             if (trigger && !trigger.dataset.pageDescriptionBound) {
                 trigger.dataset.pageDescriptionBound = '1';
                 trigger.style.cursor = 'pointer';

@@ -1611,11 +1611,17 @@ select.form-control {
 .pagination .pagination-ellipsis {
   display: flex;
   align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 2rem;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   font-size: 0.75rem;
   line-height: 1rem;
   color: #6b7280;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
 }
 
 .pagination #pagination-numbers button:hover {

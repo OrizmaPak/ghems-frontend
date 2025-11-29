@@ -359,37 +359,44 @@ function getSignaledPaginationNumbers() {
 
 async function getPaginationNumbers (){
     pageCount = Math.ceil(datasource.length / paginationLimit);
-    const maxNumbersToShow = 7; // keep pagination compact
     const buildButton = (page) => `<button class="pagination-number" type="button" aria-label="Page ${page}" page-index="${page}">${page}</button>`;
-    const ellipsis = `<span class="pagination-ellipsis">...</span>`;
+    const ellipsis = `<span class="pagination-ellipsis" aria-hidden="true">...</span>`;
+    const leadingCount = 3;
+    const trailingCount = 3;
+    const surroundingWindow = 2;
 
-    // Show all buttons when total pages are few
-    if (pageCount <= maxNumbersToShow) {
+    if (pageCount <= 1) return buildButton(1);
+
+    // When page count is small, just list all buttons
+    if (pageCount <= leadingCount + trailingCount + surroundingWindow + 1) {
         let str = ''
         for (let i = 1; i <= pageCount; i++) str += buildButton(i);
         return str
     }
 
-    // Always show first and last page, and a sliding window around the current page
-    const pages = [1];
-    const windowSize = 2;
-    let start = Math.max(2, currentPage - windowSize);
-    let end = Math.min(pageCount - 1, currentPage + windowSize);
+    const pageSet = new Set();
 
-    // Keep the window size consistent near the edges
-    if (currentPage <= windowSize + 1) {
-        end = 1 + windowSize * 2;
+    // Leading pages
+    for (let i = 1; i <= Math.min(leadingCount, pageCount); i++) pageSet.add(i);
+
+    // Pages around current selection
+    const startWindow = Math.max(1, currentPage - surroundingWindow);
+    const endWindow = Math.min(pageCount, currentPage + surroundingWindow);
+    for (let i = startWindow; i <= endWindow; i++) pageSet.add(i);
+
+    // Trailing pages
+    for (let i = Math.max(pageCount - trailingCount + 1, 1); i <= pageCount; i++) pageSet.add(i);
+
+    const orderedPages = Array.from(pageSet).sort((a, b) => a - b);
+    let markup = '';
+    for (let i = 0; i < orderedPages.length; i++) {
+        const page = orderedPages[i];
+        if (i > 0 && page - orderedPages[i - 1] > 1) {
+            markup += ellipsis;
+        }
+        markup += buildButton(page);
     }
-    if (currentPage >= pageCount - windowSize) {
-        start = pageCount - windowSize * 2;
-    }
-
-    if (start > 2) pages.push(ellipsis);
-    for (let i = start; i <= end; i++) pages.push(i);
-    if (end < pageCount - 1) pages.push(ellipsis);
-    pages.push(pageCount);
-
-    return pages.map(p => typeof p === 'number' ? buildButton(p) : p).join('')
+    return markup
 };
 
 function addPaginationStatus() {
