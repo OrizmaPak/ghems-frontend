@@ -75,6 +75,29 @@ body {
   display: none;
 }
 
+.reset-note-btn {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+
+.reset-note-btn:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.28);
+  opacity: 0.95;
+}
+
+.reset-note-btn:active {
+  transform: translateY(0);
+}
+
+.reset-note-btn .material-symbols-outlined {
+  color: #fff;
+  font-size: 20px;
+}
+
 /*
 1. Add the correct height in Firefox.
 2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)

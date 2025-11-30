@@ -572,12 +572,9 @@ async function openRoute(url) {
                                                 <div class="flex-1 text-sm">
                                                     ${title}
                                                 </div>  
-                                                <button onclick="document.getElementById('${page}').click()" type="button" class="btn !bg-red-400 text-white ml-auto flex items-center justify-center rounded-full w-9 h-9 shadow-sm hover:shadow-md transition-all duration-150">
+                                                <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
                                                     <div class="btnloader" style="display: none;"></div>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="1 4 1 10 7 10"></polyline>
-                                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                                                    </svg>
+                                                    <span class="material-symbols-outlined text-white text-xl leading-none">refresh</span>
                                                 </button>
                                             </div>`;
                         } else {
@@ -586,12 +583,9 @@ async function openRoute(url) {
                                                 <div class="flex-1 text-sm">
                                                     Title attribute is missing.
                                                 </div>
-                                                <button onclick="document.getElementById('${page}').click()" type="button" class="btn !bg-red-400 text-white ml-auto flex items-center justify-center rounded-full w-9 h-9 shadow-sm hover:shadow-md transition-all duration-150">
+                                                <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
                                                     <div class="btnloader" style="display: none;"></div>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="1 4 1 10 7 10"></polyline>
-                                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                                                    </svg>
+                                                    <span class="material-symbols-outlined text-white text-xl leading-none">refresh</span>
                                                 </button>
                                             </div>`;
                         }
@@ -646,8 +640,8 @@ function getCurrentRouteMeta() {
 }
 
 function getTruncatedText(text, limit = 50) {
-    if (!text) return '';
-    if (text.length <= limit) return text;
+    if (!text) return '?...';
+    if (text.length <= limit) return `${text.trimEnd()}...`;
     return `${text.slice(0, limit).trimEnd()}...`;
 }
 
