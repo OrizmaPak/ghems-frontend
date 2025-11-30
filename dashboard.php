@@ -11,7 +11,7 @@
       </div>
 
       <section class="dashboard-metrics-grid">
-        <div class="metric-card cp" onclick="document.getElementById('roomstatus')?.click()">
+        <div class="metric-card cp" data-route-target="roomstatus">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-purple-600 bg-purple-100 rounded-full mr-6">
             <span class="material-symbols-outlined">nest_multi_room</span>
           </div>
@@ -20,7 +20,7 @@
             <span class="metric-value val" id="dashavailablerooms">Loading...</span>
           </div>
         </div>
-        <div onclick="document.getElementById('activitylog').click()" class="metric-card cp">
+        <div class="metric-card cp" data-route-target="occupancylist">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-red-600 bg-red-100 rounded-full mr-6">
             <span class="material-symbols-outlined">sensor_occupied</span>
           </div>
@@ -29,7 +29,7 @@
             <span class="metric-value val" id="dashoccupiedrooms">Loading...</span>
           </div>
         </div>
-        <div onclick="document.getElementById('viewhistory').click()"  class="metric-card cp">
+        <div class="metric-card cp" data-route-target="salesreport">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-green-600 bg-green-100 rounded-full mr-6">
            <span class="material-symbols-outlined group-hover:text-primary-g" style="font-size: 40px;">attach_money</span>
           </div>
@@ -41,7 +41,7 @@
       </section>
 
       <section class="dashboard-metrics-grid">
-        <div class="metric-card cp">
+        <div class="metric-card cp" data-route-target="receiveables">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-purple-600 bg-purple-100 rounded-full mr-6">
            <span class="material-symbols-outlined">call_received</span>
           </div>
@@ -50,7 +50,7 @@
             <span class="metric-value val" id="dashreceiveable">Loading...</span>
           </div>
         </div>
-        <div onclick="document.getElementById('activitylog').click()" class="metric-card cp">
+        <div class="metric-card cp" data-route-target="viewinventory">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-red-600 bg-red-100 rounded-full mr-6">
             <span class="material-symbols-outlined">inventory</span>
           </div>
@@ -59,7 +59,7 @@
             <span class="metric-value val" id="dashinventory">Loading...</span>
           </div>
         </div>
-        <div onclick="document.getElementById('viewhistory').click()"  class="metric-card cp">
+        <div class="metric-card cp" data-route-target="payables">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-green-600 bg-green-100 rounded-full mr-6">
            <span class="material-symbols-outlined">local_atm</span>
           </div>
@@ -112,4 +112,3 @@
       </section>
     </main>
   </div> 
-

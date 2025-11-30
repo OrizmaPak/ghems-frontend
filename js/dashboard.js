@@ -14,6 +14,7 @@ async function dashboardActive() {
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', dashboardFormSubmitHandler)
     datasource = []
     entername()
+    attachDashboardMetricRoutes()
     // if(x.role !== 'SUPERADMIN'){
     //     await fetchtheusersonline()
     //     await fetchthfetchtotalusers()
@@ -220,5 +221,22 @@ async function dashboardFormSubmitHandler() {
     document.querySelector('#dashboardform').reset();
     fetchdashboard();
     return notification(request.message, 0);
+}
+
+function attachDashboardMetricRoutes() {
+    try {
+        document.querySelectorAll('.metric-card[data-route-target]').forEach(card => {
+            if(card.dataset.routeBound === '1') return
+            const targetId = card.dataset.routeTarget
+            if(!targetId) return
+            card.dataset.routeBound = '1'
+            card.addEventListener('click', () => {
+                const navItem = document.getElementById(targetId)
+                if(navItem) navItem.click()
+            })
+        })
+    } catch (error) {
+        console.log(error)
+    }
 }
 
