@@ -569,7 +569,7 @@ async function openRoute(url) {
                         if (title) {
                             el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
                                                 <p class="font-medium">Note!<br/></p> 
-                                                <div class="flex-1 text-sm">
+                                                <div class="flex-1 text-sm note-description" role="button" tabindex="0">
                                                     ${title}
                                                 </div>  
                                                 <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
@@ -580,7 +580,7 @@ async function openRoute(url) {
                         } else {
                             el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
                                                 <p class="font-medium">Note!<br/></p>
-                                                <div class="flex-1 text-sm">
+                                                <div class="flex-1 text-sm note-description" role="button" tabindex="0">
                                                     Title attribute is missing.
                                                 </div>
                                                 <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
@@ -592,6 +592,21 @@ async function openRoute(url) {
                 
                         // Prepend the alert element to the workspace
                         document.getElementById('workspace').prepend(el);
+
+                        const noteDescription = el.querySelector('.note-description');
+                        if (noteDescription && !noteDescription.dataset.pageDescriptionBound) {
+                            const handler = (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openPageDescriptionModal();
+                            };
+                            noteDescription.dataset.pageDescriptionBound = '1';
+                            noteDescription.addEventListener('click', handler);
+                            noteDescription.addEventListener('keypress', (e) => {
+                                if (e.key === 'Enter' || e.key === ' ') handler(e);
+                            });
+                            noteDescription.style.cursor = 'pointer';
+                        }
                     } else {
                         console.error(`Element with ID '${page}' not found.`);
                     }
