@@ -628,13 +628,13 @@ function openPageDescriptionModal() {
         const label = meta.label || 'Page Description';
 
         if (typeof Swal === 'undefined') {
-            alert(`${label}\n\n${description}`);
+            alert(`${label}\n\n${stripHtml(description)}`);
             return;
         }
 
         Swal.fire({
             title: `${label} - Details`,
-            text: description,
+            html: `<div class="page-description-modal">${description}</div>`,
             icon: 'info',
             confirmButtonText: 'Close'
         });
@@ -659,8 +659,17 @@ function getCurrentRouteMeta() {
 
 function getTruncatedText(text, limit = 50) {
     if (!text) return '?...';
-    if (text.length <= limit) return `${text.trimEnd()}...`;
-    return `${text.slice(0, limit).trimEnd()}...`;
+    const sanitized = stripHtml(text);
+    if (!sanitized) return '?...';
+    if (sanitized.length <= limit) return `${sanitized.trimEnd()}...`;
+    return `${sanitized.slice(0, limit).trimEnd()}...`;
+}
+
+function stripHtml(text = '') {
+    if (!text) return '';
+    const temp = document.createElement('div');
+    temp.innerHTML = text;
+    return temp.textContent || temp.innerText || '';
 }
 
 let timer;
@@ -692,7 +701,7 @@ function attachPageDescriptionTrigger() {
             }
 
             trigger.textContent = previewText;
-            trigger.title = meta?.description || meta?.label || '';
+            trigger.title = stripHtml(meta?.description || meta?.label || '');
             if (trigger && !trigger.dataset.pageDescriptionBound) {
                 trigger.dataset.pageDescriptionBound = '1';
                 trigger.style.cursor = 'pointer';

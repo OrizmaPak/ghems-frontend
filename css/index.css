@@ -3831,3 +3831,39 @@ textarea {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
 }
+
+.note-description {
+  max-height: 120px;
+  overflow: hidden;
+  position: relative;
+  line-height: 1.5;
+  display: block;
+}
+
+.note-description::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0) 0%, rgba(239, 246, 255, 1) 100%);
+  pointer-events: none;
+}
+
+.note-description:focus-visible {
+  outline: 2px solid #157cd0;
+  outline-offset: 2px;
+}
+
+.page-description-modal {
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #1e293b;
+}
+
+.page-description-modal ul {
+  margin-left: 1.25rem;
+  list-style: disc;
+}
