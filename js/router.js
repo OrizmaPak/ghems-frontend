@@ -605,6 +605,7 @@ async function openRoute(url) {
 }
 
 function openPageDescriptionModal() {
+    alert('openPageDescriptionModal')
     try {
         if (typeof Swal === 'undefined') return;
 

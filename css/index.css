@@ -76,7 +76,7 @@ body {
 }
 
 .reset-note-btn {
-  background: linear-gradient(135deg, #eb2525, #e90e0e);
+  background: linear-gradient(135deg, #eb2525, #e90e0e) !important;
   color: #fff !important;
   border: none;
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
@@ -85,7 +85,7 @@ body {
 
 .reset-note-btn:hover {
   transform: translateY(-1px) scale(1.03);
-  box-shadow: 0 14px 28px rgba(235, 37, 37, 0.28);
+  box-shadow: 0 14px 28px rgba(235, 37, 37, 0.28) !important;
   opacity: 0.95;
 }
 
