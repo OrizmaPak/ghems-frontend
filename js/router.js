@@ -678,7 +678,11 @@ function attachPageDescriptionTrigger() {
             if (trigger && !trigger.dataset.pageDescriptionBound) {
                 trigger.dataset.pageDescriptionBound = '1';
                 trigger.style.cursor = 'pointer';
-                trigger.addEventListener('click', openPageDescriptionModal);
+                trigger.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation(); // keep the reset button from firing
+                    openPageDescriptionModal();
+                });
             }
         });
     } catch (error) {
