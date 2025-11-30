@@ -605,15 +605,17 @@ async function openRoute(url) {
 }
 
 function openPageDescriptionModal() {
-    alert('openPageDescriptionModal')
     try {
-        if (typeof Swal === 'undefined') return;
-
         const meta = getCurrentRouteMeta();
         if (!meta) return;
 
         const description = meta.description || 'No description available for this page.';
         const label = meta.label || 'Page Description';
+
+        if (typeof Swal === 'undefined') {
+            alert(`${label}\n\n${description}`);
+            return;
+        }
 
         Swal.fire({
             title: `${label} - Details`,
