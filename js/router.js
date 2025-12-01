@@ -633,10 +633,15 @@ function openPageDescriptionModal() {
         }
 
         Swal.fire({
-            title: `${label} - Details`,
-            html: `<div class="page-description-modal">${description}</div>`,
-            icon: 'info',
-            confirmButtonText: 'Close'
+            title: '',
+            html: buildPageDescriptionModal(label, description),
+            showConfirmButton: true,
+            confirmButtonText: 'Close Guide',
+            focusConfirm: false,
+            customClass: {
+                popup: 'page-description-popup',
+                confirmButton: 'page-description-confirm'
+            }
         });
     } catch (error) {
         console.log(error);
@@ -670,6 +675,19 @@ function stripHtml(text = '') {
     const temp = document.createElement('div');
     temp.innerHTML = text;
     return temp.textContent || temp.innerText || '';
+}
+
+function buildPageDescriptionModal(label, description) {
+    return `
+        <div class="page-description-modal">
+            <div class="pdm-header">
+                <span class="pdm-chip">Workspace Guide</span>
+                <h3>${label}</h3>
+                <p class="pdm-subtext">Here’s everything you need to know before diving in.</p>
+            </div>
+            <div class="pdm-body">${description}</div>
+        </div>
+    `;
 }
 
 let timer;
