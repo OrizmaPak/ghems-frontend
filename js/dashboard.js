@@ -35,8 +35,10 @@ async function dashboardActive() {
     
     await fetchdashboarder()
     
+        const roleEl = did('your_role')
+        const shouldHideMetrics = roleEl && roleEl.value === 'USERADMIN' // only hide for restricted USERADMIN role
         for(let i=0;i<document.getElementsByClassName('val').length;i++){
-            if(did('your_role').value !== 'USERADMIN'){
+            if(shouldHideMetrics){
                 document.getElementsByClassName('val')[i].classList.add('hidden')
             }else{
                 document.getElementsByClassName('val')[i].classList.remove('hidden')
