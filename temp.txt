@@ -1,0 +1,81 @@
+                                        <span class="material-symbols-outlined group-hover:text-primary-g"
+                                            style="font-size: 20px;">dashboard</span>
+                                        <span class="group-hover:text-primary-g">
+                                            <span>Dashboard</span>
+                                        </span>
+                                    </span>
+                                </li> 
+                                <li class="nav-item">
+                                    <span class="navitem-title group  text-[#292929]">
+                                        <span class="material-symbols-outlined group-hover:text-primary-g"
+                                            style="font-size: 20px;">person</span>
+                                        <span class="group-hover:text-primary-g">
+                                            <span>Administration</span> 
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">chevron_right</span>
+                                        </span>
+                                    </span>
+                                    <ul class="ml-14 gap-y-4 flex flex-col">
+                                        <li class="navitem-child text-[#292929] hidden" title="Please enter and update your profile details below." id="profile">Profile</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Please enter your current password and choose a new password below." id="changepassword">Change Password</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Review users recent activities and updates below." id="useractivity">Activity Panel</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create and update department details." id="department">Department</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Manage and update user access controls, permissions, and roles." id="accesscontrol">Access Control</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View, activate and deactivate users" id="userspage">Users</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, update, and manage rate codes for pricing and promotions." id="ratecode">Rate code</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, update, and manage booking plans and schedules." id="bookplan">Booking Plan</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, update, and manage discount coupons, promotional codes, and special offers for guests." id="discountcouponp">discount</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, update, and manage cost centers for tracking and allocating expenses." id="costcenter">Cost Center</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Configure system settings, application preferences and set accounts." id="settings">Settings</li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item"> 
+                                    <span class="navitem-title group  text-[#292929]">
+                                        <span class="material-symbols-outlined group-hover:text-primary-g"
+                                            style="font-size: 20px;">storefront</span>
+                                        <span class="group-hover:text-primary-g"> 
+                                            <span>Inventory</span>
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">chevron_right</span>
+                                        </span>
+                                    </span>
+                                    <ul class="ml-14 gap-y-4 flex flex-col">
+                                        <li class="navitem-child text-[#292929] hidden" title="Add new inventory items, define their details, and manage stock levels." id="createinventory">Create Inventory</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Enter and manage the initial stock quantities for your inventory items." id="openstock">Opening Stock</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Edit inventory details, adjust stock levels, and manage item information." id="updateinventory">Update Inventory</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View and review the details of current inventory items, including quantities and descriptions."id="viewinventory">View Inventory</li>
+                                        <!--<li class="navitem-child text-[#292929] hidden" id="warehousestorage">Warehouse/Department</li>-->
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, manage, and track inventory requisitions and supply requests." id="requisition">Requisition</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View and review details of current requisitions, including requests, statuses, and fulfillment." id="viewrequisition">View Requisition</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Review pending inventory requisitions, assess request details, and make decisions to approve or reject each supply request based on needs and availability." id="approverequisition">Approve Requisition</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View and manage a comprehensive list of issue types for categorizing problems." id="issuetypelist">issue type list</li>  
+                                        <li class="navitem-child text-[#292929] hidden" title="Create new issue logs by documenting details of problems or requests, including descriptions, priorities, and assigned personnel for resolution." id="issuelog">Issue Log</li>  
+                                        <li class="navitem-child text-[#292929] hidden" title="View and track the history of issues, including their details, statuses, resolutions, and any actions taken throughout the issue lifecycle." id="viewissuelog">View Issue Log</li>  
+                                        <li class="navitem-child text-[#292929] hidden" title="Process and manage the return of items, including initiating return requests, handling refunds, and updating inventory records." id="returns">Return Item</li>  
+                                        <li class="navitem-child text-[#292929] hidden" title="View and review details of returned items, including return requests, reasons for return, status updates, and associated refund or exchange information." id="viewreturns">View Returned Item</li>  
+                                        <li class="navitem-child text-[#292929] hidden" title="View and manage the detailed stock ledger, including inventory transactions, stock adjustments, and historical records of item movements and balances." id="stockhistory">Stock Ledger</li>  
+                                        <li class="navitem-child text-[#292929] hidden" title="Calculate and review the value of current inventory based on stock quantities, item costs, and market conditions for financial and management purposes." id="stockvaluation">Stock valuation</li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item"> 
+                                    <span class="navitem-title group  text-[#292929]">
+                                        <span class="material-symbols-outlined group-hover:text-primary-g"
+                                            style="font-size: 20px;">computer</span>
+                                        <span class="group-hover:text-primary-g">
+                                            <span>Front Office</span>
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">chevron_right</span>
+                                        </span>
+                                    </span>
+                                    <ul class="ml-14 gap-y-4 flex flex-col">
+                                        <li class="navitem-child text-[#292929] hidden" title="Search for recent guest arrivals by entering various search criteria. Review details such as guest names, arrival dates, booking information, and room assignments to efficiently manage check-ins and monitor guest stays." id="searcharrivals">Search Arrivals</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, manage, and review guest groups, travel agencies and companies including details, member information, booking arrangements, and special requests. And ensure all group needs are met effectively." id="hotelguest">Guests Management</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, manage, and review guest groups, travel agencies and companies including details, member information, booking arrangements, and special requests. And ensure all group needs are met effectively." id="groupofguests">Groups</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View and manage guest profiles and reservations. Access detailed information about individual guests, their booking history, current reservations, check-in and check-out dates, room assignments, and special requests for efficient guest management." id="guestsreservations">Guests & Reservations</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Manage the check-in process for guest reservations. Verify booking details, complete the check-in procedures, update room assignments, and handle any special requests or requirements to ensure a smooth and welcoming guest arrival experience." id="reservationcheckin">Reservation Check In</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Handle direct check-ins for guests arriving without prior reservations. Quickly complete the check-in process, assign rooms, collect necessary information, and ensure guests receive all essential details for a comfortable stay." id="checkin">Direct Check in</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Create, manage, and review group reservations, including booking multiple rooms for group events, tracking group details, coordinating special requests, and overseeing room assignments to ensure a seamless experience for all group members." id="groupreservations">group reservations</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Manage the check-in process for groups, including verifying group reservation details, assigning rooms to group members, processing check-ins for multiple guests simultaneously, and addressing any special requests or needs for a smooth group arrival experience." id="groupcheckin">Group Check in</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Print the guest registration card for the current reservation. This card includes essential guest details, booking information, and check-in/check-out dates for documentation and verification purposes during the check-in process." id="printregistrationcard">Print Registration Card</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View a comprehensive list of upcoming guest arrivals. This page displays essential details such as guest names, expected arrival times, and any special requests. It helps staff prepare for check-ins and ensures a smooth arrival experience." id="expectedarrivals">expected arrivals</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="View the expected check-out for departing guests. " id="expectedcheckouts">Expected Check out</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Allow guests to extend their current reservation through the Extend Stay feature. This page provides options for adjusting check-out dates, viewing availability for additional nights, and updating the reservation with new dates and rates to accommodate guests' extended stays." id="extendstay">Extend Stay</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Manage the check-out process for departing guests. This page allows staff to finalize the guest's bill, process payments, and review any additional charges or services. It also provides options for generating invoices and collecting feedback on the guest’s stay." id="checkout">Check out</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Cancel a guest’s reservation by reviewing booking details, applying cancellation policies, updating availability, and confirming the cancellation. This process ensures the reservation is effectively canceled and records are maintained for future reference." id="cancelreservation">cancel reservation</li>
