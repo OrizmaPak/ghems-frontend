@@ -3859,6 +3859,24 @@ textarea {
   outline-offset: 2px;
 }
 
+.note-guide-link {
+  margin-top: 0.35rem;
+  align-self: flex-start;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #157cd0;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.note-guide-link:hover,
+.note-guide-link:focus-visible {
+  text-decoration: underline;
+}
+
 .swal2-popup.page-description-popup {
   padding: 0 !important;
   background: transparent;
@@ -3866,6 +3884,7 @@ textarea {
 }
 
 .page-description-modal {
+  position: relative;
   text-align: left;
   font-size: 14px;
   line-height: 1.7;
@@ -3879,6 +3898,28 @@ textarea {
 
 .page-description-modal .pdm-header {
   margin-bottom: 1.2rem;
+}
+
+.page-description-modal .pdm-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #f43f5e;
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(244, 63, 94, 0.4);
+}
+
+.page-description-modal .pdm-close:hover {
+  background: #e11d48;
 }
 
 .page-description-modal .pdm-chip {

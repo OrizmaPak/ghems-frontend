@@ -567,21 +567,25 @@ async function openRoute(url) {
                         // Get the title attribute of the page element, if it exists
                         let title = pageElement.getAttribute('title');
                         if (title) {
-                            el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
-                                                <p class="font-medium">Note!<br/></p> 
-                                                <div class="flex-1 text-sm note-description" role="button" tabindex="0">
-                                                    ${title}
-                                                </div>  
+                        el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
+                                                <div class="flex flex-col flex-1 gap-1">
+                                                    <div class="text-sm note-description" role="button" tabindex="0">
+                                                        ${title}
+                                                    </div>
+                                                    <button type="button" class="note-guide-link" data-note-guide="${page}">Click guide</button>
+                                                </div>
                                                 <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span class="material-symbols-outlined text-white text-xl leading-none">refresh</span>
                                                 </button>
                                             </div>`;
-                        } else {
+                    } else {
                             el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
-                                                <p class="font-medium">Note!<br/></p>
-                                                <div class="flex-1 text-sm note-description" role="button" tabindex="0">
-                                                    Title attribute is missing.
+                                                <div class="flex flex-col flex-1 gap-1">
+                                                    <div class="flex-1 text-sm note-description" role="button" tabindex="0">
+                                                        Title attribute is missing.
+                                                    </div>
+                                                    <button type="button" class="note-guide-link" data-note-guide="${page}">Click guide</button>
                                                 </div>
                                                 <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
                                                     <div class="btnloader" style="display: none;"></div>
@@ -594,19 +598,23 @@ async function openRoute(url) {
                         document.getElementById('workspace').prepend(el);
 
                         const noteDescription = el.querySelector('.note-description');
-                        if (noteDescription && !noteDescription.dataset.pageDescriptionBound) {
+                        const noteGuideLink = el.querySelector('.note-guide-link');
+                        const bindGuideTrigger = (element) => {
+                            if (!element || element.dataset.pageDescriptionBound) return;
                             const handler = (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 openPageDescriptionModal();
                             };
-                            noteDescription.dataset.pageDescriptionBound = '1';
-                            noteDescription.addEventListener('click', handler);
-                            noteDescription.addEventListener('keypress', (e) => {
+                            element.dataset.pageDescriptionBound = '1';
+                            element.addEventListener('click', handler);
+                            element.addEventListener('keypress', (e) => {
                                 if (e.key === 'Enter' || e.key === ' ') handler(e);
                             });
-                            noteDescription.style.cursor = 'pointer';
-                        }
+                            element.style.cursor = 'pointer';
+                        };
+                        bindGuideTrigger(noteDescription);
+                        bindGuideTrigger(noteGuideLink);
                     } else {
                         console.error(`Element with ID '${page}' not found.`);
                     }
@@ -635,12 +643,10 @@ function openPageDescriptionModal() {
         Swal.fire({
             title: '',
             html: buildPageDescriptionModal(label, description),
-            showConfirmButton: true,
-            confirmButtonText: 'Close Guide',
+            showConfirmButton: false,
             focusConfirm: false,
             customClass: {
-                popup: 'page-description-popup',
-                confirmButton: 'page-description-confirm'
+                popup: 'page-description-popup'
             }
         });
     } catch (error) {
@@ -680,10 +686,11 @@ function stripHtml(text = '') {
 function buildPageDescriptionModal(label, description) {
     return `
         <div class="page-description-modal">
+            <button type="button" class="pdm-close" aria-label="Close guide" onclick="Swal.close()">&times;</button>
             <div class="pdm-header">
                 <span class="pdm-chip">Workspace Guide</span>
                 <h3>${label}</h3>
-                <p class="pdm-subtext">Here’s everything you need to know before diving in.</p>
+                <p class="pdm-subtext">Here's everything you need to know before diving in.</p>
             </div>
             <div class="pdm-body">${description}</div>
         </div>
