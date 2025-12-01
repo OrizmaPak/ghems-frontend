@@ -49,6 +49,7 @@ async function getAllUsers(id='user') {
 
 window.onload = function() {
     window.scrollTo(0, 0)
+    decorateNavigationDescriptions()
     runPermissions()
     rundashboard()
     runavailablerooms()
@@ -153,6 +154,37 @@ window.onload = function() {
         }
     }
 
+}
+
+function decorateNavigationDescriptions(){
+    const navItems = document.querySelectorAll('#navigation [title]')
+    navItems.forEach(item => {
+        const originalTitle = item.getAttribute('title')
+        if(!originalTitle || originalTitle.trim().startsWith('<')) return
+        const label = extractNavItemLabel(item)
+        const markup = buildNavDescriptionMarkup(label, originalTitle)
+        item.setAttribute('title', markup)
+    })
+}
+
+function extractNavItemLabel(item){
+    if(item.classList.contains('navitem-title')){
+        const labelWrapper = item.children[1]?.querySelector('span:first-child')
+        if(labelWrapper) return labelWrapper.textContent.trim()
+    }
+    return (item.textContent || '').trim()
+}
+
+function buildNavDescriptionMarkup(label, description){
+    const safeLabel = sanitizeHTML(label)
+    const safeDescription = sanitizeHTML(description)
+    return `<div class='text-[13px] leading-relaxed text-slate-700'><span class='font-semibold text-primary-g text-sm block mb-1'>${safeLabel}</span><p class='text-[12px] text-slate-600 leading-relaxed mb-1'>${safeDescription}</p></div>`
+}
+
+function sanitizeHTML(value=''){
+    const temp = document.createElement('div')
+    temp.textContent = value
+    return temp.innerHTML
 }
 
 async function runPermissions(){
