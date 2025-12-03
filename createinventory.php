@@ -66,6 +66,12 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                                                         <select name="units" id="units" class="form-control comp">
                                                             <option value=''>-- Select Unit --</option>
                                                             <option>PCS</option>
+                                                            <option>PLASTIC</option>
+                                                            <option>EACH</option>
+                                                            <option>PACKET</option>
+                                                            <option>ROLL</option>
+                                                            <option>CUP</option>
+                                                            <option>PAIR</option>
                                                             <option>YARDS</option>
                                                             <option>KG</option>
                                                             <option>SETS</option>
