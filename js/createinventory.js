@@ -271,7 +271,7 @@ function addform (){
                                 <p name="itemno" class="page-title !mb-4">
                                     <span>Item 1</span>
                                 </p>
-                                    <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
+                                    <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm" style="border: none;">
                                         <div  class="relative top-[-15px] w-full justify-end h-fit flex gap-5">
                                             <button title="Collapse" onclick="this.parentElement.parentElement.nextElementSibling.classList.contains('hidden') ? this.parentElement.parentElement.nextElementSibling.classList.remove('hidden') : this.parentElement.parentElement.nextElementSibling.classList.add('hidden')"  class="!z-[1] material-symbols-outlined rounded-full bg-[#969696] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">menu</button>
                                             <button title="Add Item" onclick="addform();runItemNo()" class="relative material-symbols-outlined rounded-full bg-[green] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">add</button>
@@ -290,7 +290,7 @@ function addform (){
                                             </div> 
                                         </div>
                                         <div class="collapsible-body" style="border: none;">
-                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
+                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm" style="border: none;">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                     <div class="form-group">
@@ -328,7 +328,7 @@ function addform (){
                                                 </div>  
                                                 </div> 
                                             </div>
-                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
+                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm" style="border: none;">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                     <div class="form-group">
@@ -346,7 +346,7 @@ function addform (){
                                                     </div>
                                                 </div> 
                                             </div>
-                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
+                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm" style="border: none;">
                                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                     <div class="form-group">
@@ -382,7 +382,7 @@ function addform (){
                                                     </div>
                                                 </div> 
                                             </div>
-                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
+                                            <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm" style="border: none;">
                                                 <div class="grid grid-cols-1 gap-6">
                                                     <div class="form-group">
                                                         <label for="logoname" class="control-label">Description</label>
