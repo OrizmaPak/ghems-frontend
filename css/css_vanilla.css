@@ -795,7 +795,7 @@ table {
     letter-spacing: 0.08em;
     font-size: 0.7rem;
     padding: 0.9rem;
-    border-bottom: 1px solid rgba(149, 171, 206, 0.4);
+    /* border-bottom: 1px solid rgba(149, 171, 206, 0.4); */
 }
 
 .table-content th:first-child {
