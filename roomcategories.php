@@ -1,7 +1,12 @@
        <section class="animate__animated animate__fadeIn">
-                            <p class="page-title">
+                            <div class="page-title flex justify-between items-center">
                                 <span>MANAGE ROOM CATEGORIES</span>
-                            </p>
+                                <div class="flex items-center gap-2">
+                                    <button id="roomcatTemplateBtn" type="button" class="relative bg-[#3b82f6] text-white text-xs px-3 py-2 rounded-md drop-shadow-md hover:scale-[1.05]">Template</button>
+                                    <button id="roomcatImportBtn" type="button" class="relative bg-primary-g text-white text-xs px-3 py-2 rounded-md drop-shadow-md hover:scale-[1.05]">Import Excel</button>
+                                    <input type="file" id="roomcatImportInput" accept=".xlsx,.xls,.csv" class="hidden" />
+                                </div>
+                            </div>
                             <form id="roomcategoriesform">
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -62,7 +67,7 @@
                             </form>
                             <hr class="my-10">
                             
-                             <div >
+                            <div >
                                 <div class="table-content">
                                     <table>
                                         <thead>
@@ -86,6 +91,50 @@
                                     </table>
                                 </div>
                                 <div class="table-status"></div>
+                            </div>
+
+                            <div id="roomcatImportModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+                                <div class="bg-white rounded-md shadow-xl w-full max-w-5xl max-h-[80vh] overflow-hidden flex flex-col">
+                                    <div class="flex justify-between items-center px-4 py-3 border-b">
+                                        <h3 class="text-lg font-semibold">Import Room Categories</h3>
+                                        <button id="roomcatModalClose" class="material-symbols-outlined text-[#666] hover:text-black">close</button>
+                                    </div>
+                                    <div class="px-4 py-3 flex items-center gap-3 border-b">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                                            <input type="checkbox" id="roomcatSelectAll" class="accent-[#22c55e]" checked />
+                                            <span>Select all</span>
+                                        </label>
+                                        <span id="roomcatImportCount" class="text-xs text-[#555]">0 rows</span>
+                                        <span class="text-xs text-[#f97316]">Review and uncheck any rows you do not want to import.</span>
+                                    </div>
+                                    <div class="flex-1 overflow-auto">
+                                        <table class="w-full text-sm">
+                                            <thead class="bg-[#f5f5f6]">
+                                                <tr>
+                                                    <th class="p-3 text-left w-12">#</th>
+                                                    <th class="p-3 text-left">Category</th>
+                                                    <th class="p-3 text-left">Type</th>
+                                                    <th class="p-3 text-left">Rate Code</th>
+                                                    <th class="p-3 text-left">Currency</th>
+                                                    <th class="p-3 text-left">Min Deposit</th>
+                                                    <th class="p-3 text-left">Price</th>
+                                                    <th class="p-3 text-left">Price L2</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="roomcatImportTable" class="divide-y"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="px-4 py-3 border-t flex justify-between items-center">
+                                        <div id="roomcatImportStatus" class="text-xs text-[#555]"></div>
+                                        <div class="flex gap-2">
+                                            <button id="roomcatModalCancel" class="px-3 py-2 rounded-md border text-sm">Cancel</button>
+                                            <button id="roomcatModalSubmit" class="px-4 py-2 rounded-md bg-primary-g text-white text-sm drop-shadow-md hover:opacity-90 flex items-center gap-2">
+                                                <div class="btnloader" style="display: none;"></div>
+                                                <span>Import Selected</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         
                         </section>  

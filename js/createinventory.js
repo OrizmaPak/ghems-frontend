@@ -216,32 +216,31 @@ async function createinventoryFormSubmitHandler(){
     }
     
     function params(){
-        let param = new FormData();
-            param.append(`rowsize`, document.getElementsByName('itemname').length)
-        for(let i=0;i<document.getElementsByName('itemname').length;i++){
-            param.append(`itemname${i+1}`, document.getElementsByName('itemname')[i].value)
-            param.append(`units${i+1}`, document.getElementsByName('units')[i].value)
-            param.append(`cost${i+1}`, document.getElementsByName('cost')[i].value)
-            param.append(`price${i+1}`, document.getElementsByName('price')[i].value)
-            param.append(`price_two${i+1}`, document.getElementsByName('price_two')[i].value) 
-            param.append(`beginbalance${i+1}`, document.getElementsByName('beginbalance')[i].value)
-            param.append(`groupname${i+1}`, document.getElementsByName('groupname')[i].value)
-            param.append(`applyto${i+1}`, document.getElementsByName('applyto')[i].value)
-            param.append(`reorderlevel${i+1}`, document.getElementsByName('rlevel')[i].value)
-            param.append(`composite${i+1}`, document.getElementsByName('composite')[i].value) 
-            param.append(`description${i+1}`, document.getElementsByName('description')[i].value)
-            param.append(`itemclass${i+1}`, document.getElementsByName('itemclass')[i].value) 
-            param.append(`minbalance${i+1}`, document.getElementsByName('minbalance')[i].value) 
-            let x = document.getElementsByName('itemname')[i].parentElement.parentElement.children[2]
-            let y = ''; 
-            for(let j=0;j<x.children.length;j++){
-                if(x.children[j].children[0].checked && y)y=y+'|'+x.children[j].children[0].getAttribute('name')
-                if(x.children[j].children[0].checked && !y)y=x.children[j].children[0].getAttribute('name')
-            }
-            param.append(`salespoint${i+1}`, y)
-            
-            
-        }
+        const items = Array.from(document.getElementById('createinventorycontainer').children)
+        const param = new FormData();
+        param.append(`rowsize`, items.length)
+        items.forEach((item, idx)=>{
+            const n = idx + 1
+            const get = name => (item.querySelector(`[name=\"${name}\"]`)?.value ?? '').toString()
+            param.append(`itemname${n}`, get('itemname'))
+            param.append(`units${n}`, get('units'))
+            param.append(`cost${n}`, get('cost'))
+            param.append(`price${n}`, get('price'))
+            param.append(`price_two${n}`, get('price_two'))
+            param.append(`beginbalance${n}`, get('beginbalance'))
+            param.append(`groupname${n}`, get('groupname'))
+            param.append(`applyto${n}`, get('applyto'))
+            param.append(`reorderlevel${n}`, get('rlevel'))
+            param.append(`composite${n}`, get('composite'))
+            param.append(`description${n}`, get('description'))
+            param.append(`itemclass${n}`, get('itemclass'))
+            param.append(`minbalance${n}`, get('minbalance'))
+            let salespoints = []
+            item.querySelectorAll('#departmt input[type=\"checkbox\"]').forEach(cb=>{
+                if(cb.checked) salespoints.push(cb.getAttribute('name'))
+            })
+            param.append(`salespoint${n}`, salespoints.join('|'))
+        })
         return param
     }
     params()
