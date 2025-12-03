@@ -4,7 +4,7 @@ let availableroomlength
 let occupiedroomlength
 let receiveablelength
 let payableslength
-let saleslength
+let saleslength 
 let userpermission
 let allratecodes
 const default_department = 'Main Store'

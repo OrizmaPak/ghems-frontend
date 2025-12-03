@@ -22,8 +22,12 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                                     <p class="font-bold">Add</p>
                                 </div>
                                 <div title="Import from excel" class="bg-[#f5f5f6] z-[100] flex flex-col justify-end items-end p-3 gap-2 cp  transition-all">
-                                    <button class="relative bg-primary-g p-2 rounded-md text-white drop-shadow-md text-xs hover:scale-[1.1]" style="font-size: 13px;">Import Excel</button>
-                                    <p class="text-xs text-[orange]">NB: Excel 97-2003</p>
+                                    <div class="flex gap-2 items-center">
+                                        <button id="downloadInventoryTemplate" class="relative bg-[#3b82f6] p-2 rounded-md text-white drop-shadow-md text-xs hover:scale-[1.05]" style="font-size: 13px;">Template</button>
+                                        <button id="importExcelBtn" class="relative bg-primary-g p-2 rounded-md text-white drop-shadow-md text-xs hover:scale-[1.1]" style="font-size: 13px;">Import Excel</button>
+                                        <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="hidden" />
+                                    </div>
+                                    <p class="text-xs text-[orange]">NB: Excel 97-2003+. Columns must match template.</p>
                                 </div>
                             </div>
                             <!--start container-->

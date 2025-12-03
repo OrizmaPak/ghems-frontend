@@ -1,5 +1,21 @@
 let createinventoryid
 let departmenthtml
+const inventoryImportHeaderMap = {
+    'item name': 'itemname',
+    'units': 'units',
+    'cost': 'cost',
+    'price': 'price',
+    'price two': 'price_two',
+    'begin balance': 'beginbalance',
+    'min balance': 'minbalance',
+    'group name': 'groupname',
+    'apply to': 'applyto',
+    'item class': 'itemclass',
+    'reorder level': 'rlevel',
+    'composite': 'composite',
+    'description': 'description',
+    'sales points': 'salespoint'
+}
 async function createinventoryActive() {
     did('submit').addEventListener('click', createinventoryFormSubmitHandler) 
     datasource = []
@@ -15,7 +31,169 @@ async function createinventoryActive() {
             did('departmt').innerHTML = departmenthtml
         }
     }else return notification(request.message, 0);
+    wireInventoryImport()
+    wireInventoryTemplate()
     // await fetchcreateinventorys()
+}
+
+function wireInventoryImport(){
+    const importBtn = document.getElementById('importExcelBtn')
+    const importInput = document.getElementById('importExcelInput')
+    if(importBtn && importInput){
+        importBtn.addEventListener('click', ()=>importInput.click())
+        importInput.addEventListener('change', handleInventoryExcelImport)
+    }
+}
+
+function wireInventoryTemplate(){
+    const templateBtn = document.getElementById('downloadInventoryTemplate')
+    if(templateBtn) templateBtn.addEventListener('click', downloadInventoryTemplate)
+}
+
+async function ensureXLSXLoaded(){
+    if(window.XLSX) return true
+    return await new Promise(resolve=>{
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+        script.onload = ()=>resolve(true)
+        script.onerror = ()=>resolve(false)
+        document.head.appendChild(script)
+    })
+}
+
+async function downloadInventoryTemplate(){
+    const ok = await ensureXLSXLoaded()
+    if(!ok) return notification('Could not load Excel helper. Check your connection.', 0)
+    const sampleRows = [
+        {
+            'Item Name': 'Sample Item 1',
+            'Units': 'PCS',
+            'Cost': 10,
+            'Price': 15,
+            'Price Two': 14,
+            'Begin Balance': 5,
+            'Min Balance': 1,
+            'Group Name': 'GENERAL',
+            'Apply To': 'FOR SALE',
+            'Item Class': 'STOCK-ITEM',
+            'Reorder Level': 3,
+            'Composite': 'NO',
+            'Description': 'Example description',
+            'Sales Points': 'BAR|RESTAURANT'
+        },
+        {
+            'Item Name': 'Sample Item 2',
+            'Units': 'KG',
+            'Cost': 20,
+            'Price': 28,
+            'Price Two': '',
+            'Begin Balance': 0,
+            'Min Balance': 0,
+            'Group Name': 'SUPPLIES',
+            'Apply To': 'NOT FOR SALE',
+            'Item Class': 'NON STOCK-ITEM',
+            'Reorder Level': '',
+            'Composite': 'NO',
+            'Description': 'Second example item',
+            'Sales Points': 'KITCHEN'
+        }
+    ]
+    const ws = XLSX.utils.json_to_sheet(sampleRows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventory')
+    XLSX.writeFile(wb, 'inventory_import_template.xlsx')
+}
+
+async function handleInventoryExcelImport(event){
+    if(!departmenthtml) return notification('Departments are still loading. Try again shortly.', 0)
+    const file = event.target.files[0]
+    if(!file) return
+    const ok = await ensureXLSXLoaded()
+    if(!ok) {
+        event.target.value = ''
+        return notification('Could not load Excel helper. Check your connection.', 0)
+    }
+    const reader = new FileReader()
+    reader.onload = e=>{
+        try{
+            const workbook = XLSX.read(e.target.result, {type:'array'})
+            const sheet = workbook.Sheets[workbook.SheetNames[0]]
+            const rawRows = XLSX.utils.sheet_to_json(sheet, {defval: ''})
+            const normalizedRows = normalizeInventoryRows(rawRows)
+            populateInventoryForm(normalizedRows)
+        }catch(err){
+            notification('Unable to read Excel file. Please confirm the template.', 0)
+            console.error(err)
+        }finally{
+            event.target.value = ''
+        }
+    }
+    reader.readAsArrayBuffer(file)
+}
+
+function normalizeInventoryRows(rawRows){
+    const rows = []
+    rawRows.forEach(item=>{
+        const normalized = {}
+        Object.keys(item).forEach(key=>{
+            const mappedKey = inventoryImportHeaderMap[key?.toString().trim().toLowerCase()]
+            if(mappedKey) normalized[mappedKey] = item[key]
+        })
+        const hasValues = Object.values(normalized).some(val=>`${val}`.trim() !== '')
+        if(hasValues) rows.push(normalized)
+    })
+    return rows
+}
+
+function populateInventoryForm(rows){
+    if(!rows.length) return notification('No rows found in Excel. Please confirm headers match the template.', 0)
+    const container = did('createinventorycontainer')
+    container.innerHTML = ''
+    for(let i=0;i<rows.length;i++) addform()
+    rows.forEach((row, idx)=>{
+        const form = container.children[idx]
+        setInventoryField(form, 'itemname', row.itemname)
+        setInventoryField(form, 'units', row.units)
+        setInventoryField(form, 'cost', row.cost)
+        setInventoryField(form, 'price', row.price)
+        setInventoryField(form, 'price_two', row.price_two)
+        setInventoryField(form, 'beginbalance', row.beginbalance)
+        setInventoryField(form, 'minbalance', row.minbalance)
+        setInventoryField(form, 'groupname', row.groupname)
+        setInventoryField(form, 'applyto', row.applyto)
+        setInventoryField(form, 'itemclass', row.itemclass)
+        setInventoryField(form, 'rlevel', row.rlevel)
+        setInventoryField(form, 'composite', row.composite || 'NO')
+        setInventoryField(form, 'description', row.description)
+        setSalesPoints(form, row.salespoint)
+    })
+    runItemNo()
+    notification(`${rows.length} item(s) loaded from Excel. Review and submit.`, 1)
+}
+
+function setInventoryField(form, name, value){
+    const el = form?.querySelector(`[name=\"${name}\"]`)
+    if(!el) return
+    let val = value
+    if(val === undefined || val === null) val = ''
+    if(typeof val === 'string') val = val.trim()
+    if(el.tagName === 'SELECT'){
+        const targetVal = `${val}`.toUpperCase()
+        const match = Array.from(el.options).find(opt=>opt.value.toUpperCase() === targetVal || opt.text.toUpperCase() === targetVal)
+        el.value = match ? match.value : ''
+    }else{
+        el.value = val
+    }
+}
+
+function setSalesPoints(form, salesPoints){
+    const points = (salesPoints || '').toString().split(/[,|;]/).map(p=>p.trim().toLowerCase()).filter(Boolean)
+    if(!points.length) return
+    const set = new Set(points)
+    form.querySelectorAll('#departmt input[type=\"checkbox\"]').forEach(cb=>{
+        const key = (cb.getAttribute('name') || '').trim().toLowerCase()
+        cb.checked = set.has(key)
+    })
 }
 
 async function createinventoryFormSubmitHandler(){
@@ -213,5 +391,3 @@ function addform (){
     did('createinventorycontainer').appendChild(element)
     runItemNo()
 }
-
-
