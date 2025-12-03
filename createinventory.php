@@ -52,12 +52,12 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                                                     <input type="text" name="itemname" class="form-control comp" placeholder="Enter Name of Item">
                                                 </div>
                                                 <label class="text-xl font-medium opacity-[0.7]">Department / Sales Point</label>
-                                                <div id="departmt" class="min-h-[100px] h-fit flex flex-wrap rounded bg-[#5757570f] p-4">
+                                                <div id="departmt" class="min-h-[100px] h-fit flex flex-wrap items-center rounded bg-[#5757570f] p-4">
                                                     <div id="loading">Loading...</div> 
                                                 </div>
                                             </div> 
                                         </div>
-                                        <div class="">
+                                        <div class="collapsible-body" style="border: none;">
                                             <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

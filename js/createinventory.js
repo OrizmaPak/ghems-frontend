@@ -21,7 +21,7 @@ async function createinventoryActive() {
     datasource = []
     let request = await httpRequest2('../controllers/fetchdepartments', null, null, 'json')
     if(request.status) {
-        departmenthtml = request.data.filter(dat=>dat.applyforsales == 'NON STOCK' || dat.applyforsales == 'STOCK').map(data=>`<div class="border  p-2 flex m-1 gap-3 w-fit pr-4">
+        departmenthtml = request.data.filter(dat=>dat.applyforsales == 'NON STOCK' || dat.applyforsales == 'STOCK').map(data=>`<div class="border  p-2 flex items-center m-1 gap-3 w-fit pr-4">
                             <input class="cp" name="${data.department}"  type="checkbox"/> 
                             <label class="cp" onclick="this.previousElementSibling.click()">${data.department}</label>
                         </div>`).join('');
@@ -284,12 +284,12 @@ function addform (){
                                                     <input type="text" name="itemname" class="form-control comp" placeholder="Enter Name of Item">
                                                 </div>
                                                 <label class="text-xl font-medium opacity-[0.7]">Department / Sales Point</label>
-                                                <div id="departmt" class="min-h-[100px] h-fit flex flex-wrap rounded bg-[#5757570f] p-4">
+                                                <div id="departmt" class="min-h-[100px] h-fit flex flex-wrap items-center rounded bg-[#5757570f] p-4">
                                                     ${departmenthtml}
                                                 </div>
                                             </div> 
                                         </div>
-                                        <div class="">
+                                        <div class="collapsible-body" style="border: none;">
                                             <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
