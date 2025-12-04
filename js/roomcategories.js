@@ -317,18 +317,25 @@ function mapRoomCategoryToFormData(row){
     form.append('categorytype', resolveSelectValue('categorytype', row.categorytype))
     form.append('ratecode', resolveSelectValue('ratecode', row.ratecode))
     form.append('currency', resolveSelectValue('currency', row.currency))
-    form.append('minimumrequireddeposit', row.minimumrequireddeposit || '')
-    form.append('price', row.price || '')
-    form.append('price_2', row.price_2 || '')
+    form.append('minimumrequireddeposit', normalizeRoomCategoryNumber(row.minimumrequireddeposit))
+    form.append('price', normalizeRoomCategoryNumber(row.price))
+    form.append('price_2', normalizeRoomCategoryNumber(row.price_2))
     return form
 }
 
 function resolveSelectValue(selectId, rawValue){
     const selectEl = document.getElementById(selectId)
-    if(!selectEl) return ''
+    const fallback = `${rawValue || ''}`.trim()
+    if(!selectEl) return fallback
     const target = `${rawValue || ''}`.trim().toUpperCase()
     const match = Array.from(selectEl.options).find(opt=>opt.text.trim().toUpperCase() === target || opt.value.trim().toUpperCase() === target)
-    return match ? match.value : ''
+    return match ? match.value : fallback
+}
+
+function normalizeRoomCategoryNumber(val){
+    if(val === undefined || val === null) return ''
+    const num = Number(val)
+    return isNaN(num) ? val : num
 }
 
 
