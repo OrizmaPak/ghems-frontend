@@ -286,6 +286,10 @@ let currRange;
 let callback;
 let datasource = []
 
+function computePageCount(){
+    return Math.max(1, Math.ceil((datasource?.length || 0) / paginationLimit))
+}
+
 function makePaginationMoveButton(type) {
     return `<button type="button" id="${type}-button" disabled>${type}</button>`
 }
@@ -293,16 +297,17 @@ function makePaginationMoveButton(type) {
 function initializePaginationMoveButtonsEventListeners() {
 
     const tableStatusWrap = document.querySelector('.table-status')
+    if(!tableStatusWrap) return
     
-    tableStatusWrap.querySelector('#prev-button').addEventListener('click', () => {
+    tableStatusWrap.querySelector('#prev-button')?.addEventListener('click', () => {
         setCurrentPage(currentPage - 1); 
     })
 
-    tableStatusWrap.querySelector('#next-button').addEventListener('click', () => {
+    tableStatusWrap.querySelector('#next-button')?.addEventListener('click', () => {
         setCurrentPage(currentPage + 1); 
     })
 
-    tableStatusWrap.querySelector('#pagination-limit').addEventListener('change', limitChange)
+    tableStatusWrap.querySelector('#pagination-limit')?.addEventListener('change', limitChange)
 
     document.querySelectorAll(".pagination-number").forEach((button) => {
         const pageIndex = Number(button.getAttribute("page-index"));         
@@ -320,7 +325,9 @@ function limitChange() {
 }
 
 const handleActivePageNumber = () => {
-    document.querySelectorAll(".pagination-number").forEach((button) => {
+    const buttons = document.querySelectorAll(".pagination-number");
+    if(!buttons?.length) return
+    buttons.forEach((button) => {
         button.classList.remove("active");
         const pageIndex = Number(button.getAttribute("page-index"));
         if (pageIndex == currentPage)  button.classList.add("active")
@@ -329,6 +336,7 @@ const handleActivePageNumber = () => {
 
 const handlePageButtonsStatus = () => {
     const tableStatusWrap = document.querySelector('.table-status')
+    if(!tableStatusWrap) return
     if (currentPage === 1)  disableButton(tableStatusWrap.querySelector('#prev-button'));
     else  enableButton(tableStatusWrap.querySelector('#prev-button'))
     if (pageCount === currentPage) disableButton(tableStatusWrap.querySelector('#next-button'))  
@@ -358,42 +366,31 @@ function getSignaledPaginationNumbers() {
 }
 
 async function getPaginationNumbers (){
-    pageCount = Math.ceil(datasource.length / paginationLimit);
+    pageCount = computePageCount();
     const buildButton = (page) => `<button class="pagination-number" type="button" aria-label="Page ${page}" page-index="${page}">${page}</button>`;
     const ellipsis = `<span class="pagination-ellipsis" aria-hidden="true">...</span>`;
-    const leadingCount = 3;
-    const trailingCount = 3;
-    const surroundingWindow = 2;
+    const windowSize = 1; // show current ±1
+    const staticEnds = [1, pageCount];
 
-    if (pageCount <= 1) return buildButton(1);
-
-    // When page count is small, just list all buttons
-    if (pageCount <= leadingCount + trailingCount + surroundingWindow + 1) {
+    if (pageCount <= 8) {
         let str = ''
         for (let i = 1; i <= pageCount; i++) str += buildButton(i);
         return str
     }
 
-    const pageSet = new Set();
+    const pages = new Set(staticEnds);
+    for(let i = currentPage - windowSize; i <= currentPage + windowSize; i++){
+        if(i > 1 && i < pageCount) pages.add(i)
+    }
+    pages.add(2);
+    pages.add(pageCount - 1);
 
-    // Leading pages
-    for (let i = 1; i <= Math.min(leadingCount, pageCount); i++) pageSet.add(i);
-
-    // Pages around current selection
-    const startWindow = Math.max(1, currentPage - surroundingWindow);
-    const endWindow = Math.min(pageCount, currentPage + surroundingWindow);
-    for (let i = startWindow; i <= endWindow; i++) pageSet.add(i);
-
-    // Trailing pages
-    for (let i = Math.max(pageCount - trailingCount + 1, 1); i <= pageCount; i++) pageSet.add(i);
-
-    const orderedPages = Array.from(pageSet).sort((a, b) => a - b);
+    const orderedPages = Array.from(pages).sort((a,b)=>a-b);
     let markup = '';
-    for (let i = 0; i < orderedPages.length; i++) {
+    for(let i=0;i<orderedPages.length;i++){
         const page = orderedPages[i];
-        if (i > 0 && page - orderedPages[i - 1] > 1) {
-            markup += ellipsis;
-        }
+        const prev = orderedPages[i-1];
+        if(i>0 && page - prev > 1) markup += ellipsis;
         markup += buildButton(page);
     }
     return markup
@@ -401,25 +398,15 @@ async function getPaginationNumbers (){
 
 function addPaginationStatus() {
 
+    const limits = [10,20,30,35,40,70,100,150,200,250,500,750,1000,1500]
+    const limitOptions = limits.map(val=>`<option value="${val}" ${val===paginationLimit ? 'selected' : ''}>${val}</option>`).join('')
+
     template = `
         ${getSignaledPaginationStatus()}
         <span class=" flex justify-between gap-6">
             <span>
                 <select id="pagination-limit" class="form-control !bg-white cursor-pointer">
-                    <option value="" selected="true">10</option>
-                    <option value="20" >20</option>
-                    <option value="30">30</option>
-                    <option value="35">35</option>
-                    <option value="40">40</option>
-                    <option value="70">70</option>
-                    <option value="100">100</option>
-                    <option value="150">150</option>
-                    <option value="200">200</option>
-                    <option value="250">250</option>
-                    <option value="500">500</option>
-                    <option value="750">750</option>
-                    <option value="1000">1000</option>
-                    <option value="1500">1500</option>
+                    ${limitOptions}
                 </select>
             </span>
             <span class="flex pagination">
@@ -440,15 +427,16 @@ function resolvePagination(data, cb) {
  
  
  function setCurrentPage(pageNum) {
+    pageCount = computePageCount()
+    currentPage = Math.min(Math.max(pageNum, 1), pageCount);
     document.querySelector('#tabledata').innerHTML = `
         <tr>
             <td colspan="100%" class="text-center opacity-70">
                 <span class="loader mx-auto"></span>
             </td>
         </tr`
-    currentPage = pageNum;
-    prevRange = (pageNum - 1) * paginationLimit;
-    currRange = pageNum * paginationLimit;
+    prevRange = (currentPage - 1) * paginationLimit;
+    currRange = currentPage * paginationLimit;
     if (datasource.length) {
         filteredDataSource = []
         for(let i=0; i<datasource.length; i++) {
@@ -462,9 +450,10 @@ function resolvePagination(data, cb) {
 
 async function sendStorageSignal(filteredDataSource) {
     sessionStorage.setItem('datasource', JSON.stringify(filteredDataSource))
-    let itemsAvailable = getSignaledDatasource().length;
-
-    let status = `<span class="text-xs text-gray-500">Showing ${ prevRange + 1 }  to ${ itemsAvailable >= currRange * currRange ? (-prevRange + currRange ) + itemsAvailable : itemsAvailable + prevRange} of ${ datasource.length } Records </span> `
+    const total = datasource.length
+    const start = total ? prevRange + 1 : 0
+    const end = Math.min(currRange, total)
+    let status = `<span class="text-xs text-gray-500">Showing ${start} to ${end} of ${ total } Records </span> `
 
     let pageNumbers = await getPaginationNumbers()
     let pageNumberTemplate = `<span id="pagination-numbers"> ${pageNumbers} </span>`
