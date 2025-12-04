@@ -1,5 +1,6 @@
 let roomcategoriesid
 let roomcatImportedRows = []
+const roomcatImportDelay = 800
 async function roomcategoriesActive() {
     const form = document.querySelector('#roomcategoriesform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', roomcategoriesFormSubmitHandler)
@@ -118,7 +119,10 @@ function wireRoomCategoryImport(){
     const closeBtn = document.getElementById('roomcatModalClose')
     const cancelBtn = document.getElementById('roomcatModalCancel')
     if(templateBtn) templateBtn.addEventListener('click', downloadRoomCategoryTemplate)
-    if(importBtn && importInput) importBtn.addEventListener('click', ()=>importInput.click())
+    if(importBtn && importInput) importBtn.addEventListener('click', async ()=>{
+        await fetchratecodes() // make sure lookups are fresh before mapping rows
+        importInput.click()
+    })
     if(importInput) importInput.addEventListener('change', handleRoomCategoryExcelImport)
     if(closeBtn) closeBtn.addEventListener('click', ()=>toggleRoomCatModal(false))
     if(cancelBtn) cancelBtn.addEventListener('click', ()=>toggleRoomCatModal(false))
@@ -236,9 +240,6 @@ function buildRoomCategoryImportTable(rows){
         if(count) count.textContent = '0 rows'
         return
     }
-    const typeLookup = buildOptionLookup(document.getElementById('categorytype'))
-    const currencyLookup = buildOptionLookup(document.getElementById('currency'))
-    const ratecodeLookup = buildOptionLookup(document.getElementById('ratecode'))
     rows.forEach((row, idx)=>{
         const tr = document.createElement('tr')
         tr.innerHTML = `
@@ -246,35 +247,17 @@ function buildRoomCategoryImportTable(rows){
                 <input type="checkbox" class="roomcat-row-checkbox accent-[#22c55e]" data-index="${idx}" checked />
             </td>
             <td class="p-3">${row.category || ''}</td>
-            <td class="p-3">${resolveLookup(row.categorytype, typeLookup)}</td>
-            <td class="p-3">${resolveLookup(row.ratecode, ratecodeLookup)}</td>
-            <td class="p-3">${resolveLookup(row.currency, currencyLookup)}</td>
-            <td class="p-3">${row.minimumrequireddeposit || ''}</td>
-            <td class="p-3">${row.price || ''}</td>
-            <td class="p-3">${row.price_2 || ''}</td>
+            <td class="p-3">${resolveRoomCatSelectLabel('categorytype', row.categorytype)}</td>
+            <td class="p-3">${resolveRoomCatSelectLabel('ratecode', row.ratecode)}</td>
+            <td class="p-3">${resolveRoomCatSelectLabel('currency', row.currency)}</td>
+            <td class="p-3">${formatRoomCatNumberForImport(row.minimumrequireddeposit)}</td>
+            <td class="p-3">${formatRoomCatNumberForImport(row.price)}</td>
+            <td class="p-3">${formatRoomCatNumberForImport(row.price_2)}</td>
         `
         tbody.appendChild(tr)
     })
     if(count) count.textContent = `${rows.length} row${rows.length>1?'s':''}`
     if(selectAll) selectAll.checked = true
-}
-
-function resolveLookup(val, lookup){
-    if(!val) return ''
-    const key = `${val}`.trim().toUpperCase()
-    return lookup[key] || val
-}
-
-function buildOptionLookup(selectEl){
-    if(!selectEl) return {}
-    const map = {}
-    Array.from(selectEl.options).forEach(opt=>{
-        const keyText = opt.text.toUpperCase()
-        const keyVal = opt.value.toUpperCase()
-        map[keyText] = opt.text
-        map[keyVal] = opt.text
-    })
-    return map
 }
 
 function toggleRoomCatModal(show){
@@ -298,14 +281,17 @@ async function importSelectedRoomCategories(){
     if(loader) loader.style.display = 'flex'
     if(submitBtn) submitBtn.setAttribute('disabled', true)
     let successCount = 0
-    for(const row of rowsToImport){
+    for(let i=0; i<rowsToImport.length; i++){
+        if(i>0) await delayRoomCat(roomcatImportDelay)
+        if(status) status.textContent = `Submitting ${i+1}/${rowsToImport.length}...`
+        const row = rowsToImport[i]
         const payload = mapRoomCategoryToFormData(row)
         const request = await httpRequest2('../controllers/roomcategories', payload, null)
         if(request?.status) successCount++
     }
     if(loader) loader.style.display = 'none'
     if(submitBtn) submitBtn.removeAttribute('disabled')
-    if(status) status.textContent = `${successCount}/${rowsToImport.length} imported`
+    if(status) status.textContent = `${successCount}/${rowsToImport.length} submitted`
     fetchroomcategories()
     toggleRoomCatModal(false)
     notification(`${successCount} row(s) imported`, successCount ? 1 : 0)
@@ -336,6 +322,25 @@ function normalizeRoomCategoryNumber(val){
     if(val === undefined || val === null) return ''
     const num = Number(val)
     return isNaN(num) ? val : num
+}
+
+function resolveRoomCatSelectLabel(selectId, rawValue){
+    const selectEl = document.getElementById(selectId)
+    const fallback = `${rawValue || ''}`.trim()
+    if(!selectEl) return fallback
+    const target = fallback.toUpperCase()
+    const match = Array.from(selectEl.options).find(opt=>opt.text.trim().toUpperCase() === target || opt.value.trim().toUpperCase() === target)
+    return match ? match.text : fallback
+}
+
+function formatRoomCatNumberForImport(val){
+    if(val === undefined || val === null) return ''
+    const num = Number(val)
+    return isNaN(num) ? val : num
+}
+
+function delayRoomCat(ms){
+    return new Promise(resolve=>setTimeout(resolve, ms))
 }
 
 
