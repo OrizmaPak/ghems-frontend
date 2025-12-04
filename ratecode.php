@@ -1,7 +1,12 @@
        <section class="animate__animated animate__fadeIn relative">
-                            <p class="page-title">
+                            <div class="page-title flex justify-between items-center">
                                 <span>rate code</span>
-                            </p>
+                                <div class="flex items-center gap-2">
+                                    <button id="ratecodeTemplateBtn" type="button" class="relative bg-[#3b82f6] text-white text-xs px-3 py-2 rounded-md drop-shadow-md hover:scale-[1.05]">Template</button>
+                                    <button id="ratecodeImportBtn" type="button" class="relative bg-primary-g text-white text-xs px-3 py-2 rounded-md drop-shadow-md hover:scale-[1.05]">Import Excel</button>
+                                    <input type="file" id="ratecodeImportInput" accept=".xlsx,.xls,.csv" class="hidden" />
+                                </div>
+                            </div>
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('guestsreservationsform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
@@ -137,6 +142,54 @@
                                     </table>
                                 </div>
                                 <div class="table-status"></div>
+                            </div>
+                            <div id="ratecodeImportModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+                                <div class="bg-white rounded-md shadow-xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
+                                    <div class="flex justify-between items-center px-4 py-3 border-b">
+                                        <h3 class="text-lg font-semibold">Import Rate Codes</h3>
+                                        <button id="ratecodeModalClose" class="material-symbols-outlined text-[#666] hover:text-black">close</button>
+                                    </div>
+                                    <div class="px-4 py-3 flex items-center gap-3 border-b text-sm">
+                                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                                            <input type="checkbox" id="ratecodeSelectAll" class="accent-[#22c55e]" checked />
+                                            <span>Select all</span>
+                                        </label>
+                                        <span id="ratecodeImportCount" class="text-xs text-[#555]">0 rows</span>
+                                        <span class="text-xs text-[#f97316]">Review the breakdown below, uncheck anything you do not want to submit.</span>
+                                    </div>
+                                    <div class="flex-1 overflow-auto">
+                                        <table class="w-full text-sm">
+                                            <thead class="bg-[#f5f5f6]">
+                                                <tr>
+                                                    <th class="p-3 text-left w-12">#</th>
+                                                    <th class="p-3 text-left">Rate Code</th>
+                                                    <th class="p-3 text-left">Plan</th>
+                                                    <th class="p-3 text-left">Currency</th>
+                                                    <th class="p-3 text-left">Adult1</th>
+                                                    <th class="p-3 text-left">Adult2</th>
+                                                    <th class="p-3 text-left">Adult3</th>
+                                                    <th class="p-3 text-left">Adult4</th>
+                                                    <th class="p-3 text-left">Extra Adult</th>
+                                                    <th class="p-3 text-left">Extra Child</th>
+                                                    <th class="p-3 text-left">Child Two</th>
+                                                    <th class="p-3 text-left">Plan Adult</th>
+                                                    <th class="p-3 text-left">Plan Child</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ratecodeImportTable" class="divide-y"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="px-4 py-3 border-t flex justify-between items-center">
+                                        <div id="ratecodeImportStatus" class="text-xs text-[#555]"></div>
+                                        <div class="flex gap-2">
+                                            <button id="ratecodeModalCancel" class="px-3 py-2 rounded-md border text-sm">Cancel</button>
+                                            <button id="ratecodeModalSubmit" class="px-4 py-2 rounded-md bg-primary-g text-white text-sm drop-shadow-md hover:opacity-90 flex items-center gap-2">
+                                                <div class="btnloader" style="display: none;"></div>
+                                                <span>Submit Selected</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                            </section> 
