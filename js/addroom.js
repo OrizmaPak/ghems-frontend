@@ -1,9 +1,13 @@
 let addroomid
+let addroomImportedRows = []
+let addroomImportEventsBound = false
+const addroomImportDelay = 1000
 async function addroomActive() {
     const form = document.querySelector('#addroomform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', addroomFormSubmitHandler)
     datasource = []
     await fetcroomcategory()
+    wireAddRoomImport()
     await fetchaddroom()
 }
 
@@ -18,7 +22,11 @@ async function fetcroomcategory(id) {
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
             if(request.data.length) {
-                did('categoryid').innerHTML += request.data.map(dat=>`<option value="${dat.id}">${dat.category}</option>`).join('')
+                const select = did('categoryid')
+                if(select) {
+                    const options = request.data.map(dat=>`<option value="${dat.id}">${dat.category}</option>`).join('')
+                    select.innerHTML = `<option value="">-- SELECT CATEGORY --</option>${options}`
+                }
             }
     }
     else return notification('No records retrieved')
@@ -115,6 +123,234 @@ async function addroomFormSubmitHandler() {
     document.querySelector('#addroomform').reset();
     fetchaddroom();
     return notification(request.message, 0);
+}
+
+function wireAddRoomImport(){
+    if(addroomImportEventsBound) return
+    addroomImportEventsBound = true
+    const templateBtn = document.getElementById('roomImportTemplateBtn')
+    const importBtn = document.getElementById('roomImportBtn')
+    const importInput = document.getElementById('roomImportInput')
+    const closeBtn = document.getElementById('addRoomModalClose')
+    const cancelBtn = document.getElementById('addRoomModalCancel')
+    const selectAll = document.getElementById('addRoomSelectAll')
+    const submitBtn = document.getElementById('addRoomModalSubmit')
+    if(templateBtn) templateBtn.addEventListener('click', downloadAddRoomTemplate)
+    if(importBtn && importInput) importBtn.addEventListener('click', ()=>importInput.click())
+    if(importInput) importInput.addEventListener('change', handleAddRoomExcelImport)
+    if(closeBtn) closeBtn.addEventListener('click', ()=>toggleAddRoomImportModal(false))
+    if(cancelBtn) cancelBtn.addEventListener('click', ()=>toggleAddRoomImportModal(false))
+    if(selectAll) selectAll.addEventListener('change', ()=>{
+        const checked = selectAll.checked
+        document.querySelectorAll('.addroom-row-checkbox').forEach(cb=>cb.checked = checked)
+    })
+    if(submitBtn) submitBtn.addEventListener('click', importSelectedRooms)
+}
+
+async function ensureXLSXLoadedAddRoom(){
+    if(window.XLSX) return true
+    return await new Promise(resolve=>{
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+        script.onload = ()=>resolve(true)
+        script.onerror = ()=>resolve(false)
+        document.head.appendChild(script)
+    })
+}
+
+async function downloadAddRoomTemplate(){
+    const ok = await ensureXLSXLoadedAddRoom()
+    if(!ok) return notification('Could not load Excel helper. Check your connection.', 0)
+    const sampleRows = [
+        {
+            'Room Name': 'Deluxe 101',
+            'Room Number': '101',
+            'Building': 'Main Tower',
+            'Category': 'Deluxe Suite',
+            'Floor': '10',
+            'Description': 'Ocean view suite'
+        },
+        {
+            'Room Name': 'Standard 202',
+            'Room Number': '202',
+            'Building': 'Annex',
+            'Category': 'Standard',
+            'Floor': '2',
+            'Description': 'Standard queen'
+        }
+    ]
+    const ws = XLSX.utils.json_to_sheet(sampleRows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Rooms')
+    XLSX.writeFile(wb, 'room_import_template.xlsx')
+}
+
+async function handleAddRoomExcelImport(event){
+    const file = event.target.files[0]
+    if(!file) return
+    const ok = await ensureXLSXLoadedAddRoom()
+    if(!ok) {
+        event.target.value = ''
+        return notification('Could not load Excel helper. Check your connection.', 0)
+    }
+    const reader = new FileReader()
+    reader.onload = e=>{
+        try{
+            const workbook = XLSX.read(e.target.result, {type: 'array'})
+            const sheet = workbook.Sheets[workbook.SheetNames[0]]
+            const rawRows = XLSX.utils.sheet_to_json(sheet, {defval: ''})
+            addroomImportedRows = normalizeAddRoomRows(rawRows)
+            buildAddRoomImportTable(addroomImportedRows)
+            toggleAddRoomImportModal(true)
+        }catch(err){
+            console.error(err)
+            notification('Unable to read Excel file. Please confirm the template.', 0)
+        }finally{
+            event.target.value = ''
+        }
+    }
+    reader.readAsArrayBuffer(file)
+}
+
+function normalizeAddRoomRows(rawRows){
+    const map = {
+        'room name': 'roomname',
+        'name': 'roomname',
+        'room number': 'roomnumber',
+        'roomnumber': 'roomnumber',
+        'number': 'roomnumber',
+        'building': 'building',
+        'category': 'category',
+        'category name': 'category',
+        'category id': 'category',
+        'categoryid': 'category',
+        'floor': 'floor',
+        'level': 'floor',
+        'description': 'description',
+        'details': 'description'
+    }
+    const rows = []
+    rawRows.forEach(item=>{
+        const normalized = {}
+        Object.keys(item).forEach(key=>{
+            const mappedKey = map[key?.toString().trim().toLowerCase()]
+            if(mappedKey) normalized[mappedKey] = item[key]
+        })
+        const hasValue = Object.values(normalized).some(val=>`${val}`.trim() !== '')
+        if(hasValue) rows.push(normalized)
+    })
+    return rows
+}
+
+function buildAddRoomImportTable(rows){
+    const tbody = document.getElementById('addRoomImportTable')
+    const count = document.getElementById('addRoomImportCount')
+    const selectAll = document.getElementById('addRoomSelectAll')
+    if(!tbody) return
+    tbody.innerHTML = ''
+    if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-[#666]">No rows found in Excel.</td></tr>`
+        if(count) count.textContent = '0 rows'
+        return
+    }
+    rows.forEach((row, idx)=>{
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+            <td class="p-3 align-top">
+                <input type="checkbox" class="addroom-row-checkbox accent-[#22c55e]" data-index="${idx}" checked />
+            </td>
+            <td class="p-3">${formatAddRoomCell(row.roomname)}</td>
+            <td class="p-3">${formatAddRoomCell(row.roomnumber)}</td>
+            <td class="p-3">${formatAddRoomCell(row.building)}</td>
+            <td class="p-3">${resolveAddRoomCategoryLabel(row.category)}</td>
+            <td class="p-3">${formatAddRoomCell(row.floor)}</td>
+            <td class="p-3">${formatAddRoomCell(row.description)}</td>
+        `
+        tbody.appendChild(tr)
+    })
+    if(count) count.textContent = `${rows.length} row${rows.length>1?'s':''}`
+    if(selectAll) selectAll.checked = true
+}
+
+function toggleAddRoomImportModal(show){
+    const modal = document.getElementById('roomImportModal')
+    if(!modal) return
+    if(show) modal.classList.remove('hidden')
+    else modal.classList.add('hidden')
+    const status = document.getElementById('addRoomImportStatus')
+    if(status) status.textContent = ''
+}
+
+async function importSelectedRooms(){
+    if(!addroomImportedRows.length) return notification('No rows to import', 0)
+    const checkboxes = Array.from(document.querySelectorAll('.addroom-row-checkbox')).filter(cb=>cb.checked)
+    if(!checkboxes.length) return notification('Select at least one row to import.', 0)
+    const rowsToImport = checkboxes.map(cb=>addroomImportedRows[cb.getAttribute('data-index')])
+    const submitBtn = document.getElementById('addRoomModalSubmit')
+    const loader = submitBtn?.querySelector('.btnloader')
+    const status = document.getElementById('addRoomImportStatus')
+    if(loader) loader.style.display = 'flex'
+    if(submitBtn) submitBtn.setAttribute('disabled', true)
+    let successCount = 0
+    for(let i=0; i<rowsToImport.length; i++){
+        if(i>0) await delayAddRoomImport(addroomImportDelay)
+        if(status) status.textContent = `Submitting ${i+1}/${rowsToImport.length}...`
+        const payload = mapAddRoomRowToFormData(rowsToImport[i])
+        const request = await httpRequest2('../controllers/rooms', payload, null)
+        if(request?.status) successCount++
+    }
+    if(loader) loader.style.display = 'none'
+    if(submitBtn) submitBtn.removeAttribute('disabled')
+    if(status) status.textContent = `${successCount}/${rowsToImport.length} submitted`
+    fetchaddroom()
+    toggleAddRoomImportModal(false)
+    notification(`${successCount} row(s) imported`, successCount ? 1 : 0)
+}
+
+function mapAddRoomRowToFormData(row){
+    const form = new FormData()
+    form.append('roomname', formatAddRoomCell(row.roomname))
+    form.append('roomnumber', formatAddRoomCell(row.roomnumber))
+    form.append('building', formatAddRoomCell(row.building))
+    form.append('categoryid', resolveAddRoomCategoryValue(row.category))
+    form.append('floor', formatAddRoomCell(row.floor))
+    form.append('description', formatAddRoomCell(row.description))
+    return form
+}
+
+function resolveAddRoomCategoryValue(rawValue){
+    const select = document.getElementById('categoryid')
+    const fallback = `${rawValue || ''}`.trim()
+    if(!select) return fallback
+    const target = fallback.toUpperCase()
+    const match = Array.from(select.options).find(opt=>{
+        const optionText = opt.text?.trim().toUpperCase()
+        const optionValue = opt.value?.toString().trim().toUpperCase()
+        return optionText === target || optionValue === target
+    })
+    return match ? match.value : ''
+}
+
+function resolveAddRoomCategoryLabel(rawValue){
+    const select = document.getElementById('categoryid')
+    const fallback = `${rawValue || ''}`.trim()
+    if(!select) return fallback
+    const target = fallback.toUpperCase()
+    const match = Array.from(select.options).find(opt=>{
+        const optionText = opt.text?.trim().toUpperCase()
+        const optionValue = opt.value?.toString().trim().toUpperCase()
+        return optionText === target || optionValue === target
+    })
+    return match ? match.text : fallback
+}
+
+function formatAddRoomCell(value){
+    if(value === undefined || value === null) return ''
+    return value.toString().trim()
+}
+
+function delayAddRoomImport(ms){
+    return new Promise(resolve=>setTimeout(resolve, ms))
 }
 
 
