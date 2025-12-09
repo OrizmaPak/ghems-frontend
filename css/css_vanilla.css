@@ -725,6 +725,19 @@ button:focus-visible {
     font-size: 0.8rem;
 }
 
+/* Ensure small action buttons on GL Account import are visible */
+#glAccountImportBtn {
+    background: #157cd0;
+    color: #ffffff;
+    border: 1px solid #0f5ea3;
+}
+
+#glAccountTemplateBtn {
+    background: #3b82f6;
+    color: #ffffff;
+    border: 1px solid #2f6dd1;
+}
+
 .form-control,
 input,
 select,
