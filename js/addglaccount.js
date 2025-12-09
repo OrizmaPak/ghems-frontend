@@ -1,7 +1,6 @@
 let addglaccountid
 let glAccountImportedRows = []
 let glAccountImportEventsBound = false
-const glAccountImportDelay = 1000
 async function addglaccountActive() {
     const form = document.querySelector('#addglaccountform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', addglaccountFormSubmitHandler)
@@ -183,7 +182,6 @@ async function importSelectedGlAccounts(){
     if(submitBtn) submitBtn.setAttribute('disabled', true)
     let successCount = 0
     for(let i=0; i<rowsToImport.length; i++){
-        if(i>0) await delayGlAccountImport(glAccountImportDelay)
         if(status) status.textContent = `Sending ${i+1}/${rowsToImport.length}...`
         const payload = mapGlAccountRowToFormData(rowsToImport[i])
         const request = await httpRequest2('../controllers/glaccountscript', payload, null)
@@ -208,10 +206,6 @@ function mapGlAccountRowToFormData(row){
 function formatGlAccountCell(value){
     if(value === undefined || value === null) return ''
     return value.toString().trim()
-}
-
-function delayGlAccountImport(ms){
-    return new Promise(resolve=>setTimeout(resolve, ms))
 }
 
 async function populateaddglaccountselects(id='') {
