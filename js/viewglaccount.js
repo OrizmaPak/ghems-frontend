@@ -6,6 +6,7 @@ async function viewglaccountActive() {
     document.getElementById('accounttype').addEventListener('change', e=>viewglaccountFormSubmitHandler())
     datasource = []
     await fetchviewglaccount()
+    wireViewGlAccountExports()
 }
 
 async function fetchviewglaccount(id) {
@@ -22,6 +23,7 @@ async function fetchviewglaccount(id) {
             if(request.data.length) {
                 datasource = request.data
                 resolvePagination(datasource, onviewglaccountTableDataSignal)
+                buildViewGlAccountExport(datasource)
             }
         }else{
              viewglaccountid = request.data[0].id
@@ -89,7 +91,45 @@ async function viewglaccountFormSubmitHandler() {
             if(request.data.length) {
                 datasource = request.data
                 resolvePagination(datasource, onviewglaccountTableDataSignal)
+                buildViewGlAccountExport(datasource)
             }}else return notification(request.message, 0);
+}
+
+function wireViewGlAccountExports(){
+    const pdfBtn = document.getElementById('viewglaccountPrintBtn')
+    const excelBtn = document.getElementById('viewglaccountExcelBtn')
+    if(pdfBtn) pdfBtn.addEventListener('click', ()=>exportViewGlAccountPDF())
+    if(excelBtn) excelBtn.addEventListener('click', ()=>exportViewGlAccountExcel())
+}
+
+function buildViewGlAccountExport(data){
+    const tbody = document.getElementById('viewGlAccountExportBody')
+    if(!tbody) return
+    tbody.innerHTML = ''
+    if(!data?.length) return
+    data.forEach((item, idx)=>{
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${item.accountnumber || ''}</td>
+            <td>${item.description || ''}</td>
+            <td>${item.accounttype || ''}</td>
+            <td>${item.groupname || ''}</td>
+        `
+        tbody.appendChild(tr)
+    })
+}
+
+function exportViewGlAccountExcel(){
+    if(!datasource || !datasource.length) return notification('No data to export', 0)
+    buildViewGlAccountExport(datasource)
+    return exportToExcel('viewGlAccountExportTable', 'GL Accounts')
+}
+
+function exportViewGlAccountPDF(){
+    if(!datasource || !datasource.length) return notification('No data to export', 0)
+    buildViewGlAccountExport(datasource)
+    return exportToPDF('viewGlAccountExportWrap', true)
 }
 
 

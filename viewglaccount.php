@@ -10,12 +10,12 @@
                                             <input type="input" oninput="this.value = this.value.toUpperCase()" name="accounttype" id="accounttype" list="viewglaccounttypelist" class="form-control" placeholder="Search by Account Type">
                                         </div>
                                         <div></div>
-                                        <div class="flex justify-end mt-5 gap-5">
-                                             <button id="" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                    <div class="flex justify-end mt-5 gap-3 flex-wrap">
+                                             <button id="viewglaccountPrintBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <div class="btnloader" style="display: none;"></div>
-                                                <span>Print</span>
+                                                <span>Export PDF</span>
                                             </button>
-                                             <button id="" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                             <button id="viewglaccountExcelBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Export&nbsp;to&nbsp;Excel</span>
                                             </button>
@@ -48,6 +48,20 @@
                                     </table>
                                 </div>
                                 <div class="table-status"></div>
+                            </div>
+                            <div id="viewGlAccountExportWrap" class="hidden">
+                                <table id="viewGlAccountExportTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Account Number</th>
+                                            <th>Description</th>
+                                            <th>Account Type</th>
+                                            <th>Group Name</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="viewGlAccountExportBody"></tbody>
+                                </table>
                             </div>
                             <datalist id="viewglaccounttypelist">
                                     <option value="" disabled selected>--Select&nbsp;Account Type--</option>
