@@ -64,11 +64,13 @@ async function downloadGlAccountTemplate(){
     const sampleRows = [
         {
             'Group Name': 'CASH & BANK',
+            'Subgroup': 'OPERATIONS',
             'Account Type': 'ASSET',
             'Description': 'Cash at hand and bank balances'
         },
         {
             'Group Name': 'ROOM REVENUE',
+            'Subgroup': 'FRONT OFFICE',
             'Account Type': 'INCOME',
             'Description': 'Income from room sales'
         }
@@ -110,6 +112,8 @@ function normalizeGlAccountRows(rawRows){
     const map = {
         'group name': 'groupname',
         'group': 'groupname',
+        'subgroup': 'subgroup',
+        'sub group': 'subgroup',
         'account type': 'accounttype',
         'type of account': 'accounttype',
         'type': 'accounttype',
@@ -148,6 +152,7 @@ function buildGlAccountImportTable(rows){
                 <input type="checkbox" class="glaccount-row-checkbox accent-[#22c55e]" data-index="${idx}" checked />
             </td>
             <td class="p-3">${formatGlAccountCell(row.groupname)}</td>
+            <td class="p-3">${formatGlAccountCell(row.subgroup)}</td>
             <td class="p-3">${formatGlAccountCell(row.accounttype).toUpperCase()}</td>
             <td class="p-3">${formatGlAccountCell(row.description)}</td>
         `
@@ -194,6 +199,7 @@ async function importSelectedGlAccounts(){
 function mapGlAccountRowToFormData(row){
     const form = new FormData()
     form.append('groupname', formatGlAccountCell(row.groupname))
+    form.append('subgroup', formatGlAccountCell(row.subgroup))
     form.append('accounttype', formatGlAccountCell(row.accounttype).toUpperCase())
     form.append('description', formatGlAccountCell(row.description))
     return form

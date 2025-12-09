@@ -36,6 +36,7 @@
                                                 <th>Account&nbsp;Number</th>
                                                 <th>Description</th>
                                                 <th>Account type</th>
+                                                <th>Subgroup</th>
                                                 <th>Group name</th>
                                                 <th>ACTION</th>
                                             </tr>
@@ -57,6 +58,7 @@
                                             <th>Account Number</th>
                                             <th>Description</th>
                                             <th>Account Type</th>
+                                            <th>Subgroup</th>
                                             <th>Group Name</th>
                                         </tr>
                                     </thead>

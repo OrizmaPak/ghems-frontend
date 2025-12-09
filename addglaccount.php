@@ -26,10 +26,14 @@
                                         <!--        <span>Retrieve Account</span>-->
                                         <!--    </div>-->
                                     </div>
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                         <div class="form-group">
                                             <label for="logoname" class="control-label">Group Name</label>
                                             <input type="text" name="groupname" id="groupname" class="form-control comp" placeholder="Enter Group Name">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="logoname" class="control-label">Subgroup</label>
+                                            <input type="text" name="subgroup" id="subgroup" class="form-control comp" placeholder="Enter Subgroup">
                                         </div>
                                         <div class="form-group">
                                             <label for="logoname" class="control-label">Type Of Account</label>
@@ -92,6 +96,7 @@
                                                 <tr>
                                                     <th class="p-3 text-left w-12">#</th>
                                                     <th class="p-3 text-left">Group Name</th>
+                                                    <th class="p-3 text-left">Subgroup</th>
                                                     <th class="p-3 text-left">Account Type</th>
                                                     <th class="p-3 text-left">Description</th>
                                                 </tr>

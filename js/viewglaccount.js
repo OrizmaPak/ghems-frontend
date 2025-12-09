@@ -64,6 +64,7 @@ async function onviewglaccountTableDataSignal() {
         <td>${item.accountnumber}</td>
         <td>${item.description}</td>
         <td>${item.accounttype}</td>
+        <td>${item.subgroup || ''}</td>
         <td>${item.groupname}</td>
         <td class="flex items-center gap-3">
             <button title="Edit row entry" onclick="fetchviewglaccountedit('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
@@ -114,6 +115,7 @@ function buildViewGlAccountExport(data){
             <td>${item.accountnumber || ''}</td>
             <td>${item.description || ''}</td>
             <td>${item.accounttype || ''}</td>
+            <td>${item.subgroup || ''}</td>
             <td>${item.groupname || ''}</td>
         `
         tbody.appendChild(tr)
