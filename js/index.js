@@ -288,7 +288,7 @@ async function getoccupiedroom(){
     if(request.status) {
         if(request.data.length) { 
             occupiedroomlength = request.data.filter(room => room.roomstatus == 'OCCUPIED').length
-            if(document.getElementById('dashoccupiedrooms'))document.getElementById('dashoccupiedrooms').textContent = request.data.length
+            if(document.getElementById('dashoccupiedrooms'))document.getElementById('dashoccupiedrooms').textContent = occupiedroomlength
            
         }
     }
