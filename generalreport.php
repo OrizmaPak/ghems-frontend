@@ -47,7 +47,7 @@
                                     </form>
             
             <div id="guestonamealplan" class="">
-            <div class="table-content  lg:max-w-[1000px]">
+            <div class="table-content  lg:max-w-full">
                 
                                     <table id="tableer">
                                         <thead>
@@ -77,7 +77,7 @@
             </div>
             
             <div id="discountplan" class="hidden">
-            <div class="table-content  lg:max-w-[1000px]">
+            <div class="table-content  lg:max-w-full">
                 
                                     <table id="tableer">
                                         <thead>

@@ -47,7 +47,7 @@
                                 
                                         </div>
                                     </form>
-                                     <div class="table-content  lg:max-w-[1000px]">
+                                     <div class="table-content  lg:max-w-full">
                                     <table id="tableer">
                                         <thead>
                                             <tr>

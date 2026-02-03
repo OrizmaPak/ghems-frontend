@@ -26,7 +26,7 @@
                                 
                                         </div>
                                     </form>
-                                <div class="table-content  lg:max-w-[1000px]">
+                                <div class="table-content  lg:max-w-full">
                                     <div class="w-full flex justify-end relative my-2 ">
                                          <button onclick="printContent('HEMS GUEST PROFILE', null, 'tableer', true)" type="button" class="w-full h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                             <div class="btnloader" style="display: none;"></div>
