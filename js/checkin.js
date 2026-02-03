@@ -72,7 +72,7 @@ async function checkinActive() {
 
 
 async function groupssubmithandler(){
-    if(!validateForm('groupofguestsform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+    if(!validateForm('groupofguestsform', getIdFromCls('comp', 'groupofguestsform')))return notification('some data are not provided...', 0)
     let payload
 
     payload = getFormData2(document.querySelector('#groupofguestsform'))
@@ -88,7 +88,7 @@ async function groupssubmithandler(){
 }
 
 async function travelssubmithandler(){
-    if(!validateForm('travelagencyform', getIdFromCls('compt')))return notification('some data are not provided...', 0)
+    if(!validateForm('travelagencyform', getIdFromCls('compt', 'travelagencyform')))return notification('some data are not provided...', 0)
     let payload
 
     payload = getFormData2(document.querySelector('#travelagencyform'))
@@ -104,7 +104,7 @@ async function travelssubmithandler(){
 }
 
 async function companysubmithandler(){
-    if(!validateForm('companyform', getIdFromCls('compp')))return notification('some data are not provided...', 0)
+    if(!validateForm('companyform', getIdFromCls('compp', 'companyform')))return notification('some data are not provided...', 0)
     let payload
 
     payload = new FormData(document.getElementById('companyform'))
@@ -988,7 +988,7 @@ function openguestform(name, id){
 // this handles form submission and the state is true if the function is called from the guest management page but if called anywhere else it will  be false
 async function submitguestform(state="") {
     console.log('started')
-    if(!validateForm('guestmodalform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+    if(!validateForm('guestmodalform', getIdFromCls('comp', 'guestmodalform')))return notification('some data are not provided...', 0)
     if(!state && !nameandidofguest)notification('Somethin went wrong, the new guest you are saving cant be automatically loaded. you will have to get it from the datalist.')
     let payload
 
@@ -1974,19 +1974,19 @@ async function checkinnFormSubmitHandler(guest){
     if(guest == 'reassignroomsform')checkinid = '';
     if(!guest)return notification('Wrong call point', 0)
     if(did('checkinform')){
-        if(!validateForm('checkinform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+        if(!validateForm('checkinform', getIdFromCls('comp', 'checkinform')))return notification('some data are not provided...', 0)
     }
     if(did('reassignroomsform')){
-        if(!validateForm('reassignroomsform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+        if(!validateForm('reassignroomsform', getIdFromCls('comp', 'reassignroomsform')))return notification('some data are not provided...', 0)
     }
     if(did('guestreservationform')){
-        if(!validateForm('guestreservationform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+        if(!validateForm('guestreservationform', getIdFromCls('comp', 'guestreservationform')))return notification('some data are not provided...', 0)
     }
     if(did('reservationcheckinform')){
-        if(!validateForm('reservationcheckinform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+        if(!validateForm('reservationcheckinform', getIdFromCls('comp', 'reservationcheckinform')))return notification('some data are not provided...', 0)
     }
     if(did('groupcheckinform')){
-        if(!validateForm('groupcheckinform', getIdFromCls('comp')))return notification('some data are not provided...', 0)
+        if(!validateForm('groupcheckinform', getIdFromCls('comp', 'groupcheckinform')))return notification('some data are not provided...', 0)
     }
     if(did('cancelreservationform')){
         Swal.fire({
@@ -2002,10 +2002,10 @@ async function checkinnFormSubmitHandler(guest){
             return
           }
         });
-        if(!validateForm('cancelreservationform', getIdFromCls('comp22')))return notification('some data are not provided...', 0)
+        if(!validateForm('cancelreservationform', getIdFromCls('comp22', 'cancelreservationform')))return notification('some data are not provided...', 0)
     }
     if(did('extendstayform')){
-        if(!validateForm('extendstayform', getIdFromCls('comp33')))return notification('some data are not provided...', 0)
+        if(!validateForm('extendstayform', getIdFromCls('comp33', 'extendstayform')))return notification('some data are not provided...', 0)
     }
     calculatetotals()
     // if(checkinid)return alert()

@@ -275,10 +275,13 @@ function dna(element){
     if(document.getElementsByNames(element))return document.getElementsByNames(element)
 }
 
-function getIdFromCls(cls){
+function getIdFromCls(cls, scope=null){
+    let root = scope
+    if(typeof scope === 'string')root = document.getElementById(scope)
+    if(!root)root = document
     let x = []
-    for(let i=0;i<document.getElementsByClassName(cls).length;i++){
-        x.push(document.getElementsByClassName(cls)[i].id)
+    for(let i=0;i<root.getElementsByClassName(cls).length;i++){
+        x.push(root.getElementsByClassName(cls)[i].id)
     }
     return x
 }
