@@ -319,7 +319,7 @@ function initializePaginationMoveButtonsEventListeners() {
 }
 
 function limitChange() {
-    el = document.querySelector('#pagination-limit')
+    const el = document.querySelector('#pagination-limit')
     paginationLimit = +(el.options[el.selectedIndex].value)
     setCurrentPage(1)
 }
@@ -344,11 +344,13 @@ const handlePageButtonsStatus = () => {
  };
 
 const disableButton = (button) => {
+    if(!button) return
     button.classList.add("disabled");
     button.setAttribute("disabled", true);
 };
 
 const enableButton = (button) => {
+    if(!button) return
     button.classList.remove("disabled");
     button.removeAttribute("disabled");
 };
@@ -401,7 +403,7 @@ function addPaginationStatus() {
     const limits = [10,20,30,35,40,70,100,150,200,250,500,750,1000,1500]
     const limitOptions = limits.map(val=>`<option value="${val}" ${val===paginationLimit ? 'selected' : ''}>${val}</option>`).join('')
 
-    template = `
+    const template = `
         ${getSignaledPaginationStatus()}
         <span class=" flex justify-between gap-6">
             <span>
@@ -420,13 +422,13 @@ function addPaginationStatus() {
 }
 
 function resolvePagination(data, cb) {
+    callback = cb
     datasource = data;
     setCurrentPage(1)
-    callback = cb
  }
  
  
- function setCurrentPage(pageNum) {
+function setCurrentPage(pageNum) {
     pageCount = computePageCount()
     currentPage = Math.min(Math.max(pageNum, 1), pageCount);
     document.querySelector('#tabledata').innerHTML = `
@@ -434,18 +436,16 @@ function resolvePagination(data, cb) {
             <td colspan="100%" class="text-center opacity-70">
                 <span class="loader mx-auto"></span>
             </td>
-        </tr`
+        </tr>`
     prevRange = (currentPage - 1) * paginationLimit;
     currRange = currentPage * paginationLimit;
-    if (datasource.length) {
-        filteredDataSource = []
-        for(let i=0; i<datasource.length; i++) {
-            if (i >= prevRange && i < currRange) {
-                filteredDataSource.push({index: i, ...datasource[i]})
+    filteredDataSource = []
+    for(let i=0; i<datasource.length; i++) {
+        if (i >= prevRange && i < currRange) {
+            filteredDataSource.push({index: i, ...datasource[i]})
             }
-        }
-        sendStorageSignal(filteredDataSource)
     }
+    sendStorageSignal(filteredDataSource)
 }
 
 async function sendStorageSignal(filteredDataSource) {

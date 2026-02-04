@@ -2,8 +2,16 @@ let viewinventoryid
 async function viewinventoryActive() {
     const form = document.querySelector('#viewinventoryform')
     const form2 = document.querySelector('#viewinventoryeditform')
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>viewinventoryFormSubmitHandler())
-    if(form2.querySelector('#submit')) form2.querySelector('#submit').addEventListener('click', e=>viewinventoryFormEditHandler())
+    const submitBtn = form?.querySelector('#submit')
+    const updateBtn = form2?.querySelector('#submit')
+    if(submitBtn && !submitBtn.dataset.bound) {
+        submitBtn.addEventListener('click', ()=>viewinventoryFormSubmitHandler())
+        submitBtn.dataset.bound = '1'
+    }
+    if(updateBtn && !updateBtn.dataset.bound) {
+        updateBtn.addEventListener('click', ()=>viewinventoryFormEditHandler())
+        updateBtn.dataset.bound = '1'
+    }
     form.querySelector('#submit').click()
     datasource = []
     // await fetchviewinventorys()
@@ -21,10 +29,8 @@ async function fetchviewinventorys(id) {
     if(request.status) {
         const items = normalizeInventoryItems(request.data)
         if(!id){
-            if(items.length) {
-                datasource = items
-                resolvePagination(datasource, onviewinventoryTableDataSignal)
-            }
+            datasource = items
+            resolvePagination(datasource, onviewinventoryTableDataSignal)
         }else{
              viewinventoryid = items[0]?.id
             if(items[0])populateData(items[0])
@@ -58,7 +64,8 @@ async function removeviewinventory(id) {
 
 
 async function onviewinventoryTableDataSignal() {
-    let rows = getSignaledDatasource().map((item, index) => `
+    const signaledData = getSignaledDatasource() || []
+    let rows = signaledData.map((item, index) => `
     <tr>
         <td>${item.index + 1 }</td>
         <td>${item.itemname}</td>
@@ -75,6 +82,7 @@ async function onviewinventoryTableDataSignal() {
     </tr>`
     )
     .join('')
+    if(!rows) rows = `<tr><td colspan="100%" class="text-center opacity-70"> Table is empty</td></tr>`
     injectPaginatatedTable(rows)
 }
 
@@ -98,12 +106,10 @@ async function viewinventoryFormSubmitHandler(itemid='') {
     if(request.status) {
         const items = normalizeInventoryItems(request.data)
         if(!itemid){
-            if(items.length) {
-                datasource = items
-                resolvePagination(datasource, onviewinventoryTableDataSignal)
-                did('modalform').classList.add('hidden')
-                return notification(request.message, 1);
-            }
+            datasource = items
+            resolvePagination(datasource, onviewinventoryTableDataSignal)
+            did('modalform').classList.add('hidden')
+            return notification(request.message, 1);
         }else{
              viewinventoryid = itemid
             //  console.log(request.data.filter(data=>data.id==id))
@@ -124,20 +130,10 @@ async function viewinventoryFormEditHandler(id='') {
     payload = getFormData2(document.querySelector('#viewinventoryeditform'), viewinventoryid ? [['itemid', viewinventoryid],['photofilename', showFileName('imageurl')],['userphotoname', getFile('imageurl')]] : null)
     let request = await httpRequest2('../controllers/editinventory', payload, document.querySelector('#viewinventoryeditform #submit'))
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
-    viewinventoryFormSubmitHandler()
     if(request.status) {
-        if(!id){
-            if(request.data.length) {
-                // resolvePagination(datasource, onviewinventoryTableDataSignal)
-                // datasource = request.data
-                document.getElementById('modalform').classList.remove('hidden')
-                viewinventoryActive()
-                return notification(request.message, 1);
-            }
-        }else{
-             viewinventoryid = request.data[0].itemid
-            populateData(request.data[0])
-        }
+        did('modalform').classList.add('hidden')
+        await viewinventoryFormSubmitHandler()
+        return notification(request.message, 1);
     }
     else return notification('No records retrieved')
 }
