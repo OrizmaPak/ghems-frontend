@@ -53,6 +53,7 @@ function bindViewInventoryEvents() {
     const searchInput = did('itemname1')
     const updateBtn = editForm?.querySelector('#submit')
     const tableBody = did('tabledata')
+    const hackRunBtn = did('hack-run')
 
     if (submitBtn && !submitBtn.dataset.bound) {
         submitBtn.addEventListener('click', () => viewinventoryFormSubmitHandler())
@@ -93,6 +94,71 @@ function bindViewInventoryEvents() {
         })
         tableBody.dataset.bound = '1'
     }
+
+    if (hackRunBtn && !hackRunBtn.dataset.bound) {
+        hackRunBtn.addEventListener('click', () => runCompositeBulkHack())
+        hackRunBtn.dataset.bound = '1'
+    }
+}
+
+function buildEditPayloadFromInventoryItem(item, compositeValue) {
+    const payload = new FormData()
+    payload.append('itemid', item.itemid ?? '')
+    payload.append('itemname', item.itemname ?? '')
+    payload.append('units', item.units ?? '')
+    payload.append('cost', item.cost ?? '')
+    payload.append('price', item.price ?? '')
+    payload.append('price_two', item.price_two ?? '')
+    payload.append('beginbalance', item.beginbalance ?? '')
+    payload.append('minbalance', item.minbalance ?? '')
+    payload.append('groupname', item.groupname ?? '')
+    payload.append('applyto', item.applyto ?? '')
+    payload.append('reorderlevel', item.reorderlevel ?? '')
+    payload.append('composite', compositeValue)
+    payload.append('description', item.description ?? '')
+    payload.append('photofilename', '')
+    payload.append('userphotoname', '')
+    return payload
+}
+
+async function fetchAllInventoryForHack() {
+    const payload = new FormData()
+    payload.append('itemname', '')
+    const request = await httpRequest2('../controllers/fetchinventorylist', payload, null, 'json')
+    if (!request?.status) return []
+    return normalizeViewInventoryItems(normalizeInventoryItems(request.data))
+}
+
+async function runCompositeBulkHack() {
+    const groupName = String(did('hack-groupname')?.value || '').trim()
+    const compositeValue = String(did('hack-composite')?.value || '').trim().toUpperCase()
+    const actionBtn = did('hack-run')
+
+    if (!groupName) return notification('Please enter a group name', 0)
+    if (!['YES', 'NO'].includes(compositeValue)) return notification('Please select composite value', 0)
+
+    const allItems = await fetchAllInventoryForHack()
+    if (!allItems.length) return notification('No inventory records found', 0)
+
+    const targets = allItems.filter(item => String(item.groupname || '').trim().toLowerCase() === groupName.toLowerCase())
+    if (!targets.length) return notification('No items found for this group name', 0)
+
+    let successCount = 0
+    for (let i = 0; i < targets.length; i++) {
+        const item = targets[i]
+        const payload = buildEditPayloadFromInventoryItem(item, compositeValue)
+        const response = await httpRequest2('../controllers/editinventory', payload, actionBtn, 'json')
+
+        if (!response?.status) {
+            notification(`Stopped at ${successCount}/${targets.length}. ${response?.message || 'Update failed'}`, 0)
+            await viewinventoryFormSubmitHandler()
+            return
+        }
+        successCount += 1
+    }
+
+    notification(`Bulk update complete: ${successCount} item(s) updated`, 1)
+    await viewinventoryFormSubmitHandler()
 }
 
 async function loadViewInventory() {

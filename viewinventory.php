@@ -22,6 +22,29 @@
                                     <p id="inventory-summary" class="text-xs text-gray-500">0 item(s) loaded</p>
                                 </div>
                             </form>
+                            <div class="bg-[#fff8db] border border-[#f5d76e] rounded-sm p-4 mt-4">
+                                <p class="text-sm font-semibold text-[#7a5b00] mb-3">Temporary Composite Bulk Fix</p>
+                                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+                                    <div class="form-group lg:col-span-6">
+                                        <label for="hack-groupname" class="control-label">Group Name</label>
+                                        <input type="text" id="hack-groupname" class="form-control" placeholder="Enter exact group name">
+                                    </div>
+                                    <div class="form-group lg:col-span-3">
+                                        <label for="hack-composite" class="control-label">Composite</label>
+                                        <select id="hack-composite" class="form-control">
+                                            <option value="">-- Select --</option>
+                                            <option value="YES">YES</option>
+                                            <option value="NO">NO</option>
+                                        </select>
+                                    </div>
+                                    <div class="lg:col-span-3 flex lg:justify-end">
+                                        <button id="hack-run" type="button" class="btn">
+                                            <div class="btnloader" style="display: none;"></div>
+                                            <span>Run Bulk Update</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <hr class="my-10">
                             
                             <div id="modalform" class="z-[100] w-screen h-screen fixed bg-[#5a5a5a3e] top-0 left-0 p-10 overflow-auto hidden">
