@@ -116,11 +116,15 @@ function stageCardPrint(item) {
 
     const html = `
     <div class="bg-white !text-black relative">
-        <div class="text-center mb-4">
-            ${logoPath ? `<img src="${logoPath}" alt="Hotel logo" class="mx-auto mb-2 w-20 h-20 object-contain">` : ''}
-            <h1 class="text-2xl font-bold uppercase">${orgInformation.companyname}</h1>
-            <p class="text-sm capitalize">${orgInformation.address}</p>
-            <p class="text-sm">Phone: ${orgInformation.mobile} Tel: ${orgInformation.telephone}</p>
+        <div class="mb-4 w-full border-b pb-3">
+            <div class="flex items-center justify-start gap-4 w-full">
+                ${logoPath ? `<img src="${logoPath}" alt="Hotel logo" class="w-20 h-20 object-contain shrink-0">` : ''}
+                <div class="text-left flex-1">
+                    <h1 class="text-2xl font-bold uppercase">${orgInformation.companyname}</h1>
+                    <p class="text-sm capitalize">${orgInformation.address}</p>
+                    <p class="text-sm">Phone: ${orgInformation.mobile} Tel: ${orgInformation.telephone}</p>
+                </div>
+            </div>
         </div>
 
         <div>
