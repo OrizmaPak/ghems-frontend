@@ -66,6 +66,7 @@ async function onviewinventoryTableDataSignal() {
         <td>${item.price}</td>
         <td>${item.units}</td>
         <td>${item.groupname}</td>
+        <td>${item.composite || '-'}</td>
         <td>${item.description}</td>
         <td class="flex items-center gap-3">
             <button title="Edit row entry" onclick="viewinventoryFormSubmitHandler('${item.itemid}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>

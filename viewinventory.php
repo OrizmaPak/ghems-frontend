@@ -175,6 +175,7 @@
                                                 <th>price</th>
                                                 <th>units</th>
                                                 <th>Group name</th>
+                                                <th>composite</th>
                                                 <th>description</th>
                                                 <th>action</th>
                                             </tr>
