@@ -3993,16 +3993,22 @@ textarea {
 .pagination-shell {
   width: 100%;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
 }
 
 .pagination-meta {
   font-size: 0.74rem;
   color: #64748b;
   text-transform: none;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  margin-right: auto;
 }
 
 .pagination {
@@ -4010,6 +4016,15 @@ textarea {
   align-items: center;
   gap: 0.35rem;
   overflow: visible;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.pagination #pagination-numbers {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
 }
 
 .pagination > button,
