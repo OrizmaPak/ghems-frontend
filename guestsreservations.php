@@ -754,7 +754,7 @@
                                             </div>
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">travel agent</label>
-                                                <select name="travelagent" id="travelagent1" class="bg-white form-control comp">
+                                                <select name="travelagent" id="travelagent1" class="bg-white form-control">
                                                     <option value="">Loading...</option>
                                                 </select>
                                             </div>
@@ -762,13 +762,13 @@
                                         <div class="grid grid-cols-1  lg:grid-cols-2 gap-10">
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">company</label>
-                                                <select name="company" id="company1" class="bg-white form-control comp">
+                                                <select name="company" id="company1" class="bg-white form-control">
                                                     <option value="">Loading...</option>
                                                 </select>
                                             </div>
                                             <div class="form-group">
-                                                <label for="logoname" class="control-label">email</label>
-                                                <input type="email" name="email" id="email" class="bg-white form-control comp" placeholder="Enter email">
+                                                <label for="logoname" class="control-label">phone number</label>
+                                                <input type="tel" name="phone" id="group_phone" class="bg-white form-control comp" placeholder="Enter phone number">
                                             </div>
                                         </div>
                                         <div class="grid grid-cols-1 lg:grid-cols-2 !mb-1 gap-10">

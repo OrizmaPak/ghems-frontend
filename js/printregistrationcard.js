@@ -110,10 +110,14 @@ function printRegistrationCardItem(id) {
 }
 
 function stageCardPrint(item) {
+    const logoFromSettings = orgInformation?.logo && orgInformation.logo !== '-' ? `../images/${orgInformation.logo}` : ''
+    const logoFromGlobal = did('your_companylogo')?.value ? `../images/${did('your_companylogo').value}` : ''
+    const logoPath = logoFromSettings || logoFromGlobal
 
     const html = `
     <div class="bg-white !text-black relative">
         <div class="text-center mb-4">
+            ${logoPath ? `<img src="${logoPath}" alt="Hotel logo" class="mx-auto mb-2 w-20 h-20 object-contain">` : ''}
             <h1 class="text-2xl font-bold uppercase">${orgInformation.companyname}</h1>
             <p class="text-sm capitalize">${orgInformation.address}</p>
             <p class="text-sm">Phone: ${orgInformation.mobile} Tel: ${orgInformation.telephone}</p>
