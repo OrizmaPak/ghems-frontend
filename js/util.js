@@ -303,8 +303,6 @@ function getSignaledPaginationNumbers() {
 }
 
 const paginationComponent = {
-    limits: [10,20,30,35,40,70,100,150,200,250,500,750,1000,1500],
-
     getStatusWrap() {
         return document.querySelector('.table-status')
     },
@@ -313,24 +311,27 @@ const paginationComponent = {
         const total = datasource.length
         const start = total ? prevRange + 1 : 0
         const end = Math.min(currRange, total)
-        return `<span class="text-xs text-gray-500">Showing ${start} to ${end} of ${total} Records </span>`
+        return `Showing ${start} to ${end} of ${total} records`
     },
 
     getNumberButtonsMarkup() {
         pageCount = computePageCount()
         const buildButton = (page) => `<button class="pagination-number ${page === currentPage ? 'active' : ''}" type="button" aria-label="Page ${page}" page-index="${page}">${page}</button>`
         const ellipsis = `<span class="pagination-ellipsis" aria-hidden="true">...</span>`
+        const windowSize = 2
 
-        if (pageCount <= 8) {
+        if (pageCount <= 9) {
             let markup = ''
             for (let i = 1; i <= pageCount; i++) markup += buildButton(i)
             return `<span id="pagination-numbers">${markup}</span>`
         }
 
-        const pages = new Set([1, 2, pageCount - 1, pageCount])
-        for(let i = currentPage - 1; i <= currentPage + 1; i++){
-            if(i > 2 && i < pageCount - 1) pages.add(i)
+        const pages = new Set([1, pageCount])
+        for(let i = currentPage - windowSize; i <= currentPage + windowSize; i++){
+            if(i > 1 && i < pageCount) pages.add(i)
         }
+        if(currentPage <= 4) { pages.add(2); pages.add(3); pages.add(4) }
+        if(currentPage >= pageCount - 3) { pages.add(pageCount - 1); pages.add(pageCount - 2); pages.add(pageCount - 3) }
 
         const orderedPages = Array.from(pages).sort((a,b)=>a-b)
         let markup = ''
@@ -347,24 +348,15 @@ const paginationComponent = {
         const wrap = this.getStatusWrap()
         if(!wrap) return
 
-        const limitOptions = this.limits
-            .map(value => `<option value="${value}" ${value === paginationLimit ? 'selected' : ''}>${value}</option>`)
-            .join('')
-
         const template = `
-            ${this.getStatusMarkup()}
-            <span class="flex justify-between gap-6">
-                <span>
-                    <select id="pagination-limit" class="form-control !bg-white cursor-pointer">
-                        ${limitOptions}
-                    </select>
-                </span>
-                <span class="flex pagination">
-                    <button type="button" id="prev-button" ${currentPage <= 1 ? 'disabled' : ''}>prev</button>
+            <div class="pagination-shell">
+                <span class="pagination-meta">${this.getStatusMarkup()}</span>
+                <span class="flex pagination" aria-label="Pagination">
+                    <button type="button" id="prev-button" class="pager-arrow" aria-label="Previous page" ${currentPage <= 1 ? 'disabled' : ''}>&lsaquo;</button>
                     ${this.getNumberButtonsMarkup()}
-                    <button type="button" id="next-button" ${currentPage >= pageCount ? 'disabled' : ''}>next</button>
+                    <button type="button" id="next-button" class="pager-arrow" aria-label="Next page" ${currentPage >= pageCount ? 'disabled' : ''}>&rsaquo;</button>
                 </span>
-            </span>
+            </div>
         `
 
         wrap.innerHTML = template
@@ -383,15 +375,6 @@ const paginationComponent = {
 
             const pageIndex = Number(target.getAttribute('page-index'))
             if(pageIndex) setCurrentPage(pageIndex)
-        })
-
-        wrap.addEventListener('change', (event) => {
-            const select = event.target
-            if(select?.id !== 'pagination-limit') return
-            const nextLimit = Number(select.value)
-            if(!Number.isFinite(nextLimit) || nextLimit < 1) return
-            paginationLimit = nextLimit
-            setCurrentPage(1)
         })
 
         wrap.dataset.paginationBound = '1'

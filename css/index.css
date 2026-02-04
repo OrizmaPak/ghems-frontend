@@ -3984,3 +3984,71 @@ textarea {
 .page-description-confirm:focus-visible {
   box-shadow: 0 0 0 3px rgba(15, 130, 255, 0.35), 0 10px 20px rgba(15, 130, 255, 0.35) !important;
 }
+
+/* Global pagination overhaul */
+.table-status {
+  width: 100%;
+}
+
+.pagination-shell {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.pagination-meta {
+  font-size: 0.74rem;
+  color: #64748b;
+  text-transform: none;
+}
+
+.pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: visible;
+}
+
+.pagination > button,
+.pagination #pagination-numbers button {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid #dbe4ee;
+  border-radius: 9999px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: all 180ms ease;
+}
+
+.pagination > button:hover,
+.pagination #pagination-numbers button:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.pagination-number.active {
+  background: #0f6dbe !important;
+  border-color: #0f6dbe !important;
+  color: #fff !important;
+}
+
+.pagination .pagination-ellipsis {
+  min-width: 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  user-select: none;
+}
+
+.pagination .pager-arrow {
+  font-size: 1rem;
+  padding-bottom: 0.08rem;
+}
