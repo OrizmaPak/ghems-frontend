@@ -290,189 +290,155 @@ function computePageCount(){
     return Math.max(1, Math.ceil((datasource?.length || 0) / paginationLimit))
 }
 
-function makePaginationMoveButton(type) {
-    return `<button type="button" id="${type}-button" disabled>${type}</button>`
-}
-
-function initializePaginationMoveButtonsEventListeners() {
-
-    const tableStatusWrap = document.querySelector('.table-status')
-    if(!tableStatusWrap) return
-    
-    tableStatusWrap.querySelector('#prev-button')?.addEventListener('click', () => {
-        setCurrentPage(currentPage - 1); 
-    })
-
-    tableStatusWrap.querySelector('#next-button')?.addEventListener('click', () => {
-        setCurrentPage(currentPage + 1); 
-    })
-
-    tableStatusWrap.querySelector('#pagination-limit')?.addEventListener('change', limitChange)
-
-    document.querySelectorAll(".pagination-number").forEach((button) => {
-        const pageIndex = Number(button.getAttribute("page-index"));         
-        if (pageIndex)  button.addEventListener("click", () => {
-            setCurrentPage(pageIndex); 
-        });
-    });
-
-}
-
-function limitChange() {
-    const el = document.querySelector('#pagination-limit')
-    paginationLimit = +(el.options[el.selectedIndex].value)
-    setCurrentPage(1)
-}
-
-const handleActivePageNumber = () => {
-    const buttons = document.querySelectorAll(".pagination-number");
-    if(!buttons?.length) return
-    buttons.forEach((button) => {
-        button.classList.remove("active");
-        const pageIndex = Number(button.getAttribute("page-index"));
-        if (pageIndex == currentPage)  button.classList.add("active")
-    });
-};
-
-const handlePageButtonsStatus = () => {
-    const tableStatusWrap = document.querySelector('.table-status')
-    if(!tableStatusWrap) return
-    if (currentPage === 1)  disableButton(tableStatusWrap.querySelector('#prev-button'));
-    else  enableButton(tableStatusWrap.querySelector('#prev-button'))
-    if (pageCount === currentPage) disableButton(tableStatusWrap.querySelector('#next-button'))  
-    else enableButton(tableStatusWrap.querySelector('#next-button')) 
- };
-
-const disableButton = (button) => {
-    if(!button) return
-    button.classList.add("disabled");
-    button.setAttribute("disabled", true);
-};
-
-const enableButton = (button) => {
-    if(!button) return
-    button.classList.remove("disabled");
-    button.removeAttribute("disabled");
-};
-
 function getSignaledDatasource() {
-    return JSON.parse(sessionStorage.getItem('datasource'))
+    return filteredDataSource
 }
 
 function getSignaledPaginationStatus() {
-    return sessionStorage.getItem('p-status')
+    return paginationComponent.getStatusMarkup()
 }
 
 function getSignaledPaginationNumbers() {
-    return sessionStorage.getItem('p-numbers')
+    return paginationComponent.getNumberButtonsMarkup()
 }
 
-async function getPaginationNumbers (){
-    pageCount = computePageCount();
-    const buildButton = (page) => `<button class="pagination-number" type="button" aria-label="Page ${page}" page-index="${page}">${page}</button>`;
-    const ellipsis = `<span class="pagination-ellipsis" aria-hidden="true">...</span>`;
-    const windowSize = 1; // show current ±1
-    const staticEnds = [1, pageCount];
+const paginationComponent = {
+    limits: [10,20,30,35,40,70,100,150,200,250,500,750,1000,1500],
 
-    if (pageCount <= 8) {
-        let str = ''
-        for (let i = 1; i <= pageCount; i++) str += buildButton(i);
-        return str
-    }
+    getStatusWrap() {
+        return document.querySelector('.table-status')
+    },
 
-    const pages = new Set(staticEnds);
-    for(let i = currentPage - windowSize; i <= currentPage + windowSize; i++){
-        if(i > 1 && i < pageCount) pages.add(i)
-    }
-    pages.add(2);
-    pages.add(pageCount - 1);
+    getStatusMarkup() {
+        const total = datasource.length
+        const start = total ? prevRange + 1 : 0
+        const end = Math.min(currRange, total)
+        return `<span class="text-xs text-gray-500">Showing ${start} to ${end} of ${total} Records </span>`
+    },
 
-    const orderedPages = Array.from(pages).sort((a,b)=>a-b);
-    let markup = '';
-    for(let i=0;i<orderedPages.length;i++){
-        const page = orderedPages[i];
-        const prev = orderedPages[i-1];
-        if(i>0 && page - prev > 1) markup += ellipsis;
-        markup += buildButton(page);
-    }
-    return markup
-};
+    getNumberButtonsMarkup() {
+        pageCount = computePageCount()
+        const buildButton = (page) => `<button class="pagination-number ${page === currentPage ? 'active' : ''}" type="button" aria-label="Page ${page}" page-index="${page}">${page}</button>`
+        const ellipsis = `<span class="pagination-ellipsis" aria-hidden="true">...</span>`
 
-function addPaginationStatus() {
+        if (pageCount <= 8) {
+            let markup = ''
+            for (let i = 1; i <= pageCount; i++) markup += buildButton(i)
+            return `<span id="pagination-numbers">${markup}</span>`
+        }
 
-    const limits = [10,20,30,35,40,70,100,150,200,250,500,750,1000,1500]
-    const limitOptions = limits.map(val=>`<option value="${val}" ${val===paginationLimit ? 'selected' : ''}>${val}</option>`).join('')
+        const pages = new Set([1, 2, pageCount - 1, pageCount])
+        for(let i = currentPage - 1; i <= currentPage + 1; i++){
+            if(i > 2 && i < pageCount - 1) pages.add(i)
+        }
 
-    const template = `
-        ${getSignaledPaginationStatus()}
-        <span class=" flex justify-between gap-6">
-            <span>
-                <select id="pagination-limit" class="form-control !bg-white cursor-pointer">
-                    ${limitOptions}
-                </select>
+        const orderedPages = Array.from(pages).sort((a,b)=>a-b)
+        let markup = ''
+        for(let i=0; i<orderedPages.length; i++){
+            const page = orderedPages[i]
+            const previous = orderedPages[i - 1]
+            if(i > 0 && page - previous > 1) markup += ellipsis
+            markup += buildButton(page)
+        }
+        return `<span id="pagination-numbers">${markup}</span>`
+    },
+
+    render() {
+        const wrap = this.getStatusWrap()
+        if(!wrap) return
+
+        const limitOptions = this.limits
+            .map(value => `<option value="${value}" ${value === paginationLimit ? 'selected' : ''}>${value}</option>`)
+            .join('')
+
+        const template = `
+            ${this.getStatusMarkup()}
+            <span class="flex justify-between gap-6">
+                <span>
+                    <select id="pagination-limit" class="form-control !bg-white cursor-pointer">
+                        ${limitOptions}
+                    </select>
+                </span>
+                <span class="flex pagination">
+                    <button type="button" id="prev-button" ${currentPage <= 1 ? 'disabled' : ''}>prev</button>
+                    ${this.getNumberButtonsMarkup()}
+                    <button type="button" id="next-button" ${currentPage >= pageCount ? 'disabled' : ''}>next</button>
+                </span>
             </span>
-            <span class="flex pagination">
-                ${ makePaginationMoveButton('prev') }
-                ${ getSignaledPaginationNumbers() }
-                ${ makePaginationMoveButton('next') }
-            </span>
-        </span>
-    `
-    document.querySelector('.table-status').innerHTML = template
+        `
+
+        wrap.innerHTML = template
+        this.attachEvents(wrap)
+    },
+
+    attachEvents(wrap) {
+        if(wrap.dataset.paginationBound === '1') return
+
+        wrap.addEventListener('click', (event) => {
+            const target = event.target?.closest('button')
+            if(!target) return
+
+            if(target.id === 'prev-button') return setCurrentPage(currentPage - 1)
+            if(target.id === 'next-button') return setCurrentPage(currentPage + 1)
+
+            const pageIndex = Number(target.getAttribute('page-index'))
+            if(pageIndex) setCurrentPage(pageIndex)
+        })
+
+        wrap.addEventListener('change', (event) => {
+            const select = event.target
+            if(select?.id !== 'pagination-limit') return
+            const nextLimit = Number(select.value)
+            if(!Number.isFinite(nextLimit) || nextLimit < 1) return
+            paginationLimit = nextLimit
+            setCurrentPage(1)
+        })
+
+        wrap.dataset.paginationBound = '1'
+    }
 }
 
 function resolvePagination(data, cb) {
-    callback = cb
-    datasource = data;
+    callback = typeof cb === 'function' ? cb : function(){}
+    datasource = Array.isArray(data) ? data : []
     setCurrentPage(1)
  }
  
  
 function setCurrentPage(pageNum) {
     pageCount = computePageCount()
-    currentPage = Math.min(Math.max(pageNum, 1), pageCount);
-    document.querySelector('#tabledata').innerHTML = `
-        <tr>
-            <td colspan="100%" class="text-center opacity-70">
-                <span class="loader mx-auto"></span>
-            </td>
-        </tr>`
-    prevRange = (currentPage - 1) * paginationLimit;
-    currRange = currentPage * paginationLimit;
+    currentPage = Math.min(Math.max(pageNum, 1), pageCount)
+    const tableBody = document.querySelector('#tabledata')
+    if(tableBody){
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="100%" class="text-center opacity-70">
+                    <span class="loader mx-auto"></span>
+                </td>
+            </tr>`
+    }
+    prevRange = (currentPage - 1) * paginationLimit
+    currRange = currentPage * paginationLimit
     filteredDataSource = []
     for(let i=0; i<datasource.length; i++) {
         if (i >= prevRange && i < currRange) {
             filteredDataSource.push({index: i, ...datasource[i]})
-            }
+        }
     }
     sendStorageSignal(filteredDataSource)
 }
 
 async function sendStorageSignal(filteredDataSource) {
-    sessionStorage.setItem('datasource', JSON.stringify(filteredDataSource))
-    const total = datasource.length
-    const start = total ? prevRange + 1 : 0
-    const end = Math.min(currRange, total)
-    let status = `<span class="text-xs text-gray-500">Showing ${start} to ${end} of ${ total } Records </span> `
-
-    let pageNumbers = await getPaginationNumbers()
-    let pageNumberTemplate = `<span id="pagination-numbers"> ${pageNumbers} </span>`
-
-    sessionStorage.setItem('p-status', status)
-    sessionStorage.setItem('p-numbers', pageNumberTemplate)
     callback()
 }
 
 
 function injectPaginatatedTable(rows) {
-    document.querySelector('#tabledata').innerHTML = rows
-    addPaginationStatus()
-    handleActivePageNumber();
-    handlePageButtonsStatus()
-    initializePaginationMoveButtonsEventListeners()
-    sessionStorage.removeItem('p-status')
-    sessionStorage.removeItem('p-numbers')
-    sessionStorage.removeItem('datasource')
+    const tableBody = document.querySelector('#tabledata')
+    if(tableBody){
+        tableBody.innerHTML = rows || `<tr><td colspan="100%" class="text-center opacity-70"> Table is empty</td></tr>`
+    }
+    paginationComponent.render()
 }
 
 function logoff() {
@@ -506,3 +472,4 @@ function printRegistrationCard(content) {
     document.body.appendChild(div)
     printDomContent('', 'card')
 }
+

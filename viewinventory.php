@@ -3,29 +3,23 @@
                                 <span>VIEW INVENTORY</span>
                             </p>
                             <form id="viewinventoryform">
-                                <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
-                                        <div class="form-group">
-                                            <label for="logoname" class="control-label">Item Name</label>
-                                            <input type="text" name="itemname1" id="itemname1" class="form-control" placeholder="Search by Item Name">
+                                <div class="flex flex-col space-y-4 bg-white/90 p-5 xl:p-8 rounded-sm">
+                                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                                        <div class="form-group lg:col-span-8">
+                                            <label for="itemname1" class="control-label">Item Name</label>
+                                            <input type="text" name="itemname1" id="itemname1" class="form-control" placeholder="Search by name, unit, group, composite, description">
                                         </div>
-                                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                        
-                                        <div></div>
-                                        <div></div>
-                                        
-                                        <div class="flex justify-end mt-5">
-                                             <button id="submit" type="button" class="btn">
-                                                <div class="btnloader" style="display: none;"></div>
-                                                <span>Submit</span>
+                                        <div class="flex gap-3 lg:col-span-4 justify-end">
+                                            <button id="reset-filter" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-red-400 via-red-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                <span>Reset</span>
                                             </button>
-                                            <!-- <button id="submit" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                            <!--    <div class="btnloader" style="display: none;"></div>-->
-                                            <!--    <span>Submit</span>-->
-                                            <!--</button>-->
+                                            <button id="submit" type="button" class="btn">
+                                                <div class="btnloader" style="display: none;"></div>
+                                                <span>Refresh</span>
+                                            </button>
                                         </div>
-                                        
-                                    </div> 
-                        
+                                    </div>
+                                    <p id="inventory-summary" class="text-xs text-gray-500">0 item(s) loaded</p>
                                 </div>
                             </form>
                             <hr class="my-10">
@@ -164,20 +158,20 @@
                         </form>  
                             </div>
                             
-                             <div >
-                                <div class="table-content">
-                                    <table>
+                             <div>
+                                <div class="table-content" style="overflow-x: auto;">
+                                    <table style="min-width: 1120px;">
                                         <thead>
                                             <tr>
-                                                <th>s/n</th>
+                                                <th>S/N</th>
                                                 <th>Item Name</th>
-                                                <th>cost</th>
-                                                <th>price</th>
-                                                <th>units</th>
-                                                <th>Group name</th>
-                                                <th>composite</th>
-                                                <th>description</th>
-                                                <th>action</th>
+                                                <th>Cost</th>
+                                                <th>Price</th>
+                                                <th>Units</th>
+                                                <th>Group Name</th>
+                                                <th>Composite</th>
+                                                <th>Description</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tabledata">
@@ -187,7 +181,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="table-status"></div>
+                                <div class="table-status" id="viewinventory-pagination"></div>
                             </div>
                         
                                 </section> 
