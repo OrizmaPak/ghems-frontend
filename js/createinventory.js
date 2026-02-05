@@ -29,6 +29,7 @@ async function createinventoryActive() {
             did('loading').remove();
             did('createinventoryform').classList.remove('hidden');
             did('departmt').innerHTML = departmenthtml
+            populateInventoryUnitSelects(did('createinventoryform'))
         }
     }else return notification(request.message, 0);
     wireInventoryImport()
@@ -394,5 +395,6 @@ function addform (){
                                 `
     element.innerHTML = x
     did('createinventorycontainer').appendChild(element)
+    populateInventoryUnitSelect(element.querySelector('select[name="units"]'))
     runItemNo()
 }

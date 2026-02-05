@@ -456,3 +456,54 @@ function printRegistrationCard(content) {
     printDomContent('', 'card')
 }
 
+
+const INVENTORY_COMMON_UNITS = [
+  'PCS','PIECE','EACH','PACK','PACKET','ROLL','CUP','PAIR','DOZEN','SCORE','SET','SETS','UNIT','CASE','CARTON','BOX','BAG','SACK','TRAY','PALLET','BUNDLE','REAM','BALE',
+  'METER','METRE','METERS','METRES','KILOMETER','KILOMETRE','CENTIMETER','CENTIMETRE','MILLIMETER','MILLIMETRE','MICROMETER','MICROMETRE','NANOMETER','NANOMETRE',
+  'INCH','FOOT','FEET','YARD','YARDS','MILE','NAUTICAL MILE','FURLONG',
+  'SQUARE METER','SQUARE METRE','SQUARE KILOMETER','SQUARE KILOMETRE','SQUARE CENTIMETER','SQUARE CENTIMETRE','HECTARE','ACRE','SQUARE FOOT','SQUARE YARD',
+  'CUBIC METER','CUBIC METRE','CUBIC CENTIMETER','CUBIC CENTIMETRE','CUBIC FOOT','CUBIC YARD',
+  'LITRE','LITER','LITRES','LITERS','MILLILITRE','MILLILITER','CENTILITRE','DECILITRE','KILOLITRE','CUBIC METER','GALLON','QUART','PINT','CUP','TABLESPOON','TEASPOON','FLUID OUNCE','BARREL','DRUM',
+  'GRAM','G','KILOGRAM','KG','MILLIGRAM','MG','MICROGRAM','TONNE','TON','POUND','LB','OUNCE','OZ','STONE','CARAT',
+  'SECOND','MINUTE','HOUR','DAY','WEEK','MONTH','YEAR',
+  'CELSIUS','FAHRENHEIT','KELVIN',
+  'AMPERE','MILLIAMPERE','VOLT','MILLIVOLT','KILOVOLT','WATT','KILOWATT','MEGAWATT','KILOWATT HOUR','WATT HOUR','JOULE','KILOJOULE','CALORIE','KILOCALORIE','BTU',
+  'PASCAL','KILOPASCAL','BAR','MILLIBAR','ATMOSPHERE','PSI',
+  'METER PER SECOND','KILOMETER PER HOUR','MILE PER HOUR','KNOT',
+  'PERCENT','PPM','PPB'
+];
+
+const INVENTORY_UCUM_UNITS = ["%","%[slope]","[acr_br]","[acr_us]","[Amb\u0027a\u00271\u0027U]","[anti\u0027Xa\u0027U]","[APL\u0027U]","[arb\u0027U]","[AU]","[BAU]","[bbl_us]","[bdsk\u0027U]","[beth\u0027U]","[bf_i]","[Btu]","[Btu_39]","[Btu_59]","[Btu_60]","[Btu_IT]","[Btu_m]","[Btu_th]","[bu_br]","[bu_us]","[c]","[Cal]","[car_Au]","[car_m]","[CCID_50]","[cft_i]","[CFU]","[Ch]","[ch_br]","[ch_us]","[cicero]","[cin_i]","[cml_i]","[cr_i]","[crd_us]","[cup_m]","[cup_us]","[cyd_i]","[D\u0027ag\u0027U]","[degF]","[degR]","[degRe]","[den]","[didot]","[diop]","[dpt_us]","[dqt_us]","[dr_ap]","[dr_av]","[drp]","[dye\u0027U]","[e]","[EID_50]","[ELU]","[eps_0]","[EU]","[fdr_br]","[fdr_us]","[FEU]","[FFU]","[FNU]","[foz_br]","[foz_m]","[foz_us]","[ft_br]","[ft_i]","[ft_us]","[fth_br]","[fth_i]","[fth_us]","[fur_us]","[g]","[gal_br]","[gal_us]","[gal_wi]","[gil_br]","[gil_us]","[GPL\u0027U]","[gr]","[h]","[hd_i]","[hnsf\u0027U]","[HP]","[hp_C]","[hp\u0027_C]","[hp_M]","[hp\u0027_M]","[hp_Q]","[hp\u0027_Q]","[hp_X]","[hp\u0027_X]","[HPF]","[in_br]","[in_i]","[in_i\u0027H2O]","[in_i\u0027Hg]","[in_us]","[IR]","[iU]","[k]","[ka\u0027U]","[kn_br]","[kn_i]","[knk\u0027U]","[kp_C]","[kp_M]","[kp_Q]","[kp_X]","[lb_ap]","[lb_av]","[lb_tr]","[lbf_av]","[lcwt_av]","[Lf]","[ligne]","[lk_br]","[lk_us]","[lne]","[LPF]","[lton_av]","[ly]","[m/s2/Hz^(1/2)]","[m_e]","[m_p]","[mclg\u0027U]","[mesh_i]","[MET]","[mi_br]","[mi_i]","[mi_us]","[mil_i]","[mil_us]","[min_br]","[min_us]","[MPL\u0027U]","[mu_0]","[nmi_br]","[nmi_i]","[NTU]","[oz_ap]","[oz_av]","[oz_m]","[oz_tr]","[pc_br]","[pca]","[pca_pr]","[p\u0027diop]","[PFU]","[pH]","[pi]","[pied]","[pk_br]","[pk_us]","[pnt]","[pnt_pr]","[PNU]","[pouce]","[ppb]","[ppm]","[ppth]","[pptr]","[PRU]","[psi]","[pt_br]","[pt_us]","[pwt_tr]","[qt_br]","[qt_us]","[rch_us]","[rd_br]","[rd_us]","[rlk_us]","[S]","[sc_ap]","[sct]","[scwt_av]","[sft_i]","[sin_i]","[smgy\u0027U]","[smi_us]","[smoot]","[srd_us]","[ston_av]","[stone_av]","[syd_i]","[tbs_m]","[tbs_us]","[tb\u0027U]","[TCID_50]","[todd\u0027U]","[tsp_m]","[tsp_us]","[twp]","[USP\u0027U]","[wood\u0027U]","[yd_br]","[yd_i]","[yd_us]","10*","10^","A","a_g","a_j","a_t","Ao","ar","atm","att","AU","B","B[10.nV]","B[kW]","B[mV]","B[SPL]","B[uV]","B[V]","B[W]","bar","Bd","Bi","bit","bit_s","Bq","By","C","cal","cal_[15]","cal_[20]","cal_IT","cal_m","cal_th","cd","Cel","Ci","circ","d","deg","dyn","eq","erg","eV","F","G","g%","Gal","Gb","gf","gon","Gy","H","Hz","J","K","kat","Ky","l","lm","Lmb","lx","m","m[H2O]","m[Hg]","mho","min","mo","mo_g","mo_j","mo_s","mol","Mx","N","Np","Oe","Ohm","osm","P","Pa","pc","ph","R","rad","REM","s","sb","sph","sr","st","Sv","t","tex","u","V","W","Wb","wk"];
+
+const INVENTORY_UNIT_OPTIONS = Array.from(new Set([
+  ...INVENTORY_COMMON_UNITS,
+  ...INVENTORY_UCUM_UNITS
+]));
+
+function getInventoryUnitOptions() {
+  return INVENTORY_UNIT_OPTIONS;
+}
+
+function buildInventoryUnitOptions(selectedValue = '') {
+  const selectedText = String(selectedValue || '').trim();
+  const options = selectedText && !INVENTORY_UNIT_OPTIONS.includes(selectedText)
+    ? [selectedText, ...INVENTORY_UNIT_OPTIONS]
+    : INVENTORY_UNIT_OPTIONS;
+  const optionTags = options.map(unit => {
+    const selected = unit === selectedText ? ' selected' : '';
+    return `<option${selected}>${unit}</option>`;
+  }).join('');
+  return `<option value=''>-- Select Unit --</option>${optionTags}`;
+}
+
+function populateInventoryUnitSelect(select, selectedValue = '') {
+  if (!select) return;
+  const current = selectedValue || select.value || '';
+  select.innerHTML = buildInventoryUnitOptions(current);
+  if (current) select.value = current;
+}
+
+function populateInventoryUnitSelects(root = document) {
+  if (!root) return;
+  root.querySelectorAll('select[name="units"]').forEach(select => populateInventoryUnitSelect(select));
+}

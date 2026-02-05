@@ -123,6 +123,7 @@ async function loadViewInventory() {
 
 async function viewinventoryActive() {
     bindViewInventoryEvents()
+    populateInventoryUnitSelects(document.querySelector('#viewinventoryeditform'))
     await viewinventoryFormSubmitHandler()
 }
 
@@ -200,6 +201,7 @@ async function viewinventoryFormSubmitHandler(itemid='') {
 
         viewinventoryid = itemid
         did('modalform').classList.remove('hidden')
+        populateInventoryUnitSelect(document.querySelector('#viewinventoryeditform select[name="units"]'), selected.units || '')
         populateData(selected, ['imageurl'])
         return
     }
