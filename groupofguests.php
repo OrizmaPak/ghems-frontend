@@ -227,7 +227,7 @@
                                             </div>
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">travel agent</label>
-                                                <select name="travelagent" id="travelagent" class="form-control comp">
+                                                <select name="travelagent" id="travelagent" class="form-control">
                                                     <option value="">Loading...</option>
                                                 </select>
                                             </div>
@@ -235,13 +235,13 @@
                                         <div class="grid grid-cols-1  lg:grid-cols-2 gap-10">
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">company</label>
-                                                <select name="company" id="company" class="form-control comp">
+                                                <select name="company" id="company" class="form-control">
                                                     <option value="">Loading...</option>
                                                 </select>
                                             </div>
                                             <div class="form-group">
-                                                <label for="logoname" class="control-label">email</label>
-                                                <input type="email" name="email" id="email" class="form-control comp" placeholder="Enter email">
+                                                <label for="logoname" class="control-label">phone number</label>
+                                                <input type="tel" name="phone" id="group_phone" class="form-control comp" placeholder="Enter phone number">
                                             </div>
                                         </div>
                                         <div class="grid grid-cols-1 lg:grid-cols-2 !mb-1 gap-10">
@@ -352,7 +352,7 @@
                                                 <th>Contact</th>
                                                 <th>Travel Agent</th>
                                                 <th>Company</th>
-                                                <th>Email</th>
+                                                <th>Phone</th>
                                                 <th>Country</th>
                                                 <th>city</th>
                                                 <th>Language</th>
@@ -380,4 +380,4 @@
                                 </div>  
                             </div>
                         
-                        </section>  
+                        </section>

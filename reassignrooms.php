@@ -739,7 +739,7 @@
                                             </div>
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">travel agent</label>
-                                                <select name="travelagent" id="travelagent1" class="bg-white form-control comp">
+                                                <select name="travelagent" id="travelagent1" class="bg-white form-control">
                                                     <option value="">Loading...</option>
                                                 </select>
                                             </div>
@@ -747,7 +747,7 @@
                                         <div class="grid grid-cols-1  lg:grid-cols-2 gap-10">
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">company</label>
-                                                <select name="company" id="company1" class="bg-white form-control comp">
+                                                <select name="company" id="company1" class="bg-white form-control">
                                                     <option value="">Loading...</option>
                                                 </select>
                                             </div>

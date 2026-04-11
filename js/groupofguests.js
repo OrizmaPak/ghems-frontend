@@ -163,7 +163,7 @@ async function ongroupofguestsTableDataSignal() {
         <td>${item.contact}</td>
         <td>${item.travelagent}</td>
         <td>${item.company}</td>
-        <td>${item.email}</td>
+        <td>${item.phone}</td>
         <td>${item.country}</td>
         <td>${item.city}</td>
         <td>${item.language}</td>
