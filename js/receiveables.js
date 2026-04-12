@@ -68,7 +68,6 @@ async function removereceiveables(id) {
 async function onreceiveablesTableDataSignal() {
     let rows = getSignaledDatasource().map((item, index) =>{
     const result = Number(item.debit) - Number(item.credit);
-    const textColorClass = result == 0 ? 'text-[black]' : result > 0 ? 'text-[green]' : 'text-[red]';
     const roomIdentifier = item.ownerid || item.roomnumber || '';
     return(`
     <tr>
@@ -76,7 +75,7 @@ async function onreceiveablesTableDataSignal() {
         <td> ROOM ${roomIdentifier}</td>
         <td>${item.debit}</td>
         <td>${item.credit}</td>
-        <td><p class="${textColorClass} font-semibold">${result}</p></td>
+        <td><p class="text-black font-semibold">${result}</p></td>
         <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}')" class="btn btn-sm btn-primary ${result < 1 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
     )
