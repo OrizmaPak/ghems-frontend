@@ -9,7 +9,7 @@
                                 <!--    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Check-In</p>-->
                                 <!--</li>-->
                                 <li id="" class="me-2 cp updater optioner" name="checkinview" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Check-In</p>
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Receivables</p>
                                 </li>
                             </ul>
                             
