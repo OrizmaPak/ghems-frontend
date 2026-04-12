@@ -2,18 +2,21 @@ let receiveablesid
 async function receiveablesActive() {
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
+    if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => fetchreceiveables('', did('receiveablesroomnumber').value))
+    if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
     datasource = []
     await fetchreceiveables()
 }
 
-async function fetchreceiveables(id) {
+async function fetchreceiveables(id='', roomnumber='') {
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
-        paramstr.append('id', id)
+        if(id)paramstr.append('id', id)
+        if(roomnumber)paramstr.append('roomnumber', roomnumber)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchreceivablesbyrooms', id ? getparamm() : null, null, 'json')
+    let request = await httpRequest2('../controllers/fetchreceivablesbyrooms', (id || roomnumber) ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
@@ -27,6 +30,11 @@ async function fetchreceiveables(id) {
         }
     }
     else return notification('No records retrieved')
+}
+
+function resetreceiveablesfilter(){
+    if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = ''
+    fetchreceiveables()
 }
 
 async function removereceiveables(id) {
