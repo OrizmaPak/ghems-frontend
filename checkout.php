@@ -68,7 +68,7 @@
                                         <input type="hidden" name="balance" id="balance" />
                                          <div class="form-group pl-6">
                                                 <label for="logoname" class="control-label text-md ">payment method</label>
-                                                <select name="paymentmethod" id="paymentmethod" class="bg-white form-control !p-2 comp">
+                                                <select name="paymentmethod" id="paymentmethod" class="bg-white form-control !p-2">
                                                     <option value="">-- SELECT PAYMENT METHOD --</option>
                                                     <option>TRANSFER</option>
                                                     <option>CASH</option>
@@ -228,4 +228,3 @@
                         </div>
                         
                         </div>
-                        
