@@ -9,6 +9,10 @@ async function checkoutActive() {
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     if(document.querySelector('#refreshcheckoutoccupancy')) document.querySelector('#refreshcheckoutoccupancy').addEventListener('click', loadCheckoutOccupancyList)
     if(document.querySelector('#checkoutoccupancysearch')) document.querySelector('#checkoutoccupancysearch').addEventListener('input', renderCheckoutOccupancyRows)
+    if(document.querySelector('#balance_display')) document.querySelector('#balance_display').addEventListener('input', () => syncCheckoutPaymentInput('balance'))
+    if(document.querySelector('#balance_display')) document.querySelector('#balance_display').addEventListener('blur', () => syncCheckoutPaymentInput('balance', true))
+    if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('input', () => syncCheckoutPaymentInput('otherbills'))
+    if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('blur', () => syncCheckoutPaymentInput('otherbills', true))
     datasource = []
     await fetchcheckinn('', '', 'cancelreservationformfilter')
     await loadCheckoutOccupancyList()
@@ -56,10 +60,8 @@ async function fetchcheckout(id) {
                 </tr>
             `
         }).join('')
-        if(did('balance'))did('balance').value = roomBalance
-        if(did('balance_display'))did('balance_display').value = formatNumber(roomBalance)
-        if(did('otherbills'))did('otherbills').value = otherBills
-        if(did('otherbills_display'))did('otherbills_display').value = formatNumber(otherBills)
+        setCheckoutPaymentValue('balance', roomBalance)
+        setCheckoutPaymentValue('otherbills', otherBills)
         did('tabledata2').innerHTML += `
                 <tr>
                     <td></td>
@@ -207,6 +209,24 @@ async function loadCheckoutFromOccupancy(reservationId){
     if(!reference)return notification('Reservation reference was not found for checkout', 0)
     if(did('reference'))did('reference').value = reference
     await fetchcheckout()
+}
+
+function parseCheckoutPaymentAmount(value){
+    return String(value || '').replace(/,/g, '').replace(/[^\d.]/g, '')
+}
+
+function setCheckoutPaymentValue(field, value){
+    const amount = parseCheckoutPaymentAmount(value)
+    if(did(field))did(field).value = amount
+    if(did(`${field}_display`))did(`${field}_display`).value = amount ? formatNumber(amount) : ''
+}
+
+function syncCheckoutPaymentInput(field, shouldFormat = false){
+    const display = did(`${field}_display`)
+    if(!display)return
+    const amount = parseCheckoutPaymentAmount(display.value)
+    if(did(field))did(field).value = amount
+    if(shouldFormat)display.value = amount ? formatNumber(amount) : ''
 }
 
 function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){

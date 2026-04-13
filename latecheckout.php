@@ -101,13 +101,13 @@
                                     </table>
                                     <div class="flex flex-wrap gap-10 justify-end items-end pr-5">
                                         <div class="form-group pl-6">
-                                                <label for="balance_display" class="control-label text-md ">Room Balance</label>
-                                                <input type="text" id="balance_display" class="bg-white form-control !p-2" placeholder="Room Balance balance for the rooms" readonly>
+                                                <label for="balance_display" class="control-label text-md ">Room Payment</label>
+                                                <input type="text" id="balance_display" class="bg-white form-control !p-2" inputmode="decimal" placeholder="Enter room balance payment">
                                                 <input type="hidden" name="balance" id="balance">
                                             </div>
                                         <div class="form-group pl-6">
-                                                <label for="otherbills_display" class="control-label text-md ">Other Bills</label>
-                                                <input type="text" id="otherbills_display" class="bg-white form-control !p-2" placeholder="Other Bills for any other bill pending" readonly>
+                                                <label for="otherbills_display" class="control-label text-md ">Other Bills Payment</label>
+                                                <input type="text" id="otherbills_display" class="bg-white form-control !p-2" inputmode="decimal" placeholder="Enter payment for any other pending bill">
                                                 <input type="hidden" name="otherbills" id="otherbills">
                                             </div>
                                          <div class="form-group pl-6">
