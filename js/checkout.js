@@ -13,6 +13,8 @@ async function checkoutActive() {
     if(document.querySelector('#balance_display')) document.querySelector('#balance_display').addEventListener('blur', () => syncCheckoutPaymentInput('balance', true))
     if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('input', () => syncCheckoutPaymentInput('otherbills'))
     if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('blur', () => syncCheckoutPaymentInput('otherbills', true))
+    if(document.querySelector('#amountpaid_display')) document.querySelector('#amountpaid_display').addEventListener('input', () => syncCheckoutPaymentInput('amountpaid'))
+    if(document.querySelector('#amountpaid_display')) document.querySelector('#amountpaid_display').addEventListener('blur', () => syncCheckoutPaymentInput('amountpaid', true))
     datasource = []
     await fetchcheckinn('', '', 'cancelreservationformfilter')
     await loadCheckoutOccupancyList()

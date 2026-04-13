@@ -110,6 +110,11 @@
                                                 <input type="text" id="otherbills_display" class="bg-white form-control !p-2" inputmode="decimal" placeholder="Enter payment for any other pending bill">
                                                 <input type="hidden" name="otherbills" id="otherbills">
                                             </div>
+                                        <div class="form-group pl-6">
+                                                <label for="amountpaid_display" class="control-label text-md ">Amount Paid</label>
+                                                <input type="text" id="amountpaid_display" class="bg-white form-control !p-2" inputmode="decimal" placeholder="Enter amount paid at checkout">
+                                                <input type="hidden" name="amountpaid" id="amountpaid">
+                                            </div>
                                          <div class="form-group pl-6">
                                                 <label for="logoname" class="control-label text-md ">payment method</label>
                                                 <select name="paymentmethod" id="paymentmethod" class="bg-white form-control !p-2">
