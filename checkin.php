@@ -579,11 +579,15 @@
                                             <label for="logoname" class=" font-bold">Total Rate:</label>
                                             <label for="logoname" id="totalrate" class=" !text-md font-bold text-[blue]">00.00</label>
                                             <label for="logoname" id="totalmounttext" class=" !text-md hidden font-bold text-[blue]">00.00</label>
-                                            <input type="text"  name="" id="totalamount" class="bg-white form-control !p-2 !hidden border-none text-[blue]" readonly>
+                                            <input type="text"  name="totalamount" id="totalamount" class="bg-white form-control !p-2 !hidden border-none text-[blue]" readonly>
                                             <input type="text"  name="" id="currency" class="bg-white form-control !p-2 !hidden border-none text-[blue]" readonly>
                                             <input type="text" id="" class="bg-white form-control !p-2 !hidden border-none text-[blue]" readonly>
                                         </div>
-                                        <div class="flex items-center gap-5 text-md border  p-4 "> 
+                                        <div class="flex items-center gap-5 text-md border  p-4 ">
+                                            <label for="otherdiscount" class=" font-bold">Other Discount:</label>
+                                            <input type="number" min="0" name="otherdiscount" id="otherdiscount" oninput="calculatetotals()" class="bg-white form-control !p-2" placeholder="0">
+                                        </div>
+                                        <div class="flex items-center gap-5 text-md border  p-4 ">
                                             <label for="logoname" class=" font-bold">Total Discount:</label>
                                             <label for="logoname" id="totaldiscount" class=" !text-md font-bold text-[blue]">00.00</label>
                                         </div>

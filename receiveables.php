@@ -56,7 +56,7 @@
                                 <div class="table-content">
                                     <table id="tableer">
                                         <thead>
-                                            <tr>
+                                            <tr id="receiveables-table-head">
                                                  <th style="width: 20px">s/n</th>
                                                 <th>room&nbsp;number</th>
                                                 <th>debit</th>

@@ -1,4 +1,5 @@
 let receiveablesid
+let receiveablesFiltered = false
 async function receiveablesActive() {
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
@@ -9,6 +10,8 @@ async function receiveablesActive() {
 }
 
 async function fetchreceiveables(id='', roomnumber='') {
+    receiveablesFiltered = Boolean(roomnumber)
+    setreceiveablesTableHeader()
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
@@ -66,6 +69,27 @@ async function removereceiveables(id) {
         // </td>
 
 async function onreceiveablesTableDataSignal() {
+    setreceiveablesTableHeader()
+    if(receiveablesFiltered){
+        let rows = getSignaledDatasource().map((item, index) =>{
+        const result = Number(item.debit) - Number(item.credit);
+        const roomIdentifier = item.ownerid || item.roomnumber || '';
+        return(`
+        <tr>
+            <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
+            <td> ROOM ${roomIdentifier}</td>
+            <td>${item.description || ''}</td>
+            <td>${formatNumber(item.debit)}</td>
+            <td>${formatNumber(item.credit)}</td>
+            <td><p class="text-black font-semibold">${formatNumber(result)}</p></td>
+            <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}')" class="btn btn-sm btn-primary ${result < 1 ? '' : '!hidden'}">Pay Now</button></td>
+        </tr>`)}
+        )
+        .join('')
+        injectPaginatatedTable(rows)
+        return
+    }
+
     let rows = getSignaledDatasource().map((item, index) =>{
     const result = Number(item.debit) - Number(item.credit);
     const roomIdentifier = item.ownerid || item.roomnumber || '';
@@ -81,6 +105,45 @@ async function onreceiveablesTableDataSignal() {
     )
     .join('')
     injectPaginatatedTable(rows)
+}
+
+function setreceiveablesTableHeader(){
+    const tableHead = document.getElementById('receiveables-table-head')
+    if(!tableHead)return
+
+    tableHead.innerHTML = receiveablesFiltered ? `
+        <th>transaction&nbsp;date</th>
+        <th>room&nbsp;number</th>
+        <th>description</th>
+        <th>debit</th>
+        <th>credit</th>
+        <th>balance</th>
+        <th>ACTION</th>
+    ` : `
+        <th style="width: 20px">s/n</th>
+        <th>room&nbsp;number</th>
+        <th>debit</th>
+        <th>credit</th>
+        <th>balance</th>
+        <th>ACTION</th>
+    `
+}
+
+function formatReceivableTransactionDate(value){
+    if(!value)return ''
+
+    const parsedDate = new Date(String(value).replace(' ', 'T'))
+    if(Number.isNaN(parsedDate.getTime()))return value
+
+    const day = parsedDate.getDate()
+    const suffix = day % 10 == 1 && day % 100 != 11 ? 'st' : day % 10 == 2 && day % 100 != 12 ? 'nd' : day % 10 == 3 && day % 100 != 13 ? 'rd' : 'th'
+    const month = parsedDate.toLocaleString('en-US', { month: 'long' })
+    const year = parsedDate.getFullYear()
+    const hours = parsedDate.getHours() % 12 || 12
+    const minutes = String(parsedDate.getMinutes()).padStart(2, '0')
+    const period = parsedDate.getHours() < 12 ? 'a.m.' : 'p.m.'
+
+    return `${day}${suffix} of ${month} ${year} ${hours}:${minutes} ${period}`
 }
 
 function openreceiveablemodal(dbt, cdt, rn){

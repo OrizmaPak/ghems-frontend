@@ -196,16 +196,19 @@ function calculatetotals(){
     let trd = 0;
     let tp = 0;
     let tpd = 0;
+    let otherdiscount = document.getElementById('otherdiscount') ? Number(document.getElementById('otherdiscount').value || 0) : 0;
+    if(otherdiscount < 0)otherdiscount = 0
     for(let i=0;i<document.getElementsByClassName('roomnumber').length;i++){
         tr = Number(document.getElementsByClassName('roomrate')[i].value)+tr
         trd = Number(document.getElementsByClassName('discountamount')[i].value)+trd
         tp = Number(document.getElementsByClassName('planamount')[i].value)+tp
         tpd = Number(document.getElementsByClassName('plandiscountamount')[i].value)+tpd
     }
+    let totalamount = Math.max(((tr + tp) - (trd + tpd)) - otherdiscount, 0)
     did('totalrate').textContent = formatNumber(tr + tp)
-    did('totaldiscount').textContent = formatNumber(trd+tpd)
-    did('totalplan').textContent = formatNumber((tr + tp) - (trd + tpd))
-    if(document.getElementById('totalamount'))document.getElementById('totalamount').value = (tr + tp) - (trd + tpd)
+    did('totaldiscount').textContent = formatNumber(trd + tpd + otherdiscount)
+    did('totalplan').textContent = formatNumber(totalamount)
+    if(document.getElementById('totalamount'))document.getElementById('totalamount').value = totalamount
 }
 
 // this is the function that adds new card
@@ -2059,6 +2062,8 @@ async function checkinnFormSubmitHandler(guest){
         param.set('arrivaldate', document.getElementById('arrivaldate').value.replace('T', ' '))
         param.set('departuredate', document.getElementById('departuredate').value.replace('T', ' '))
         param.set('rowsize', document.getElementsByClassName('roomnumber').length)
+        if(document.getElementById('otherdiscount'))param.set('otherdiscount', document.getElementById('otherdiscount').value || 0)
+        if(document.getElementById('totalamount'))param.set('totalamount', document.getElementById('totalamount').value || 0)
         
         for(let i=0;i<rn.length;i++){
            if(document.getElementsByClassName('moreguestcontainer')[i].children.length > 1){
