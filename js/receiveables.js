@@ -78,7 +78,7 @@ async function onreceiveablesTableDataSignal() {
         <tr>
             <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
             <td> ROOM ${roomIdentifier}</td>
-            <td>${item.description || ''}</td>
+            <td>${formatReceivableDescription(item.description)}</td>
             <td>${formatNumber(item.debit)}</td>
             <td>${formatNumber(item.credit)}</td>
             <td><p class="text-black font-semibold">${formatNumber(result)}</p></td>
@@ -144,6 +144,15 @@ function formatReceivableTransactionDate(value){
     const period = parsedDate.getHours() < 12 ? 'a.m.' : 'p.m.'
 
     return `${day}${suffix} of ${month} ${year} ${hours}:${minutes} ${period}`
+}
+
+function formatReceivableDescription(value){
+    if(!value)return ''
+
+    const parts = String(value).split('|').map(part => part.trim())
+    if(parts.length >= 3 && parts[1])return parts[1]
+
+    return value
 }
 
 function openreceiveablemodal(dbt, cdt, rn){
