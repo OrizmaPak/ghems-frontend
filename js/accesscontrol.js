@@ -84,6 +84,7 @@ const accessctrl_frontdesk = [
     'NOTIFICATIONS',
     'RECEIVABLES',
     'REVIEWS',
+    'OCCUPANCY LIST',
     'REVERSE RESERVATION',
     'NO POSTING',
     'DELETE GUEST'

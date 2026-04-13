@@ -198,12 +198,13 @@ async function runPermissions(){
     let request = await httpRequest2('../controllers/fetchuserprofile', param(), null, 'json')
     if(request.status) {
         userpermission = request.permissions
+        const role = String(request.role || '').replace(/\s+/g, '').toUpperCase()
         let subitems = document.getElementsByClassName('navitem-child')
-        if(request.role == 'SUPERADMIN'){ 
+        if(role == 'SUPERADMIN'){
             for(i=0; i<subitems.length; i++){
                     subitems[i].classList.remove('hidden');
             }}
-        if(request.role != 'SUPERADMIN'){ 
+        if(role != 'SUPERADMIN'){
             for(i=0; i<subitems.length; i++){
               if(userpermission.split('|').includes(subitems[i].textContent.toUpperCase().trim())){
                     if(permission_switch === 'ON')subitems[i].classList.remove('hidden');
