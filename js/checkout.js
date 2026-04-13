@@ -21,16 +21,20 @@ async function fetchcheckout(id) {
     // if(!id)document.getElementById('tabledata2').innerHTML = `No records retrieved`
     if(request.status) {
         datasource = request.data;
+        const checkoutTransactions = [
+            ...(request.data.transactions || []),
+            ...(request.data.posdata || [])
+        ].sort((a, b) => new Date(a.transactiondate) - new Date(b.transactiondate) || Number(a.id || 0) - Number(b.id || 0))
         let tt = 0
             yy = 0
-        did('tabledata2').innerHTML = request.data.transactions.map((item, index)=>{
+        did('tabledata2').innerHTML = checkoutTransactions.map((item, index)=>{
             tt=tt+(Number(item.debit)-Number(item.credit))
             // S/N	ITEM	DEBIT	CREDIT	BALANCE
             return `
                 <tr>
                     <td>${index + 1 }</td>
                     <td>${specialformatDateTime(item.transactiondate)}</td>
-                    <td>${item.description}</td>
+                    <td>${formatCheckoutDescription(item.description)}</td>
                     <td>${formatNumber(item.debit)}</td>
                     <td>${formatNumber(item.credit)}</td>
                     <td>${formatNumber(tt)}</td>
@@ -100,6 +104,15 @@ async function fetchcheckout(id) {
     else{
         did('invoicing').click()
         return notification(request.message, 0)}
+}
+
+function formatCheckoutDescription(value){
+    if(!value)return ''
+
+    const parts = String(value).split('|').map(part => part.trim())
+    if(parts.length >= 3 && parts[1])return parts[1]
+
+    return value
 }
 
 async function fetchexpectedarrivalss() {
@@ -332,4 +345,4 @@ async function checkoutFormSubmitHandler() {
 //         }
 //     }
 //     else return notification('No records retrieved')
-// } 
+// }
