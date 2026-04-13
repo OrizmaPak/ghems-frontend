@@ -162,8 +162,8 @@ function getReceivableRunningBalance(index){
     const lastIndex = Number(index)
 
     for(let i = 0; i <= lastIndex && i < datasource.length; i++){
-        balance += Number(datasource[i].credit || 0)
-        balance -= Number(datasource[i].debit || 0)
+        balance += Number(datasource[i].debit || 0)
+        balance -= Number(datasource[i].credit || 0)
     }
 
     return balance
