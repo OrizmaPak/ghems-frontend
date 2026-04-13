@@ -1104,7 +1104,7 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
                 if(did('reassignroomsform'))datasource = request.data.filter(data=>data.reservations.status == 'CHECKED IN')
                 if(did('guestreservationform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id == 0)
                 if(did('reservationcheckinform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id == 0)
-                if(did('groupcheckinform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id != 0)
+                if(did('groupcheckinform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED' || data.reservations.status == 'CHECKED IN').filter(data=>data.reservations.group_id != 0)
                 if(did('extendstayform'))datasource = request.data
                 // if(did('cancelreservationform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id != 0)
                 if(did('cancelreservationformfilter'))datasource = request.data
@@ -1503,6 +1503,14 @@ function removeguestsreservations(ref){
     document.getElementById('cancelreservation').click()
 }
 
+function openCheckoutFromCheckin(id){
+    const reservation = datasource.find(data => String(data.reservations?.id) == String(id))?.reservations
+    if(!reservation?.reference)return notification('Reservation reference was not found for checkout', 0)
+
+    sessionStorage.setItem('checkoutreference', reservation.reference)
+    if(did('checkout'))did('checkout').click()
+}
+
 
 
 async function oncheckinTableDataSignal() {
@@ -1588,6 +1596,7 @@ async function oncheckinTableDataSignal() {
                 <button title="Reverse Reservation" onclick="reverseareservation('${item.reservations.id}', 'reserved')" class="material-symbols-outlined ${item.reservations.status == 'RESERVED' ? '' : item.reservations.status == 'OPEN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Check In" onclick="reverseareservation('${item.reservations.id}', 'checked in')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Check Out" onclick="reverseareservation('${item.reservations.id}', 'checked out')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED OUT' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
+                <button title="Check Out" onclick="openCheckoutFromCheckin('${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">logout</button>
                 <button title="Edit row entry" onclick="fetchcheckinn('${item.reservations.id}')" class="${item.reservations.status == 'CHECKED IN' ? 'hidden' : ''} ${did('cancelreservationformfilter') ? '' : 'hidden'} ${!did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Cancel Reservation" onclick="removeguestsreservations('${item.reservations.reference}')" class="${item.reservations.status != 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
             </div>

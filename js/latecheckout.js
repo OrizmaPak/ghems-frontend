@@ -106,6 +106,7 @@ async function fetchcheckout(id) {
                                   </div>
                                 </div>
         `;
+        did('displaydetails').innerHTML = buildCheckoutSummary(request.data, roomBalance, otherBills, tt)
 
     }
     else{
@@ -124,6 +125,62 @@ function formatCheckoutDescription(value){
 
 function getCheckoutLedgerBalance(items){
     return items.reduce((total, item) => total + (Number(item.debit || 0) - Number(item.credit || 0)), 0)
+}
+
+function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){
+    const reservation = data.reservation || {}
+    const guestrows = data.guestrows || []
+    const posdata = data.posdata || []
+    const rooms = guestrows.length ? guestrows.map(row => row.roomnumber).filter(Boolean).join(', ') : '-'
+    const totalRoomRate = guestrows.reduce((total, row) => total + Number(row.roomrate || 0), 0)
+    const roomTypes = guestrows.length ? [...new Set(guestrows.map(row => row.roomcategoryname).filter(Boolean))].join(', ') : '-'
+    const rateCodes = guestrows.length ? [...new Set(guestrows.map(row => row.ratecodename).filter(Boolean))].join(', ') : '-'
+
+    return `
+                            <div class="flex flex-col justify-center items-center gap-2 text-center">
+                                    <h4 class="font-semibold">${did('your_companyname').value}</h4>
+                                    <p class="text-xs">${did('your_companyaddress').value}</p>
+                                </div>
+                                <div class="flex flex-col gap-3 border-b py-6 text-xs">
+                                  ${checkoutSummaryRow('reference', reservation.reference)}
+                                  ${checkoutSummaryRow('status', reservation.status)}
+                                  ${checkoutSummaryRow('Room(s)', rooms)}
+                                  ${checkoutSummaryRow('room type', roomTypes)}
+                                  ${checkoutSummaryRow('rate code', rateCodes)}
+                                  ${checkoutSummaryRow('arrival date', specialformatDateTime(reservation.arrivaldate))}
+                                  ${checkoutSummaryRow('departure date', specialformatDateTime(reservation.departuredate))}
+                                  ${checkoutSummaryRow('number of nights', reservation.numberofnights)}
+                                  ${checkoutSummaryRow('type of guest', reservation.typeofguest)}
+                                  ${checkoutSummaryRow('reservation type', reservation.reservationtype)}
+                                  ${checkoutSummaryRow('billing info', reservation.billinginfo)}
+                                  ${checkoutSummaryRow('payment method', reservation.paymentmethod)}
+                                  ${checkoutSummaryRow('currency', reservation.currency)}
+                                </div>
+                                <div class="flex flex-col gap-3 border-b py-6 text-xs">
+                                  <p class="font-semibold text-gray-700">Late Checkout Overview</p>
+                                  ${checkoutSummaryRow('total room rate', formatNumber(totalRoomRate))}
+                                  ${checkoutSummaryRow('room balance', formatNumber(roomBalance))}
+                                  ${checkoutSummaryRow('other bills', formatNumber(otherBills))}
+                                  ${checkoutSummaryRow('POS entries', posdata.length)}
+                                  ${checkoutSummaryRow('total balance', formatNumber(totalBalance), true)}
+                                </div>
+                                <div class="flex flex-col gap-3 pb-6 pt-4 text-xs">
+                                  <div class="py-2 justify-center items-center flex flex-col gap-2">
+                                    <p class="flex gap-2">${did('your_companyemail').value}</p>
+                                    <p class="flex gap-2">${did('your_companyphone').value}</p>
+                                  </div>
+                                </div>
+        `;
+}
+
+function checkoutSummaryRow(label, value, strong=false){
+    const displayValue = value === 0 ? 0 : value || '-'
+    return `
+                                  <p class="flex justify-between gap-4">
+                                    <span class="text-gray-400 capitalize text-right">${label}:</span>
+                                    <span class="${strong ? 'font-semibold text-black' : 'text-gray-800'} text-right">${displayValue}</span>
+                                  </p>
+    `
 }
 
 async function fetchexpectedarrivalss() {
