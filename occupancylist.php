@@ -73,7 +73,7 @@
                                             <thead>
                                                     <tr>
                                                      <th style="width: 20px">s/n</th>
-                                                    <th class="text-center opacity-70 hidden">Action</th>
+                                                    <th class="text-center opacity-70">Action</th>
                                                     <th class="text-center opacity-70">Ref</th>
                                                     <th class="text-center opacity-70">details</th>
                                                     <th class="text-center opacity-70">
@@ -290,7 +290,6 @@
                                 </div>
                                
                         </div>
-                        
                         
                         
                         

@@ -1,12 +1,23 @@
 let latecheckoutid
+window.checkoutOccupancyData = window.checkoutOccupancyData || []
 async function latecheckoutActive() {
+    window.currentCheckoutMode = 'latecheckout'
     const form = document.querySelector('#checkoutform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', latecheckoutFormSubmitHandler)
     if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', fetchcheckout)
     if(document.querySelector('#submitview')) document.querySelector('#submitview').addEventListener('click', fetchcheckinn('', '', 'cancelreservationformfilter'))
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#refreshcheckoutoccupancy')) document.querySelector('#refreshcheckoutoccupancy').addEventListener('click', loadCheckoutOccupancyList)
+    if(document.querySelector('#checkoutoccupancysearch')) document.querySelector('#checkoutoccupancysearch').addEventListener('input', renderCheckoutOccupancyRows)
     datasource = []
     await fetchcheckinn('', '', 'cancelreservationformfilter')
+    await loadCheckoutOccupancyList()
+    const checkoutReference = sessionStorage.getItem('checkoutreference')
+    if(checkoutReference && did('reference')){
+        did('reference').value = checkoutReference
+        sessionStorage.removeItem('checkoutreference')
+        await fetchcheckout()
+    }
 }
 
 async function fetchcheckout(id) {
@@ -127,6 +138,77 @@ function getCheckoutLedgerBalance(items){
     return items.reduce((total, item) => total + (Number(item.debit || 0) - Number(item.credit || 0)), 0)
 }
 
+async function loadCheckoutOccupancyList(){
+    if(!did('checkoutoccupancydata'))return
+    did('checkoutoccupancydata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading current check-ins...</td></tr>`
+    let request = await httpRequest2('../controllers/fetchallcheckins', new FormData(), did('refreshcheckoutoccupancy'), 'json')
+    if(request.status && request.data?.length){
+        window.checkoutOccupancyData = request.data
+        renderCheckoutOccupancyRows()
+        return
+    }
+    window.checkoutOccupancyData = []
+    did('checkoutoccupancydata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No current check-ins found</td></tr>`
+}
+
+function renderCheckoutOccupancyRows(){
+    if(!did('checkoutoccupancydata'))return
+    const search = (did('checkoutoccupancysearch')?.value || '').toLowerCase().trim()
+    const rows = window.checkoutOccupancyData
+        .filter(item => getCheckoutOccupancySearchText(item).includes(search))
+        .map((item, index) => buildCheckoutOccupancyRow(item, index))
+        .join('')
+
+    did('checkoutoccupancydata').innerHTML = rows || `<tr><td colspan="100%" class="text-center opacity-70">No matching check-ins found</td></tr>`
+}
+
+function buildCheckoutOccupancyRow(item, index){
+    const reservation = item.reservations || {}
+    const roomRows = item.roomguestrow || item.roomgeustrow || []
+    const rooms = roomRows.map(row => row.roomdata?.roomnumber).filter(Boolean).join(', ') || '-'
+    const guests = roomRows.flatMap(row => [
+        ...(row.guest1 || []),
+        ...(row.guest2 || []),
+        ...(row.guest3 || []),
+        ...(row.guest4 || [])
+    ]).map(guest => `${guest.firstname || ''} ${guest.lastname || ''} ${guest.othernames || ''}`.trim()).filter(Boolean).join(', ') || '-'
+
+    return `
+        <tr>
+            <td>${index + 1}</td>
+            <td>
+                <button title="Load checkout" onclick="loadCheckoutFromOccupancy('${reservation.id || ''}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">logout</button>
+            </td>
+            <td>${reservation.reference || '-'}</td>
+            <td>${rooms}</td>
+            <td>${guests}</td>
+            <td>${reservation.arrivaldate ? specialformatDateTime(reservation.arrivaldate) : '-'}</td>
+            <td>${reservation.departuredate ? specialformatDateTime(reservation.departuredate) : '-'}</td>
+            <td>${formatNumber(reservation.amountpaid || 0)}</td>
+        </tr>
+    `
+}
+
+function getCheckoutOccupancySearchText(item){
+    const reservation = item.reservations || {}
+    const roomRows = item.roomguestrow || item.roomgeustrow || []
+    const roomText = roomRows.map(row => row.roomdata?.roomnumber).filter(Boolean).join(' ')
+    const guestText = roomRows.flatMap(row => [
+        ...(row.guest1 || []),
+        ...(row.guest2 || []),
+        ...(row.guest3 || []),
+        ...(row.guest4 || [])
+    ]).map(guest => `${guest.firstname || ''} ${guest.lastname || ''} ${guest.othernames || ''} ${guest.phone || ''}`).join(' ')
+    return `${reservation.reference || ''} ${reservation.arrivaldate || ''} ${reservation.departuredate || ''} ${reservation.status || ''} ${roomText} ${guestText}`.toLowerCase()
+}
+
+async function loadCheckoutFromOccupancy(reservationId){
+    const reference = window.checkoutOccupancyData.find(item => String(item.reservations?.id) == String(reservationId))?.reservations?.reference
+    if(!reference)return notification('Reservation reference was not found for checkout', 0)
+    if(did('reference'))did('reference').value = reference
+    await fetchcheckout()
+}
+
 function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){
     const reservation = data.reservation || {}
     const guestrows = data.guestrows || []
@@ -157,7 +239,7 @@ function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){
                                   ${checkoutSummaryRow('currency', reservation.currency)}
                                 </div>
                                 <div class="flex flex-col gap-3 border-b py-6 text-xs">
-                                  <p class="font-semibold text-gray-700">Late Checkout Overview</p>
+                                  <p class="font-semibold text-gray-700">${window.currentCheckoutMode == 'latecheckout' ? 'Late Checkout Overview' : 'Checkout Overview'}</p>
                                   ${checkoutSummaryRow('total room rate', formatNumber(totalRoomRate))}
                                   ${checkoutSummaryRow('room balance', formatNumber(roomBalance))}
                                   ${checkoutSummaryRow('other bills', formatNumber(otherBills))}

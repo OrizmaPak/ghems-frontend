@@ -45,6 +45,41 @@
 
                             </div>
                         </form>
+                            <div class="bg-white/90 p-5 xl:p-10 rounded-sm mb-6 border">
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-end">
+                                    <div class="form-group lg:col-span-2">
+                                        <label for="checkoutoccupancysearch" class="control-label">Search current check-ins</label>
+                                        <input type="text" id="checkoutoccupancysearch" class="form-control" placeholder="Search by reference, room, guest, phone, arrival or departure">
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button id="refreshcheckoutoccupancy" type="button" class="btn">
+                                            <div class="btnloader" style="display: none;"></div>
+                                            <span>Refresh</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-content mt-5 lg:max-w-full">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20px">s/n</th>
+                                                <th>action</th>
+                                                <th>reference</th>
+                                                <th>rooms</th>
+                                                <th>guest(s)</th>
+                                                <th>arrival</th>
+                                                <th>departure</th>
+                                                <th>amount paid</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="checkoutoccupancydata">
+                                            <tr>
+                                                <td colspan="100%" class="text-center opacity-70">Loading current check-ins...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                             <form id="checkoutform" class=" shadow rounded border">
                                 <div class="table-content">
                                     <table id="tableer">

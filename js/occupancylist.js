@@ -375,9 +375,9 @@ async function onoccupancylistTableDataSignal() {
     return `
                                                        <tr> 
                                                             <td>${index + 1 }</td> 
-                                                            <td class="hidden">
+                                                            <td>
                                                                 <div class="w-full h-full flex items-center justify-center gap-4">
-                                                                    <button title="View" class="material-symbols-outlined rounded-full bg-gray-100 h-8 w-8 text-green-400 drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                                                                    <button title="Check Out" onclick="openCheckoutFromOccupancy('${item.reservations.id}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">logout</button>
                                                                 </div>
                                                             </td>
                                                             <td>${item.reservations.reference}</td>
@@ -662,4 +662,12 @@ function stageCardPrintoccupancylist(item) {
     </div>
     `
     occupancylist(html)
+}
+
+function openCheckoutFromOccupancy(id){
+    const reference = datasource.find(data => String(data.reservations?.id) == String(id))?.reservations?.reference
+    if(!reference)return notification('Reservation reference was not found for checkout', 0)
+
+    sessionStorage.setItem('checkoutreference', reference)
+    if(did('checkout'))did('checkout').click()
 }
