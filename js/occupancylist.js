@@ -626,7 +626,7 @@ function stageCardPrintoccupancylist(item) {
                     <tbody>
                         <tr>
                             <td class="p-2 font-semibold">Conditions</td>
-                            <td class="p-2"></td>
+                            <td class="p-2">funds cannot be refunded after 24hours of confirmation</td>
                         </tr>
                     </tbody>
                 </table>
