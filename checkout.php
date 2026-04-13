@@ -64,8 +64,15 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                    <div class="flex gap-10 justify-end items-end pr-5">
-                                        <input type="hidden" name="balance" id="balance" />
+                                    <div class="flex flex-wrap gap-10 justify-end items-end pr-5">
+                                        <div class="form-group pl-6">
+                                                <label for="balance" class="control-label text-md ">Room Balance</label>
+                                                <input type="number" name="balance" id="balance" class="bg-white form-control !p-2" placeholder="Room Balance balance for the rooms" readonly>
+                                            </div>
+                                        <div class="form-group pl-6">
+                                                <label for="otherbills" class="control-label text-md ">Other Bills</label>
+                                                <input type="number" name="otherbills" id="otherbills" class="bg-white form-control !p-2" placeholder="Other Bills for any other bill pending" readonly>
+                                            </div>
                                          <div class="form-group pl-6">
                                                 <label for="logoname" class="control-label text-md ">payment method</label>
                                                 <select name="paymentmethod" id="paymentmethod" class="bg-white form-control !p-2">

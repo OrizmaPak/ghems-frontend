@@ -21,10 +21,14 @@ async function fetchcheckout(id) {
     // if(!id)document.getElementById('tabledata2').innerHTML = `No records retrieved`
     if(request.status) {
         datasource = request.data;
+        const checkoutRoomTransactions = request.data.transactions || []
+        const checkoutPosTransactions = request.data.posdata || []
         const checkoutTransactions = [
-            ...(request.data.transactions || []),
-            ...(request.data.posdata || [])
+            ...checkoutRoomTransactions,
+            ...checkoutPosTransactions
         ].sort((a, b) => new Date(a.transactiondate) - new Date(b.transactiondate) || Number(a.id || 0) - Number(b.id || 0))
+        const roomBalance = getCheckoutLedgerBalance(checkoutRoomTransactions)
+        const otherBills = getCheckoutLedgerBalance(checkoutPosTransactions)
         let tt = 0
             yy = 0
         did('tabledata2').innerHTML = checkoutTransactions.map((item, index)=>{
@@ -41,6 +45,8 @@ async function fetchcheckout(id) {
                 </tr>
             `
         }).join('')
+        if(did('balance'))did('balance').value = roomBalance
+        if(did('otherbills'))did('otherbills').value = otherBills
         did('tabledata2').innerHTML += `
                 <tr>
                     <td></td>
@@ -51,7 +57,6 @@ async function fetchcheckout(id) {
                     <td>${formatNumber(tt)}</td>
                 </tr>
             `
-        did('balance').value = tt
         did('displaydetails').innerHTML = `
                             <div class="flex flex-col justify-center items-center gap-2">
                                     <h4 class="font-semibold">${did('your_companyname').value}</h4>
@@ -113,6 +118,10 @@ function formatCheckoutDescription(value){
     if(parts.length >= 3 && parts[1])return parts[1]
 
     return value
+}
+
+function getCheckoutLedgerBalance(items){
+    return items.reduce((total, item) => total + (Number(item.debit || 0) - Number(item.credit || 0)), 0)
 }
 
 async function fetchexpectedarrivalss() {
