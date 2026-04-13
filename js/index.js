@@ -203,7 +203,12 @@ async function runPermissions(){
         if(role == 'SUPERADMIN'){
             for(i=0; i<subitems.length; i++){
                     subitems[i].classList.remove('hidden');
-            }}
+            }
+            let x =  document.getElementsByClassName('navitem-title')
+            for(let i=0;i<x.length;i++){
+                x[i].classList.remove('hidden')
+            }
+        }
         if(role != 'SUPERADMIN'){
             for(i=0; i<subitems.length; i++){
               if(userpermission.split('|').includes(subitems[i].textContent.toUpperCase().trim())){
