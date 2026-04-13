@@ -64,6 +64,8 @@ async function fetchcheckout(id) {
         }).join('')
         setCheckoutPaymentValue('balance', roomBalance)
         setCheckoutPaymentValue('otherbills', otherBills)
+        setCheckoutPaymentDueLabel('roompaymentdue', roomBalance)
+        setCheckoutPaymentDueLabel('otherbillsdue', otherBills)
         did('tabledata2').innerHTML += `
                 <tr>
                     <td></td>
@@ -221,6 +223,10 @@ function setCheckoutPaymentValue(field, value){
     const amount = parseCheckoutPaymentAmount(value)
     if(did(field))did(field).value = amount
     if(did(`${field}_display`))did(`${field}_display`).value = amount ? formatNumber(amount) : ''
+}
+
+function setCheckoutPaymentDueLabel(id, value){
+    if(did(id))did(id).innerHTML = `(Due: ${formatNumber(value || 0)})`
 }
 
 function syncCheckoutPaymentInput(field, shouldFormat = false){
