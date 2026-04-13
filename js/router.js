@@ -242,6 +242,11 @@ const routerTree = {
         startingFunction: 'checkoutActive',
         scriptName: './js/checkout.js'
     },
+    latecheckout: {
+        template: 'latecheckout',
+        startingFunction: 'latecheckoutActive',
+        scriptName: './js/latecheckout.js'
+    },
     cancellation: {
         template: 'cancellation',
         startingFunction: 'cancellationActive',
