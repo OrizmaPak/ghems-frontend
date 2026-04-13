@@ -73,9 +73,9 @@ async function onreceiveablesTableDataSignal() {
     <tr>
         <td>${item.index + 1 }</td>
         <td> ROOM ${roomIdentifier}</td>
-        <td>${item.debit}</td>
-        <td>${item.credit}</td>
-        <td><p class="text-black font-semibold">${result}</p></td>
+        <td>${formatNumber(item.debit)}</td>
+        <td>${formatNumber(item.credit)}</td>
+        <td><p class="text-black font-semibold">${formatNumber(result)}</p></td>
         <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}')" class="btn btn-sm btn-primary ${result < 1 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
     )
