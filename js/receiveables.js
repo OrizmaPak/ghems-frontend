@@ -74,6 +74,7 @@ async function onreceiveablesTableDataSignal() {
         let rows = getSignaledDatasource().map((item, index) =>{
         const result = Number(item.debit) - Number(item.credit);
         const roomIdentifier = item.ownerid || item.roomnumber || '';
+        const runningBalance = getReceivableRunningBalance(item.index ?? index);
         return(`
         <tr>
             <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
@@ -81,7 +82,7 @@ async function onreceiveablesTableDataSignal() {
             <td>${formatReceivableDescription(item.description)}</td>
             <td>${formatNumber(item.debit)}</td>
             <td>${formatNumber(item.credit)}</td>
-            <td><p class="text-black font-semibold">${formatNumber(result)}</p></td>
+            <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
             <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
         </tr>`)}
         )
@@ -93,13 +94,14 @@ async function onreceiveablesTableDataSignal() {
     let rows = getSignaledDatasource().map((item, index) =>{
     const result = Number(item.debit) - Number(item.credit);
     const roomIdentifier = item.ownerid || item.roomnumber || '';
+    const runningBalance = getReceivableRunningBalance(item.index ?? index);
     return(`
     <tr>
         <td>${item.index + 1 }</td>
         <td> ROOM ${roomIdentifier}</td>
         <td>${formatNumber(item.debit)}</td>
         <td>${formatNumber(item.credit)}</td>
-        <td><p class="text-black font-semibold">${formatNumber(result)}</p></td>
+        <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
         <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
     )
@@ -153,6 +155,18 @@ function formatReceivableDescription(value){
     if(parts.length >= 3 && parts[1])return parts[1]
 
     return value
+}
+
+function getReceivableRunningBalance(index){
+    let balance = 0
+    const lastIndex = Number(index)
+
+    for(let i = 0; i <= lastIndex && i < datasource.length; i++){
+        balance += Number(datasource[i].credit || 0)
+        balance -= Number(datasource[i].debit || 0)
+    }
+
+    return balance
 }
 
 function openreceiveablemodal(dbt, cdt, rn){
