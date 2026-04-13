@@ -633,7 +633,7 @@ function stageCardPrintoccupancylist(item) {
             </div>
         </div>
 
-        <div class="mt-4 border border-gray-400 p-2 text-center text-xs font-semibold uppercase">
+        <div class="mt-4 border border-red-600 p-2 text-center text-xs font-bold uppercase text-red-600">
             Funds cannot be refunded after 24 hours of confirmation.
         </div>
 
