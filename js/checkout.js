@@ -46,7 +46,9 @@ async function fetchcheckout(id) {
             `
         }).join('')
         if(did('balance'))did('balance').value = roomBalance
+        if(did('balance_display'))did('balance_display').value = formatNumber(roomBalance)
         if(did('otherbills'))did('otherbills').value = otherBills
+        if(did('otherbills_display'))did('otherbills_display').value = formatNumber(otherBills)
         did('tabledata2').innerHTML += `
                 <tr>
                     <td></td>

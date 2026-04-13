@@ -66,12 +66,14 @@
                                     </table>
                                     <div class="flex flex-wrap gap-10 justify-end items-end pr-5">
                                         <div class="form-group pl-6">
-                                                <label for="balance" class="control-label text-md ">Room Balance</label>
-                                                <input type="number" name="balance" id="balance" class="bg-white form-control !p-2" placeholder="Room Balance balance for the rooms" readonly>
+                                                <label for="balance_display" class="control-label text-md ">Room Balance</label>
+                                                <input type="text" id="balance_display" class="bg-white form-control !p-2" placeholder="Room Balance balance for the rooms" readonly>
+                                                <input type="hidden" name="balance" id="balance">
                                             </div>
                                         <div class="form-group pl-6">
-                                                <label for="otherbills" class="control-label text-md ">Other Bills</label>
-                                                <input type="number" name="otherbills" id="otherbills" class="bg-white form-control !p-2" placeholder="Other Bills for any other bill pending" readonly>
+                                                <label for="otherbills_display" class="control-label text-md ">Other Bills</label>
+                                                <input type="text" id="otherbills_display" class="bg-white form-control !p-2" placeholder="Other Bills for any other bill pending" readonly>
+                                                <input type="hidden" name="otherbills" id="otherbills">
                                             </div>
                                          <div class="form-group pl-6">
                                                 <label for="logoname" class="control-label text-md ">payment method</label>
