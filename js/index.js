@@ -52,7 +52,7 @@ window.onload = function() {
     decorateNavigationDescriptions()
     if(currentUserIsSuperAdmin()){
         enforceSuperAdminNavigation()
-        watchSuperAdminNavigation()
+        scheduleSuperAdminNavigationStabilizer()
     }
     runPermissions()
     rundashboard()
@@ -217,21 +217,16 @@ function enforceSuperAdminNavigation(){
     if(navigationContainer) navigationContainer.style.visibility = 'visible'
 }
 
-let superAdminNavigationObserver
-function watchSuperAdminNavigation(){
-    if(!currentUserIsSuperAdmin()) return
-    const navigation = document.getElementById('navigation')
-    if(!navigation || superAdminNavigationObserver) return
+let superAdminNavigationStabilizerScheduled = false
+function scheduleSuperAdminNavigationStabilizer(){
+    if(!currentUserIsSuperAdmin() || superAdminNavigationStabilizerScheduled) return
+    superAdminNavigationStabilizerScheduled = true
 
-    superAdminNavigationObserver = new MutationObserver(() => {
-        enforceSuperAdminNavigation()
-    })
-
-    superAdminNavigationObserver.observe(navigation, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ['class', 'style']
+    const stabilizationDelays = [100, 400, 1200]
+    stabilizationDelays.forEach(delay => {
+        setTimeout(() => {
+            enforceSuperAdminNavigation()
+        }, delay)
     })
 }
 
@@ -281,7 +276,7 @@ async function runPermissions(){
     if(currentUserIsSuperAdmin()){
         userpermission = '*'
         enforceSuperAdminNavigation()
-        watchSuperAdminNavigation()
+        scheduleSuperAdminNavigationStabilizer()
         return
     }
 
@@ -294,7 +289,7 @@ async function runPermissions(){
     if(normalizeRoleName(request.role || getCurrentSessionRoleName()) === 'SUPERADMIN'){
         userpermission = '*'
         enforceSuperAdminNavigation()
-        watchSuperAdminNavigation()
+        scheduleSuperAdminNavigationStabilizer()
         return
     }
 
