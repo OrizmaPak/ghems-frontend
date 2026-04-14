@@ -50,6 +50,10 @@ async function getAllUsers(id='user') {
 window.onload = function() {
     window.scrollTo(0, 0)
     decorateNavigationDescriptions()
+    if(currentUserIsSuperAdmin()){
+        enforceSuperAdminNavigation()
+        watchSuperAdminNavigation()
+    }
     runPermissions()
     rundashboard()
     runavailablerooms()
@@ -176,6 +180,9 @@ function extractNavItemLabel(item){
 }
 
 function showAllNavigationItems(){
+    let navItems = document.querySelectorAll('#navigation .nav-item')
+    navItems.forEach(item => item.classList.remove('hidden'))
+
     let subitems = document.getElementsByClassName('navitem-child')
     for(let i=0; i<subitems.length; i++){
         subitems[i].classList.remove('hidden')
@@ -185,6 +192,47 @@ function showAllNavigationItems(){
     for(let i=0; i<titles.length; i++){
         titles[i].classList.remove('hidden')
     }
+}
+
+function expandAllNavigationSections(){
+    document.querySelectorAll('#navigation .nav-item').forEach(item => {
+        const trigger = item.querySelector(':scope > span')
+        const submenu = item.querySelector(':scope > ul')
+        if(!trigger || !submenu) return
+
+        item.classList.add('expand')
+        item.style.maxHeight = '1000px'
+
+        const icons = trigger.querySelectorAll('.material-symbols-outlined')
+        if(icons[1]){
+            icons[1].style.transform = 'rotate(90deg)'
+        }
+    })
+}
+
+function enforceSuperAdminNavigation(){
+    showAllNavigationItems()
+    expandAllNavigationSections()
+    const navigationContainer = document.getElementById('navigationcontainer')
+    if(navigationContainer) navigationContainer.style.visibility = 'visible'
+}
+
+let superAdminNavigationObserver
+function watchSuperAdminNavigation(){
+    if(!currentUserIsSuperAdmin()) return
+    const navigation = document.getElementById('navigation')
+    if(!navigation || superAdminNavigationObserver) return
+
+    superAdminNavigationObserver = new MutationObserver(() => {
+        enforceSuperAdminNavigation()
+    })
+
+    superAdminNavigationObserver.observe(navigation, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    })
 }
 
 function applyGrantedPermissionsToNavigation(grantedPermissions, permissionSwitch='ON'){
@@ -232,8 +280,8 @@ async function runPermissions(){
 
     if(currentUserIsSuperAdmin()){
         userpermission = '*'
-        showAllNavigationItems()
-        navigationContainer.style.visibility = 'visible'
+        enforceSuperAdminNavigation()
+        watchSuperAdminNavigation()
         return
     }
 
@@ -245,8 +293,8 @@ async function runPermissions(){
 
     if(normalizeRoleName(request.role || getCurrentSessionRoleName()) === 'SUPERADMIN'){
         userpermission = '*'
-        showAllNavigationItems()
-        navigationContainer.style.visibility = 'visible'
+        enforceSuperAdminNavigation()
+        watchSuperAdminNavigation()
         return
     }
 
