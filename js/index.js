@@ -175,6 +175,41 @@ function extractNavItemLabel(item){
     return (item.textContent || '').trim()
 }
 
+const navPermissionAliasesById = {
+    receiveables: 'RECEIVABLES',
+    reassignrooms: 'RE-ASSIGN ROOMS',
+    expectedcheckouts: 'EXPECTED CHECK OUT',
+    noshow: 'NO SHOW',
+    generalreport: 'GENERAL REPORT',
+    hotelguest: 'GUESTS MANAGEMENT',
+    discountcouponp: 'DISCOUNT COUPON',
+    receipts: 'RECEIPTS',
+    diningtable: 'DINING TABLE',
+    reservetable: 'RESERVE TABLE'
+}
+
+const permissionValueAliases = {
+    'RECEIVEABLES': 'RECEIVABLES',
+    'ROOM TRANSFER': 'RE-ASSIGN ROOMS',
+    'EXPECTED CHECK OUT': 'EXPECTED CHECK OUT',
+    'NO SHOW': 'NO SHOW',
+    'GENERAL REPORT': 'GENERAL REPORT',
+    'DISCOUNT': 'DISCOUNT COUPON',
+    'RECEIVE DEPOSITS': 'RECEIPTS',
+    'DINING TABLES': 'DINING TABLE',
+    'RESERVE TABLES': 'RESERVE TABLE'
+}
+
+function normalizePermissionLabel(label=''){
+    const normalized = String(label || '').replace(/\s+/g, ' ').trim().toUpperCase()
+    return permissionValueAliases[normalized] || normalized
+}
+
+function getNavPermissionKey(item){
+    if(item?.id && navPermissionAliasesById[item.id]) return navPermissionAliasesById[item.id]
+    return normalizePermissionLabel(extractNavItemLabel(item))
+}
+
 function buildNavDescriptionMarkup(label, description){
     const safeLabel = sanitizeHTML(label)
     const safeDescription = sanitizeHTML(description)
@@ -199,6 +234,13 @@ async function runPermissions(){
     if(request.status) {
         userpermission = request.permissions
         const role = String(request.role || '').replace(/\s+/g, '').toUpperCase()
+        const grantedPermissions = new Set(
+            String(userpermission || '')
+                .split('||')
+                .flatMap(item => item.split('|'))
+                .map(normalizePermissionLabel)
+                .filter(Boolean)
+        )
         let subitems = document.getElementsByClassName('navitem-child')
         if(role == 'SUPERADMIN'){
             for(i=0; i<subitems.length; i++){
@@ -211,7 +253,7 @@ async function runPermissions(){
         }
         if(role != 'SUPERADMIN'){
             for(i=0; i<subitems.length; i++){
-              if(userpermission.split('|').includes(subitems[i].textContent.toUpperCase().trim())){
+              if(grantedPermissions.has(getNavPermissionKey(subitems[i]))){
                     if(permission_switch === 'ON')subitems[i].classList.remove('hidden');
                 }else{
                     if(permission_switch === 'ON')subitems[i].classList.add('hidden');

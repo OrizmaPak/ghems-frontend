@@ -66,6 +66,7 @@ const accessctrl_housekeeping = ['ROOM CATEGORIES', 'ROOMS', 'UPDATE ROOM STATUS
 
 const accessctrl_frontdesk = [
     'SEARCH ARRIVALS',
+    'GUESTS MANAGEMENT',
     'GROUPS',
     'GUESTS & RESERVATIONS',
     'RESERVATION CHECK IN',
@@ -74,6 +75,7 @@ const accessctrl_frontdesk = [
     'GROUP CHECK IN',
     'PRINT REGISTRATION CARD',
     'EXPECTED ARRIVALS',
+    'EXPECTED CHECK OUT',
     'EXTEND STAY',
     'CHECK OUT',
     'LATE CHECKOUT',
@@ -86,20 +88,25 @@ const accessctrl_frontdesk = [
     'TRANSACTION HISTORY',
     'REVIEWS',
     'OCCUPANCY LIST',
+    'NO SHOW',
+    'GENERAL REPORT',
     'REVERSE RESERVATION',
     'NO POSTING',
     'DELETE GUEST'
 ];
 
 
-const accessctrl_sales = ['SALES', 'VIEW ALL USER SALES']
+const accessctrl_sales = ['SALES', 'VIEW ALL USER SALES', 'SALES REPORT', 'RECEIPT']
 
-const accessctrl_purchases = ['MANAGE SUPPLIER', 'PURCHASE ORDER', 'VIEW PURCHASE ORDER', 'RECEIVE PURCHASES', 'VIEW PURCHASES', 'PAYABLES', 'ALL PAYABLES']
+const accessctrl_purchases = ['MANAGE SUPPLIER', 'PURCHASE ORDER', 'VIEW PURCHASE ORDER', 'RECEIVE PURCHASES', 'VIEW PURCHASES', 'PAYABLES', 'ALL PAYABLES', 'EXPENSES', 'PAYMENT', 'REVERSALS', 'VIEW REVERSALS']
 
 const accessctrl_cashier = [
     'TRACK',
     'INVOICING',
-    'RECEIPTS'
+    'RECEIPTS',
+    'SALES REPORT',
+    'REVERSALS',
+    'VIEW REVERSALS'
 ]
 
 
