@@ -21,7 +21,7 @@ async function fetchtransactionhistory(roomnumber = '') {
         return paramstr
     }
 
-    did('transactionhistorytabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading transaction history...</td></tr>`
+    did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading transaction history...</td></tr>`
     let request = await httpRequest2('../controllers/fetchreceivablesbyrooms', getparamm(), document.querySelector('#submittransactionhistoryfilter'), 'json')
     if(!(request.status && request.data?.length)){
         datasource = []
@@ -107,8 +107,8 @@ function transactionHistorySummaryCard(label, value){
 }
 
 function rendertransactionhistoryempty(message){
-    if(!did('transactionhistorytabledata'))return
-    did('transactionhistorytabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
+    if(!did('tabledata'))return
+    did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
 }
 
 async function ontransactionhistoryTableDataSignal() {

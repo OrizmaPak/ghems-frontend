@@ -50,7 +50,7 @@
                         <th>details</th>
                     </tr>
                 </thead>
-                <tbody id="transactionhistorytabledata">
+                <tbody id="tabledata">
                     <tr>
                         <td colspan="100%" class="text-center opacity-70">Enter a room number to load transaction history</td>
                     </tr>
