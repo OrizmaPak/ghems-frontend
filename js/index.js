@@ -175,39 +175,42 @@ function extractNavItemLabel(item){
     return (item.textContent || '').trim()
 }
 
-const navPermissionAliasesById = {
-    receiveables: 'RECEIVABLES',
-    reassignrooms: 'RE-ASSIGN ROOMS',
-    expectedcheckouts: 'EXPECTED CHECK OUT',
-    noshow: 'NO SHOW',
-    generalreport: 'GENERAL REPORT',
-    hotelguest: 'GUESTS MANAGEMENT',
-    discountcouponp: 'DISCOUNT COUPON',
-    receipts: 'RECEIPTS',
-    diningtable: 'DINING TABLE',
-    reservetable: 'RESERVE TABLE'
+function showAllNavigationItems(){
+    let subitems = document.getElementsByClassName('navitem-child')
+    for(let i=0; i<subitems.length; i++){
+        subitems[i].classList.remove('hidden')
+    }
+
+    let titles = document.getElementsByClassName('navitem-title')
+    for(let i=0; i<titles.length; i++){
+        titles[i].classList.remove('hidden')
+    }
 }
 
-const permissionValueAliases = {
-    'RECEIVEABLES': 'RECEIVABLES',
-    'ROOM TRANSFER': 'RE-ASSIGN ROOMS',
-    'EXPECTED CHECK OUT': 'EXPECTED CHECK OUT',
-    'NO SHOW': 'NO SHOW',
-    'GENERAL REPORT': 'GENERAL REPORT',
-    'DISCOUNT': 'DISCOUNT COUPON',
-    'RECEIVE DEPOSITS': 'RECEIPTS',
-    'DINING TABLES': 'DINING TABLE',
-    'RESERVE TABLES': 'RESERVE TABLE'
-}
+function applyGrantedPermissionsToNavigation(grantedPermissions, permissionSwitch='ON'){
+    let subitems = document.getElementsByClassName('navitem-child')
+    for(let i=0; i<subitems.length; i++){
+        if(grantedPermissions.has(getNavPermissionKeyFromNode(subitems[i]))){
+            if(permissionSwitch === 'ON') subitems[i].classList.remove('hidden')
+        }else{
+            if(permissionSwitch === 'ON') subitems[i].classList.add('hidden')
+        }
 
-function normalizePermissionLabel(label=''){
-    const normalized = String(label || '').replace(/\s+/g, ' ').trim().toUpperCase()
-    return permissionValueAliases[normalized] || normalized
-}
+        if(permissionSwitch === 'OFF') subitems[i].classList.remove('hidden')
+    }
 
-function getNavPermissionKey(item){
-    if(item?.id && navPermissionAliasesById[item.id]) return navPermissionAliasesById[item.id]
-    return normalizePermissionLabel(extractNavItemLabel(item))
+    let titles = document.getElementsByClassName('navitem-title')
+    for(let i=0; i<titles.length; i++){
+        if(titles[i].nextElementSibling){
+            let children = titles[i].nextElementSibling.children
+            let hasVisibleChild = false
+            for(let j=0; j<children.length; j++){
+                if(!children[j].classList.contains('hidden')) hasVisibleChild = true
+            }
+            if(!hasVisibleChild) titles[i].classList.add('hidden')
+            if(hasVisibleChild) titles[i].classList.remove('hidden')
+        }
+    }
 }
 
 function buildNavDescriptionMarkup(label, description){
@@ -224,58 +227,35 @@ function sanitizeHTML(value=''){
 
 async function runPermissions(){
     let permission_switch = 'ON' // 'ON or OFF'
-    document.getElementById('navigationcontainer').style.visibility = 'hidden';
-    function param(){
-        let para = new FormData()
-        para.append('email', document.getElementById('your_email').value)
-        return para
+    const navigationContainer = document.getElementById('navigationcontainer')
+    navigationContainer.style.visibility = 'hidden'
+
+    if(currentUserIsSuperAdmin()){
+        userpermission = '*'
+        showAllNavigationItems()
+        navigationContainer.style.visibility = 'visible'
+        return
     }
-    let request = await httpRequest2('../controllers/fetchuserprofile', param(), null, 'json')
-    if(request.status) {
-        userpermission = request.permissions
-        const role = String(request.role || '').replace(/\s+/g, '').toUpperCase()
-        const grantedPermissions = new Set(
-            String(userpermission || '')
-                .split('||')
-                .flatMap(item => item.split('|'))
-                .map(normalizePermissionLabel)
-                .filter(Boolean)
-        )
-        let subitems = document.getElementsByClassName('navitem-child')
-        if(role == 'SUPERADMIN'){
-            for(i=0; i<subitems.length; i++){
-                    subitems[i].classList.remove('hidden');
-            }
-            let x =  document.getElementsByClassName('navitem-title')
-            for(let i=0;i<x.length;i++){
-                x[i].classList.remove('hidden')
-            }
-        }
-        if(role != 'SUPERADMIN'){
-            for(i=0; i<subitems.length; i++){
-              if(grantedPermissions.has(getNavPermissionKey(subitems[i]))){
-                    if(permission_switch === 'ON')subitems[i].classList.remove('hidden');
-                }else{
-                    if(permission_switch === 'ON')subitems[i].classList.add('hidden');
-                }  
-                    if(permission_switch === 'OFF')subitems[i].classList.remove('hidden');
-            }
-            let x =  document.getElementsByClassName('navitem-title')
-            for(let i=0;i<x.length;i++){
-                if(x[i].nextElementSibling){
-                    let y = x[i].nextElementSibling.children
-                    let m = false
-                    for(let j=0;j<y.length;j++){
-                        if(!y[j].classList.contains('hidden'))m = true
-                    }
-                    if(!m)x[i].classList.add('hidden')
-                    if(m)x[i].classList.remove('hidden')
-                }
-            }
-        }
-        document.getElementById('navigationcontainer').style.visibility = 'visible';
+
+    let request = await fetchCurrentUserProfileCached(true)
+    if(!request?.status){
+        navigationContainer.style.visibility = 'visible'
+        return notification('No records retrieved')
     }
-    else return notification('No records retrieved')
+
+    if(normalizeRoleName(request.role || getCurrentSessionRoleName()) === 'SUPERADMIN'){
+        userpermission = '*'
+        showAllNavigationItems()
+        navigationContainer.style.visibility = 'visible'
+        return
+    }
+
+    userpermission = request.permissions
+    applyGrantedPermissionsToNavigation(
+        request.grantedPermissions || buildGrantedPermissionSet(userpermission),
+        permission_switch
+    )
+    navigationContainer.style.visibility = 'visible'
 }
 
 

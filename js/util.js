@@ -1,15 +1,149 @@
 let qqqqqqqqqq = 0
+let currentUserProfileRequest = null
+let currentUserProfileData = null
+let permissionRedirectTriggered = false
 
-function runpermissioncheck(state=''){
-    if(!state && qqqqqqqqqq ==0)return
-    if(state && qqqqqqqqqq ==0)qqqqqqqqqq = 1
-    setTimeout(()=>{let x = window.location.href.split('=')[1]
-//   console.log(window.location.href.split('=')[1], document.getElementById(x)); // Output: sales
-    if(x && document.getElementById(x) && document.getElementById(x).classList.contains('hidden')){
-         notification('You do not have permission to access this page', 0)
-         return window.location.href = 'index.php?r=dashboard'
-    }},2000)
-    
+const permissionAliasesByRouteId = {
+    receiveables: 'RECEIVABLES',
+    reassignrooms: 'RE-ASSIGN ROOMS',
+    expectedcheckouts: 'EXPECTED CHECK OUT',
+    noshow: 'NO SHOW',
+    generalreport: 'GENERAL REPORT',
+    hotelguest: 'GUESTS MANAGEMENT',
+    discountcouponp: 'DISCOUNT COUPON',
+    receipts: 'RECEIPTS',
+    diningtable: 'DINING TABLE',
+    reservetable: 'RESERVE TABLE'
+}
+
+const permissionAliasesByValue = {
+    'RECEIVEABLES': 'RECEIVABLES',
+    'ROOM TRANSFER': 'RE-ASSIGN ROOMS',
+    'EXPECTED CHECK OUT': 'EXPECTED CHECK OUT',
+    'NO SHOW': 'NO SHOW',
+    'GENERAL REPORT': 'GENERAL REPORT',
+    'DISCOUNT': 'DISCOUNT COUPON',
+    'RECEIVE DEPOSITS': 'RECEIPTS',
+    'DINING TABLES': 'DINING TABLE',
+    'RESERVE TABLES': 'RESERVE TABLE'
+}
+
+function normalizeRoleName(role=''){
+    return String(role || '').replace(/[\s_-]+/g, '').trim().toUpperCase()
+}
+
+function getCurrentSessionRoleName(){
+    return normalizeRoleName(document.getElementById('your_role')?.value)
+}
+
+function currentUserIsSuperAdmin(){
+    return getCurrentSessionRoleName() === 'SUPERADMIN'
+}
+
+function normalizePermissionName(label=''){
+    const normalized = String(label || '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase()
+    return permissionAliasesByValue[normalized] || normalized
+}
+
+function buildGrantedPermissionSet(rawPermissions=''){
+    return new Set(
+        String(rawPermissions || '')
+            .split('||')
+            .flatMap(item => item.split('|'))
+            .map(normalizePermissionName)
+            .filter(Boolean)
+    )
+}
+
+function getNavPermissionKeyFromNode(item){
+    if(item?.id && permissionAliasesByRouteId[item.id]){
+        return normalizePermissionName(permissionAliasesByRouteId[item.id])
+    }
+
+    const label = typeof extractNavItemLabel === 'function'
+        ? extractNavItemLabel(item)
+        : (item?.textContent || '').trim()
+
+    return normalizePermissionName(label)
+}
+
+function getCurrentRouteName(){
+    try {
+        return new URL(window.location.href).searchParams.get('r') || ''
+    }
+    catch (error) {
+        const value = window.location.href.split('=')[1] || ''
+        return value.split('&')[0]
+    }
+}
+
+async function fetchCurrentUserProfileCached(force=false){
+    if(currentUserIsSuperAdmin()){
+        currentUserProfileData = {
+            status: true,
+            role: 'SUPERADMIN',
+            permissions: '*',
+            grantedPermissions: new Set(['*'])
+        }
+        return currentUserProfileData
+    }
+
+    if(!force && currentUserProfileData) return currentUserProfileData
+    if(!force && currentUserProfileRequest) return currentUserProfileRequest
+
+    const email = document.getElementById('your_email')?.value
+    if(!email) return { status: false, message: 'User email not found' }
+
+    const payload = new FormData()
+    payload.append('email', email)
+
+    currentUserProfileRequest = fetch('../controllers/fetchuserprofile', {
+        method: 'POST',
+        body: payload,
+        headers: new Headers()
+    }).then(async result => {
+        const response = await result.json()
+        if(response?.status){
+            response.role = normalizeRoleName(response.role || getCurrentSessionRoleName())
+            response.grantedPermissions = buildGrantedPermissionSet(response.permissions)
+            currentUserProfileData = response
+        }
+        return response
+    }).catch(error => {
+        console.log(error)
+        return { status: false, message: 'Unable to fetch user profile' }
+    }).finally(() => {
+        currentUserProfileRequest = null
+    })
+
+    return currentUserProfileRequest
+}
+
+async function runpermissioncheck(state=''){
+    if(!state && qqqqqqqqqq == 0) return true
+    if(state && qqqqqqqqqq == 0) qqqqqqqqqq = 1
+
+    const route = getCurrentRouteName()
+    if(!route || route === 'dashboard' || currentUserIsSuperAdmin()) return true
+
+    const currentNavItem = document.getElementById(route)
+    if(!currentNavItem) return true
+
+    const profile = await fetchCurrentUserProfileCached()
+    if(!profile?.status || normalizeRoleName(profile.role) === 'SUPERADMIN') return true
+
+    const permissionKey = getNavPermissionKeyFromNode(currentNavItem)
+    if(!permissionKey || profile.grantedPermissions?.has(permissionKey)) return true
+
+    if(permissionRedirectTriggered) return false
+    permissionRedirectTriggered = true
+    notification('You do not have permission to access this page', 0)
+    window.location.href = 'index.php?r=dashboard'
+    return false
 }
 
 function modifyButtons() {
