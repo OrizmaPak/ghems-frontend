@@ -194,25 +194,8 @@ function showAllNavigationItems(){
     }
 }
 
-function expandAllNavigationSections(){
-    document.querySelectorAll('#navigation .nav-item').forEach(item => {
-        const trigger = item.querySelector(':scope > span')
-        const submenu = item.querySelector(':scope > ul')
-        if(!trigger || !submenu) return
-
-        item.classList.add('expand')
-        item.style.maxHeight = '1000px'
-
-        const icons = trigger.querySelectorAll('.material-symbols-outlined')
-        if(icons[1]){
-            icons[1].style.transform = 'rotate(90deg)'
-        }
-    })
-}
-
 function enforceSuperAdminNavigation(){
     showAllNavigationItems()
-    expandAllNavigationSections()
     const navigationContainer = document.getElementById('navigationcontainer')
     if(navigationContainer) navigationContainer.style.visibility = 'visible'
 }
