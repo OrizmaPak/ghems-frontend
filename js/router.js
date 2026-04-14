@@ -402,6 +402,11 @@ const routerTree = {
         startingFunction: 'occupancylistActive',
         scriptName: './js/occupancylist.js'
     },
+    transactionhistory: {
+        template: 'transactionhistory',
+        startingFunction: 'transactionhistoryActive',
+        scriptName: './js/transactionhistory.js'
+    },
     build: {
         template: 'build',
         startingFunction: 'buildActive',

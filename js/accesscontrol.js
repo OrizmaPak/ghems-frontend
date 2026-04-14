@@ -83,6 +83,7 @@ const accessctrl_frontdesk = [
     'MESSAGES',
     'NOTIFICATIONS',
     'RECEIVABLES',
+    'TRANSACTION HISTORY',
     'REVIEWS',
     'OCCUPANCY LIST',
     'REVERSE RESERVATION',
