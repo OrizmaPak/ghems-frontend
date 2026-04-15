@@ -1,31 +1,60 @@
 let receiveablesid
 let receiveablesFiltered = false
-async function receiveablesActive() {
+let receiveablesPageMode = 'receiveables'
+
+function isPayPendingCheckoutBillsRoute(){
+    return receiveablesPageMode === 'paypendingcheckoutbills' || getCurrentRouteName() === 'paypendingcheckoutbills'
+}
+
+function renderReceiveablesEmptyState(message='No records retrieved'){
+    const tabledata = document.getElementById('tabledata')
+    if(!tabledata)return
+    tabledata.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
+}
+
+async function receiveablesActive(mode='receiveables') {
+    receiveablesPageMode = mode
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
     if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => fetchreceiveables('', did('receiveablesroomnumber').value))
     if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
     datasource = []
+    receiveablesFiltered = false
+    setreceiveablesTableHeader()
+    if(isPayPendingCheckoutBillsRoute()){
+        renderReceiveablesEmptyState('Enter a room number to load pending checkout bills')
+        return
+    }
     await fetchreceiveables()
 }
 
 async function fetchreceiveables(id='', roomnumber='') {
-    receiveablesFiltered = Boolean(roomnumber)
+    const normalizedRoomNumber = String(roomnumber || '').trim()
+    if(isPayPendingCheckoutBillsRoute() && !id && !normalizedRoomNumber){
+        receiveablesFiltered = false
+        setreceiveablesTableHeader()
+        renderReceiveablesEmptyState('Enter a room number to load pending checkout bills')
+        return notification('Please enter a room number', 0)
+    }
+
+    receiveablesFiltered = Boolean(normalizedRoomNumber)
     setreceiveablesTableHeader()
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         if(id)paramstr.append('id', id)
-        if(roomnumber)paramstr.append('roomnumber', roomnumber)
+        if(normalizedRoomNumber)paramstr.append('roomnumber', normalizedRoomNumber)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchreceivablesbyrooms', (id || roomnumber) ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
-    if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
+    let request = await httpRequest2('../controllers/fetchreceivablesbyrooms', (id || normalizedRoomNumber) ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
+    if(!id)renderReceiveablesEmptyState()
     if(request.status) {
         if(!id){
             if(request.data.length) {
                 datasource = request.data
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
+            }else{
+                renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
             }
         }else{
              receiveablesid = request.data[0].id
@@ -37,6 +66,13 @@ async function fetchreceiveables(id='', roomnumber='') {
 
 function resetreceiveablesfilter(){
     if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = ''
+    if(isPayPendingCheckoutBillsRoute()){
+        datasource = []
+        receiveablesFiltered = false
+        setreceiveablesTableHeader()
+        renderReceiveablesEmptyState('Enter a room number to load pending checkout bills')
+        return
+    }
     fetchreceiveables()
 }
 
@@ -70,7 +106,7 @@ async function removereceiveables(id) {
 
 async function onreceiveablesTableDataSignal() {
     setreceiveablesTableHeader()
-    if(receiveablesFiltered){
+    if(receiveablesFiltered || isPayPendingCheckoutBillsRoute()){
         let rows = getSignaledDatasource().map((item, index) =>{
         const result = Number(item.debit) - Number(item.credit);
         const roomIdentifier = item.ownerid || item.roomnumber || '';
@@ -112,8 +148,9 @@ async function onreceiveablesTableDataSignal() {
 function setreceiveablesTableHeader(){
     const tableHead = document.getElementById('receiveables-table-head')
     if(!tableHead)return
+    const useDetailedHeader = receiveablesFiltered || isPayPendingCheckoutBillsRoute()
 
-    tableHead.innerHTML = receiveablesFiltered ? `
+    tableHead.innerHTML = useDetailedHeader ? `
         <th>transaction&nbsp;date</th>
         <th>room&nbsp;number</th>
         <th>description</th>

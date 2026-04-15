@@ -257,6 +257,11 @@ const routerTree = {
         startingFunction: 'receiveablesActive',
         scriptName: './js/receiveables.js'
     },
+    paypendingcheckoutbills: {
+        template: 'paypendingcheckoutbills',
+        startingFunction: 'paypendingcheckoutbillsActive',
+        scriptName: './js/paypendingcheckoutbills.js'
+    },
     reassignrooms: {
         template: 'reassignrooms',
         startingFunction: 'reassignroomsActive',

@@ -85,6 +85,7 @@ const accessctrl_frontdesk = [
     'MESSAGES',
     'NOTIFICATIONS',
     'RECEIVABLES',
+    'PAY PENDING CHECKOUT BILLS',
     'TRANSACTION HISTORY',
     'REVIEWS',
     'OCCUPANCY LIST',
