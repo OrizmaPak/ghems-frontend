@@ -16,10 +16,6 @@ async function checkinActive() {
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('checkinform'))
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
         if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            if(did('amountpaid').value == ''){
-                notification('please Enter Amount Paid', 0);
-                return did('modalformone').classList.remove('hidden')
-            }
             if (did('paymentmethod').value == 'TRANSFER') {
                 if (!did('bankname').value || !did('otherdetails').value) {
                     notification('Please Enter Customer\'s Bank Name and Other Details');

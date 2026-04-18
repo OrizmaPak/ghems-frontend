@@ -7,10 +7,6 @@ async function groupcheckinActive() {
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('groupcheckinform'))
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
         if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            if(did('amountpaid').value == ''){
-                notification('please Enter Amount Paid', 0);
-                return did('modalformone').classList.remove('hidden')
-            }
             if(did('paymentmethod').value == 'TRANSFER' && did('bankname').value == '' || did('otherdetails').value == ''){
                 notification('Please Enter Customers Bank Name and Other details')
                 return did('modalformone').classList.remove('hidden')
