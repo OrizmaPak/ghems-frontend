@@ -6,7 +6,7 @@
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-3 gap-6"> 
                                         <div class="form-group">
-                                            <label for="logoname" class="control-label">Supplier Type</label>
+                                            <label for="logoname" class="control-label">Account</label>
                                             <input type="text" name="accountnumber" id="accountnumber" list="gltransactionhistorylist" onchange="checkdatalist(this)" class="form-control" placeholder="Enter account">
                                         </div>
                                          <div class="form-group">
@@ -57,7 +57,7 @@
                                 </div>
                                 <div class="table-status"></div>
                             </div>
-                            
+
                             <datalist id="gltransactionhistorylist"></datalist>
-                        
-                        </section>  
+
+                        </section>
