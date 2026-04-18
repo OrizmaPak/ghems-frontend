@@ -7,14 +7,15 @@ async function latecheckoutActive() {
     if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', fetchcheckout)
     if(document.querySelector('#submitview')) document.querySelector('#submitview').addEventListener('click', fetchcheckinn('', '', 'cancelreservationformfilter'))
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     if(document.querySelector('#refreshcheckoutoccupancy')) document.querySelector('#refreshcheckoutoccupancy').addEventListener('click', loadCheckoutOccupancyList)
     if(document.querySelector('#checkoutoccupancysearch')) document.querySelector('#checkoutoccupancysearch').addEventListener('input', renderCheckoutOccupancyRows)
     if(document.querySelector('#balance_display')) document.querySelector('#balance_display').addEventListener('input', () => syncCheckoutPaymentInput('balance'))
-    if(document.querySelector('#balance_display')) document.querySelector('#balance_display').addEventListener('blur', () => syncCheckoutPaymentInput('balance', true))
+    if(document.querySelector('#balance_display')) document.querySelector('#balance_display').addEventListener('blur', () => syncCheckoutPaymentInput('balance', true, true))
     if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('input', () => syncCheckoutPaymentInput('otherbills'))
-    if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('blur', () => syncCheckoutPaymentInput('otherbills', true))
-    if(document.querySelector('#amountpaid_display')) document.querySelector('#amountpaid_display').addEventListener('input', () => syncCheckoutPaymentInput('amountpaid'))
-    if(document.querySelector('#amountpaid_display')) document.querySelector('#amountpaid_display').addEventListener('blur', () => syncCheckoutPaymentInput('amountpaid', true))
+    if(document.querySelector('#otherbills_display')) document.querySelector('#otherbills_display').addEventListener('blur', () => syncCheckoutPaymentInput('otherbills', true, true))
+    if(document.querySelector('#amountpaid_display')) document.querySelector('#amountpaid_display').addEventListener('input', () => syncCheckoutPaymentInput('amountpaid', true))
+    if(document.querySelector('#amountpaid_display')) document.querySelector('#amountpaid_display').addEventListener('blur', () => syncCheckoutPaymentInput('amountpaid', true, true))
     datasource = []
     await fetchcheckinn('', '', 'cancelreservationformfilter')
     await loadCheckoutOccupancyList()
@@ -216,25 +217,45 @@ async function loadCheckoutFromOccupancy(reservationId){
 }
 
 function parseCheckoutPaymentAmount(value){
-    return String(value || '').replace(/,/g, '').replace(/[^\d.]/g, '')
+    const cleaned = String(value || '').replace(/,/g, '').replace(/[^\d.]/g, '')
+    const [whole, ...decimalParts] = cleaned.split('.')
+    if(decimalParts.length) return `${whole}.${decimalParts.join('')}`
+    return whole
+}
+
+function formatCheckoutPaymentDisplayAmount(value){
+    const amount = parseCheckoutPaymentAmount(value)
+    if(!amount)return ''
+
+    const [whole, decimal] = amount.split('.')
+    const wholeNumber = (whole || '0').replace(/^0+(?=\d)/, '')
+    const formattedWhole = wholeNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return decimal !== undefined ? `${formattedWhole}.${decimal}` : formattedWhole
 }
 
 function setCheckoutPaymentValue(field, value){
     const amount = parseCheckoutPaymentAmount(value)
     if(did(field))did(field).value = amount
-    if(did(`${field}_display`))did(`${field}_display`).value = amount ? formatNumber(amount) : ''
+    if(did(`${field}_display`))did(`${field}_display`).value = amount ? formatCheckoutPaymentDisplayAmount(amount) : ''
 }
 
 function setCheckoutPaymentDueLabel(id, value){
     if(did(id))did(id).innerHTML = `(Due: ${formatNumber(value || 0)})`
 }
 
-function syncCheckoutPaymentInput(field, shouldFormat = false){
+function syncCheckoutPaymentInput(field, shouldFormat = false, shouldFinalize = false){
     const display = did(`${field}_display`)
     if(!display)return
-    const amount = parseCheckoutPaymentAmount(display.value)
+    let amount = parseCheckoutPaymentAmount(display.value)
+    if(shouldFinalize) amount = amount.replace(/\.$/, '')
     if(did(field))did(field).value = amount
-    if(shouldFormat)display.value = amount ? formatNumber(amount) : ''
+    if(shouldFormat)display.value = amount ? formatCheckoutPaymentDisplayAmount(amount) : ''
+}
+
+function syncAllCheckoutPaymentInputs(){
+    syncCheckoutPaymentInput('balance', true, true)
+    syncCheckoutPaymentInput('otherbills', true, true)
+    syncCheckoutPaymentInput('amountpaid', true, true)
 }
 
 function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){
@@ -352,6 +373,7 @@ async function oncheckoutTableData2Signal() {
 
 async function latecheckoutFormSubmitHandler() {
     if(!validateForm('checkoutform', getIdFromCls('comp'))) return
+    syncAllCheckoutPaymentInputs()
 
     let payload
 

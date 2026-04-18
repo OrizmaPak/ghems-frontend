@@ -454,7 +454,7 @@ function checkotherbankdetails(comp='comp'){
         if(document.getElementById('paymentmethod').value == 'TRANSFER' || document.getElementById('paymentmethod').value == 'POS'){
             document.getElementById('bankdetails').innerHTML = `<div class="form-group mt-2">
                                                      <label for="logoname" class="control-label">Bank Name</label>
-                                                    <input type="number" name="bankname" id="bankname" placeholder="Enter bank name" class="form-control ${comp} bg-white" >
+                                                    <input type="text" name="bankname" id="bankname" placeholder="Enter bank name" class="form-control ${comp} bg-white" >
                                                 </div>
                                                 <div class="form-group mt-2">
                                                     <label for="logoname" class="control-label">Other Details</label>

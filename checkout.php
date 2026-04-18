@@ -112,7 +112,7 @@
                                             </div>
                                         <div class="form-group pl-6">
                                                 <label for="amountpaid_display" class="control-label text-md ">Amount Paid</label>
-                                                <input type="text" id="amountpaid_display" class="bg-white form-control !p-2" inputmode="decimal" placeholder="Enter amount paid at checkout">
+                                                <input type="text" id="amountpaid_display" class="bg-white form-control !p-2" inputmode="numeric" pattern="[0-9,]*" placeholder="Enter amount paid at checkout">
                                                 <input type="hidden" name="amountpaid" id="amountpaid">
                                             </div>
                                          <div class="form-group pl-6">
