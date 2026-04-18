@@ -352,21 +352,6 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                                         <li class="navitem-child text-[#292929] hidden" title="<div class='text-[13px] leading-relaxed text-slate-700'><span class='font-semibold text-primary-g text-sm block mb-1'>General Account Report</span><p class='mb-2'>Cross-module revenue report grouped by category (Bookings, F&B, Sundry) with ready-to-go exports.</p><ul class='list-disc ml-4 text-[12px] space-y-1'><li>Select a date range and a category to pull matching transactions with amounts, consumption, service charge, VAT, and totals.</li><li>Print, PDF, and Excel buttons sit directly above the table, so you can share the filtered report instantly.</li><li>Sales point and description columns help you trace each row back to its originating module if questions arise.</li></ul><p class='mt-2 text-[11px] text-slate-500'>Tip: Export each category separately when preparing departmental revenue summaries-the totals already include VAT and service charge.</p></div>" id="generalaccountreport">General Sales Report</li>
                                     </ul>
                                 </li>
-                                <li class="nav-item hidden"> 
-                                    <span class="navitem-title group  text-[#292929]">
-                                        <span class="material-symbols-outlined group-hover:text-primary-g"
-                                            style="font-size: 20px;">storefront</span>
-                                        <span class="group-hover:text-primary-g">
-                                            <span>Products</span>
-                                            <span class="material-symbols-outlined" style="font-size: 15px;">chevron_right</span>
-                                        </span>
-                                    </span>
-                                    <ul class="ml-14 gap-y-4 flex flex-col">
-                                        <li class="navitem-child text-[#292929] hidden" title="<div class='text-[13px] leading-relaxed text-slate-700'><span class='font-semibold text-primary-g text-sm block mb-1'>Products (View)</span><p class='mb-2'>This navigation item is a placeholder-the router does not load a template for it yet.</p><ul class='list-disc ml-4 text-[12px] space-y-1'><li>The ID exists in <code>index.php</code>, but no PHP template or router entry has been provided, so the workspace stays blank.</li><li>Until the Products module ships, use Inventory &gt; View Inventory or Purchases &gt; View Purchases to review stock items.</li><li>The nav group remains hidden by default to avoid confusing users with an empty page.</li></ul><p class='mt-2 text-[11px] text-slate-500'>Tip: Once engineering delivers the module, update this tooltip to describe the real workflow.</p></div>" id="viewproductpurchase">View Products</li>
-                                        <li class="navitem-child text-[#292929] hidden" title="<div class='text-[13px] leading-relaxed text-slate-700'><span class='font-semibold text-primary-g text-sm block mb-1'>Products (Add)</span><p class='mb-2'>Reserved link for a future product creation form; no template or script is wired up today.</p><ul class='list-disc ml-4 text-[12px] space-y-1'><li><code>routerTree</code> has no entry for <code>addproducts</code> and the project lacks an <code>addproducts.php</code> template.</li><li>The navigation group stays hidden, so clicking it does nothing until the feature is implemented.</li><li>Use Inventory &gt; Create/Update Inventory to add items until this shortcut becomes available.</li></ul><p class='mt-2 text-[11px] text-slate-500'>Tip: Keep a backlog of requirements-when the screen ships you can populate the guide with the actual flow.</p></div>" id="addproducts">Add Products</li>
-                                    </ul>
-                                </li>
-
                             </ul>
                         </div>
                     </nav>
