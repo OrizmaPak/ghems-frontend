@@ -27,7 +27,6 @@ async function submitapprovedeclinerequisition(state){
             }
         }
     if(ids.length <= 0)return notification('No Item Selected')
-    if(state !== 'APPROVE')return notification('Decline Not Available for now. Try Later..')
     function payload(){
         let param  = new FormData()
         param.append('rowsize', ids.length)
@@ -36,9 +35,10 @@ async function submitapprovedeclinerequisition(state){
         }
         return param
     }
-     let request = await httpRequest2(`../controllers/${state == 'APPROVE' ? 'approverequisitions' : 'cancelrequisition'}`, payload(), document.getElementById('requisitionapprovebtn'))
+    const actionBtn = document.getElementById(state == 'APPROVE' ? 'requisitionapprovebtn' : 'requisitiondeclinebtn')
+    let request = await httpRequest2(`../controllers/${state == 'APPROVE' ? 'approverequisitions' : 'cancelrequisition'}`, payload(), actionBtn)
     if(request.status) {
-        notification('Selected Records Approved Successfully!', 1);
+        notification(`Selected Records ${state == 'APPROVE' ? 'Approved' : 'Declined'} Successfully!`, 1);
         fetchapproverequisition();
         return
     }else return notification('Something Went Wrong.. try again later', 0)
