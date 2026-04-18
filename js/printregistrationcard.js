@@ -107,7 +107,7 @@ async function onprintregistrationcardTableDataSignal() {
 function reservationTableActionButtons(reservationId) {
     return `
         <div class="flex flex-col gap-1 w-[190px]">
-            <button type="button" title="Print Guest Registration Card" onclick="printRegistrationCardItem('${reservationId}')" class="rounded-md bg-primary-g text-white px-2 py-1 text-[11px] font-semibold flex items-center justify-center gap-1 leading-tight">
+            <button type="button" title="Print Guest Registration Card" onclick="printRegistrationCardItem('${reservationId}')" class="rounded-md bg-green-700 text-white px-2 py-1 text-[11px] font-semibold flex items-center justify-center gap-1 leading-tight">
                 <span class="material-symbols-outlined text-[14px]">print</span>
                 <span>Guest Registration Card</span>
             </button>
