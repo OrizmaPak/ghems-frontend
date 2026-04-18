@@ -48,7 +48,7 @@ async function onprintregistrationcardTableDataSignal() {
         <td>${formatDate(item.reservations.departuredate)}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="printRegistrationCardItem('${item.reservations.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+            ${reservationTableActionButtons(item.reservations.id)}
         </td>
     </tr>` : ''}
      ${item.roomgeustrow[0]?.guest2.length > 0 ? `<tr>
@@ -63,7 +63,7 @@ async function onprintregistrationcardTableDataSignal() {
         <td>${formatDate(item.reservations.departuredate)}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="printRegistrationCardItem('${item.reservations.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+            ${reservationTableActionButtons(item.reservations.id)}
         </td>
     </tr>`:''}
      ${item.roomgeustrow[0]?.guest3.length > 0 ? `
@@ -79,7 +79,7 @@ async function onprintregistrationcardTableDataSignal() {
         <td>${formatDate(item.reservations.departuredate)}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="printRegistrationCardItem('${item.reservations.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+            ${reservationTableActionButtons(item.reservations.id)}
         </td>
     </tr>` : ''}
       ${item.roomgeustrow[0]?.guest4.length > 0 ? `<tr>
@@ -94,7 +94,7 @@ async function onprintregistrationcardTableDataSignal() {
         <td>${formatDate(item.reservations.departuredate)}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="printRegistrationCardItem('${item.reservations.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+            ${reservationTableActionButtons(item.reservations.id)}
         </td>
     </tr>` : ''}
     
@@ -104,9 +104,21 @@ async function onprintregistrationcardTableDataSignal() {
     injectPaginatatedTable(rows)
 }
 
+function reservationTableActionButtons(reservationId) {
+    return `
+        <button title="Print Registration Card" onclick="printRegistrationCardItem('${reservationId}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+        <button type="button" onclick="printReservationConfirmationItem('${reservationId}')" class="rounded-md bg-blue-700 text-white px-2 py-1 text-[11px] font-semibold whitespace-nowrap">Reservation Confirmation</button>
+    `
+}
+
 function printRegistrationCardItem(id) {
     const selectedItem = datasource.find(item => item.reservations.id == id)
     if(selectedItem) stageCardPrint(selectedItem)
+}
+
+function printReservationConfirmationItem(id) {
+    const selectedItem = datasource.find(item => item.reservations.id == id)
+    if(selectedItem) stageReservationConfirmationPrint(selectedItem)
 }
 
 function stageCardPrint(item) {
@@ -326,4 +338,91 @@ function stageCardPrint(item) {
     </div>
     `
     printRegistrationCard(html)
+}
+
+function stageReservationConfirmationPrint(item) {
+    const guest = item.roomgeustrow[0]?.guest1?.[0] || {}
+    const guestNameRaw = `${guest.firstname || ''} ${guest.othernames && guest.othernames !== '-' ? guest.othernames : ''} ${guest.lastname || ''}`.replace(/\s+/g, ' ').trim()
+    const guestName = guestNameRaw || 'Guest'
+    const nationality = guest.nationality && guest.nationality !== '-' ? guest.nationality : ''
+    const reference = item.reservations.reference || item.reservations.id || ''
+    const roomType = item.roomgeustrow[0]?.roomdata?.roomcategoryname || ''
+    const roomRate = Number(item.roomgeustrow[0]?.roomdata?.roomrate || 0)
+    const nights = Number(item.reservations.numberofnights || 0)
+
+    const html = `
+    <div class="bg-white !text-black p-8 text-[14px] leading-relaxed">
+        <div class="text-center mb-6">
+            <div class="text-2xl font-bold uppercase">GRAVITY HOTELS</div>
+            <div class="text-xl font-bold uppercase mt-2">RESERVATION CONFIRMATION</div>
+        </div>
+
+        <p class="mb-4"><strong>Date:</strong> ${formatReservationConfirmationDateTime(new Date())}</p>
+
+        <p><strong>Guest:</strong></p>
+        <p class="uppercase">${guestName}</p>
+        <p class="uppercase mb-4">${nationality}</p>
+
+        <p class="mb-4">Dear ${guestName},</p>
+
+        <p class="mb-4">Thank you for your request for a reservation at the GRAVITY HOTEL OWERRI. We are pleased to confirm your booking with confirmation number ${reference} under the following terms:</p>
+
+        <div class="mb-4">
+            <p><strong>Guest Name:</strong> ${guestName}</p>
+            <p><strong>Arrival Date:</strong> ${formatReservationConfirmationDate(item.reservations.arrivaldate)}</p>
+            <p><strong>Departure Date:</strong> ${formatReservationConfirmationDate(item.reservations.departuredate)}</p>
+            <p><strong>No. of Nights:</strong> ${nights}</p>
+            <p><strong>No. of Rooms/Room Type:</strong> 1 x ${roomType}</p>
+            <p><strong>Rate payable per room per night:</strong> ${formatNumber(roomRate.toFixed ? roomRate : Number(roomRate))}.00 NGN</p>
+        </div>
+
+        <p class="mb-4">Please note that the above rate is inclusive of a Complimentary Breakfast, 10% Service charge, Consumption tax and 7.5% VAT.</p>
+
+        <p class="mb-4">All rooms are furnished with TV, In-room safe, minibar, telephone, internet access, individual adjustable air condition system as well as shower, bathtub and WC.</p>
+
+        <p class="mb-4">Our check-in time is 14:00 hours on date of arrival. A deposit is required 24 hours prior to check-in.<br>
+        Check out time is 11:00 hours. Checkout after 12:00PM hours attracts 50% extra charge of your room rate till 16:00 hours and 100% after 18:00 hours.</p>
+
+        <p class="mb-1"><strong>Refund Policy:</strong></p>
+        <p class="mb-4">Reservation cancellation must be made 24 - 48 hours before check-in dates to qualify for a refund. Refund payment attracts 15% processing fee and taxes. Refund may take up to 72 hours.</p>
+
+        <p class="mb-4">Should you require any further information or assistance please do not hesitate to contact us.</p>
+
+        <p class="mb-4">We look forward to the pleasure of welcoming you as our guest at the GRAVITY HOTEL OWERRI.</p>
+
+        <p class="mb-4">With kind regards,<br>
+        Precious Onuoha<br>
+        GRAVITY HOTEL OWERRI</p>
+
+        <p class="mb-0"><strong>Address & Contact:</strong></p>
+        <p class="mb-0">5002B, Action Commercial Area, Ikenegbu Layout, Imo State, Nigeria</p>
+        <p class="mb-4">Email: acehospitalityng@gmail.com</p>
+
+        <p class="mb-0">Website: www.acehospitality.com/gravityhotelowerri</p>
+        <p class="mb-0">Tel: +234 (0) 90 9040001-7</p>
+    </div>
+    `
+
+    printRegistrationCard(html)
+}
+
+function formatReservationConfirmationDate(value) {
+    const d = value ? new Date(value) : new Date()
+    if (Number.isNaN(d.getTime())) return ''
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    return `${day}/${month}/${year}`
+}
+
+function formatReservationConfirmationDateTime(value) {
+    const d = value ? new Date(value) : new Date()
+    if (Number.isNaN(d.getTime())) return ''
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    const hour = String(d.getHours()).padStart(2, '0')
+    const minute = String(d.getMinutes()).padStart(2, '0')
+    const second = String(d.getSeconds()).padStart(2, '0')
+    return `${day}/${month}/${year} ${hour}:${minute}:${second}`
 }
