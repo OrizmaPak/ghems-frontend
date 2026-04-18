@@ -1709,6 +1709,17 @@ async function oncheckinTableDataSignal() {
 function opencheckinreceipt(id, ratee, rooms){
     let receiptdata = datasource.filter(data=>data.reservations.id == id)[0]
     if(!receiptdata)return callModal('Something went wrong...')
+    const bookingRows = receiptdata.roomgeustrow || receiptdata.roomguestrow || []
+    const totalRooms = bookingRows.length
+    const totalRoomRate = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.roomrate || 0), 0)
+    const totalPlanAmount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.planamount || 0), 0)
+    const totalRoomDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.discountamount || 0), 0)
+    const totalPlanDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.plandiscountamount || 0), 0)
+    const otherDiscount = Number(receiptdata?.reservations?.otherdiscount || 0)
+    const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
+    const calculatedTotalAmount = Math.max((totalRoomRate + totalPlanAmount) - totalDiscount, 0)
+    const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
+    const showSavedTotalAmount = savedTotalAmount > 0 && Math.round(savedTotalAmount) !== Math.round(calculatedTotalAmount)
     // did('invoiceno').setAttribute('value', receiptdata.reservations.reference)
     // did('invoiceno').value = receiptdata.reservations.reference
     // did('invoicedate').setAttribute('value', specialformatDateTime(receiptdata.reservations.reservationdate))
@@ -1805,9 +1816,13 @@ function opencheckinreceipt(id, ratee, rooms){
                         				<label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Status:</label>
                         				<input readonly value="${receiptdata.reservations.status == 'OPEN' ? 'RESERVED' : receiptdata.reservations.status }" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
                         				<label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Total Rate:</label>
-                        				<input readonly value="${ratee}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
+                        				<input readonly value="${formatNumber(totalRoomRate)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
                         				<label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Total Rooms:</label>
-                        				<input readonly value="${rooms}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
+                        				<input readonly value="${totalRooms}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
+                                        <label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Plan Amount:</label>
+                        				<input readonly value="${formatNumber(totalPlanAmount)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Plan Amount" >
+                                        <label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Total Discount:</label>
+                        				<input readonly value="${formatNumber(totalDiscount)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Total Discount" >
                         			</div>
                         			<div class="w-full md:w-1/3">
                         				<label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Firm:</label>
@@ -1844,13 +1859,20 @@ function opencheckinreceipt(id, ratee, rooms){
                                                     </table>
                                                 </th>
                                                 <th class="text-center opacity-70">rate</th>
+                                                <th class="text-center opacity-70">plan amount</th>
                                                 <th class="text-center opacity-70">discount</th>
                                                 <th class="text-center opacity-70">plan discount</th>
+                                                <th class="text-center opacity-70">line total</th>
                                             </tr>
                                         </thead>
                                         <tbody id="roomtabledata">
                                             ${
-                                                receiptdata.roomgeustrow.map((item, index)=>{
+                                                bookingRows.map((item, index)=>{
+                                                    const roomRate = Number(item.roomdata.roomrate || 0)
+                                                    const planAmount = Number(item.roomdata.planamount || 0)
+                                                    const roomDiscount = Number(item.roomdata.discountamount || 0)
+                                                    const planDiscount = Number(item.roomdata.plandiscountamount || 0)
+                                                    const lineTotal = Math.max((roomRate + planAmount) - (roomDiscount + planDiscount), 0)
                                                     return ` 
                                                         <tr> 
                                                             <td>${index + 1 }</td> 
@@ -1882,9 +1904,11 @@ function opencheckinreceipt(id, ratee, rooms){
                                                                         </tbody>
                                                                     </table>
                                                             </td>
-                                                            <td>${formatNumber(item.roomdata.roomrate)}</td> 
-                                                            <td>${formatNumber(item.roomdata.discountamount)}</td> 
-                                                            <td>${formatNumber(item.roomdata.plandiscountamount)}</td>
+                                                            <td>${formatNumber(roomRate)}</td> 
+                                                            <td>${formatNumber(planAmount)}</td>
+                                                            <td>${formatNumber(roomDiscount)}</td> 
+                                                            <td>${formatNumber(planDiscount)}</td>
+                                                            <td>${formatNumber(lineTotal)}</td>
                                                         </tr> `
                                                 }).join('')
                                             }
@@ -1960,25 +1984,57 @@ function opencheckinreceipt(id, ratee, rooms){
                         				</div>
                         			</div>
                         
-                        		<div class="py-2 ml-auto mt-5 w-full sm:w-2/4 lg:w-1/4">
+                        		<div class="py-2 ml-auto mt-5 w-full sm:w-2/4 lg:w-1/3">
                         			<div class="flex justify-between mb-3">
-                        				<div class="text-gray-800 text-right flex-1">Total&nbsp;Balance</div>
+                        				<div class="text-gray-800 text-right flex-1">Total Room Rate</div>
                         				<div class="text-right w-40">
-                        					<div id="rtotalbalance" class="text-gray-800 font-medium"></div>
+                        					<div id="rtotalbalance" class="text-gray-800 font-medium">${formatNumber(totalRoomRate)}</div>
+                        				</div>
+                        			</div>
+                        			<div class="flex justify-between mb-3">
+                        				<div class="text-gray-800 text-right flex-1">Total Plan Amount</div>
+                        				<div class="text-right w-40">
+                        					<div class="text-gray-800 font-medium">${formatNumber(totalPlanAmount)}</div>
+                        				</div>
+                        			</div>
+                        			<div class="flex justify-between mb-3">
+                        				<div class="text-gray-800 text-right flex-1">Room Discount</div>
+                        				<div class="text-right w-40">
+                        					<div class="text-gray-800 font-medium">${formatNumber(totalRoomDiscount)}</div>
+                        				</div>
+                        			</div>
+                        			<div class="flex justify-between mb-3">
+                        				<div class="text-gray-800 text-right flex-1">Plan Discount</div>
+                        				<div class="text-right w-40">
+                        					<div class="text-gray-800 font-medium">${formatNumber(totalPlanDiscount)}</div>
+                        				</div>
+                        			</div>
+                        			<div class="flex justify-between mb-3">
+                        				<div class="text-gray-800 text-right flex-1">Other Discount</div>
+                        				<div class="text-right w-40">
+                        					<div class="text-gray-800 font-medium">${formatNumber(otherDiscount)}</div>
                         				</div>
                         			</div>
                         			<div class="flex justify-between mb-4">
-                        				<div class="text-sm text-gray-600 text-right flex-1">VAT</div>
+                        				<div class="text-gray-800 text-right flex-1">Total Discount</div>
                         				<div class="text-right w-40">
-                        					<div id="" class="text-sm text-gray-600" >0.00</div>
+                        					<div class="text-gray-800 font-medium">${formatNumber(totalDiscount)}</div>
                         				</div>
                         			</div>
+                                    ${showSavedTotalAmount ? `
+                                        <div class="flex justify-between mb-4">
+                                            <div class="text-sm text-gray-600 text-right flex-1">Saved Total Amount</div>
+                                            <div class="text-right w-40">
+                                                <div class="text-sm text-gray-600">${formatNumber(savedTotalAmount)}</div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
                         		
                         			<div class="py-2 border-t border-b">
                         				<div class="flex justify-between">
                         					<div class="text-xl text-gray-600 text-right flex-1">Total&nbsp;Amount</div>
                         					<div class="text-right w-40">
-                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatNumber(ratee)}</div>
+                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatNumber(calculatedTotalAmount)}</div>
                         					</div>
                         				</div>
                         			</div>
