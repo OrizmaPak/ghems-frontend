@@ -2148,7 +2148,7 @@ async function checkinnFormSubmitHandler(guest){
         
         if(guest != 'cancelreservationform' && guest != 'extendstayform'){
             // if amount its from a reservation and direct then an invoice must be called
-            if(did('amountpaid').value && guest){
+            if(guest){
                 async function payloadinvoice() {
                       // Show SweetAlert modal to ask if the user wants to distribute payment
                       const result = await Swal.fire({
@@ -2181,7 +2181,7 @@ async function checkinnFormSubmitHandler(guest){
                       p.append('reference', request.reference);
                       p.append('paymentmethod', did('paymentmethod').value);
                       p.append('totaldue', did('totalamount').value);
-                      p.append('amountpaid', did('amountpaid').value);
+                      p.append('amountpaid', did('amountpaid').value || 0);
                       p.append('distribute', distribute);
                       p.append('bankname', did('bankname').value);
                       p.append('otherdetails', did('otherdetails').value);
@@ -2189,7 +2189,7 @@ async function checkinnFormSubmitHandler(guest){
                       return p;
                     }
                 if(populateddata && checkinid && populateddata.amountpaid && populateddata.ampuntpaid != document.getElementById('amountpaid').value){
-                    let requestinvoice = await httpRequest2('../controllers/receiptforcashier', await payloadinvoice(), document.querySelector(`#${guest} #submit`))
+                    let requestinvoice = await httpRequest2('../controllers/invoicing', await payloadinvoice(), document.querySelector(`#${guest} #submit`))
                     if(requestinvoice.status) {
                         notification(requestinvoice.message, 1);
                         Swal.fire({
