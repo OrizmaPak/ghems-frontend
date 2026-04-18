@@ -7,23 +7,69 @@ let planobj // this is used to keep the plan object
 let nameandidofguest  // this will carry an array of the name and id of the newly created guest
 let actionid // this is the variable that will hold id in memory for me
 let distribute = "YES"
+const checkinOtherDetailsPromptState = {}
+
+function setCheckinPaymentMethodDefaultCash() {
+    const paymentMethodEl = did('paymentmethod')
+    if (!paymentMethodEl) return
+    if (paymentMethodEl.value) return
+    const cashOption = Array.from(paymentMethodEl.options || []).find(opt => /^cash$/i.test(String(opt.value || '').trim()))
+    if (cashOption) {
+        paymentMethodEl.value = cashOption.value
+    } else {
+        paymentMethodEl.value = 'CASH'
+    }
+}
+
+async function runCheckinOtherDetailsSubmitGuard(formId) {
+    setCheckinPaymentMethodDefaultCash()
+    const paymentMethod = String((did('paymentmethod') && did('paymentmethod').value) || '').trim().toUpperCase()
+    const bankName = String((did('bankname') && did('bankname').value) || '').trim()
+    const otherDetails = String((did('otherdetails') && did('otherdetails').value) || '').trim()
+
+    // If transfer is selected, bank details remain mandatory.
+    if (paymentMethod === 'TRANSFER') {
+        if (!bankName || !otherDetails) {
+            notification('Please Enter Customer\'s Bank Name and Other Details')
+            did('modalformone').classList.remove('hidden')
+            return false
+        }
+        checkinOtherDetailsPromptState[formId] = false
+        return true
+    }
+
+    // For non-transfer methods, show a one-time confirmation before submit.
+    if (!bankName && !otherDetails && !checkinOtherDetailsPromptState[formId]) {
+        await Swal.fire({
+            title: 'Confirm Without Other Details',
+            text: 'You are about to submit without bank name and other details. Click submit again to continue.',
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            customClass: {
+                confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2'
+            },
+            buttonsStyling: false
+        })
+        checkinOtherDetailsPromptState[formId] = true
+        return false
+    }
+
+    return true
+}
+
 async function checkinActive() {
     notification('Loading...')
     checkinid = ''
+    checkinOtherDetailsPromptState.checkinform = false
     // markallcomp() 
     const form = document.querySelector('#checkinform')  
     await checkinpopulatedl() 
+    setCheckinPaymentMethodDefaultCash()
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('checkinform'))
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
+    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', async e=>{
+        if(!await runCheckinOtherDetailsSubmitGuard('checkinform')) return
         if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            if (did('paymentmethod').value == 'TRANSFER') {
-                if (!did('bankname').value || !did('otherdetails').value) {
-                    notification('Please Enter Customer\'s Bank Name and Other Details');
-                    did('modalformone').classList.remove('hidden');
-                    return;  // Prevent further execution
-                }
-            }
-        return checkinnFormSubmitHandler('checkinform')
+            return checkinnFormSubmitHandler('checkinform')
         }
         return checkinnFormSubmitHandler('checkinform')
     })

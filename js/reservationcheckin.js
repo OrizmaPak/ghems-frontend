@@ -1,19 +1,15 @@
 async function reservationcheckinActive() {
    notification('Loading...')
     checkinid = ''
+    checkinOtherDetailsPromptState.reservationcheckinform = false
     // markallcomp() 
     const form = document.querySelector('#reservationcheckinform')  
     await checkinpopulatedl() 
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
+    setCheckinPaymentMethodDefaultCash()
+    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', async e=>{
+        if(!await runCheckinOtherDetailsSubmitGuard('reservationcheckinform')) return
         if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            if (did('paymentmethod').value == 'TRANSFER') {
-                if (!did('bankname').value || !did('otherdetails').value) {
-                    notification('Please Enter Customer\'s Bank Name and Other Details');
-                    did('modalformone').classList.remove('hidden');
-                    return;  // Prevent further execution
-                }
-            }
-        return checkinnFormSubmitHandler('reservationcheckinform')
+            return checkinnFormSubmitHandler('reservationcheckinform')
         }
         return checkinnFormSubmitHandler('reservationcheckinform')
     })

@@ -1,17 +1,14 @@
 async function groupcheckinActive() {
    notification('Loading...')
     checkinid = ''
+    checkinOtherDetailsPromptState.groupcheckinform = false
     // markallcomp() 
     const form = document.querySelector('#groupcheckinform')  
     await checkinpopulatedl() 
+    setCheckinPaymentMethodDefaultCash()
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('groupcheckinform'))
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
-        if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            if(did('paymentmethod').value == 'TRANSFER' && did('bankname').value == '' || did('otherdetails').value == ''){
-                notification('Please Enter Customers Bank Name and Other details')
-                return did('modalformone').classList.remove('hidden')
-            }
-        }
+    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', async e=>{
+        if(!await runCheckinOtherDetailsSubmitGuard('groupcheckinform')) return
         checkinnFormSubmitHandler('groupcheckinform')
     })
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone'))
