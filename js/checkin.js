@@ -185,19 +185,26 @@ function datedifference() {
 
             const start = new Date(startdate);
             const end = new Date(enddate);
-
-            const timeDifference = end - start;
-            const dayDifference = timeDifference / (1000 * 60 * 60 * 24);
-
-            if (dayDifference < 0) {
-                notification("Invalid: End date is before start date.", 0);
-                startdate = ''
-                enddate = ''
+            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+                notification("Please enter valid arrival and departure dates.", 0);
                 nightInput.value = '';
                 return;
             }
 
-            nightInput.value = Math.floor(dayDifference);
+            // Nights are based on calendar dates, not raw hour difference.
+            const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            const dayDifference = (endDay - startDay) / (1000 * 60 * 60 * 24);
+
+            if (dayDifference < 0) {
+                notification("Invalid: End date is before start date.", 0);
+                document.querySelector('#arrivaldate').value = ''
+                document.querySelector('#departuredate').value = ''
+                nightInput.value = '';
+                return;
+            }
+
+            nightInput.value = dayDifference;
             // if a room is selected prior to entering the page this set of code below sets
             if(sessionStorage.getItem('roomsetting')){
                 try{
