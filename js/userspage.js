@@ -21,12 +21,7 @@ async function onuserspagesTableDataSignal() {
     <tr class="${item.role == 'SUPERADMIN' ? 'hidden' : ''}" >
         <td>${item.index + 1 }</td>
         <td class="flex items-center gap-3">
-            ${item.status == 'ACTIVE' ? `<button onclick="deactivateuserspageItem(event, '${item.email}', '${item.id}')" title="Deactivate User" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">lock</button>`
-            :
-            item.status == 'DEACTIVATED' ? `<button onclick="activateuserspageItem(event, '${item.email}', '${item.id}')" title="Activate User" class="material-symbols-outlined rounded-full bg-green-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">key</button>` 
-            :
-                ''
-            }
+            ${renderUsersActionButton(item)}
         </td>
         <td>${item.firstname}</td>
         <td>${item.lastname}</td>
@@ -37,6 +32,23 @@ async function onuserspagesTableDataSignal() {
     )
     .join('')
     injectPaginatatedTable(rows)
+}
+
+function renderUsersActionButton(item){
+    const status = String(item?.status || '').trim().toUpperCase()
+    const isActive = status === 'ACTIVE'
+
+    if(isActive){
+        return `<button onclick="deactivateuserspageItem(event, '${item.email}', '${item.id}')" title="Deactivate User" class="rounded-md bg-red-600 px-2 py-1 text-white drop-shadow-md text-xs font-semibold inline-flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">lock</span>
+            <span>Deactivate</span>
+        </button>`
+    }
+
+    return `<button onclick="activateuserspageItem(event, '${item.email}', '${item.id}')" title="Activate User" class="rounded-md bg-green-600 px-2 py-1 text-white drop-shadow-md text-xs font-semibold inline-flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">key</span>
+        <span>Activate</span>
+    </button>`
 }
 
 async function activateuserspageItem(event, email, index) {
