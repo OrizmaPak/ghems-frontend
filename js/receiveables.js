@@ -215,8 +215,8 @@ function openreceiveablemodal(dbt, cdt, rn){
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
-
     let data = {debit: dbt,credit:cdt,roomnumber:rn}
+    const payableAmount = Number(data.debit || 0)
     did('invoicecontainer').innerHTML = `
                             <div class="rounded-lg">
                         
@@ -287,9 +287,8 @@ function openreceiveablemodal(dbt, cdt, rn){
                                 <h3 class="text-xl font-bold"> Payment: </h3>
                                 <ul class="text-md font-semibold text-grey-400 px-1">
                                     <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Date:</p> <span>${String(formatDate(getTodaysDate()))}</span></li>
-                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Debit:</p> <p>${formatCurrency(data.debit)}</p></li>
-                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Credit:</p> <p>${formatCurrency(data.credit)}</p></li>
-                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Balance:</p> <p>${formatCurrency(Number(data.debit) - Number(data.credit))}</p></li>
+                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Amount:</p> <p>${formatCurrency(payableAmount)}</p></li>
+                                    <li class="border rounded p-1 mt-1" style="display: flex;justify-content:space-between;width: 100%"><p>Total Amount:</p> <p>${formatCurrency(payableAmount)}</p></li>
                                 </ul>
                                 
                         		
@@ -304,9 +303,9 @@ function openreceiveablemodal(dbt, cdt, rn){
                         		
                         			<div class="py-2 border-t border-b">
                         				<div class="flex justify-between">
-                        					<div class="text-xl text-gray-600 text-right flex-1">Total&nbsp;Balance</div>
+                        					<div class="text-xl text-gray-600 text-right flex-1">Total&nbsp;Amount</div>
                         					<div class="text-right w-40">
-                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatCurrency(Number(data.debit) - Number(data.credit))}</div>
+                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatCurrency(payableAmount)}</div>
                         					</div>
                         				</div>
                         			</div>
