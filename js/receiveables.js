@@ -120,7 +120,7 @@ async function onreceiveablesTableDataSignal() {
             <td>${formatNumber(item.debit)}</td>
             <td>${formatNumber(item.credit)}</td>
             <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
-            <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}','${item.currency || 'NGN'}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
+            <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
         </tr>`)}
         )
         .join('')
@@ -139,7 +139,7 @@ async function onreceiveablesTableDataSignal() {
         <td>${formatNumber(item.debit)}</td>
         <td>${formatNumber(item.credit)}</td>
         <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
-        <td><button onclick="openreceiveablemodal('${item.debit}','${item.credit}','${roomIdentifier}','${item.currency || 'NGN'}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
+        <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
     )
     .join('')
@@ -205,6 +205,15 @@ function getReceivableRunningBalance(index){
     }
 
     return balance
+}
+
+function openreceiveablemodalbyindex(rowIndex){
+    const numericIndex = Number(rowIndex)
+    const rowItem = datasource.find(item => Number(item.index) === numericIndex) || datasource[numericIndex] || null
+    if(!rowItem)return notification('Unable to load receivable row', 0)
+
+    const roomIdentifier = rowItem.ownerid || rowItem.roomnumber || ''
+    openreceiveablemodal(rowItem.debit, rowItem.credit, roomIdentifier, rowItem.currency || 'NGN')
 }
 
 function openreceiveablemodal(dbt, cdt, rn, ccy='NGN'){
