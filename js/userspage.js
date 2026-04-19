@@ -36,9 +36,9 @@ async function onuserspagesTableDataSignal() {
 
 function renderUsersActionButton(item){
     const status = String(item?.status || '').trim().toUpperCase()
-    const isActive = status === 'ACTIVE'
+    const shouldShowDeactivate = status === 'ACTIVE' || status === 'NOT VERIFIED'
 
-    if(isActive){
+    if(shouldShowDeactivate){
         return `<button onclick="deactivateuserspageItem(event, '${item.email}', '${item.id}')" title="Deactivate User" class="rounded-md bg-red-600 px-2 py-1 text-white drop-shadow-md text-xs font-semibold inline-flex items-center gap-1">
             <span class="material-symbols-outlined text-sm">lock</span>
             <span>Deactivate</span>
