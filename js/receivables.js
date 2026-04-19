@@ -3,6 +3,11 @@ let receiveablesFiltered = false
 let receiveablesPageMode = 'receiveables'
 const receivablesPaymentController = '../controllers/receipts'
 
+// Backward compatibility for old route/function spelling.
+async function receiveablesActive(mode='receiveables') {
+    return receivablesActive(mode)
+}
+
 function isPayPendingCheckoutBillsRoute(){
     return receiveablesPageMode === 'paypendingcheckoutbills' || getCurrentRouteName() === 'paypendingcheckoutbills'
 }
@@ -13,7 +18,7 @@ function renderReceiveablesEmptyState(message='No records retrieved'){
     tabledata.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
 }
 
-async function receiveablesActive(mode='receiveables') {
+async function receivablesActive(mode='receivables') {
     receiveablesPageMode = mode
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)

@@ -253,9 +253,14 @@ const routerTree = {
         scriptName: './js/cancellation.js'
     },
     receiveables: {
-        template: 'receiveables',
-        startingFunction: 'receiveablesActive',
-        scriptName: './js/receiveables.js'
+        template: 'receivables',
+        startingFunction: 'receivablesActive',
+        scriptName: './js/receivables.js'
+    },
+    receivables: {
+        template: 'receivables',
+        startingFunction: 'receivablesActive',
+        scriptName: './js/receivables.js'
     },
     paypendingcheckoutbills: {
         template: 'paypendingcheckoutbills',
