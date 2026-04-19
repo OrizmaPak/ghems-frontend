@@ -1,7 +1,13 @@
 let viewrecipeid
+let viewrecipeDatasource = []
+let filteredViewrecipeDatasource = []
+
 async function viewrecipeActive() {
     const form = document.querySelector('#viewrecipeform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>fetchviewrecipe())
+    if(did('viewrecipesearch')) did('viewrecipesearch').addEventListener('input', applyViewrecipeFilters)
+    if(did('viewrecipesalespointfilter')) did('viewrecipesalespointfilter').addEventListener('change', applyViewrecipeFilters)
+    if(did('clearviewrecipefilters')) did('clearviewrecipefilters').addEventListener('click', clearViewrecipeFilters)
     datasource = []
     await fetchviewrecipe()
 }
@@ -18,8 +24,18 @@ async function fetchviewrecipe(id='') {
     if(request.status) {
         if(!id){
             if(request.data.length) {
+                viewrecipeDatasource = request.data
                 datasource = request.data
-                resolvePagination(datasource, onviewrecipeTableDataSignal)
+                syncViewrecipeSalesPointFilterOptions(viewrecipeDatasource)
+                applyViewrecipeFilters()
+            } else {
+                viewrecipeDatasource = []
+                filteredViewrecipeDatasource = []
+                datasource = []
+                syncViewrecipeSalesPointFilterOptions([])
+                did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
+                const tableStatus = document.querySelector('.table-status')
+                if(tableStatus) tableStatus.innerHTML = ''
             }
         }else{
              viewrecipeid = request.data[0].id
@@ -27,6 +43,61 @@ async function fetchviewrecipe(id='') {
         }
     }
     else return notification('No records retrieved')
+}
+
+function clearViewrecipeFilters() {
+    if(did('viewrecipesearch')) did('viewrecipesearch').value = ''
+    if(did('viewrecipesalespointfilter')) did('viewrecipesalespointfilter').value = ''
+    applyViewrecipeFilters()
+}
+
+function syncViewrecipeSalesPointFilterOptions(data) {
+    const salesPointFilter = did('viewrecipesalespointfilter')
+    if(!salesPointFilter) return
+    const uniqueSalesPoints = [...new Set(
+        (data || [])
+            .map(item => item?.compositeitemdetail?.salespoint)
+            .filter(Boolean)
+    )].sort((a, b) => String(a).localeCompare(String(b)))
+
+    salesPointFilter.innerHTML = `
+        <option value="">All sales points</option>
+        ${uniqueSalesPoints.map(point => `<option value="${point}">${point}</option>`).join('')}
+    `
+}
+
+function getViewrecipeSearchText(item){
+    const base = [
+        item?.compositeitemdetail?.salespoint || '',
+        item?.compositeitemdetail?.itemname || '',
+        item?.compositeitemdetail?.groupname || '',
+        item?.compositeitemdetail?.description || '',
+        item?.compositeitemdetail?.units || '',
+        item?.compositeitemdetail?.cost || '',
+        item?.compositeitemdetail?.price || ''
+    ].join(' ')
+    const members = (item?.compositememberitems || []).map(dat => `${dat?.itemname || ''} ${dat?.qty || ''}`).join(' ')
+    return `${base} ${members}`.toLowerCase()
+}
+
+function applyViewrecipeFilters() {
+    const search = (did('viewrecipesearch')?.value || '').toLowerCase().trim()
+    const salesPoint = (did('viewrecipesalespointfilter')?.value || '').toLowerCase().trim()
+    filteredViewrecipeDatasource = (viewrecipeDatasource || []).filter(item => {
+        const itemSalesPoint = String(item?.compositeitemdetail?.salespoint || '').toLowerCase()
+        const matchesSalesPoint = !salesPoint || itemSalesPoint === salesPoint
+        const matchesSearch = !search || getViewrecipeSearchText(item).includes(search)
+        return matchesSalesPoint && matchesSearch
+    })
+
+    datasource = filteredViewrecipeDatasource
+    if(filteredViewrecipeDatasource.length) {
+        resolvePagination(filteredViewrecipeDatasource, onviewrecipeTableDataSignal)
+        return
+    }
+    did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No matching recipes found</td></tr>`
+    const tableStatus = document.querySelector('.table-status')
+    if(tableStatus) tableStatus.innerHTML = ''
 }
 
 async function removeviewrecipe(id) {
@@ -97,7 +168,7 @@ async function onviewrecipeTableDataSignal() {
 
 function modalviewrecipe (id){
     if(!id)return
-    let data = datasource.filter(dat=>dat.compositeitemdetail.id == id)[0]
+    let data = viewrecipeDatasource.filter(dat=>dat.compositeitemdetail.id == id)[0]
     did('modaldetails').innerHTML = `
         <p class="!text-sm font-thin"><img src="../images/${data.compositeitemdetail.imageurl}" class="w-[100px] h-[100px]"></p>
         <div>

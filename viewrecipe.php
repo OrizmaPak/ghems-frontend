@@ -38,6 +38,24 @@
                             </form>
                             <hr class="my-10">
                             
+                            <div class="bg-white/90 p-4 rounded-sm mb-4">
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <div class="form-group">
+                                        <label for="viewrecipesearch" class="control-label">Filter recipes</label>
+                                        <input type="text" id="viewrecipesearch" class="form-control" placeholder="Search by item, group, description or ingredient">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="viewrecipesalespointfilter" class="control-label">Sales point</label>
+                                        <select id="viewrecipesalespointfilter" class="form-control">
+                                            <option value="">All sales points</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button id="clearviewrecipefilters" type="button" class="btn">Clear Filters</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             
                              <div >
                                 <div class="table-content">
