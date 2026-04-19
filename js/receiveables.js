@@ -78,7 +78,7 @@ function resetreceiveablesfilter(){
 
 async function removereceiveables(id) {
     // Ask for confirmation
-    const confirmed = window.confirm("Are you sure you want to remove this receiveables?");
+    const confirmed = window.confirm("Are you sure you want to remove this receivable?");
 
     // If not confirmed, do nothing
     if (!confirmed) {

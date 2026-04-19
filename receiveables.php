@@ -1,6 +1,6 @@
        <section class="animate__animated animate__fadeIn">
                             <p class="page-title">
-                                <span>RECEIVEABLES</span>
+                                <span>RECEIVABLES</span>
                             </p>
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
