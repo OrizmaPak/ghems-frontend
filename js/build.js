@@ -151,7 +151,7 @@ async function buildFormSubmitHandler() {
         param.append('gridsize', document.getElementsByName('qty').length)
         return param
     }
-    let request = await httpRequest2('../controllers/buildrecipes', payload(), document.querySelector('#buildform #submit'))
+    let request = await httpRequest2('../controllers/builditemscript', payload(), document.querySelector('#buildform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
         document.querySelector('#build').click();
