@@ -153,6 +153,7 @@
                                 <div class="form-group-auth mt-5">
                                     <label for="location_name" class="text-gray-500 font-normal capitalize text-2xs font-heebo">WHT Rate (%)<span class="text-[red]">*</span></label>
                                     <select id="whtrate"  name="whtrate" class="font-semibold text-sm focus:outline-none focus:ring-0 comp bg-transparent border-b-2 border-gray-300 focus:border-primary-g transition ease-linear duration-300 w-full">
+                                        <option>0</option>
                                         <option>4</option>
                                         <option>4.5</option>
                                         <option>5</option>
