@@ -30,12 +30,6 @@ function handlesalesapplyto (){
     document.getElementById('owner').value = '';
     document.getElementById('owner1').value = '';
     document.getElementById('owner').removeAttribute('list')
-    if(document.getElementById('applyto').value == 'ROOMS' || document.getElementById('applyto').value == 'COST CENTER'){
-        did('amountpaid').previousElementSibling.classList.remove('required')
-        did('amountpaid').classList.remove('comp')
-    }else{
-        did('amountpaid').classList.add('comp')
-    }
     if(document.getElementById('applyto').value == 'ROOMS'){
         document.getElementById('owner1').setAttribute('list', 'hems_roomnumber_id1')
     }
@@ -675,13 +669,11 @@ function preparesalesvalues(){
 }
 
 async function salesFormSubmitHandler() {
-    if(!validateForm('salesform', getIdFromCls('comp')))return notification('Please Ensure all compulsory fields are filled', 0)
+    const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
+    if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
     // if(did('salespointname').value == 'Restaurant' && !did('tablenumber').value)return notification('Please enter an available table number', 0)
     // if(Number(did('salespointname').value)){
     // }
-    if(Number(saletotalamount) != Number(did('amountpaid').value) && did('applyto').value != 'ROOMS'){
-        return notification('The amount paid is lesser that the total cost', 0)
-    }
     let t = true
     for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
         if(document.getElementsByClassName('qqty')[i].value < 1)t = false;

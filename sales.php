@@ -112,7 +112,7 @@
                                         <div class="grid load hidden grid-cols-1  lg:grid-cols-1 gap-10"> 
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">payment method</label>
-                                                <select  name="paymentmethod" id="paymentmethod" class="form-control comp">
+                                                <select  name="paymentmethod" id="paymentmethod" class="form-control">
                                                     <option value="">-- SELECT PAYMENT METHOD --</option>
                                                     <option>TRANSFER</option>
                                                     <option>CASH</option>
@@ -180,7 +180,7 @@
                                                  
                                                 <div class="flex items-center gap-5 m-5">
                                                     <label for="logoname" class="control-label text-xl">Amount&nbsp;Paid:</label>
-                                                    <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control comp " onchange="" placeholder="">
+                                                    <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control" onchange="" placeholder="">
                                                 </div>
                                             </div>
                                     <div class="flex justify-end w-full my-4">
