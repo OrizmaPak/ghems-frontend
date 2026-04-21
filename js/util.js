@@ -90,8 +90,11 @@ function buildGrantedPermissionSet(rawPermissions=''){
             .filter(Boolean)
     )
 
-    // Backward compatibility: users with SETTINGS previously had full admin visibility in many deployments.
-    if(granted.has('SETTINGS')) granted.add('PERSONNEL & PAYROLL')
+    // Backward compatibility: inherit personnel/payroll visibility from common existing admin grants.
+    const personnelPayrollFallbacks = ['SETTINGS', 'DEPARTMENT', 'ACCESS CONTROL', 'USERS', 'PROFILE']
+    if(personnelPayrollFallbacks.some(permission => granted.has(permission))){
+        granted.add('PERSONNEL & PAYROLL')
+    }
 
     return granted
 }
