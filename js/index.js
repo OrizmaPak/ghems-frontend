@@ -202,11 +202,14 @@ window.onload = function() {
 function decorateNavigationDescriptions(){
     const navItems = document.querySelectorAll('#navigation [title]')
     navItems.forEach(item => {
-        const originalTitle = item.getAttribute('title')
-        if(!originalTitle || originalTitle.trim().startsWith('<')) return
+        const titleValue = item.getAttribute('title') || ''
         const label = extractNavItemLabel(item)
-        const markup = buildNavDescriptionMarkup(label, originalTitle)
-        item.setAttribute('title', markup)
+        const hasHtml = titleValue.trim().startsWith('<')
+        const markup = hasHtml ? titleValue : buildNavDescriptionMarkup(label, titleValue)
+        const plainTooltip = toPlainGuideTooltip(hasHtml ? titleValue : titleValue, label)
+
+        item.dataset.guideHtml = markup
+        item.setAttribute('title', plainTooltip)
     })
 }
 
@@ -293,6 +296,20 @@ function sanitizeHTML(value=''){
     const temp = document.createElement('div')
     temp.textContent = value
     return temp.innerHTML
+}
+
+function stripHTML(value=''){
+    const temp = document.createElement('div')
+    temp.innerHTML = String(value || '')
+    return (temp.textContent || temp.innerText || '').trim()
+}
+
+function toPlainGuideTooltip(description='', label=''){
+    const plainDescription = stripHTML(description).replace(/\s+/g, ' ').trim()
+    const plainLabel = String(label || '').replace(/\s+/g, ' ').trim()
+    const base = plainDescription || plainLabel || 'Click guide'
+    const capped = base.length > 160 ? `${base.slice(0, 157).trimEnd()}...` : base
+    return capped
 }
 
 async function runPermissions(){

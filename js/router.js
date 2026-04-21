@@ -716,8 +716,8 @@ async function openRoute(url) {
                     el.classList.add('p-4', 'mb-4', 'text-sm', 'text-blue-800', 'rounded-lg', 'bg-blue-50');
                     el.setAttribute('role', 'alert');
                     
-                    // Get the title attribute of the page element, if it exists
-                    let title = pageElement?.getAttribute('title');
+                    // Get rich guide markup (data attribute first), fallback to title.
+                    let title = getMenuGuideHtml(pageElement);
                     if (title) {
                         el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
                                                 <div class="flex flex-col flex-1 gap-1">
@@ -808,6 +808,11 @@ function resolveRouteMenuElement(route) {
     return document.getElementById(route) || document.getElementById(`${route}_main`);
 }
 
+function getMenuGuideHtml(menu) {
+    if (!menu) return '';
+    return menu.dataset?.guideHtml || menu.getAttribute('title') || '';
+}
+
 function getCurrentRouteMeta() {
     const searchParams = new URLSearchParams(window.location.search);
     const page = searchParams.get('r');
@@ -817,7 +822,7 @@ function getCurrentRouteMeta() {
     if (!menu) return null;
 
     return {
-        description: menu.getAttribute('title') || '',
+        description: getMenuGuideHtml(menu),
         label: (menu.textContent || '').trim()
     };
 }
