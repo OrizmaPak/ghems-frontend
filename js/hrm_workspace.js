@@ -1026,7 +1026,9 @@ function hrmNormalizeLevelOptions(responseData) {
     return rows.map((item) => {
         const nested = item?.level || {};
         const id = item?.id ?? nested?.id ?? '';
-        const label = item?.level ?? nested?.level ?? '';
+        const label = typeof item?.level === 'string'
+            ? item.level
+            : (nested?.level ?? item?.levelname ?? '');
         return { id: String(id), label: String(label) };
     }).filter((item) => item.id && item.label);
 }
