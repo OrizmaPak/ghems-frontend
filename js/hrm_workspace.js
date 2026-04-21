@@ -1400,11 +1400,24 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 notification(hrmResultErrorMessage(result, `Save failed on ${saveController}`), 0);
                 return;
             }
-            notification('Record submitted successfully', 1);
+            notification(result?.data?.message || 'Record submitted successfully', 1);
             if (route === 'pp_level') {
                 form?.reset();
                 hrmLevelEditingId = '';
                 hrmRenderLevelLineEditors([], []);
+            }
+            if (route === 'pp_personnel') {
+                form?.reset();
+                const levelControl = document.getElementById('levelid');
+                if (hrmTomSelectInstances.levelid) {
+                    hrmTomSelectInstances.levelid.clear(true);
+                } else if (levelControl) {
+                    levelControl.value = '';
+                }
+                const basicSalaryControl = document.getElementById('basicsalary');
+                const idControl = document.getElementById('id');
+                if (basicSalaryControl) basicSalaryControl.value = '';
+                if (idControl) idControl.value = '';
             }
             await hrmLoadViewData(route, blueprint);
         };
