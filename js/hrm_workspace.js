@@ -13,12 +13,11 @@ const hrmInterfaceRegistry = {
     pp_personnel: {
         title: 'Add Personnel',
         subtitle: 'Capture personnel bio-data and compensation context for onboarding.',
-        flow: ['Select department/level', 'Capture personnel profile details', 'Submit for approval queue'],
+        flow: ['Select level', 'Capture personnel profile details', 'Submit for approval queue'],
         controllers: [
             { name: 'fetchpersonnels.php', purpose: 'Retrieve personnel list' },
             { name: 'personnelscript.php', purpose: 'Create or update personnel record' },
             { name: 'personnelapprovals.php', purpose: 'Submit to personnel approval pipeline' },
-            { name: 'fetchdepartment.php', purpose: 'Load department options' },
             { name: 'fetchlevel.php', purpose: 'Load level options' }
         ]
     },
@@ -49,7 +48,6 @@ const hrmInterfaceRegistry = {
         controllers: [
             { name: 'fetchpersonnelhistory.php', purpose: 'Retrieve personnel history records' },
             { name: 'fetchpersonnels.php', purpose: 'Load personnel filter list' },
-            { name: 'fetchdepartment.php', purpose: 'Load department filter list' },
             { name: 'fetchlevel.php', purpose: 'Load level filter list' }
         ]
     },
@@ -269,12 +267,19 @@ const hrmInterfaceRegistry = {
 
 const hrmCommonFilters = [
     { id: 'search', label: 'Search', type: 'text', placeholder: 'Name, staff ID, reference' },
-    { id: 'department', label: 'Department', type: 'select', options: ['All Departments'] },
     { id: 'startdate', label: 'Start Date', type: 'date' },
     { id: 'enddate', label: 'End Date', type: 'date' }
 ];
 
-const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 'bankname2']);
+const hrmHiddenFrontendFields = new Set([
+    'accountnumber',
+    'bankaccountnumber2',
+    'bankname2',
+    'department',
+    'departmentid',
+    'groupid',
+    'groupname'
+]);
 
 const hrmHtgControllerRouting = {
     pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
@@ -431,11 +436,10 @@ const hrmInterfaceBlueprints = {
         fields: [],
         filters: [
             { id: 'search', label: 'Search', type: 'text', placeholder: 'Staff name or ID' },
-            { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
             { id: 'status', label: 'Approval Status', type: 'select', options: ['PENDING', 'APPROVED', 'DECLINED'] }
         ],
         actions: ['Approve Selected', 'Decline Selected'],
-        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Department', 'Level', 'Basic Salary', 'Status', 'Action'],
+        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Level', 'Basic Salary', 'Status', 'Action'],
         summary: ['Pending', 'Approved Today', 'Declined Today', 'Total Queue']
     },
     pp_viewpersonnel: {
@@ -451,7 +455,6 @@ const hrmInterfaceBlueprints = {
         fields: [],
         filters: [
             { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' },
-            { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
             { id: 'eventtype', label: 'Event Type', type: 'select', options: ['All Events', 'LEVEL CHANGE', 'PROMOTION', 'QUERY', 'LEAVE', 'PAYROLL'] },
             { id: 'startdate', label: 'Start Date', type: 'date' },
             { id: 'enddate', label: 'End Date', type: 'date' }
@@ -567,7 +570,7 @@ const hrmInterfaceBlueprints = {
     pp_presalaryapproval: {
         context: 'Payroll processing',
         fields: [],
-        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' }],
+        filters: [{ id: 'month', label: 'Month', type: 'month' }],
         actions: ['Run Payroll', 'Send For Approval'],
         columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Month', 'Gross Pay', 'Deduction', 'Net Pay', 'Status'],
         summary: ['Payroll Count', 'Gross Pay', 'Deductions', 'Net Pay']
@@ -1210,15 +1213,9 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     }
     payload.append('module', route);
     payload.append('mode', mode);
-    if (String(route || '').startsWith('pp_')) {
-        payload.set('groupname', 'NAN');
-        payload.set('groupid', '0');
-    }
     if (route === 'pp_personnel') {
         const levelId = payload.get('levelid') || payload.get('level') || '';
         if (levelId) payload.set('levelid', levelId);
-        if (!payload.get('departmentid')) payload.set('departmentid', '0');
-        if (!payload.get('department')) payload.set('department', 'NAN');
     }
     return payload;
 }

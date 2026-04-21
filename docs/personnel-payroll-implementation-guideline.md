@@ -124,22 +124,25 @@ For every interface implementation:
 - Confirm export buttons remain visible and do not break layout.
 - Confirm mobile/tablet widths do not overflow.
 
-## Current HEMS Cleanup Targets
+## Shared Cleanup Status
 
-These should be removed or replaced as implementation continues:
+The shared Personnel and Payroll blueprint has been cleaned so department/group UI does not leak back into new screens:
 
-- `hrmCommonFilters` currently includes `department`; create a Personnel/Payroll-specific common filter without it.
-- `pp_approvepersonnel` still references a Department column in the current blueprint.
-- `pp_personnelhistory` still references department filters in the current blueprint.
-- `pp_presalaryapproval` still references department in the current filter blueprint.
-- `hrmBuildPayloadFromForm` adds `module`, `mode`, `groupname`, `groupid`, and department fallback keys. Do not use it for HTG-exact save payloads that should not send those keys.
-- Documentation in `personnel-payroll-htg-replication.md` still lists removed group/department controllers and should be reconciled after implementation cleanup.
+- `hrmCommonFilters` no longer injects department into every interface.
+- Approval, history, and payroll blueprint filters no longer include department.
+- Personnel approval table columns no longer include department.
+- Shared controller registry no longer calls `fetchdepartment.php` or `fetchgroupname.php`.
+- Generic Personnel and Payroll payloads no longer add group or department values automatically.
+- Dedicated Add Personnel payload keeps only the controller fallback IDs currently required by the HTG-shaped save endpoint: `departmentid=0` and `groupid=0`.
+
+Implementation reminder:
+
+- Do not use the generic payload builder for final HTG-exact save screens if the controller requires a dedicated payload shape without `module` or `mode`.
 
 ## Recommended Implementation Order
 
-1. Finish shared cleanup: remove department/group from shared filters, columns, docs, and payload defaults.
-2. Complete `pp_personnel` and `pp_viewpersonnel` because other interfaces depend on clean personnel selection and edit/view behavior.
-3. Complete personnel child-record screens: guarantor, employer record, referees, qualification, parents/guardians.
-4. Complete personnel matter screens: query, promotion, termination, suspension, leave, warning, monitoring/evaluation, advance.
-5. Complete approval screens: approve personnel, pre-salary approval, confirm salary, monthly salary schedule.
-6. Complete report-only screens: staff salary record, view staff advance, payroll class A, payroll class B.
+1. Complete `pp_personnel` and `pp_viewpersonnel` because other interfaces depend on clean personnel selection and edit/view behavior.
+2. Complete personnel child-record screens: guarantor, employer record, referees, qualification, parents/guardians.
+3. Complete personnel matter screens: query, promotion, termination, suspension, leave, warning, monitoring/evaluation, advance.
+4. Complete approval screens: approve personnel, pre-salary approval, confirm salary, monthly salary schedule.
+5. Complete report-only screens: staff salary record, view staff advance, payroll class A, payroll class B.

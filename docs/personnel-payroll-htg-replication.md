@@ -7,16 +7,15 @@ Detailed implementation rules, payload contracts, and per-interface guidance now
 - HEMS keeps its own design while preserving HTG logic flow per interface.
 - Each interface is wired to HTG-named controller endpoints through `../controllers/<controller-name>`.
 
-## Implemented Interfaces and Placeholder Controllers
+## Implemented Interfaces and Controller Mapping
 
-| HEMS Route ID | Interface | HTG Logic Summary | Placeholder Controllers (from HTG mapping) |
+| HEMS Route ID | Interface | HTG Logic Summary | Controllers (from HTG mapping) |
 |---|---|---|---|
 | `pp_level` | Level | Level + salary structure CRUD | `fetchlevel.php`, `level.php`, `removelevel.php`, `fetchlocation.php` |
-| `pp_groupname` | Group | Personnel grouping CRUD | `fetchgroupname.php`, `groupname.php`, `removegroup.php` |
-| `pp_personnel` | Add Personnel | Personnel onboarding and submission | `fetchpersonnels.php`, `personnelscript.php`, `personnelapprovals.php`, `fetchdepartment.php`, `fetchgroupname.php`, `fetchlevel.php` |
+| `pp_personnel` | Add Personnel | Personnel onboarding and submission | `fetchpersonnels.php`, `personnelscript.php`, `personnelapprovals.php`, `fetchlevel.php` |
 | `pp_approvepersonnel` | Approve Personnel | Approve/decline personnel | `fetchpersonnels.php`, `personnelapprovals.php`, `removepersonnel.php` |
 | `pp_viewpersonnel` | View Personnel | Personnel list and maintenance | `fetchpersonnels.php`, `personnelscript.php`, `removepersonnel.php` |
-| `pp_personnelhistory` | Personnel History | Personnel change audit | `fetchpersonnelhistory.php`, `fetchpersonnels.php`, `fetchdepartment.php`, `fetchgroupname.php`, `fetchlevel.php` |
+| `pp_personnelhistory` | Personnel History | Personnel change audit | `fetchpersonnelhistory.php`, `fetchpersonnels.php`, `fetchlevel.php` |
 | `pp_guarantor` | Guarantor | Personnel guarantor records | `fetchguarantors.php`, `guarantorscript.php`, `removeguarantor.php`, `fetchpersonnels.php` |
 | `pp_employerrecord` | Employment Record | Employer history records | `fetchemploymentrecords.php`, `employmentrecordscript.php`, `removeemploymentrecord.php`, `fetchpersonnels.php` |
 | `pp_referees` | Referees | Referee records per personnel | `fetchreferees.php`, `refereescript.php`, `removereferee.php`, `fetchpersonnels.php` |
@@ -49,3 +48,4 @@ Detailed implementation rules, payload contracts, and per-interface guidance now
 - Controller routing is centralized in `hrmHtgControllerRouting` inside `js/hrm_workspace.js`.
 - For each route, the module calls `load`, `filter`, and `save` endpoints using HTG controller names (for example, `personnel.php`, `viewpersonnel.php`, `presalaryapproval.php`).
 - To swap to final backend controllers later, update `hrmHtgControllerRouting` only.
+- Department and group screens/controllers are intentionally excluded from this replication. Do not add `fetchdepartment.php`, `fetchgroupname.php`, department filters, group filters, department columns, or group columns back into Personnel and Payroll.
