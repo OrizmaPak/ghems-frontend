@@ -609,17 +609,35 @@ function hrmWorkspaceActive() {
     if (!config) return;
 
     const blueprint = hrmInterfaceBlueprints[route] || buildDefaultHrmBlueprint(route, config);
-    document.getElementById('hrm_page_title').textContent = config.title;
-    document.getElementById('hrm_page_subtitle').textContent = config.subtitle;
-    document.getElementById('hrm_page_context').textContent = blueprint.context || '';
-    document.getElementById('hrm_table_title').textContent = `${config.title} Records`;
+    const fields = blueprint.fields || [];
+    const filters = blueprint.filters || hrmCommonFilters;
+    const sections = blueprint.sections || [];
+    const hasEntrySection = fields.length > 0 || sections.length > 0;
+    const hasFilters = filters.length > 0;
+    const pageTitle = document.getElementById('hrm_page_title');
+    const tableTitle = document.getElementById('hrm_table_title');
 
-    hrmRenderFields('hrm_entry_grid', blueprint.fields || []);
-    hrmRenderFilters(blueprint.filters || hrmCommonFilters);
+    if (pageTitle) pageTitle.textContent = config.title;
+    if (tableTitle) tableTitle.textContent = `${config.title} Records`;
+
+    hrmToggleElement('hrm_entry_form', hasEntrySection);
+    hrmToggleElement('hrm_entry_separator', hasEntrySection);
+    hrmToggleElement('hrm_form_actions', hasEntrySection);
+    hrmToggleElement('hrm_filter_panel', hasFilters);
+    hrmToggleElement('hrm_filter_separator', hasFilters);
+
+    hrmRenderFields('hrm_entry_grid', fields);
+    hrmRenderFilters(filters);
     hrmRenderDynamicSections(blueprint.sections || []);
     hrmRenderSummary(blueprint.summary || ['Records', 'Pending', 'Approved', 'Updated']);
     hrmRenderTable(blueprint.columns || ['S/N', 'Name', 'Status', 'Action'], config.title);
     hrmBindWorkspaceControls(route, blueprint);
+}
+
+function hrmToggleElement(id, shouldShow) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.classList.toggle('hidden', !shouldShow);
 }
 
 function buildDefaultHrmBlueprint(route, config) {
@@ -642,7 +660,7 @@ function hrmRenderFields(containerId, fields) {
     if (!container) return;
 
     if (!fields.length) {
-        container.innerHTML = `<div class="text-sm text-slate-500 lg:col-span-3">This interface is report or approval based. Use the filters and action buttons below.</div>`;
+        container.innerHTML = '';
         return;
     }
 
@@ -650,7 +668,12 @@ function hrmRenderFields(containerId, fields) {
 }
 
 function hrmRenderFilters(fields) {
-    hrmRenderFields('hrm_filter_grid', fields);
+    const filterFields = fields.map((field) => ({
+        ...field,
+        id: `hrm_filter_${field.id}`,
+        name: field.name || field.id
+    }));
+    hrmRenderFields('hrm_filter_grid', filterFields);
 }
 
 function hrmRenderDynamicSections(sections) {
@@ -661,7 +684,7 @@ function hrmRenderDynamicSections(sections) {
         <div class="border border-slate-200 rounded-sm p-4">
             <div class="flex items-center justify-between mb-3">
                 <p class="text-sm font-semibold text-slate-700">${section.title}</p>
-                <button type="button" class="btn-reset btn hrm-ui-action"><span class="material-symbols-outlined text-lg">add</span><span class="text-lg">Add Line</span></button>
+                <button type="button" class="btn hrm-ui-action" title="Add ${section.title} line"><span>Add Line</span></button>
             </div>
             <div class="table-content">
                 <table>
@@ -678,12 +701,13 @@ function hrmBuildControl(field) {
     const readonly = field.readonly ? 'readonly' : '';
     const list = field.list ? `list="${field.list}"` : '';
     const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : '';
+    const name = field.name || field.id;
 
     if (field.type === 'select') {
         return `
             <div class="form-group">
                 <label class="control-label" for="${field.id}">${field.label}</label>
-                <select id="${field.id}" name="${field.id}" class="form-control" ${required}>
+                <select id="${field.id}" name="${name}" class="form-control" ${required}>
                     <option value="">-- select ${field.label.toLowerCase()} --</option>
                     ${(field.options || []).map((option) => `<option value="${option}">${option}</option>`).join('')}
                 </select>
@@ -695,7 +719,7 @@ function hrmBuildControl(field) {
         return `
             <div class="form-group lg:col-span-2">
                 <label class="control-label" for="${field.id}">${field.label}</label>
-                <textarea id="${field.id}" name="${field.id}" class="form-control" rows="3" ${required} ${placeholder}></textarea>
+                <textarea id="${field.id}" name="${name}" class="form-control" rows="3" ${required} ${placeholder}></textarea>
             </div>
         `;
     }
@@ -703,7 +727,7 @@ function hrmBuildControl(field) {
     return `
         <div class="form-group">
             <label class="control-label" for="${field.id}">${field.label}</label>
-            <input id="${field.id}" name="${field.id}" type="${field.type || 'text'}" class="form-control" ${list} ${required} ${readonly} ${placeholder}>
+            <input id="${field.id}" name="${name}" type="${field.type || 'text'}" class="form-control" ${list} ${required} ${readonly} ${placeholder}>
         </div>
     `;
 }
@@ -731,17 +755,21 @@ function hrmRenderTable(columns, label) {
 
 function hrmBindWorkspaceControls(route, blueprint) {
     const form = document.getElementById('hrm_entry_form');
+    const filterForm = document.getElementById('hrm_filter_form');
     const saveButton = document.getElementById('hrm_save_btn');
     const resetButton = document.getElementById('hrm_reset_btn');
     const filterButton = document.getElementById('hrm_filter_btn');
     const filterResetButton = document.getElementById('hrm_filter_reset_btn');
+    const batchActions = document.getElementById('hrm_batch_actions');
 
     if (saveButton) saveButton.onclick = () => notification('Interface is ready. Controller wiring will be added when you provide the endpoint.', 1);
     if (resetButton) resetButton.onclick = () => form?.reset();
     if (filterButton) filterButton.onclick = () => notification('Filter controls are ready. Data loading is pending controller wiring.', 1);
-    if (filterResetButton) filterResetButton.onclick = () => document.getElementById('hrm_filter_panel')?.querySelectorAll('input, select, textarea').forEach((control) => control.value = '');
+    if (filterResetButton) filterResetButton.onclick = () => filterForm?.reset();
+    if (batchActions) batchActions.innerHTML = '';
 
     document.querySelectorAll('.hrm-export-btn').forEach((button) => {
+        button.title = button.title || `${button.textContent.trim()} records`;
         button.onclick = () => {
             const exportType = button.dataset.export || 'export';
             if (exportType === 'print') window.print();
@@ -750,13 +778,14 @@ function hrmBindWorkspaceControls(route, blueprint) {
     });
 
     (blueprint.actions || []).forEach((label) => {
-        if (document.querySelector(`[data-hrm-action="${label}"]`)) return;
+        if (!batchActions) return;
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'btn hrm-ui-action';
         button.dataset.hrmAction = label;
+        button.title = label;
         button.innerHTML = `<span>${label}</span>`;
         button.onclick = () => notification(`${label} action is ready for ${route}. Controller wiring is pending.`, 1);
-        document.getElementById('hrm_filter_panel')?.querySelector('.flex.flex-wrap.gap-2')?.prepend(button);
+        batchActions.appendChild(button);
     });
 }
