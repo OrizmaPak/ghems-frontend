@@ -413,9 +413,9 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             </ul>
                         </div>
                     </nav>
-                    <section class="flex flex-col justify-between pb-6 px-5 w-full lg:px-1 lg:flex-1 lg:min-w-0 content-scaffold">
+                    <section class="flex flex-col pb-6 px-5 w-full lg:px-1 lg:flex-1 lg:min-w-0 content-scaffold min-h-0">
                         <!-- content area -->
-                        <div  class="overflow-y-auto overflow-x-hidden h-full w-full content-scroll">
+                        <div  class="overflow-y-auto overflow-x-hidden h-full w-full content-scroll flex-1 min-h-0">
                             <div class=" w-full mx-auto mt-1 p-5 xl:px-10 workspace-canvas" id="workspace">
                                 
                             </div>

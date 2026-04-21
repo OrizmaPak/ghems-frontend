@@ -391,7 +391,7 @@ const hrmInterfaceBlueprints = {
     pp_personnel: {
         context: 'Personnel onboarding',
         fields: [
-            { id: 'staffid', label: 'Staff ID', type: 'text' },
+            { id: 'staffid', label: 'Staff ID', type: 'text', readonly: true },
             { id: 'firstname', label: 'First Name', type: 'text', required: true },
             { id: 'lastname', label: 'Last Name', type: 'text', required: true },
             { id: 'email', label: 'Email', type: 'email' },
