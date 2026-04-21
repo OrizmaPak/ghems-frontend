@@ -289,88 +289,474 @@ const hrmInterfaceRegistry = {
     }
 };
 
+const hrmCommonFilters = [
+    { id: 'search', label: 'Search', type: 'text', placeholder: 'Name, staff ID, reference' },
+    { id: 'department', label: 'Department', type: 'select', options: ['All Departments'] },
+    { id: 'startdate', label: 'Start Date', type: 'date' },
+    { id: 'enddate', label: 'End Date', type: 'date' }
+];
+
+const hrmMatterFields = {
+    pp_query: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'querydate', label: 'Query Date', type: 'date', required: true },
+        { id: 'subject', label: 'Subject', type: 'text', required: true },
+        { id: 'severity', label: 'Severity', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH'] },
+        { id: 'description', label: 'Query Details', type: 'textarea' },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
+    ],
+    pp_promotions: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'currentlevel', label: 'Current Level', type: 'text', readonly: true },
+        { id: 'newlevel', label: 'New Level', type: 'text', list: 'hrm_level_list', required: true },
+        { id: 'effectivedate', label: 'Effective Date', type: 'date', required: true },
+        { id: 'newsalary', label: 'New Basic Salary', type: 'number' },
+        { id: 'remark', label: 'Remark', type: 'textarea' }
+    ],
+    pp_termination: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'exit_type', label: 'Exit Type', type: 'select', options: ['TERMINATION', 'RESIGNATION', 'RETIREMENT'] },
+        { id: 'effectivedate', label: 'Effective Date', type: 'date', required: true },
+        { id: 'reason', label: 'Reason', type: 'textarea' },
+        { id: 'finalentitlement', label: 'Final Entitlement', type: 'number' },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
+    ],
+    pp_suspension: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'startdate', label: 'Start Date', type: 'date', required: true },
+        { id: 'enddate', label: 'End Date', type: 'date', required: true },
+        { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'LIFTED'] },
+        { id: 'reason', label: 'Reason', type: 'textarea' },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
+    ],
+    pp_leave: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'leave_type', label: 'Leave Type', type: 'select', options: ['ANNUAL', 'SICK', 'MATERNITY', 'COMPASSIONATE', 'UNPAID'] },
+        { id: 'startdate', label: 'Start Date', type: 'date', required: true },
+        { id: 'enddate', label: 'End Date', type: 'date', required: true },
+        { id: 'resumptiondate', label: 'Resumption Date', type: 'date' },
+        { id: 'remark', label: 'Remark', type: 'textarea' }
+    ],
+    pp_warning: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'warningdate', label: 'Warning Date', type: 'date', required: true },
+        { id: 'warning_type', label: 'Warning Type', type: 'select', options: ['VERBAL', 'WRITTEN', 'FINAL'] },
+        { id: 'subject', label: 'Subject', type: 'text' },
+        { id: 'details', label: 'Details', type: 'textarea' },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
+    ],
+    pp_monitorevaluation: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'evaluationdate', label: 'Evaluation Date', type: 'date', required: true },
+        { id: 'score', label: 'Score', type: 'number' },
+        { id: 'reviewer', label: 'Reviewer', type: 'text' },
+        { id: 'metric', label: 'Metric', type: 'text' },
+        { id: 'comment', label: 'Comment', type: 'textarea' }
+    ],
+    pp_advance: [
+        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+        { id: 'level', label: 'Level', type: 'text', list: 'hrm_level_list' },
+        { id: 'amount', label: 'Advance Amount', type: 'number', required: true },
+        { id: 'repaymentmonth', label: 'Repayment Months', type: 'number' },
+        { id: 'startmonth', label: 'Start Month', type: 'month' },
+        { id: 'remark', label: 'Remark', type: 'textarea' }
+    ]
+};
+
+const hrmInterfaceBlueprints = {
+    pp_department: {
+        context: 'Department setup',
+        fields: [
+            { id: 'department', label: 'Department Name', type: 'text', required: true },
+            { id: 'description', label: 'Description', type: 'text' },
+            { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'INACTIVE'] }
+        ],
+        filters: [{ id: 'search', label: 'Search', type: 'text', placeholder: 'Department name' }, { id: 'status', label: 'Status', type: 'select', options: ['All Status', 'ACTIVE', 'INACTIVE'] }],
+        columns: ['S/N', 'Department', 'Description', 'Status', 'Action'],
+        summary: ['Total Departments', 'Active', 'Inactive', 'Last Updated']
+    },
+    pp_level: {
+        context: 'Salary level setup',
+        fields: [
+            { id: 'level', label: 'Level Name', type: 'text', required: true },
+            { id: 'basicsalary', label: 'Basic Salary', type: 'number', required: true },
+            { id: 'allowance', label: 'Allowance Name', type: 'text' },
+            { id: 'allowancepercent', label: 'Allowance %', type: 'number' },
+            { id: 'deduction', label: 'Deduction Name', type: 'text' },
+            { id: 'deductionpercent', label: 'Deduction %', type: 'number' }
+        ],
+        sections: [
+            { title: 'Allowance Lines', columns: ['Allowance Name', 'Percentage', 'Action'] },
+            { title: 'Deduction Lines', columns: ['Deduction Name', 'Percentage', 'Action'] }
+        ],
+        filters: [{ id: 'search', label: 'Search', type: 'text', placeholder: 'Level name' }],
+        columns: ['S/N', 'Level', 'Basic Salary', 'Allowances', 'Deductions', 'Action'],
+        summary: ['Total Levels', 'Total Basic Salary', 'Allowance Lines', 'Deduction Lines']
+    },
+    pp_groupname: {
+        context: 'Personnel group setup',
+        fields: [
+            { id: 'groupname', label: 'Group Name', type: 'text', required: true },
+            { id: 'description', label: 'Description', type: 'text' },
+            { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'INACTIVE'] }
+        ],
+        filters: [{ id: 'search', label: 'Search', type: 'text', placeholder: 'Group name' }],
+        columns: ['S/N', 'Group', 'Description', 'Status', 'Action'],
+        summary: ['Total Groups', 'Active', 'Inactive', 'Last Updated']
+    },
+    pp_personnel: {
+        context: 'Personnel onboarding',
+        fields: [
+            { id: 'staffid', label: 'Staff ID', type: 'text' },
+            { id: 'firstname', label: 'First Name', type: 'text', required: true },
+            { id: 'lastname', label: 'Last Name', type: 'text', required: true },
+            { id: 'email', label: 'Email', type: 'email' },
+            { id: 'phone', label: 'Phone', type: 'tel' },
+            { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
+            { id: 'groupname', label: 'Group', type: 'text', list: 'hrm_group_list' },
+            { id: 'level', label: 'Level', type: 'text', list: 'hrm_level_list' },
+            { id: 'employmentdate', label: 'Employment Date', type: 'date' },
+            { id: 'photo', label: 'Profile Photo', type: 'file' },
+            { id: 'address', label: 'Address', type: 'textarea' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff ID', 'Name', 'Department', 'Group', 'Level', 'Status', 'Action'],
+        summary: ['Total Personnel', 'Pending Approval', 'Approved', 'Inactive']
+    },
+    pp_approvepersonnel: {
+        context: 'Personnel approval queue',
+        fields: [],
+        filters: [
+            { id: 'search', label: 'Search', type: 'text', placeholder: 'Staff name or ID' },
+            { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
+            { id: 'status', label: 'Approval Status', type: 'select', options: ['PENDING', 'APPROVED', 'DECLINED'] }
+        ],
+        actions: ['Approve Selected', 'Decline Selected'],
+        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Department', 'Level', 'Basic Salary', 'Status', 'Action'],
+        summary: ['Pending', 'Approved Today', 'Declined Today', 'Total Queue']
+    },
+    pp_viewpersonnel: {
+        context: 'Personnel directory',
+        fields: [],
+        filters: hrmCommonFilters.concat([{ id: 'status', label: 'Status', type: 'select', options: ['All Status', 'ACTIVE', 'INACTIVE', 'SUSPENDED', 'TERMINATED'] }]),
+        actions: ['Open Profile', 'Export Directory'],
+        columns: ['S/N', 'Staff ID', 'Name', 'Phone', 'Department', 'Group', 'Level', 'Status', 'Action'],
+        summary: ['Total Personnel', 'Active', 'Suspended', 'Terminated']
+    },
+    pp_personnelhistory: {
+        context: 'Personnel audit trail',
+        fields: [],
+        filters: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' },
+            { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
+            { id: 'eventtype', label: 'Event Type', type: 'select', options: ['All Events', 'LEVEL CHANGE', 'PROMOTION', 'QUERY', 'LEAVE', 'PAYROLL'] },
+            { id: 'startdate', label: 'Start Date', type: 'date' },
+            { id: 'enddate', label: 'End Date', type: 'date' }
+        ],
+        columns: ['S/N', 'Staff ID', 'Name', 'Event Type', 'Previous Value', 'New Value', 'Entry Date', 'Action'],
+        summary: ['Events', 'Promotions', 'Disciplinary', 'Payroll Changes']
+    },
+    pp_guarantor: {
+        context: 'Guarantor records',
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'guarantorname', label: 'Guarantor Name', type: 'text', required: true },
+            { id: 'relationship', label: 'Relationship', type: 'text' },
+            { id: 'phone', label: 'Phone', type: 'tel' },
+            { id: 'email', label: 'Email', type: 'email' },
+            { id: 'occupation', label: 'Occupation', type: 'text' },
+            { id: 'address', label: 'Address', type: 'textarea' },
+            { id: 'attachment', label: 'Attachment', type: 'file' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff Name', 'Guarantor', 'Relationship', 'Phone', 'Occupation', 'Action'],
+        summary: ['Total Guarantors', 'With Attachment', 'Missing Phone', 'Updated This Month']
+    },
+    pp_employerrecord: {
+        context: 'Previous employment records',
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'employer', label: 'Employer', type: 'text', required: true },
+            { id: 'position', label: 'Position', type: 'text' },
+            { id: 'startdate', label: 'Start Date', type: 'date' },
+            { id: 'enddate', label: 'End Date', type: 'date' },
+            { id: 'reasonforleaving', label: 'Reason For Leaving', type: 'textarea' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff Name', 'Employer', 'Position', 'Start Date', 'End Date', 'Action'],
+        summary: ['Records', 'Current Employers', 'Past Employers', 'Updated This Month']
+    },
+    pp_referees: {
+        context: 'Referee records',
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'refereename', label: 'Referee Name', type: 'text', required: true },
+            { id: 'relationship', label: 'Relationship', type: 'text' },
+            { id: 'phone', label: 'Phone', type: 'tel' },
+            { id: 'email', label: 'Email', type: 'email' },
+            { id: 'address', label: 'Address', type: 'textarea' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff Name', 'Referee', 'Relationship', 'Phone', 'Email', 'Action'],
+        summary: ['Referees', 'Complete Records', 'Missing Email', 'Updated This Month']
+    },
+    pp_qualification: {
+        context: 'Qualification records',
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'qualification', label: 'Qualification', type: 'text', required: true },
+            { id: 'institution', label: 'Institution', type: 'text' },
+            { id: 'course', label: 'Course', type: 'text' },
+            { id: 'yearobtained', label: 'Year Obtained', type: 'number' },
+            { id: 'attachment', label: 'Certificate', type: 'file' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff Name', 'Qualification', 'Institution', 'Course', 'Year', 'Action'],
+        summary: ['Qualifications', 'With Certificate', 'Professional', 'Academic']
+    },
+    pp_parentsguardians: {
+        context: 'Parent and guardian records',
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'guardianname', label: 'Parent/Guardian Name', type: 'text', required: true },
+            { id: 'relationship', label: 'Relationship', type: 'text' },
+            { id: 'phone', label: 'Phone', type: 'tel' },
+            { id: 'email', label: 'Email', type: 'email' },
+            { id: 'address', label: 'Address', type: 'textarea' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff Name', 'Parent/Guardian', 'Relationship', 'Phone', 'Email', 'Action'],
+        summary: ['Guardians', 'Emergency Contacts', 'Missing Phone', 'Updated This Month']
+    },
+    pp_viewstaffadvance: {
+        context: 'Advance report',
+        fields: [],
+        filters: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' },
+            { id: 'month', label: 'Month', type: 'month' },
+            { id: 'status', label: 'Status', type: 'select', options: ['All Status', 'OPEN', 'PAID', 'CANCELLED'] }
+        ],
+        columns: ['S/N', 'Staff ID', 'Name', 'Advance Amount', 'Paid', 'Balance', 'Status', 'Action'],
+        summary: ['Total Advance', 'Recovered', 'Outstanding', 'Open Records']
+    },
+    pp_personalstaffsalaryrecord: {
+        context: 'Staff salary staging',
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'month', label: 'Salary Month', type: 'month', required: true },
+            { id: 'basicsalary', label: 'Basic Salary', type: 'number' },
+            { id: 'allowance', label: 'Allowance', type: 'number' },
+            { id: 'deduction', label: 'Deduction', type: 'number' },
+            { id: 'netpay', label: 'Net Pay', type: 'number', readonly: true }
+        ],
+        filters: [{ id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' }, { id: 'month', label: 'Month', type: 'month' }],
+        actions: ['Generate Salary Record'],
+        columns: ['S/N', 'Staff ID', 'Name', 'Month', 'Basic Salary', 'Allowance', 'Deduction', 'Net Pay', 'Action'],
+        summary: ['Gross Pay', 'Deductions', 'Net Pay', 'Records']
+    },
+    pp_viewmonthlysalaryschedule: {
+        context: 'Approved salary schedule',
+        fields: [],
+        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'location', label: 'Location', type: 'text' }, { id: 'status', label: 'Status', type: 'select', options: ['APPROVED', 'PAID'] }],
+        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Basic Salary', 'Allowance', 'Deduction', 'Net Pay', 'Status'],
+        summary: ['Total Basic', 'Total Allowance', 'Total Deduction', 'Total Net Pay']
+    },
+    pp_presalaryapproval: {
+        context: 'Payroll processing',
+        fields: [],
+        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' }],
+        actions: ['Run Payroll', 'Send For Approval'],
+        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Month', 'Gross Pay', 'Deduction', 'Net Pay', 'Status'],
+        summary: ['Payroll Count', 'Gross Pay', 'Deductions', 'Net Pay']
+    },
+    pp_confirmsalary: {
+        context: 'Payroll approval',
+        fields: [],
+        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'location', label: 'Location', type: 'text' }, { id: 'status', label: 'Status', type: 'select', options: ['PENDING', 'APPROVED', 'DECLINED'] }],
+        actions: ['Approve Selected', 'Delete Selected'],
+        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Basic Salary', 'Allowance', 'Deduction', 'Net Pay', 'Action'],
+        summary: ['Pending Payroll', 'Approved', 'Deleted', 'Total Net Pay']
+    },
+    pp_payrollclassa: {
+        context: 'Payroll class A report',
+        fields: [],
+        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'location', label: 'Location', type: 'text' }],
+        columns: ['S/N', 'Staff ID', 'Name', 'Designation', 'Basic Salary', 'Allowance', 'Deduction', 'Net Pay'],
+        summary: ['Class A Staff', 'Gross Pay', 'Deductions', 'Net Pay']
+    },
+    pp_payrollclassb: {
+        context: 'Payroll class B report',
+        fields: [],
+        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'location', label: 'Location', type: 'text' }],
+        columns: ['S/N', 'Staff ID', 'Name', 'Bank', 'Account Number', 'Net Pay', 'Status', 'Action'],
+        summary: ['Class B Staff', 'Bank Ready', 'Total Net Pay', 'Pending']
+    }
+};
+
+['pp_query', 'pp_promotions', 'pp_termination', 'pp_suspension', 'pp_leave', 'pp_warning', 'pp_monitorevaluation', 'pp_advance'].forEach((route) => {
+    hrmInterfaceBlueprints[route] = {
+        context: `${hrmInterfaceRegistry[route].title} records`,
+        fields: hrmMatterFields[route],
+        filters: hrmCommonFilters.concat([{ id: 'status', label: 'Status', type: 'select', options: ['All Status', 'OPEN', 'CLOSED', 'APPROVED'] }]),
+        columns: ['S/N', 'Staff ID', 'Name', 'Matter Type', 'Effective Date', 'Status', 'Attachment', 'Action'],
+        summary: ['Total Records', 'Open', 'Closed', 'Updated This Month']
+    };
+});
+
 function hrmWorkspaceActive() {
     const route = new URLSearchParams(window.location.search).get('r') || '';
     const config = hrmInterfaceRegistry[route];
     if (!config) return;
 
+    const blueprint = hrmInterfaceBlueprints[route] || buildDefaultHrmBlueprint(route, config);
     document.getElementById('hrm_page_title').textContent = config.title;
     document.getElementById('hrm_page_subtitle').textContent = config.subtitle;
+    document.getElementById('hrm_page_context').textContent = blueprint.context || '';
+    document.getElementById('hrm_table_title').textContent = `${config.title} Records`;
 
-    const flowList = document.getElementById('hrm_flow_list');
-    flowList.innerHTML = config.flow.map((item) => `<li>${item}</li>`).join('');
-
-    const controllerRows = config.controllers.map((controller, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td>${controller.name}</td>
-            <td>${controller.purpose}</td>
-            <td><span class="text-amber-700">placeholder</span></td>
-        </tr>
-    `).join('');
-    document.getElementById('hrm_controller_table').innerHTML = controllerRows;
-
-    document.getElementById('hrm_fetch_btn').onclick = async () => {
-        const response = await hrmPlaceholderController(route, 'fetch');
-        hrmRenderPreviewTable(response.data || []);
-        notification(response.message, response.status ? 1 : 0);
-    };
-
-    document.getElementById('hrm_submit_btn').onclick = async () => {
-        const response = await hrmPlaceholderController(route, 'submit', { source: 'hems-hrm-workspace' });
-        notification(response.message, response.status ? 1 : 0);
-    };
+    hrmRenderFields('hrm_entry_grid', blueprint.fields || []);
+    hrmRenderFilters(blueprint.filters || hrmCommonFilters);
+    hrmRenderDynamicSections(blueprint.sections || []);
+    hrmRenderSummary(blueprint.summary || ['Records', 'Pending', 'Approved', 'Updated']);
+    hrmRenderTable(blueprint.columns || ['S/N', 'Name', 'Status', 'Action'], config.title);
+    hrmBindWorkspaceControls(route, blueprint);
 }
 
-async function hrmPlaceholderController(route, action, payload = {}) {
-    const config = hrmInterfaceRegistry[route];
-    const primaryController = config?.controllers?.[0]?.name || 'controller.php';
-    await new Promise((resolve) => setTimeout(resolve, 220));
-
-    if (!window.__hrmPlaceholderLog) window.__hrmPlaceholderLog = [];
-    window.__hrmPlaceholderLog.unshift({
-        route,
-        action,
-        controller: primaryController,
-        payload,
-        at: new Date().toISOString()
-    });
-
-    if (action === 'fetch') {
-        return {
-            status: true,
-            message: `Placeholder fetch complete via ${primaryController}.`,
-            data: hrmGeneratePreviewRows(route)
-        };
-    }
-
+function buildDefaultHrmBlueprint(route, config) {
     return {
-        status: true,
-        message: `Placeholder ${action} accepted via ${primaryController}.`,
-        data: []
+        context: `${config.title} records`,
+        fields: [
+            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' },
+            { id: 'entrydate', label: 'Entry Date', type: 'date' },
+            { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'INACTIVE'] },
+            { id: 'remark', label: 'Remark', type: 'textarea' }
+        ],
+        filters: hrmCommonFilters,
+        columns: ['S/N', 'Staff ID', 'Name', config.title, 'Entry Date', 'Status', 'Action'],
+        summary: ['Total Records', 'Active', 'Inactive', 'Updated This Month']
     };
 }
 
-function hrmGeneratePreviewRows(route) {
-    const now = new Date().toISOString().slice(0, 10);
-    return [
-        { reference: `${route.toUpperCase()}-001`, person: 'Demo Personnel 1', status: 'PENDING', effective_date: now },
-        { reference: `${route.toUpperCase()}-002`, person: 'Demo Personnel 2', status: 'APPROVED', effective_date: now },
-        { reference: `${route.toUpperCase()}-003`, person: 'Demo Personnel 3', status: 'DRAFT', effective_date: now }
-    ];
-}
+function hrmRenderFields(containerId, fields) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-function hrmRenderPreviewTable(rows) {
-    const head = document.getElementById('hrm_preview_head');
-    const body = document.getElementById('hrm_preview_body');
-
-    if (!rows.length) {
-        head.innerHTML = '';
-        body.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No preview rows returned.</td></tr>`;
+    if (!fields.length) {
+        container.innerHTML = `<div class="text-sm text-slate-500 lg:col-span-3">This interface is report or approval based. Use the filters and action buttons below.</div>`;
         return;
     }
 
-    const columns = Object.keys(rows[0]);
-    head.innerHTML = `<tr>${columns.map((column) => `<th>${column.replace('_', ' ')}</th>`).join('')}</tr>`;
-    body.innerHTML = rows.map((row) => `<tr>${columns.map((column) => `<td>${row[column] ?? ''}</td>`).join('')}</tr>`).join('');
+    container.innerHTML = fields.map((field) => hrmBuildControl(field)).join('');
+}
+
+function hrmRenderFilters(fields) {
+    hrmRenderFields('hrm_filter_grid', fields);
+}
+
+function hrmRenderDynamicSections(sections) {
+    const container = document.getElementById('hrm_dynamic_sections');
+    if (!container) return;
+
+    container.innerHTML = sections.map((section) => `
+        <div class="border border-slate-200 rounded-sm p-4">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-sm font-semibold text-slate-700">${section.title}</p>
+                <button type="button" class="btn-reset btn hrm-ui-action"><span class="material-symbols-outlined text-lg">add</span><span class="text-lg">Add Line</span></button>
+            </div>
+            <div class="table-content">
+                <table>
+                    <thead><tr>${section.columns.map((column) => `<th>${column}</th>`).join('')}</tr></thead>
+                    <tbody><tr><td colspan="${section.columns.length}" class="text-center opacity-70">No lines added</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    `).join('');
+}
+
+function hrmBuildControl(field) {
+    const required = field.required ? 'required' : '';
+    const readonly = field.readonly ? 'readonly' : '';
+    const list = field.list ? `list="${field.list}"` : '';
+    const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : '';
+
+    if (field.type === 'select') {
+        return `
+            <div class="form-group">
+                <label class="control-label" for="${field.id}">${field.label}</label>
+                <select id="${field.id}" name="${field.id}" class="form-control" ${required}>
+                    <option value="">-- select ${field.label.toLowerCase()} --</option>
+                    ${(field.options || []).map((option) => `<option value="${option}">${option}</option>`).join('')}
+                </select>
+            </div>
+        `;
+    }
+
+    if (field.type === 'textarea') {
+        return `
+            <div class="form-group lg:col-span-2">
+                <label class="control-label" for="${field.id}">${field.label}</label>
+                <textarea id="${field.id}" name="${field.id}" class="form-control" rows="3" ${required} ${placeholder}></textarea>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="form-group">
+            <label class="control-label" for="${field.id}">${field.label}</label>
+            <input id="${field.id}" name="${field.id}" type="${field.type || 'text'}" class="form-control" ${list} ${required} ${readonly} ${placeholder}>
+        </div>
+    `;
+}
+
+function hrmRenderSummary(items) {
+    const container = document.getElementById('hrm_summary_grid');
+    if (!container) return;
+
+    container.innerHTML = items.map((item) => `
+        <div class="border border-slate-200 rounded-sm p-4 bg-slate-50/70">
+            <p class="text-xs uppercase tracking-wide text-slate-500">${item}</p>
+            <p class="text-2xl font-semibold text-slate-800 mt-2">0</p>
+        </div>
+    `).join('');
+}
+
+function hrmRenderTable(columns, label) {
+    const head = document.getElementById('hrm_table_head');
+    const body = document.getElementById('hrm_table_body');
+    if (!head || !body) return;
+
+    head.innerHTML = `<tr>${columns.map((column) => `<th>${column}</th>`).join('')}</tr>`;
+    body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">${label} table is ready. No data loaded yet.</td></tr>`;
+}
+
+function hrmBindWorkspaceControls(route, blueprint) {
+    const form = document.getElementById('hrm_entry_form');
+    const saveButton = document.getElementById('hrm_save_btn');
+    const resetButton = document.getElementById('hrm_reset_btn');
+    const filterButton = document.getElementById('hrm_filter_btn');
+    const filterResetButton = document.getElementById('hrm_filter_reset_btn');
+
+    if (saveButton) saveButton.onclick = () => notification('Interface is ready. Controller wiring will be added when you provide the endpoint.', 1);
+    if (resetButton) resetButton.onclick = () => form?.reset();
+    if (filterButton) filterButton.onclick = () => notification('Filter controls are ready. Data loading is pending controller wiring.', 1);
+    if (filterResetButton) filterResetButton.onclick = () => document.getElementById('hrm_filter_panel')?.querySelectorAll('input, select, textarea').forEach((control) => control.value = '');
+
+    document.querySelectorAll('.hrm-export-btn').forEach((button) => {
+        button.onclick = () => {
+            const exportType = button.dataset.export || 'export';
+            if (exportType === 'print') window.print();
+            if (exportType !== 'print') notification(`${exportType.toUpperCase()} export button is ready. Data export will run after controller wiring.`, 1);
+        };
+    });
+
+    (blueprint.actions || []).forEach((label) => {
+        if (document.querySelector(`[data-hrm-action="${label}"]`)) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn hrm-ui-action';
+        button.dataset.hrmAction = label;
+        button.innerHTML = `<span>${label}</span>`;
+        button.onclick = () => notification(`${label} action is ready for ${route}. Controller wiring is pending.`, 1);
+        document.getElementById('hrm_filter_panel')?.querySelector('.flex.flex-wrap.gap-2')?.prepend(button);
+    });
 }
