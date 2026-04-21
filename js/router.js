@@ -712,16 +712,18 @@ async function openRoute(url) {
                 
                 // Ensure `page` is not null and the element exists
                 if (page) {
-                    let pageElement = document.getElementById(page);
-                    if (pageElement) {
-                        // Create a new div element for the alert
-                        let el = document.createElement('div');
-                        el.classList.add('p-4', 'mb-4', 'text-sm', 'text-blue-800', 'rounded-lg', 'bg-blue-50');
-                        el.setAttribute('role', 'alert');
-                        
-                        // Get the title attribute of the page element, if it exists
-                        let title = pageElement.getAttribute('title');
-                        if (title) {
+                    const pageElement = resolveRouteMenuElement(page);
+                    const pageElementId = pageElement?.id || '';
+                    const resetAction = pageElementId ? `document.getElementById('${pageElementId}').click()` : 'resolveUrlPage()';
+
+                    // Create a new div element for the alert
+                    let el = document.createElement('div');
+                    el.classList.add('p-4', 'mb-4', 'text-sm', 'text-blue-800', 'rounded-lg', 'bg-blue-50');
+                    el.setAttribute('role', 'alert');
+                    
+                    // Get the title attribute of the page element, if it exists
+                    let title = pageElement?.getAttribute('title');
+                    if (title) {
                         el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
                                                 <div class="flex flex-col flex-1 gap-1">
                                                     <div class="text-sm note-description" role="button" tabindex="0">
@@ -729,50 +731,47 @@ async function openRoute(url) {
                                                     </div>
                                                     <button type="button" class="note-guide-link" data-note-guide="${page}">Click guide</button>
                                                 </div>
-                                                <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
+                                                <button onclick="${resetAction}" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span class="material-symbols-outlined text-white text-xl leading-none">refresh</span>
                                                 </button>
                                             </div>`;
                     } else {
-                            el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
+                        el.innerHTML = `<div class="flex flex-col lg:flex-row items-center gap-2 justify-between p-3">
                                                 <div class="flex flex-col flex-1 gap-1">
                                                     <div class="flex-1 text-sm note-description" role="button" tabindex="0">
                                                         Title attribute is missing.
                                                     </div>
                                                     <button type="button" class="note-guide-link" data-note-guide="${page}">Click guide</button>
                                                 </div>
-                                                <button onclick="document.getElementById('${page}').click()" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
+                                                <button onclick="${resetAction}" type="button" class="reset-note-btn btn text-white ml-auto flex items-center justify-center rounded-full w-10 h-10 shadow-sm hover:shadow-lg transition-all duration-200" aria-label="Reload page">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span class="material-symbols-outlined text-white text-xl leading-none">refresh</span>
                                                 </button>
                                             </div>`;
-                        }
-                
-                        // Prepend the alert element to the workspace
-                        document.getElementById('workspace').prepend(el);
-
-                        const noteDescription = el.querySelector('.note-description');
-                        const noteGuideLink = el.querySelector('.note-guide-link');
-                        const bindGuideTrigger = (element) => {
-                            if (!element || element.dataset.pageDescriptionBound) return;
-                            const handler = (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openPageDescriptionModal();
-                            };
-                            element.dataset.pageDescriptionBound = '1';
-                            element.addEventListener('click', handler);
-                            element.addEventListener('keypress', (e) => {
-                                if (e.key === 'Enter' || e.key === ' ') handler(e);
-                            });
-                            element.style.cursor = 'pointer';
-                        };
-                        bindGuideTrigger(noteDescription);
-                        bindGuideTrigger(noteGuideLink);
-                    } else {
-                        console.error(`Element with ID '${page}' not found.`);
                     }
+            
+                    // Prepend the alert element to the workspace
+                    document.getElementById('workspace').prepend(el);
+
+                    const noteDescription = el.querySelector('.note-description');
+                    const noteGuideLink = el.querySelector('.note-guide-link');
+                    const bindGuideTrigger = (element) => {
+                        if (!element || element.dataset.pageDescriptionBound) return;
+                        const handler = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openPageDescriptionModal();
+                        };
+                        element.dataset.pageDescriptionBound = '1';
+                        element.addEventListener('click', handler);
+                        element.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') handler(e);
+                        });
+                        element.style.cursor = 'pointer';
+                    };
+                    bindGuideTrigger(noteDescription);
+                    bindGuideTrigger(noteGuideLink);
                 } else {
                     console.error('Parameter "r" is missing from the URL.');
                 }
@@ -809,12 +808,17 @@ function openPageDescriptionModal() {
     }
 }
 
+function resolveRouteMenuElement(route) {
+    if (!route) return null;
+    return document.getElementById(route) || document.getElementById(`${route}_main`);
+}
+
 function getCurrentRouteMeta() {
     const searchParams = new URLSearchParams(window.location.search);
     const page = searchParams.get('r');
     if (!page) return null;
 
-    const menu = document.getElementById(page);
+    const menu = resolveRouteMenuElement(page);
     if (!menu) return null;
 
     return {
