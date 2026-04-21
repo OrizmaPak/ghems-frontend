@@ -443,7 +443,7 @@ const hrmInterfaceBlueprints = {
         fields: [],
         filters: hrmCommonFilters.concat([{ id: 'status', label: 'Status', type: 'select', options: ['All Status', 'ACTIVE', 'INACTIVE', 'SUSPENDED', 'TERMINATED'] }]),
         actions: ['Open Profile', 'Export Directory'],
-        columns: ['S/N', 'Staff ID', 'Name', 'Phone', 'Department', 'Level', 'Status', 'Action'],
+        columns: ['S/N', 'Staff ID', 'Name', 'Phone', 'Level', 'Status', 'Action'],
         summary: ['Total Personnel', 'Active', 'Suspended', 'Terminated']
     },
     pp_personnelhistory: {
@@ -902,6 +902,158 @@ function hrmRenderLevelRows(rows, columns) {
         `${totalDeductionLines}`
     ]);
 
+    if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+}
+
+function hrmEscapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function hrmNormalizePersonnelRows(responseData) {
+    if (Array.isArray(responseData)) return responseData;
+    if (Array.isArray(responseData?.data)) return responseData.data;
+    if (Array.isArray(responseData?.data?.data)) return responseData.data.data;
+    return [];
+}
+
+function hrmOpenPersonnelModal(entry = {}) {
+    const personnel = entry?.personnel || {};
+    const salarystructure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
+    const allowances = salarystructure.filter((line) => String(line?.salaryinfotype || '').toUpperCase() === 'ALLOWANCE');
+    const deductions = salarystructure.filter((line) => String(line?.salaryinfotype || '').toUpperCase() === 'DEDUCTION');
+    const fullName = [personnel.lastname, personnel.firstname, personnel.othernames].filter(Boolean).join(' ').trim();
+
+    const previous = document.getElementById('hrm_personnel_view_modal');
+    if (previous) previous.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'hrm_personnel_view_modal';
+    modal.className = 'fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-md shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <p class="text-lg font-semibold text-slate-800">Personnel Details</p>
+                    <p class="text-sm text-slate-500">${hrmEscapeHtml(fullName || 'Unnamed Personnel')} (${hrmEscapeHtml(personnel.staffid || '-')})</p>
+                </div>
+                <button type="button" id="hrm_personnel_modal_close" class="btn" title="Close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
+                ${[
+                    ['Status', personnel.status],
+                    ['Work Status', personnel.workstatus],
+                    ['Marital Status', personnel.maritalstatus],
+                    ['Gender', personnel.gender],
+                    ['Phone', personnel.phonenumber],
+                    ['Email', personnel.registereduseremail || personnel.user],
+                    ['Nationality', personnel.nationality],
+                    ['State', personnel.state],
+                    ['LGA', personnel.lga],
+                    ['Birth Date', personnel.birthdate],
+                    ['Employment Date', personnel.employmentdate],
+                    ['Level', personnel.levelname || personnel.levelid],
+                    ['Basic Salary', personnel.basicsalary],
+                    ['Deformity', personnel.deformity === '1' ? 'YES' : 'NO'],
+                    ['Eye Glasses', personnel.eyeglasses === '1' ? 'YES' : 'NO'],
+                    ['Hearing Aid', personnel.hearingaid === '1' ? 'YES' : 'NO'],
+                    ['Height', personnel.height],
+                    ['Weight', personnel.weight],
+                    ['Bank Name', personnel.bankname1],
+                    ['Bank Account', personnel.bankaccountnumber1],
+                    ['Residential Address', personnel.residentialaddress],
+                    ['Permanent Address', personnel.permanenthomeaddress]
+                ].map(([label, value]) => `
+                    <div class="border border-slate-200 rounded-sm p-3 bg-slate-50/60">
+                        <p class="text-xs uppercase tracking-wide text-slate-500">${hrmEscapeHtml(label)}</p>
+                        <p class="text-sm font-medium text-slate-800 mt-1 break-words">${hrmEscapeHtml(value || '-')}</p>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="border border-slate-200 rounded-sm p-4">
+                    <p class="text-sm font-semibold text-slate-700 mb-2">Allowances</p>
+                    <div class="space-y-2">
+                        ${allowances.length ? allowances.map((line) => `
+                            <div class="flex items-center justify-between text-sm">
+                                <span>${hrmEscapeHtml(line?.salaryinfo || '-')}</span>
+                                <span class="font-semibold">${hrmEscapeHtml(line?.amountpercentage || '0')}%</span>
+                            </div>
+                        `).join('') : '<p class="text-sm text-slate-500">No allowance lines</p>'}
+                    </div>
+                </div>
+                <div class="border border-slate-200 rounded-sm p-4">
+                    <p class="text-sm font-semibold text-slate-700 mb-2">Deductions</p>
+                    <div class="space-y-2">
+                        ${deductions.length ? deductions.map((line) => `
+                            <div class="flex items-center justify-between text-sm">
+                                <span>${hrmEscapeHtml(line?.salaryinfo || '-')}</span>
+                                <span class="font-semibold">${hrmEscapeHtml(line?.amountpercentage || '0')}%</span>
+                            </div>
+                        `).join('') : '<p class="text-sm text-slate-500">No deduction lines</p>'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const close = () => {
+        const active = document.getElementById('hrm_personnel_view_modal');
+        if (active) active.remove();
+    };
+    const closeButton = modal.querySelector('#hrm_personnel_modal_close');
+    if (closeButton) closeButton.onclick = close;
+    modal.onclick = (event) => {
+        if (event.target === modal) close();
+    };
+}
+
+function hrmRenderPersonnelRows(rows, columns) {
+    const body = document.getElementById('hrm_table_body');
+    const status = document.getElementById('hrm_table_status');
+    if (!body) return;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No personnel records found.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
+        return;
+    }
+
+    body.innerHTML = rows.map((entry, index) => {
+        const personnel = entry?.personnel || {};
+        const fullName = [personnel.lastname, personnel.firstname, personnel.othernames].filter(Boolean).join(' ').trim();
+        const rowPayload = encodeURIComponent(JSON.stringify(entry));
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${personnel?.staffid ?? '-'}</td>
+                <td>${fullName || '-'}</td>
+                <td>${personnel?.phonenumber ?? '-'}</td>
+                <td>${personnel?.levelname || personnel?.levelid || '-'}</td>
+                <td>${personnel?.status ?? '-'}</td>
+                <td>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="btn hrm-ui-action" data-hrm-personnel-view="${personnel?.id || ''}" data-hrm-personnel-record="${rowPayload}" title="View personnel" style="background:#0f766e;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">visibility</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-personnel-edit="${personnel?.id || ''}" data-hrm-personnel-record="${rowPayload}" title="Edit personnel" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const activeCount = rows.filter((entry) => String(entry?.personnel?.status || '').toUpperCase() === 'APPROVED').length;
+    const suspendedCount = rows.filter((entry) => String(entry?.personnel?.status || '').toUpperCase().includes('SUSP')).length;
+    const terminatedCount = rows.filter((entry) => String(entry?.personnel?.status || '').toUpperCase().includes('TERM')).length;
+    hrmSetSummaryValues([`${rows.length}`, `${activeCount}`, `${suspendedCount}`, `${terminatedCount}`]);
     if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
 }
 
@@ -1366,6 +1518,11 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         hrmRenderLevelRows(rows, columns);
         return;
     }
+    if (route === 'pp_viewpersonnel') {
+        const rows = hrmNormalizePersonnelRows(result.data);
+        hrmRenderPersonnelRows(rows, columns);
+        return;
+    }
 
     const rows = hrmExtractRowsFromResponse(result.data);
     hrmRenderRows(columns, rows);
@@ -1418,6 +1575,8 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 const idControl = document.getElementById('id');
                 if (basicSalaryControl) basicSalaryControl.value = '';
                 if (idControl) idControl.value = '';
+                const saveLabel = saveButton?.querySelector('span:last-child');
+                if (saveLabel) saveLabel.textContent = 'Submit';
             }
             await hrmLoadViewData(route, blueprint);
         };
@@ -1429,6 +1588,11 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 hrmLevelEditingId = '';
                 hrmRenderLevelLineEditors([], []);
             }
+            if (route === 'pp_personnel') {
+                if (hrmTomSelectInstances.levelid) hrmTomSelectInstances.levelid.clear(true);
+                const saveLabel = saveButton?.querySelector('span:last-child');
+                if (saveLabel) saveLabel.textContent = 'Submit';
+            }
         };
     }
     if (filterButton) filterButton.onclick = async () => hrmLoadViewData(route, blueprint, filterButton, filterForm);
@@ -1439,6 +1603,62 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (batchActions) batchActions.innerHTML = '';
     if (tableBody) {
         tableBody.onclick = (event) => {
+            if (route === 'pp_viewpersonnel') {
+                const rowRecord = (trigger) => {
+                    const raw = decodeURIComponent(trigger?.getAttribute('data-hrm-personnel-record') || '');
+                    try {
+                        return raw ? JSON.parse(raw) : {};
+                    } catch (error) {
+                        return {};
+                    }
+                };
+                const viewTrigger = event.target.closest('[data-hrm-personnel-view]');
+                if (viewTrigger) {
+                    const entry = rowRecord(viewTrigger);
+                    hrmOpenPersonnelModal(entry);
+                    return;
+                }
+                const editTrigger = event.target.closest('[data-hrm-personnel-edit]');
+                if (editTrigger) {
+                    const entry = rowRecord(editTrigger);
+                    const personnel = entry?.personnel || {};
+                    const editPayload = {
+                        id: personnel?.id || '',
+                        lastname: personnel?.lastname || '',
+                        firstname: personnel?.firstname || '',
+                        othernames: personnel?.othernames || '',
+                        phonenumber: personnel?.phonenumber || '',
+                        workstatus: personnel?.workstatus || '',
+                        maritalstatus: personnel?.maritalstatus || '',
+                        residentialaddress: personnel?.residentialaddress || '',
+                        permanenthomeaddress: personnel?.permanenthomeaddress || '',
+                        gender: personnel?.gender || '',
+                        birthdate: personnel?.birthdate || '',
+                        nationality: personnel?.nationality || '',
+                        state: personnel?.state || '',
+                        lga: personnel?.lga || '',
+                        deformity: personnel?.deformity || '',
+                        eyeglasses: personnel?.eyeglasses || '',
+                        hearingaid: personnel?.hearingaid || '',
+                        height: personnel?.height || '',
+                        weight: personnel?.weight || '',
+                        staffid: personnel?.staffid || '',
+                        bankname1: personnel?.bankname1 || '',
+                        bankaccountnumber1: personnel?.bankaccountnumber1 || '',
+                        employmentdate: personnel?.employmentdate || '',
+                        registereduseremail: personnel?.registereduseremail || personnel?.user || '',
+                        levelid: personnel?.levelid || '',
+                        basicsalary: personnel?.basicsalary || ''
+                    };
+                    sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(editPayload));
+                    if (typeof routerEvent === 'function') {
+                        routerEvent('pp_personnel');
+                    } else {
+                        notification('Unable to open Add Personnel for edit', 0);
+                    }
+                    return;
+                }
+            }
             if (route === 'pp_level') {
                 const deleteTrigger = event.target.closest('[data-hrm-level-delete]');
                 if (deleteTrigger) {
@@ -1542,8 +1762,26 @@ function hrmBindWorkspaceControls(route, blueprint) {
     }
 
     if (route === 'pp_personnel') {
-        hrmPopulatePersonnelLevelPicker();
+        const levelPickerLoad = hrmPopulatePersonnelLevelPicker();
         hrmBindPersonnelLookupBehavior();
+        const editRecordRaw = sessionStorage.getItem('hrm_personnel_edit_record');
+        if (editRecordRaw) {
+            try {
+                const editRecord = JSON.parse(editRecordRaw);
+                Promise.resolve(levelPickerLoad).finally(() => {
+                    hrmSetActiveTab('input');
+                    hrmPopulateEntryForm(editRecord);
+                    const levelControl = document.getElementById('levelid');
+                    if (hrmTomSelectInstances.levelid && levelControl?.value) {
+                        hrmTomSelectInstances.levelid.setValue(levelControl.value, true);
+                    }
+                    const saveLabel = saveButton?.querySelector('span:last-child');
+                    if (saveLabel) saveLabel.textContent = 'Update';
+                    notification('Personnel record loaded for edit', 1);
+                });
+            } catch (error) {}
+            sessionStorage.removeItem('hrm_personnel_edit_record');
+        }
     }
 
     hrmLoadViewData(route, blueprint);
