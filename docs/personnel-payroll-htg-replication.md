@@ -1,5 +1,7 @@
 # Personnel & Payroll Replication (HTG -> HEMS)
 
+Detailed implementation rules, payload contracts, and per-interface guidance now live in `docs/personnel-payroll-implementation-guideline.md`.
+
 ## Scope Completed
 - HTG personnel/payroll interfaces were mapped and recreated in HEMS under Administration using `pp_*` routes.
 - HEMS keeps its own design while preserving HTG logic flow per interface.
