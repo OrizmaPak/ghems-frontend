@@ -274,7 +274,7 @@ const hrmCommonFilters = [
     { id: 'enddate', label: 'End Date', type: 'date' }
 ];
 
-const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 'bankname2', 'groupid']);
+const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 'bankname2']);
 
 const hrmHtgControllerRouting = {
     pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
