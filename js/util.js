@@ -82,13 +82,18 @@ function normalizePermissionName(label=''){
 }
 
 function buildGrantedPermissionSet(rawPermissions=''){
+    const raw = String(rawPermissions || '').trim()
     const granted = new Set(
-        String(rawPermissions || '')
-            .split('||')
-            .flatMap(item => item.split('|'))
+        raw
+            .split(/\|\||\||,|;|\n|\r/g)
             .map(normalizePermissionName)
             .filter(Boolean)
     )
+
+    if(raw === '*' || raw.includes('*')){
+        granted.add('*')
+        granted.add('PERSONNEL & PAYROLL')
+    }
 
     // Backward compatibility: inherit personnel/payroll visibility from common existing admin grants.
     const personnelPayrollFallbacks = ['SETTINGS', 'DEPARTMENT', 'ACCESS CONTROL', 'USERS', 'PROFILE']
@@ -175,6 +180,7 @@ async function runpermissioncheck(state=''){
 
     const profile = await fetchCurrentUserProfileCached()
     if(!profile?.status || normalizeRoleName(profile.role) === 'SUPERADMIN') return true
+    if(profile.grantedPermissions?.has('*')) return true
 
     const permissionKey = getNavPermissionKeyFromNode(currentNavItem)
     if(!permissionKey || profile.grantedPermissions?.has(permissionKey)) return true

@@ -215,6 +215,11 @@ function scheduleSuperAdminNavigationStabilizer(){
 }
 
 function applyGrantedPermissionsToNavigation(grantedPermissions, permissionSwitch='ON'){
+    if(grantedPermissions?.has('*')){
+        showAllNavigationItems()
+        return
+    }
+
     let subitems = document.getElementsByClassName('navitem-child')
     for(let i=0; i<subitems.length; i++){
         if(grantedPermissions.has(getNavPermissionKeyFromNode(subitems[i]))){
