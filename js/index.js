@@ -217,11 +217,6 @@ function scheduleSuperAdminNavigationStabilizer(){
 function applyGrantedPermissionsToNavigation(grantedPermissions, permissionSwitch='ON'){
     let subitems = document.getElementsByClassName('navitem-child')
     for(let i=0; i<subitems.length; i++){
-        if((subitems[i].id || '').startsWith('pp_')){
-            subitems[i].classList.remove('hidden')
-            continue
-        }
-
         if(grantedPermissions.has(getNavPermissionKeyFromNode(subitems[i]))){
             if(permissionSwitch === 'ON') subitems[i].classList.remove('hidden')
         }else{

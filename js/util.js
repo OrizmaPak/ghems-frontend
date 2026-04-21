@@ -14,7 +14,34 @@ const permissionAliasesByRouteId = {
     discountcouponp: 'DISCOUNT COUPON',
     receipts: 'RECEIPTS',
     diningtable: 'DINING TABLE',
-    reservetable: 'RESERVE TABLE'
+    reservetable: 'RESERVE TABLE',
+    pp_department: 'PERSONNEL & PAYROLL',
+    pp_level: 'PERSONNEL & PAYROLL',
+    pp_groupname: 'PERSONNEL & PAYROLL',
+    pp_personnel: 'PERSONNEL & PAYROLL',
+    pp_approvepersonnel: 'PERSONNEL & PAYROLL',
+    pp_viewpersonnel: 'PERSONNEL & PAYROLL',
+    pp_personnelhistory: 'PERSONNEL & PAYROLL',
+    pp_guarantor: 'PERSONNEL & PAYROLL',
+    pp_employerrecord: 'PERSONNEL & PAYROLL',
+    pp_referees: 'PERSONNEL & PAYROLL',
+    pp_qualification: 'PERSONNEL & PAYROLL',
+    pp_parentsguardians: 'PERSONNEL & PAYROLL',
+    pp_query: 'PERSONNEL & PAYROLL',
+    pp_promotions: 'PERSONNEL & PAYROLL',
+    pp_termination: 'PERSONNEL & PAYROLL',
+    pp_suspension: 'PERSONNEL & PAYROLL',
+    pp_leave: 'PERSONNEL & PAYROLL',
+    pp_warning: 'PERSONNEL & PAYROLL',
+    pp_monitorevaluation: 'PERSONNEL & PAYROLL',
+    pp_advance: 'PERSONNEL & PAYROLL',
+    pp_viewstaffadvance: 'PERSONNEL & PAYROLL',
+    pp_personalstaffsalaryrecord: 'PERSONNEL & PAYROLL',
+    pp_viewmonthlysalaryschedule: 'PERSONNEL & PAYROLL',
+    pp_presalaryapproval: 'PERSONNEL & PAYROLL',
+    pp_confirmsalary: 'PERSONNEL & PAYROLL',
+    pp_payrollclassa: 'PERSONNEL & PAYROLL',
+    pp_payrollclassb: 'PERSONNEL & PAYROLL'
 }
 
 const permissionAliasesByValue = {
@@ -28,7 +55,9 @@ const permissionAliasesByValue = {
     'DISCOUNT': 'DISCOUNT COUPON',
     'RECEIVE DEPOSITS': 'RECEIPTS',
     'DINING TABLES': 'DINING TABLE',
-    'RESERVE TABLES': 'RESERVE TABLE'
+    'RESERVE TABLES': 'RESERVE TABLE',
+    'PERSONNEL AND PAYROLL': 'PERSONNEL & PAYROLL',
+    'PERSONNEL & PAYROLL': 'PERSONNEL & PAYROLL'
 }
 
 function normalizeRoleName(role=''){
@@ -53,20 +82,21 @@ function normalizePermissionName(label=''){
 }
 
 function buildGrantedPermissionSet(rawPermissions=''){
-    return new Set(
+    const granted = new Set(
         String(rawPermissions || '')
             .split('||')
             .flatMap(item => item.split('|'))
             .map(normalizePermissionName)
             .filter(Boolean)
     )
+
+    // Backward compatibility: users with SETTINGS previously had full admin visibility in many deployments.
+    if(granted.has('SETTINGS')) granted.add('PERSONNEL & PAYROLL')
+
+    return granted
 }
 
 function getNavPermissionKeyFromNode(item){
-    if((item?.id || '').startsWith('pp_')){
-        return ''
-    }
-
     if(item?.id && permissionAliasesByRouteId[item.id]){
         return normalizePermissionName(permissionAliasesByRouteId[item.id])
     }
@@ -136,7 +166,6 @@ async function runpermissioncheck(state=''){
 
     const route = getCurrentRouteName()
     if(!route || route === 'dashboard' || currentUserIsSuperAdmin()) return true
-    if(String(route).startsWith('pp_')) return true
 
     const currentNavItem = document.getElementById(route)
     if(!currentNavItem) return true

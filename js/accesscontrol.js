@@ -12,6 +12,7 @@ const accessctrl_administration = [
     'DISCOUNT COUPON',
     'COST CENTER',
     'SETTINGS',
+    'PERSONNEL & PAYROLL',
     'UPDATE OTHER USERS PROFILE',
     'REVERSE PAYMENT',
     'REVERSE SALES',
