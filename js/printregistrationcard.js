@@ -129,6 +129,11 @@ function printReservationConfirmationItem(id) {
     if(selectedItem) stageReservationConfirmationPrint(selectedItem)
 }
 
+const gravityHotelAddress = '5002B, Action Commercial Area, Ikenegbu Layout, Imo State, Nigeria'
+const gravityHotelEmail = 'acehospitalityng@gmail.com'
+const gravityHotelWebsite = 'www.acehospitality.com/gravityhotelowerri'
+const gravityHotelPhone = '+234 (0) 90 9040001-7'
+
 function stageCardPrint(item) {
     const logoFromSettings = orgInformation?.logo && orgInformation.logo !== '-' ? `../images/${orgInformation.logo}` : ''
     const logoFromGlobal = did('your_companylogo')?.value ? `../images/${did('your_companylogo').value}` : ''
@@ -141,7 +146,7 @@ function stageCardPrint(item) {
                 ${logoPath ? `<img src="${logoPath}" alt="Hotel logo" class="w-20 h-20 object-contain shrink-0">` : ''}
                 <div class="text-left flex-1">
                     <h1 class="text-2xl font-bold uppercase">${orgInformation.companyname}</h1>
-                    <p class="text-sm capitalize">${orgInformation.address}</p>
+                    <p class="text-sm capitalize">${gravityHotelAddress}</p>
                     <p class="text-sm">Phone: ${orgInformation.mobile} Tel: ${orgInformation.telephone}</p>
                 </div>
             </div>
@@ -350,6 +355,9 @@ function stageCardPrint(item) {
 
 function stageReservationConfirmationPrint(item) {
     const guest = item.roomgeustrow[0]?.guest1?.[0] || {}
+    const logoFromSettings = orgInformation?.logo && orgInformation.logo !== '-' ? `../images/${orgInformation.logo}` : ''
+    const logoFromGlobal = did('your_companylogo')?.value ? `../images/${did('your_companylogo').value}` : ''
+    const logoPath = logoFromSettings || logoFromGlobal
     const guestNameRaw = `${guest.firstname || ''} ${guest.othernames && guest.othernames !== '-' ? guest.othernames : ''} ${guest.lastname || ''}`.replace(/\s+/g, ' ').trim()
     const guestName = guestNameRaw || 'Guest'
     const nationality = guest.nationality && guest.nationality !== '-' ? guest.nationality : ''
@@ -361,6 +369,7 @@ function stageReservationConfirmationPrint(item) {
     const html = `
     <div class="bg-white !text-black p-8 text-[14px] leading-relaxed">
         <div class="text-center mb-6">
+            ${logoPath ? `<img src="${logoPath}" alt="Gravity Hotel logo" class="w-24 h-24 object-contain mx-auto mb-2">` : ''}
             <div class="text-2xl font-bold uppercase">GRAVITY HOTELS</div>
             <div class="text-xl font-bold uppercase mt-2">RESERVATION CONFIRMATION</div>
         </div>
@@ -403,11 +412,11 @@ function stageReservationConfirmationPrint(item) {
         GRAVITY HOTEL OWERRI</p>
 
         <p class="mb-0"><strong>Address & Contact:</strong></p>
-        <p class="mb-0">5002B, Action Commercial Area, Ikenegbu Layout, Imo State, Nigeria</p>
-        <p class="mb-4">Email: acehospitalityng@gmail.com</p>
+        <p class="mb-0">${gravityHotelAddress}</p>
+        <p class="mb-4">Email: ${gravityHotelEmail}</p>
 
-        <p class="mb-0">Website: www.acehospitality.com/gravityhotelowerri</p>
-        <p class="mb-0">Tel: +234 (0) 90 9040001-7</p>
+        <p class="mb-0">Website: ${gravityHotelWebsite}</p>
+        <p class="mb-0">Tel: ${gravityHotelPhone}</p>
     </div>
     `
 

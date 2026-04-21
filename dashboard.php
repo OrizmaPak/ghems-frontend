@@ -41,7 +41,7 @@
       </section>
 
       <section class="dashboard-metrics-grid">
-        <div class="metric-card cp" data-route-target="receiveables">
+        <div class="metric-card cp" data-route-target="receivables">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-purple-600 bg-purple-100 rounded-full mr-6">
            <span class="material-symbols-outlined">call_received</span>
           </div>
