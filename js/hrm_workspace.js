@@ -278,7 +278,7 @@ const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 
 
 const hrmHtgControllerRouting = {
     pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
-    pp_personnel: { load: 'personnel.php', save: 'personnel.php', filter: 'personnel.php' },
+    pp_personnel: { load: 'fetchpersonnels.php', save: 'personnelscript.php', filter: 'fetchpersonnels.php' },
     pp_approvepersonnel: { load: 'approvepersonnel.php', save: 'approvepersonnel.php', filter: 'approvepersonnel.php' },
     pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
     pp_personnelhistory: { load: 'personnelhistory.php', save: 'personnelhistory.php', filter: 'personnelhistory.php' },
