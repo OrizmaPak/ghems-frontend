@@ -836,8 +836,12 @@ function hrmRenderLevelRows(rows, columns) {
     body.innerHTML = rows.map((entry, index) => {
         const level = entry?.level || {};
         const structure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
-        const allowanceCount = structure.filter((item) => item?.salaryinfotype === 'ALLOWANCE').length;
-        const deductionCount = structure.filter((item) => item?.salaryinfotype === 'DEDUCTION').length;
+        const allowanceValues = structure
+            .filter((item) => item?.salaryinfotype === 'ALLOWANCE')
+            .map((item) => `${item?.salaryinfo || 'Allowance'} ${item?.amountpercentage ?? 0}%`);
+        const deductionValues = structure
+            .filter((item) => item?.salaryinfotype === 'DEDUCTION')
+            .map((item) => `${item?.salaryinfo || 'Deduction'} ${item?.amountpercentage ?? 0}%`);
         const entryId = level?.id ?? '';
         const payload = encodeURIComponent(JSON.stringify(entry));
 
@@ -846,8 +850,8 @@ function hrmRenderLevelRows(rows, columns) {
                 <td>${index + 1}</td>
                 <td>${level?.level ?? ''}</td>
                 <td>${level?.basicsalary ?? ''}</td>
-                <td>${allowanceCount}</td>
-                <td>${deductionCount}</td>
+                <td>${allowanceValues.length ? allowanceValues.join(', ') : '-'}</td>
+                <td>${deductionValues.length ? deductionValues.join(', ') : '-'}</td>
                 <td>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" class="btn hrm-ui-action" data-hrm-level-edit="${entryId}" data-hrm-level-record="${payload}" title="Edit level" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
@@ -1160,6 +1164,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                     const allowances = structure.filter((item) => item?.salaryinfotype === 'ALLOWANCE');
                     const deductions = structure.filter((item) => item?.salaryinfotype === 'DEDUCTION');
                     hrmRenderLevelLineEditors(allowances, deductions);
+                    hrmSetActiveTab('input');
                     window.hrmNavigateToInput({ level: record?.level?.level || '', basicsalary: record?.level?.basicsalary || '' });
                     return;
                 }
