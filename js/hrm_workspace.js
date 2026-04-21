@@ -1093,6 +1093,14 @@ async function hrmRequestController(controllerName, payload = null, button = nul
     }
 }
 
+function hrmResultErrorMessage(result, fallback = 'Request failed') {
+    if (typeof result?.data === 'string' && result.data.trim()) return result.data.trim();
+    if (result?.data?.message) return String(result.data.message);
+    if (result?.message) return String(result.message);
+    if (typeof result?.raw === 'string' && result.raw.trim()) return result.raw.trim();
+    return fallback;
+}
+
 function hrmExtractRowsFromResponse(responseData) {
     if (!responseData) return [];
     if (Array.isArray(responseData)) return responseData;
@@ -1137,7 +1145,7 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     const result = await hrmRequestController(loadController, payload, button);
 
     if (!result.ok || result?.data?.status === false) {
-        notification(`Unable to load data from ${loadController}`, 0);
+        notification(hrmResultErrorMessage(result, `Unable to load data from ${loadController}`), 0);
         hrmRenderRows(columns, []);
         return;
     }
@@ -1180,7 +1188,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
             }
             const result = await hrmRequestController(saveController, payload, saveButton);
             if (!result.ok || result?.data?.status === false) {
-                notification(`Save failed on ${saveController}`, 0);
+                notification(hrmResultErrorMessage(result, `Save failed on ${saveController}`), 0);
                 return;
             }
             notification('Record submitted successfully', 1);
@@ -1219,7 +1227,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                         payload.append('id', id);
                         hrmRequestController(deleteController, payload).then(async (result) => {
                             if (!result.ok || result?.data?.status === false) {
-                                notification(`Delete failed on ${deleteController}`, 0);
+                                notification(hrmResultErrorMessage(result, `Delete failed on ${deleteController}`), 0);
                                 return;
                             }
                             notification('Level deleted successfully', 1);
@@ -1286,7 +1294,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
             payload.append('action', label);
             const result = await hrmRequestController(saveController, payload, button);
             if (!result.ok || result?.data?.status === false) {
-                notification(`${label} failed on ${saveController}`, 0);
+                notification(hrmResultErrorMessage(result, `${label} failed on ${saveController}`), 0);
                 return;
             }
             notification(`${label} completed`, 1);
