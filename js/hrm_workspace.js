@@ -921,6 +921,49 @@ function hrmNormalizePersonnelRows(responseData) {
     return [];
 }
 
+function hrmNormalizePersonnelValue(value) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed || trimmed === '-' || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') return '';
+        return trimmed;
+    }
+    return String(value);
+}
+
+function hrmMapPersonnelEntryToForm(entry = {}) {
+    const personnel = entry?.personnel || entry || {};
+    return {
+        id: hrmNormalizePersonnelValue(personnel?.id),
+        staffid: hrmNormalizePersonnelValue(personnel?.staffid),
+        lastname: hrmNormalizePersonnelValue(personnel?.lastname),
+        firstname: hrmNormalizePersonnelValue(personnel?.firstname),
+        othernames: hrmNormalizePersonnelValue(personnel?.othernames),
+        phonenumber: hrmNormalizePersonnelValue(personnel?.phonenumber),
+        workstatus: hrmNormalizePersonnelValue(personnel?.workstatus),
+        maritalstatus: hrmNormalizePersonnelValue(personnel?.maritalstatus),
+        residentialaddress: hrmNormalizePersonnelValue(personnel?.residentialaddress),
+        permanenthomeaddress: hrmNormalizePersonnelValue(personnel?.permanenthomeaddress),
+        gender: hrmNormalizePersonnelValue(personnel?.gender),
+        birthdate: hrmNormalizePersonnelValue(personnel?.birthdate),
+        nationality: hrmNormalizePersonnelValue(personnel?.nationality),
+        state: hrmNormalizePersonnelValue(personnel?.state),
+        lga: hrmNormalizePersonnelValue(personnel?.lga),
+        deformity: hrmNormalizePersonnelValue(personnel?.deformity),
+        eyeglasses: hrmNormalizePersonnelValue(personnel?.eyeglasses),
+        hearingaid: hrmNormalizePersonnelValue(personnel?.hearingaid),
+        height: hrmNormalizePersonnelValue(personnel?.height),
+        weight: hrmNormalizePersonnelValue(personnel?.weight),
+        bankname1: hrmNormalizePersonnelValue(personnel?.bankname1),
+        bankaccountnumber1: hrmNormalizePersonnelValue(personnel?.bankaccountnumber1),
+        employmentdate: hrmNormalizePersonnelValue(personnel?.employmentdate),
+        registereduseremail: hrmNormalizePersonnelValue(personnel?.registereduseremail || personnel?.user),
+        levelid: hrmNormalizePersonnelValue(personnel?.levelid),
+        basicsalary: hrmNormalizePersonnelValue(personnel?.basicsalary)
+    };
+}
+
 function hrmOpenPersonnelModal(entry = {}) {
     const personnel = entry?.personnel || {};
     const salarystructure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
@@ -1621,36 +1664,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 const editTrigger = event.target.closest('[data-hrm-personnel-edit]');
                 if (editTrigger) {
                     const entry = rowRecord(editTrigger);
-                    const personnel = entry?.personnel || {};
-                    const editPayload = {
-                        id: personnel?.id || '',
-                        lastname: personnel?.lastname || '',
-                        firstname: personnel?.firstname || '',
-                        othernames: personnel?.othernames || '',
-                        phonenumber: personnel?.phonenumber || '',
-                        workstatus: personnel?.workstatus || '',
-                        maritalstatus: personnel?.maritalstatus || '',
-                        residentialaddress: personnel?.residentialaddress || '',
-                        permanenthomeaddress: personnel?.permanenthomeaddress || '',
-                        gender: personnel?.gender || '',
-                        birthdate: personnel?.birthdate || '',
-                        nationality: personnel?.nationality || '',
-                        state: personnel?.state || '',
-                        lga: personnel?.lga || '',
-                        deformity: personnel?.deformity || '',
-                        eyeglasses: personnel?.eyeglasses || '',
-                        hearingaid: personnel?.hearingaid || '',
-                        height: personnel?.height || '',
-                        weight: personnel?.weight || '',
-                        staffid: personnel?.staffid || '',
-                        bankname1: personnel?.bankname1 || '',
-                        bankaccountnumber1: personnel?.bankaccountnumber1 || '',
-                        employmentdate: personnel?.employmentdate || '',
-                        registereduseremail: personnel?.registereduseremail || personnel?.user || '',
-                        levelid: personnel?.levelid || '',
-                        basicsalary: personnel?.basicsalary || ''
-                    };
-                    sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(editPayload));
+                    sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
                     if (typeof routerEvent === 'function') {
                         routerEvent('pp_personnel');
                     } else {
@@ -1767,17 +1781,22 @@ function hrmBindWorkspaceControls(route, blueprint) {
         const editRecordRaw = sessionStorage.getItem('hrm_personnel_edit_record');
         if (editRecordRaw) {
             try {
-                const editRecord = JSON.parse(editRecordRaw);
+                const editEntry = JSON.parse(editRecordRaw);
+                const editRecord = hrmMapPersonnelEntryToForm(editEntry);
                 Promise.resolve(levelPickerLoad).finally(() => {
-                    hrmSetActiveTab('input');
-                    hrmPopulateEntryForm(editRecord);
-                    const levelControl = document.getElementById('levelid');
-                    if (hrmTomSelectInstances.levelid && levelControl?.value) {
-                        hrmTomSelectInstances.levelid.setValue(levelControl.value, true);
-                    }
-                    const saveLabel = saveButton?.querySelector('span:last-child');
-                    if (saveLabel) saveLabel.textContent = 'Update';
-                    notification('Personnel record loaded for edit', 1);
+                    (async () => {
+                        hrmSetActiveTab('input');
+                        hrmPopulateEntryForm(editRecord);
+                        if (editRecord?.nationality) await hrmPopulateStates(editRecord.nationality);
+                        if (editRecord?.state) await hrmPopulateCities(editRecord.nationality, editRecord.state);
+                        const levelControl = document.getElementById('levelid');
+                        if (hrmTomSelectInstances.levelid && levelControl?.value) {
+                            hrmTomSelectInstances.levelid.setValue(levelControl.value, true);
+                        }
+                        const saveLabel = saveButton?.querySelector('span:last-child');
+                        if (saveLabel) saveLabel.textContent = 'Update';
+                        notification('Personnel record loaded for edit', 1);
+                    })();
                 });
             } catch (error) {}
             sessionStorage.removeItem('hrm_personnel_edit_record');
