@@ -1249,14 +1249,14 @@ async function hrmSubmitApprovePersonnelAction(action, button, blueprint) {
 function hrmRenderApprovePersonnelBatchActions(container, blueprint) {
     if (!container) return;
     container.innerHTML = `
-        <button type="button" class="btn hrm-ui-action" id="hrm_approve_select_all" title="Select all pending personnel" style="background:#1f2937;color:#fff;">
+        <button type="button" class="btn hrm-ui-action" id="hrm_approve_select_all" title="Select all pending personnel" style="background:#1f2937 !important;color:#fff !important;">
             <span>Select All</span>
         </button>
-        <button type="button" class="btn hrm-ui-action" id="hrm_approve_selected" title="Approve selected personnel" style="background:#15803d;color:#fff;">
+        <button type="button" class="btn hrm-ui-action" id="hrm_approve_selected" title="Approve selected personnel" style="background:#15803d !important;color:#fff !important;">
             <span class="material-symbols-outlined text-lg">check_circle</span>
             <span>Approve</span>
         </button>
-        <button type="button" class="btn hrm-ui-action" id="hrm_decline_selected" title="Decline selected personnel" style="background:#dc2626;color:#fff;">
+        <button type="button" class="btn hrm-ui-action" id="hrm_decline_selected" title="Decline selected personnel" style="background:#dc2626 !important;color:#fff !important;">
             <span class="material-symbols-outlined text-lg">cancel</span>
             <span>Decline</span>
         </button>
@@ -1763,6 +1763,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
     const filterButton = document.getElementById('hrm_filter_btn');
     const filterResetButton = document.getElementById('hrm_filter_reset_btn');
     const batchActions = document.getElementById('hrm_batch_actions');
+    const tableBatchActions = document.getElementById('hrm_table_batch_actions');
     const tableBody = document.getElementById('hrm_table_body');
 
     if (saveButton) {
@@ -1828,8 +1829,16 @@ function hrmBindWorkspaceControls(route, blueprint) {
         await hrmLoadViewData(route, blueprint);
     };
     if (batchActions) batchActions.innerHTML = '';
+    if (tableBatchActions) {
+        tableBatchActions.innerHTML = '';
+        tableBatchActions.classList.add('hidden');
+    }
     if (route === 'pp_approvepersonnel') {
-        hrmRenderApprovePersonnelBatchActions(batchActions, blueprint);
+        const targetBatchActions = tableBatchActions || batchActions;
+        if (targetBatchActions) {
+            targetBatchActions.classList.remove('hidden');
+            hrmRenderApprovePersonnelBatchActions(targetBatchActions, blueprint);
+        }
     }
     if (tableBody) {
         tableBody.onclick = (event) => {

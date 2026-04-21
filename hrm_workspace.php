@@ -96,6 +96,7 @@
                     <tbody id="hrm_table_body"></tbody>
                 </table>
             </div>
+            <div id="hrm_table_batch_actions" class="hidden flex flex-wrap justify-start gap-2 mt-4 mb-4"></div>
             <div class="table-status" id="hrm_table_status">Showing 0 to 0 of 0 records</div>
         </div>
     </div>
