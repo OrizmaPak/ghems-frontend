@@ -289,7 +289,7 @@ const hrmCommonFilters = [
 const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 'bankname2', 'groupid']);
 
 const hrmHtgControllerRouting = {
-    pp_level: { load: 'level.php', save: 'level.php', filter: 'level.php' },
+    pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
     pp_groupname: { load: 'groupname.php', save: 'groupname.php', filter: 'groupname.php' },
     pp_personnel: { load: 'personnel.php', save: 'personnel.php', filter: 'personnel.php' },
     pp_approvepersonnel: { load: 'approvepersonnel.php', save: 'approvepersonnel.php', filter: 'approvepersonnel.php' },
@@ -316,6 +316,8 @@ const hrmHtgControllerRouting = {
     pp_payrollclassa: { load: 'payrollclassa.php', save: 'payrollclassa.php', filter: 'payrollclassa.php' },
     pp_payrollclassb: { load: 'payrollclassb.php', save: 'payrollclassb.php', filter: 'payrollclassb.php' }
 };
+
+let hrmLevelEditingId = '';
 
 const hrmMatterFields = {
     pp_query: [
@@ -389,11 +391,7 @@ const hrmInterfaceBlueprints = {
         context: 'Salary level setup',
         fields: [
             { id: 'level', label: 'Level Name', type: 'text', required: true },
-            { id: 'basicsalary', label: 'Basic Salary', type: 'number', required: true },
-            { id: 'allowance', label: 'Allowance Name', type: 'text' },
-            { id: 'allowancepercent', label: 'Allowance %', type: 'number' },
-            { id: 'deduction', label: 'Deduction Name', type: 'text' },
-            { id: 'deductionpercent', label: 'Deduction %', type: 'number' }
+            { id: 'basicsalary', label: 'Basic Salary', type: 'number', required: true }
         ],
         sections: [
             { title: 'Allowance Lines', columns: ['Allowance Name', 'Percentage', 'Action'] },
@@ -647,7 +645,7 @@ function hrmWorkspaceActive() {
 
     hrmRenderFields('hrm_entry_grid', fields);
     hrmRenderFilters(filters);
-    hrmRenderDynamicSections(blueprint.sections || []);
+    hrmRenderDynamicSections(blueprint.sections || [], route);
     hrmRenderSummary(blueprint.summary || ['Records', 'Pending', 'Approved', 'Updated']);
     hrmRenderTable(blueprint.columns || ['S/N', 'Name', 'Status', 'Action'], config.title);
     hrmBindWorkspaceControls(route, blueprint);
@@ -741,9 +739,30 @@ function hrmRenderFilters(fields) {
     hrmRenderFields('hrm_filter_grid', filterFields);
 }
 
-function hrmRenderDynamicSections(sections) {
+function hrmRenderDynamicSections(sections, route = '') {
     const container = document.getElementById('hrm_dynamic_sections');
     if (!container) return;
+
+    if (route === 'pp_level') {
+        container.innerHTML = `
+            <div class="border border-slate-200 rounded-sm p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-semibold text-slate-700">Allowance Lines</p>
+                    <button type="button" id="hrm_level_add_allowance" class="btn hrm-ui-action" title="Add allowance line"><span>Add Line</span></button>
+                </div>
+                <div id="hrm_level_allowance_container" class="flex flex-col gap-2"></div>
+            </div>
+            <div class="border border-slate-200 rounded-sm p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-semibold text-slate-700">Deduction Lines</p>
+                    <button type="button" id="hrm_level_add_deduction" class="btn hrm-ui-action" title="Add deduction line"><span>Add Line</span></button>
+                </div>
+                <div id="hrm_level_deduction_container" class="flex flex-col gap-2"></div>
+            </div>
+        `;
+        hrmRenderLevelLineEditors([], []);
+        return;
+    }
 
     container.innerHTML = sections.map((section) => `
         <div class="border border-slate-200 rounded-sm p-4">
@@ -759,6 +778,111 @@ function hrmRenderDynamicSections(sections) {
             </div>
         </div>
     `).join('');
+}
+
+function hrmBuildLevelLineRow(type, value = '', percent = '', removable = true) {
+    const isAllowance = type === 'ALLOWANCE';
+    const lineClass = isAllowance ? 'allowancename' : 'deductionname';
+    const pctClass = isAllowance ? 'allowancepercent' : 'deductionpecent';
+    const placeholderText = isAllowance ? 'Allowance name' : 'Deduction name';
+    const removeButton = removable
+        ? `<button type="button" class="btn hrm-ui-action hrm-level-remove-line" title="Remove line"><span>Remove</span></button>`
+        : `<span class="text-xs text-slate-500">Primary line</span>`;
+
+    return `
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-2 items-end hrm-level-line">
+            <div class="form-group mb-0">
+                <label class="control-label">${isAllowance ? 'Allowance Name' : 'Deduction Name'}</label>
+                <input type="text" class="form-control ${lineClass}" placeholder="${placeholderText}" value="${value || ''}">
+            </div>
+            <div class="form-group mb-0">
+                <label class="control-label">Percentage %</label>
+                <input type="number" class="form-control ${pctClass}" placeholder="Percentage %" value="${percent || ''}">
+            </div>
+            <div class="pb-1">${removeButton}</div>
+        </div>
+    `;
+}
+
+function hrmRenderLevelLineEditors(allowances = [], deductions = []) {
+    const allowanceContainer = document.getElementById('hrm_level_allowance_container');
+    const deductionContainer = document.getElementById('hrm_level_deduction_container');
+    if (!allowanceContainer || !deductionContainer) return;
+
+    const allowanceRows = Array.isArray(allowances) && allowances.length > 0 ? allowances : [{ salaryinfo: '', amountpercentage: '' }];
+    const deductionRows = Array.isArray(deductions) && deductions.length > 0 ? deductions : [{ salaryinfo: '', amountpercentage: '' }];
+
+    allowanceContainer.innerHTML = allowanceRows.map((row, index) => hrmBuildLevelLineRow('ALLOWANCE', row?.salaryinfo, row?.amountpercentage, index > 0)).join('');
+    deductionContainer.innerHTML = deductionRows.map((row, index) => hrmBuildLevelLineRow('DEDUCTION', row?.salaryinfo, row?.amountpercentage, index > 0)).join('');
+}
+
+function hrmAddLevelLine(type) {
+    const containerId = type === 'ALLOWANCE' ? 'hrm_level_allowance_container' : 'hrm_level_deduction_container';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.insertAdjacentHTML('beforeend', hrmBuildLevelLineRow(type, '', '', true));
+}
+
+function hrmCollectLevelLines(payload) {
+    const allowanceNames = Array.from(document.getElementsByClassName('allowancename'));
+    const allowancePercents = Array.from(document.getElementsByClassName('allowancepercent'));
+    const deductionNames = Array.from(document.getElementsByClassName('deductionname'));
+    const deductionPercents = Array.from(document.getElementsByClassName('deductionpecent'));
+
+    allowanceNames.forEach((item, index) => payload.append(`allowances${index}`, item.value || ''));
+    allowancePercents.forEach((item, index) => payload.append(`amountpercentage${index}`, item.value || ''));
+    deductionNames.forEach((item, index) => payload.append(`deductions${index}`, item.value || ''));
+    deductionPercents.forEach((item, index) => payload.append(`dedamountpercentage${index}`, item.value || ''));
+
+    payload.append('allgridsize', allowanceNames.length);
+    payload.append('dedgridsize', deductionNames.length);
+}
+
+function hrmNormalizeLevelRows(responseData) {
+    if (Array.isArray(responseData)) return responseData;
+    if (Array.isArray(responseData?.data)) return responseData.data;
+    if (Array.isArray(responseData?.data?.data)) return responseData.data.data;
+    if (Array.isArray(responseData?.result)) return responseData.result;
+    return [];
+}
+
+function hrmRenderLevelRows(rows, columns) {
+    const body = document.getElementById('hrm_table_body');
+    const status = document.getElementById('hrm_table_status');
+    if (!body) return;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No level records found.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        return;
+    }
+
+    body.innerHTML = rows.map((entry, index) => {
+        const level = entry?.level || {};
+        const structure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
+        const allowanceCount = structure.filter((item) => item?.salaryinfotype === 'ALLOWANCE').length;
+        const deductionCount = structure.filter((item) => item?.salaryinfotype === 'DEDUCTION').length;
+        const entryId = level?.id ?? '';
+        const payload = encodeURIComponent(JSON.stringify(entry));
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${level?.level ?? ''}</td>
+                <td>${level?.basicsalary ?? ''}</td>
+                <td>${allowanceCount}</td>
+                <td>${deductionCount}</td>
+                <td>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="btn hrm-ui-action" data-hrm-level-edit="${entryId}" data-hrm-level-record="${payload}" title="Edit level"><span>Edit</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-level-delete="${entryId}" title="Delete level"><span>Delete</span></button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
 }
 
 function hrmBuildControl(field) {
@@ -932,6 +1056,12 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         return;
     }
 
+    if (route === 'pp_level') {
+        const rows = hrmNormalizeLevelRows(result.data);
+        hrmRenderLevelRows(rows, columns);
+        return;
+    }
+
     const rows = hrmExtractRowsFromResponse(result.data);
     hrmRenderRows(columns, rows);
 }
@@ -950,16 +1080,35 @@ function hrmBindWorkspaceControls(route, blueprint) {
         saveButton.onclick = async () => {
             const saveController = hrmResolveControllerName(route, 'save');
             const payload = hrmBuildPayloadFromForm(form, route, 'save');
+            if (route === 'pp_level') {
+                payload.delete('module');
+                payload.delete('mode');
+                if (hrmLevelEditingId) payload.append('id', hrmLevelEditingId);
+                hrmCollectLevelLines(payload);
+            }
             const result = await hrmRequestController(saveController, payload, saveButton);
             if (!result.ok || result?.data?.status === false) {
                 notification(`Save failed on ${saveController}`, 0);
                 return;
             }
             notification('Record submitted successfully', 1);
+            if (route === 'pp_level') {
+                form?.reset();
+                hrmLevelEditingId = '';
+                hrmRenderLevelLineEditors([], []);
+            }
             await hrmLoadViewData(route, blueprint);
         };
     }
-    if (resetButton) resetButton.onclick = () => form?.reset();
+    if (resetButton) {
+        resetButton.onclick = () => {
+            form?.reset();
+            if (route === 'pp_level') {
+                hrmLevelEditingId = '';
+                hrmRenderLevelLineEditors([], []);
+            }
+        };
+    }
     if (filterButton) filterButton.onclick = async () => hrmLoadViewData(route, blueprint, filterButton, filterForm);
     if (filterResetButton) filterResetButton.onclick = async () => {
         filterForm?.reset();
@@ -968,14 +1117,56 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (batchActions) batchActions.innerHTML = '';
     if (tableBody) {
         tableBody.onclick = (event) => {
+            if (route === 'pp_level') {
+                const deleteTrigger = event.target.closest('[data-hrm-level-delete]');
+                if (deleteTrigger) {
+                    const id = deleteTrigger.getAttribute('data-hrm-level-delete');
+                    if (id) {
+                        const deleteController = hrmResolveControllerName(route, 'delete');
+                        const payload = new FormData();
+                        payload.append('id', id);
+                        hrmRequestController(deleteController, payload).then(async (result) => {
+                            if (!result.ok || result?.data?.status === false) {
+                                notification(`Delete failed on ${deleteController}`, 0);
+                                return;
+                            }
+                            notification('Level deleted successfully', 1);
+                            await hrmLoadViewData(route, blueprint);
+                        });
+                    }
+                    return;
+                }
+
+                const editLevelTrigger = event.target.closest('[data-hrm-level-edit]');
+                if (editLevelTrigger) {
+                    let record = {};
+                    const raw = decodeURIComponent(editLevelTrigger.getAttribute('data-hrm-level-record') || '');
+                    try {
+                        record = raw ? JSON.parse(raw) : {};
+                    } catch (error) {}
+                    hrmLevelEditingId = record?.level?.id || '';
+                    const levelControl = document.getElementById('level');
+                    const basicSalaryControl = document.getElementById('basicsalary');
+                    if (levelControl) levelControl.value = record?.level?.level || '';
+                    if (basicSalaryControl) basicSalaryControl.value = record?.level?.basicsalary || '';
+                    const structure = Array.isArray(record?.salarystructure) ? record.salarystructure : [];
+                    const allowances = structure.filter((item) => item?.salaryinfotype === 'ALLOWANCE');
+                    const deductions = structure.filter((item) => item?.salaryinfotype === 'DEDUCTION');
+                    hrmRenderLevelLineEditors(allowances, deductions);
+                    window.hrmNavigateToInput({ level: record?.level?.level || '', basicsalary: record?.level?.basicsalary || '' });
+                    return;
+                }
+            }
+
             const editTrigger = event.target.closest('[data-hrm-edit]');
-            if (!editTrigger) return;
-            let payload = {};
-            const rawRecord = editTrigger.dataset.hrmRecord || '';
-            try {
-                payload = rawRecord ? JSON.parse(rawRecord) : {};
-            } catch (error) {}
-            window.hrmNavigateToInput(payload);
+            if (editTrigger) {
+                let payload = {};
+                const rawRecord = editTrigger.dataset.hrmRecord || '';
+                try {
+                    payload = rawRecord ? JSON.parse(rawRecord) : {};
+                } catch (error) {}
+                window.hrmNavigateToInput(payload);
+            }
         };
     }
 
@@ -1010,6 +1201,22 @@ function hrmBindWorkspaceControls(route, blueprint) {
         };
         batchActions.appendChild(button);
     });
+
+    if (route === 'pp_level') {
+        const addAllowanceButton = document.getElementById('hrm_level_add_allowance');
+        const addDeductionButton = document.getElementById('hrm_level_add_deduction');
+        if (addAllowanceButton) addAllowanceButton.onclick = () => hrmAddLevelLine('ALLOWANCE');
+        if (addDeductionButton) addDeductionButton.onclick = () => hrmAddLevelLine('DEDUCTION');
+        const sectionsContainer = document.getElementById('hrm_dynamic_sections');
+        if (sectionsContainer) {
+            sectionsContainer.onclick = (event) => {
+                const removeButton = event.target.closest('.hrm-level-remove-line');
+                if (!removeButton) return;
+                const row = removeButton.closest('.hrm-level-line');
+                if (row) row.remove();
+            };
+        }
+    }
 
     hrmLoadViewData(route, blueprint);
 }
