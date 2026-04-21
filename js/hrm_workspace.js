@@ -761,7 +761,7 @@ function hrmBuildLevelLineRow(type, value = '', percent = '', removable = true) 
     const pctClass = isAllowance ? 'allowancepercent' : 'deductionpecent';
     const placeholderText = isAllowance ? 'Allowance name' : 'Deduction name';
     const removeButton = removable
-        ? `<button type="button" class="btn hrm-ui-action hrm-level-remove-line" title="Remove line" style="background:#dc2626;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>`
+        ? `<button type="button" class="btn hrm-ui-action hrm-level-remove-line" title="Remove line" style="background-color:#dc2626 !important;color:#fff !important;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>`
         : `<span class="text-xs text-slate-500">Primary line</span>`;
 
     return `
@@ -855,7 +855,7 @@ function hrmRenderLevelRows(rows, columns) {
                 <td>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" class="btn hrm-ui-action" data-hrm-level-edit="${entryId}" data-hrm-level-record="${payload}" title="Edit level" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
-                        <button type="button" class="btn hrm-ui-action" data-hrm-level-delete="${entryId}" title="Delete level" style="background:#dc2626;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-level-delete="${entryId}" title="Delete level" style="background-color:#dc2626 !important;color:#fff !important;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>
                     </div>
                 </td>
             </tr>
