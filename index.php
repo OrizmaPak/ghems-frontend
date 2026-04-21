@@ -378,7 +378,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                                         <li class="navitem-child text-[#292929] hidden" title="<div class='text-[13px] leading-relaxed text-slate-700'><span class='font-semibold text-primary-g text-sm block mb-1'>General Account Report</span><p class='mb-2'>Cross-module revenue report grouped by category (Bookings, F&B, Sundry) with ready-to-go exports.</p><ul class='list-disc ml-4 text-[12px] space-y-1'><li>Select a date range and a category to pull matching transactions with amounts, consumption, service charge, VAT, and totals.</li><li>Print, PDF, and Excel buttons sit directly above the table, so you can share the filtered report instantly.</li><li>Sales point and description columns help you trace each row back to its originating module if questions arise.</li></ul><p class='mt-2 text-[11px] text-slate-500'>Tip: Export each category separately when preparing departmental revenue summaries-the totals already include VAT and service charge.</p></div>" id="generalaccountreport">General Sales Report</li>
                                     </ul>
                                 </li>
-                                <li style="display: none" class="nav-item">
+                                <li class="nav-item">
                                     <span class="navitem-title group text-[#292929]">
                                         <span class="material-symbols-outlined group-hover:text-primary-g"
                                             style="font-size: 20px;">badge</span>
