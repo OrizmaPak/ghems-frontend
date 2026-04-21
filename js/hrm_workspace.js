@@ -296,6 +296,8 @@ const hrmCommonFilters = [
     { id: 'enddate', label: 'End Date', type: 'date' }
 ];
 
+const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 'bankname2', 'groupid']);
+
 const hrmMatterFields = {
     pp_query: [
         { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
@@ -701,12 +703,14 @@ function hrmRenderFields(containerId, fields) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    const visibleFields = (fields || []).filter((field) => !hrmHiddenFrontendFields.has((field?.id || '').toLowerCase()));
+
     if (!fields.length) {
         container.innerHTML = '';
         return;
     }
 
-    container.innerHTML = fields.map((field) => hrmBuildControl(field)).join('');
+    container.innerHTML = visibleFields.map((field) => hrmBuildControl(field)).join('');
 }
 
 function hrmRenderFilters(fields) {
@@ -739,6 +743,8 @@ function hrmRenderDynamicSections(sections) {
 }
 
 function hrmBuildControl(field) {
+    if (hrmHiddenFrontendFields.has((field?.id || '').toLowerCase())) return '';
+
     const required = field.required ? 'required' : '';
     const readonly = field.readonly ? 'readonly' : '';
     const list = field.list ? `list="${field.list}"` : '';
