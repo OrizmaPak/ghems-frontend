@@ -507,6 +507,141 @@ const routerTree = {
         startingFunction: 'generalaccountreportActive',
         scriptName: './js/generalaccountreport.js'
     },
+    pp_department: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_level: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_groupname: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_personnel: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_approvepersonnel: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_viewpersonnel: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_personnelhistory: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_guarantor: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_employerrecord: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_referees: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_qualification: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_parentsguardians: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_query: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_promotions: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_termination: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_suspension: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_leave: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_warning: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_monitorevaluation: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_advance: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_viewstaffadvance: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_personalstaffsalaryrecord: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_viewmonthlysalaryschedule: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_presalaryapproval: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_confirmsalary: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_payrollclassa: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
+    pp_payrollclassb: {
+        template: 'hrm_workspace',
+        startingFunction: 'hrmWorkspaceActive',
+        scriptName: './js/hrm_workspace.js'
+    },
     diningtable: { 
         template: 'diningtable',
         startingFunction: 'diningtableActive',

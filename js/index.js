@@ -119,7 +119,8 @@ window.onload = function() {
         return { url: routerTree[route].scriptName, controller: routerTree[route].startingFunction}
     })
 
-    scriptsResource.filter( item => item.url !== '').forEach( resource => {
+    const seenScriptUrls = new Set()
+    scriptsResource.filter(item => item.url !== '' && !seenScriptUrls.has(item.url) && seenScriptUrls.add(item.url)).forEach( resource => {
         loadScript(resource)
     })
     
