@@ -10,26 +10,15 @@ const hrmInterfaceRegistry = {
             { name: 'fetchlocation.php', purpose: 'Load locations for payroll context' }
         ]
     },
-    pp_groupname: {
-        title: 'Group',
-        subtitle: 'Create and manage personnel grouping used by payroll workflows.',
-        flow: ['Add group name', 'List groups', 'Edit or delete group'],
-        controllers: [
-            { name: 'fetchgroupname.php', purpose: 'Retrieve groups' },
-            { name: 'groupname.php', purpose: 'Create or update group' },
-            { name: 'removegroup.php', purpose: 'Delete group' }
-        ]
-    },
     pp_personnel: {
         title: 'Add Personnel',
         subtitle: 'Capture personnel bio-data and compensation context for onboarding.',
-        flow: ['Select department/group/level', 'Capture personnel profile details', 'Submit for approval queue'],
+        flow: ['Select department/level', 'Capture personnel profile details', 'Submit for approval queue'],
         controllers: [
             { name: 'fetchpersonnels.php', purpose: 'Retrieve personnel list' },
             { name: 'personnelscript.php', purpose: 'Create or update personnel record' },
             { name: 'personnelapprovals.php', purpose: 'Submit to personnel approval pipeline' },
             { name: 'fetchdepartment.php', purpose: 'Load department options' },
-            { name: 'fetchgroupname.php', purpose: 'Load group options' },
             { name: 'fetchlevel.php', purpose: 'Load level options' }
         ]
     },
@@ -61,7 +50,6 @@ const hrmInterfaceRegistry = {
             { name: 'fetchpersonnelhistory.php', purpose: 'Retrieve personnel history records' },
             { name: 'fetchpersonnels.php', purpose: 'Load personnel filter list' },
             { name: 'fetchdepartment.php', purpose: 'Load department filter list' },
-            { name: 'fetchgroupname.php', purpose: 'Load group filter list' },
             { name: 'fetchlevel.php', purpose: 'Load level filter list' }
         ]
     },
@@ -290,7 +278,6 @@ const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 
 
 const hrmHtgControllerRouting = {
     pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
-    pp_groupname: { load: 'groupname.php', save: 'groupname.php', filter: 'groupname.php' },
     pp_personnel: { load: 'personnel.php', save: 'personnel.php', filter: 'personnel.php' },
     pp_approvepersonnel: { load: 'approvepersonnel.php', save: 'approvepersonnel.php', filter: 'approvepersonnel.php' },
     pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
@@ -401,17 +388,6 @@ const hrmInterfaceBlueprints = {
         columns: ['S/N', 'Level', 'Basic Salary', 'Allowances', 'Deductions', 'Action'],
         summary: ['Total Levels', 'Total Basic Salary', 'Allowance Lines', 'Deduction Lines']
     },
-    pp_groupname: {
-        context: 'Personnel group setup',
-        fields: [
-            { id: 'groupname', label: 'Group Name', type: 'text', required: true },
-            { id: 'description', label: 'Description', type: 'text' },
-            { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'INACTIVE'] }
-        ],
-        filters: [{ id: 'search', label: 'Search', type: 'text', placeholder: 'Group name' }],
-        columns: ['S/N', 'Group', 'Description', 'Status', 'Action'],
-        summary: ['Total Groups', 'Active', 'Inactive', 'Last Updated']
-    },
     pp_personnel: {
         context: 'Personnel onboarding',
         fields: [
@@ -421,14 +397,13 @@ const hrmInterfaceBlueprints = {
             { id: 'email', label: 'Email', type: 'email' },
             { id: 'phone', label: 'Phone', type: 'tel' },
             { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
-            { id: 'groupname', label: 'Group', type: 'text', list: 'hrm_group_list' },
             { id: 'level', label: 'Level', type: 'text', list: 'hrm_level_list' },
             { id: 'employmentdate', label: 'Employment Date', type: 'date' },
             { id: 'photo', label: 'Profile Photo', type: 'file' },
             { id: 'address', label: 'Address', type: 'textarea' }
         ],
         filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff ID', 'Name', 'Department', 'Group', 'Level', 'Status', 'Action'],
+        columns: ['S/N', 'Staff ID', 'Name', 'Department', 'Level', 'Status', 'Action'],
         summary: ['Total Personnel', 'Pending Approval', 'Approved', 'Inactive']
     },
     pp_approvepersonnel: {
@@ -448,7 +423,7 @@ const hrmInterfaceBlueprints = {
         fields: [],
         filters: hrmCommonFilters.concat([{ id: 'status', label: 'Status', type: 'select', options: ['All Status', 'ACTIVE', 'INACTIVE', 'SUSPENDED', 'TERMINATED'] }]),
         actions: ['Open Profile', 'Export Directory'],
-        columns: ['S/N', 'Staff ID', 'Name', 'Phone', 'Department', 'Group', 'Level', 'Status', 'Action'],
+        columns: ['S/N', 'Staff ID', 'Name', 'Phone', 'Department', 'Level', 'Status', 'Action'],
         summary: ['Total Personnel', 'Active', 'Suspended', 'Terminated']
     },
     pp_personnelhistory: {
@@ -967,6 +942,10 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     }
     payload.append('module', route);
     payload.append('mode', mode);
+    if (String(route || '').startsWith('pp_')) {
+        payload.set('groupname', 'NAN');
+        payload.set('groupid', '0');
+    }
     return payload;
 }
 

@@ -512,11 +512,6 @@ const routerTree = {
         startingFunction: 'hrmWorkspaceActive',
         scriptName: './js/hrm_workspace.js'
     },
-    pp_groupname: {
-        template: 'hrm_workspace',
-        startingFunction: 'hrmWorkspaceActive',
-        scriptName: './js/hrm_workspace.js'
-    },
     pp_personnel: {
         template: 'hrm_workspace',
         startingFunction: 'hrmWorkspaceActive',
