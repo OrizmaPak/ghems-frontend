@@ -5,6 +5,7 @@ let permissionRedirectTriggered = false
 
 const permissionAliasesByRouteId = {
     receiveables: 'RECEIVABLES',
+    receivables: 'RECEIVABLES',
     reassignrooms: 'RE-ASSIGN ROOMS',
     expectedcheckouts: 'EXPECTED CHECK OUT',
     noshow: 'NO SHOW',
@@ -18,6 +19,8 @@ const permissionAliasesByRouteId = {
 
 const permissionAliasesByValue = {
     'RECEIVEABLES': 'RECEIVABLES',
+    'RECEIVABLE': 'RECEIVABLES',
+    'RECEIVEABLE': 'RECEIVABLES',
     'ROOM TRANSFER': 'RE-ASSIGN ROOMS',
     'EXPECTED CHECK OUT': 'EXPECTED CHECK OUT',
     'NO SHOW': 'NO SHOW',
@@ -60,6 +63,10 @@ function buildGrantedPermissionSet(rawPermissions=''){
 }
 
 function getNavPermissionKeyFromNode(item){
+    if((item?.id || '').startsWith('pp_')){
+        return ''
+    }
+
     if(item?.id && permissionAliasesByRouteId[item.id]){
         return normalizePermissionName(permissionAliasesByRouteId[item.id])
     }
@@ -129,6 +136,7 @@ async function runpermissioncheck(state=''){
 
     const route = getCurrentRouteName()
     if(!route || route === 'dashboard' || currentUserIsSuperAdmin()) return true
+    if(String(route).startsWith('pp_')) return true
 
     const currentNavItem = document.getElementById(route)
     if(!currentNavItem) return true
