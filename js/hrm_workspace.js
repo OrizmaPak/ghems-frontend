@@ -305,6 +305,8 @@ const hrmHtgControllerRouting = {
 };
 
 let hrmLevelEditingId = '';
+const hrmTomSelectInstances = {};
+let hrmTomSelectAssetsPromise = null;
 
 const hrmMatterFields = {
     pp_query: [
@@ -396,8 +398,7 @@ const hrmInterfaceBlueprints = {
             { id: 'lastname', label: 'Last Name', type: 'text', required: true },
             { id: 'email', label: 'Email', type: 'email' },
             { id: 'phone', label: 'Phone', type: 'tel' },
-            { id: 'department', label: 'Department', type: 'text', list: 'hrm_department_list' },
-            { id: 'level', label: 'Level', type: 'text', list: 'hrm_level_list' },
+            { id: 'levelid', label: 'Level', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'levels' },
             { id: 'employmentdate', label: 'Employment Date', type: 'date' },
             { id: 'photo', label: 'Profile Photo', type: 'file' },
             { id: 'address', label: 'Address', type: 'textarea' }
@@ -895,10 +896,11 @@ function hrmBuildControl(field) {
     const name = field.name || field.id;
 
     if (field.type === 'select') {
+        const tomSelectFlag = field.tom_select ? 'data-hrm-tom-select="1"' : '';
         return `
             <div class="form-group">
                 <label class="control-label" for="${field.id}">${field.label}</label>
-                <select id="${field.id}" name="${name}" class="form-control" ${required}>
+                <select id="${field.id}" name="${name}" class="form-control" ${required} ${tomSelectFlag}>
                     <option value="">-- select ${field.label.toLowerCase()} --</option>
                     ${(field.options || []).map((option) => `<option value="${option}">${option}</option>`).join('')}
                 </select>
@@ -978,7 +980,84 @@ function hrmBuildPayloadFromForm(form, route, mode) {
         payload.set('groupname', 'NAN');
         payload.set('groupid', '0');
     }
+    if (route === 'pp_personnel') {
+        const levelId = payload.get('levelid') || payload.get('level') || '';
+        if (levelId) payload.set('levelid', levelId);
+        if (!payload.get('departmentid')) payload.set('departmentid', '0');
+        if (!payload.get('department')) payload.set('department', 'NAN');
+    }
     return payload;
+}
+
+function hrmEnsureTomSelectAssets() {
+    if (window.TomSelect) return Promise.resolve();
+    if (hrmTomSelectAssetsPromise) return hrmTomSelectAssetsPromise;
+
+    hrmTomSelectAssetsPromise = new Promise((resolve, reject) => {
+        if (!document.querySelector('link[data-hrm-tom-select]')) {
+            const css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css';
+            css.dataset.hrmTomSelect = '1';
+            document.head.appendChild(css);
+        }
+
+        const existingScript = document.querySelector('script[data-hrm-tom-select]');
+        if (existingScript) {
+            existingScript.addEventListener('load', () => resolve(), { once: true });
+            existingScript.addEventListener('error', () => reject(new Error('Tom Select load failed')), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js';
+        script.async = true;
+        script.dataset.hrmTomSelect = '1';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Tom Select load failed'));
+        document.head.appendChild(script);
+    });
+
+    return hrmTomSelectAssetsPromise;
+}
+
+function hrmNormalizeLevelOptions(responseData) {
+    const rows = hrmNormalizeLevelRows(responseData);
+    return rows.map((item) => {
+        const nested = item?.level || {};
+        const id = item?.id ?? nested?.id ?? '';
+        const label = item?.level ?? nested?.level ?? '';
+        return { id: String(id), label: String(label) };
+    }).filter((item) => item.id && item.label);
+}
+
+async function hrmPopulatePersonnelLevelPicker() {
+    const control = document.getElementById('levelid');
+    if (!control) return;
+
+    const result = await hrmRequestController('fetchlevel.php', new FormData());
+    const options = result.ok ? hrmNormalizeLevelOptions(result.data) : [];
+
+    control.innerHTML = `<option value="">-- select level --</option>${options.map((item) => `<option value="${item.id}">${item.label.toUpperCase()}</option>`).join('')}`;
+
+    if (!control.dataset.hrmTomSelect) return;
+    try {
+        await hrmEnsureTomSelectAssets();
+        if (hrmTomSelectInstances.levelid) {
+            hrmTomSelectInstances.levelid.destroy();
+            delete hrmTomSelectInstances.levelid;
+        }
+        if (window.TomSelect) {
+            hrmTomSelectInstances.levelid = new window.TomSelect(control, {
+                create: false,
+                maxOptions: 500,
+                sortField: { field: 'text', direction: 'asc' },
+                placeholder: 'Select level'
+            });
+        }
+    } catch (error) {
+        console.log(error);
+    }
 }
 
 function hrmSetButtonLoading(button, loading) {
@@ -1228,6 +1307,10 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 if (row) row.remove();
             };
         }
+    }
+
+    if (route === 'pp_personnel') {
+        hrmPopulatePersonnelLevelPicker();
     }
 
     hrmLoadViewData(route, blueprint);
