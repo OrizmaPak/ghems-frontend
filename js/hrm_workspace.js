@@ -614,17 +614,21 @@ function hrmWorkspaceActive() {
     const sections = blueprint.sections || [];
     const hasEntrySection = fields.length > 0 || sections.length > 0;
     const hasFilters = filters.length > 0;
+    const hasViewSection = true;
     const pageTitle = document.getElementById('hrm_page_title');
     const tableTitle = document.getElementById('hrm_table_title');
 
     if (pageTitle) pageTitle.textContent = config.title;
     if (tableTitle) tableTitle.textContent = `${config.title} Records`;
 
+    hrmToggleElement('hrm_workspace_tabs', hasEntrySection && hasViewSection);
+    hrmToggleElement('hrm_input_tabpane', hasEntrySection);
+    hrmToggleElement('hrm_view_tabpane', hasViewSection);
     hrmToggleElement('hrm_entry_form', hasEntrySection);
-    hrmToggleElement('hrm_entry_separator', hasEntrySection);
     hrmToggleElement('hrm_form_actions', hasEntrySection);
     hrmToggleElement('hrm_filter_panel', hasFilters);
     hrmToggleElement('hrm_filter_separator', hasFilters);
+    hrmSetActiveTab((hasEntrySection && hasViewSection) ? 'input' : 'view');
 
     hrmRenderFields('hrm_entry_grid', fields);
     hrmRenderFilters(filters);
@@ -639,6 +643,44 @@ function hrmToggleElement(id, shouldShow) {
     if (!element) return;
     element.classList.toggle('hidden', !shouldShow);
 }
+
+function hrmSetActiveTab(tab) {
+    const inputButton = document.getElementById('hrm_tab_input');
+    const viewButton = document.getElementById('hrm_tab_view');
+    const inputPane = document.getElementById('hrm_input_tabpane');
+    const viewPane = document.getElementById('hrm_view_tabpane');
+    const isInput = tab === 'input';
+
+    if (inputButton) inputButton.classList.toggle('!text-blue-600', isInput);
+    if (inputButton) inputButton.classList.toggle('active', isInput);
+    if (viewButton) viewButton.classList.toggle('!text-blue-600', !isInput);
+    if (viewButton) viewButton.classList.toggle('active', !isInput);
+    if (inputPane) inputPane.classList.toggle('hidden', !isInput);
+    if (viewPane) viewPane.classList.toggle('hidden', isInput);
+}
+
+function hrmPopulateEntryForm(record = {}) {
+    if (!record || typeof record !== 'object') return;
+    Object.keys(record).forEach((key) => {
+        const control = document.getElementById(key);
+        if (!control) return;
+        if (control.type === 'checkbox') {
+            control.checked = Boolean(record[key]);
+            return;
+        }
+        control.value = record[key] ?? '';
+    });
+}
+
+window.hrmNavigateToInput = function(record = {}) {
+    const inputPane = document.getElementById('hrm_input_tabpane');
+    if (inputPane?.classList.contains('hidden')) {
+        notification('Input form is not available on this interface.', 0);
+        return;
+    }
+    hrmSetActiveTab('input');
+    hrmPopulateEntryForm(record);
+};
 
 function buildDefaultHrmBlueprint(route, config) {
     return {
@@ -761,12 +803,29 @@ function hrmBindWorkspaceControls(route, blueprint) {
     const filterButton = document.getElementById('hrm_filter_btn');
     const filterResetButton = document.getElementById('hrm_filter_reset_btn');
     const batchActions = document.getElementById('hrm_batch_actions');
+    const inputTabButton = document.getElementById('hrm_tab_input');
+    const viewTabButton = document.getElementById('hrm_tab_view');
+    const tableBody = document.getElementById('hrm_table_body');
 
     if (saveButton) saveButton.onclick = () => notification('Interface is ready. Controller wiring will be added when you provide the endpoint.', 1);
     if (resetButton) resetButton.onclick = () => form?.reset();
     if (filterButton) filterButton.onclick = () => notification('Filter controls are ready. Data loading is pending controller wiring.', 1);
     if (filterResetButton) filterResetButton.onclick = () => filterForm?.reset();
+    if (inputTabButton) inputTabButton.onclick = () => hrmSetActiveTab('input');
+    if (viewTabButton) viewTabButton.onclick = () => hrmSetActiveTab('view');
     if (batchActions) batchActions.innerHTML = '';
+    if (tableBody) {
+        tableBody.onclick = (event) => {
+            const editTrigger = event.target.closest('[data-hrm-edit]');
+            if (!editTrigger) return;
+            let payload = {};
+            const rawRecord = editTrigger.dataset.hrmRecord || '';
+            try {
+                payload = rawRecord ? JSON.parse(rawRecord) : {};
+            } catch (error) {}
+            window.hrmNavigateToInput(payload);
+        };
+    }
 
     document.querySelectorAll('.hrm-export-btn').forEach((button) => {
         button.title = button.title || `${button.textContent.trim()} records`;
