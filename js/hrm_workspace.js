@@ -1258,6 +1258,7 @@ function hrmBuildPersonnelPayload(form, mode = 'save') {
     const append = (key, value) => payload.append(key, value ?? '');
 
     if (mode === 'update') append('id', pick('id'));
+    append('staffid', pick('staffid'));
 
     append('maritalstatus', pick('maritalstatus'));
     append('gender', pick('gender'));
