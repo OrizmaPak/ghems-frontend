@@ -133,8 +133,47 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                                             <span>Dashboard</span>
                                         </span>
                                     </span>
-                                </li> 
+                                </li>
                                 <li class="nav-item">
+                                    <span class="navitem-title group text-[#292929]">
+                                        <span class="material-symbols-outlined group-hover:text-primary-g"
+                                            style="font-size: 20px;">badge</span>
+                                        <span class="group-hover:text-primary-g">
+                                            <span>Personnel & Payroll</span>
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">chevron_right</span>
+                                        </span>
+                                    </span>
+                                    <ul class="ml-14 gap-y-4 flex flex-col">
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_department_main">Department</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_level_main">Level</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_groupname_main">Group</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_personnel_main">Add Personnel</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_approvepersonnel_main">Approve Personnel</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_viewpersonnel_main">View Personnel</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_personnelhistory_main">Personnel History</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_guarantor_main">Guarantor</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_employerrecord_main">Employment Record</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_referees_main">Referees</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_qualification_main">Qualification</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_parentsguardians_main">Parents/Guardians</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_query_main">Query</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_promotions_main">Promotions</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_termination_main">Termination</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_suspension_main">Suspension</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_leave_main">Leave</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_warning_main">Warning</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_monitorevaluation_main">Monitoring/Evaluation</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_advance_main">Advance</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_viewstaffadvance_main">View Staff Advance</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_personalstaffsalaryrecord_main">Staff Salary Record</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_viewmonthlysalaryschedule_main">Monthly Salary Schedule</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_presalaryapproval_main">Payroll</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_confirmsalary_main">Approve Payroll</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_payrollclassa_main">Payroll Class A</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Personnel and payroll module replicated from HTG with HEMS design and placeholder controllers." id="pp_payrollclassb_main">Payroll Class B</li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item"> 
                                     <span class="navitem-title group  text-[#292929]">
                                         <span class="material-symbols-outlined group-hover:text-primary-g"
                                             style="font-size: 20px;">person</span>

@@ -8,6 +8,35 @@ let saleslength
 let userpermission
 let allratecodes
 const default_department = 'Main Store'
+const personnelPayrollMainRouteMap = {
+    pp_department_main: 'pp_department',
+    pp_level_main: 'pp_level',
+    pp_groupname_main: 'pp_groupname',
+    pp_personnel_main: 'pp_personnel',
+    pp_approvepersonnel_main: 'pp_approvepersonnel',
+    pp_viewpersonnel_main: 'pp_viewpersonnel',
+    pp_personnelhistory_main: 'pp_personnelhistory',
+    pp_guarantor_main: 'pp_guarantor',
+    pp_employerrecord_main: 'pp_employerrecord',
+    pp_referees_main: 'pp_referees',
+    pp_qualification_main: 'pp_qualification',
+    pp_parentsguardians_main: 'pp_parentsguardians',
+    pp_query_main: 'pp_query',
+    pp_promotions_main: 'pp_promotions',
+    pp_termination_main: 'pp_termination',
+    pp_suspension_main: 'pp_suspension',
+    pp_leave_main: 'pp_leave',
+    pp_warning_main: 'pp_warning',
+    pp_monitorevaluation_main: 'pp_monitorevaluation',
+    pp_advance_main: 'pp_advance',
+    pp_viewstaffadvance_main: 'pp_viewstaffadvance',
+    pp_personalstaffsalaryrecord_main: 'pp_personalstaffsalaryrecord',
+    pp_viewmonthlysalaryschedule_main: 'pp_viewmonthlysalaryschedule',
+    pp_presalaryapproval_main: 'pp_presalaryapproval',
+    pp_confirmsalary_main: 'pp_confirmsalary',
+    pp_payrollclassa_main: 'pp_payrollclassa',
+    pp_payrollclassb_main: 'pp_payrollclassb'
+}
 
 if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual'
@@ -110,6 +139,16 @@ window.onload = function() {
         if(route && !!document.getElementById(route)) {
             document.getElementById(route)?.addEventListener('click', () => {
                 routerEvent(route)
+                showActiveRoute()
+            })
+        }
+    })
+
+    Object.keys(personnelPayrollMainRouteMap).forEach(routeId => {
+        const targetRoute = personnelPayrollMainRouteMap[routeId]
+        if(routeId && targetRoute && document.getElementById(routeId)) {
+            document.getElementById(routeId)?.addEventListener('click', () => {
+                routerEvent(targetRoute)
                 showActiveRoute()
             })
         }
