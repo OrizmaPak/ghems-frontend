@@ -761,7 +761,7 @@ function hrmBuildLevelLineRow(type, value = '', percent = '', removable = true) 
     const pctClass = isAllowance ? 'allowancepercent' : 'deductionpecent';
     const placeholderText = isAllowance ? 'Allowance name' : 'Deduction name';
     const removeButton = removable
-        ? `<button type="button" class="btn hrm-ui-action hrm-level-remove-line" title="Remove line"><span>Remove</span></button>`
+        ? `<button type="button" class="btn hrm-ui-action hrm-level-remove-line" title="Remove line" style="background:#dc2626;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>`
         : `<span class="text-xs text-slate-500">Primary line</span>`;
 
     return `
@@ -829,6 +829,7 @@ function hrmRenderLevelRows(rows, columns) {
     if (!Array.isArray(rows) || rows.length === 0) {
         body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No level records found.</td></tr>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
         return;
     }
 
@@ -849,13 +850,33 @@ function hrmRenderLevelRows(rows, columns) {
                 <td>${deductionCount}</td>
                 <td>
                     <div class="flex flex-wrap gap-2">
-                        <button type="button" class="btn hrm-ui-action" data-hrm-level-edit="${entryId}" data-hrm-level-record="${payload}" title="Edit level"><span>Edit</span></button>
-                        <button type="button" class="btn hrm-ui-action" data-hrm-level-delete="${entryId}" title="Delete level"><span>Delete</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-level-edit="${entryId}" data-hrm-level-record="${payload}" title="Edit level" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-level-delete="${entryId}" title="Delete level" style="background:#dc2626;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
+
+    const totalBasicSalary = rows.reduce((sum, entry) => {
+        const raw = entry?.level?.basicsalary ?? 0;
+        const normalized = Number(String(raw).replace(/[^0-9.-]/g, ''));
+        return sum + (Number.isFinite(normalized) ? normalized : 0);
+    }, 0);
+    const totalAllowanceLines = rows.reduce((sum, entry) => {
+        const structure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
+        return sum + structure.filter((item) => item?.salaryinfotype === 'ALLOWANCE').length;
+    }, 0);
+    const totalDeductionLines = rows.reduce((sum, entry) => {
+        const structure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
+        return sum + structure.filter((item) => item?.salaryinfotype === 'DEDUCTION').length;
+    }, 0);
+    hrmSetSummaryValues([
+        `${rows.length}`,
+        `${totalBasicSalary.toLocaleString()}`,
+        `${totalAllowanceLines}`,
+        `${totalDeductionLines}`
+    ]);
 
     if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
 }
@@ -905,9 +926,16 @@ function hrmRenderSummary(items) {
     container.innerHTML = items.map((item) => `
         <div class="border border-slate-200 rounded-sm p-4 bg-slate-50/70">
             <p class="text-xs uppercase tracking-wide text-slate-500">${item}</p>
-            <p class="text-2xl font-semibold text-slate-800 mt-2">0</p>
+            <p class="text-2xl font-semibold text-slate-800 mt-2" data-hrm-summary-value>0</p>
         </div>
     `).join('');
+}
+
+function hrmSetSummaryValues(values = []) {
+    const cards = document.querySelectorAll('[data-hrm-summary-value]');
+    cards.forEach((card, index) => {
+        card.textContent = values[index] ?? '0';
+    });
 }
 
 function hrmRenderTable(columns, label) {
