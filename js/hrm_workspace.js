@@ -288,6 +288,35 @@ const hrmCommonFilters = [
 
 const hrmHiddenFrontendFields = new Set(['accountnumber', 'bankaccountnumber2', 'bankname2', 'groupid']);
 
+const hrmHtgControllerRouting = {
+    pp_level: { load: 'level.php', save: 'level.php', filter: 'level.php' },
+    pp_groupname: { load: 'groupname.php', save: 'groupname.php', filter: 'groupname.php' },
+    pp_personnel: { load: 'personnel.php', save: 'personnel.php', filter: 'personnel.php' },
+    pp_approvepersonnel: { load: 'approvepersonnel.php', save: 'approvepersonnel.php', filter: 'approvepersonnel.php' },
+    pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
+    pp_personnelhistory: { load: 'personnelhistory.php', save: 'personnelhistory.php', filter: 'personnelhistory.php' },
+    pp_guarantor: { load: 'guarantor.php', save: 'guarantor.php', filter: 'guarantor.php' },
+    pp_employerrecord: { load: 'employerrecord.php', save: 'employerrecord.php', filter: 'employerrecord.php' },
+    pp_referees: { load: 'referees.php', save: 'referees.php', filter: 'referees.php' },
+    pp_qualification: { load: 'qualificationn.php', save: 'qualificationn.php', filter: 'qualificationn.php' },
+    pp_parentsguardians: { load: 'parentsguardians.php', save: 'parentsguardians.php', filter: 'parentsguardians.php' },
+    pp_query: { load: 'query.php', save: 'query.php', filter: 'query.php' },
+    pp_promotions: { load: 'promotions.php', save: 'promotions.php', filter: 'promotions.php' },
+    pp_termination: { load: 'termination.php', save: 'termination.php', filter: 'termination.php' },
+    pp_suspension: { load: 'suspension.php', save: 'suspension.php', filter: 'suspension.php' },
+    pp_leave: { load: 'leave.php', save: 'leave.php', filter: 'leave.php' },
+    pp_warning: { load: 'warning.php', save: 'warning.php', filter: 'warning.php' },
+    pp_monitorevaluation: { load: 'monitorevaluation.php', save: 'monitorevaluation.php', filter: 'monitorevaluation.php' },
+    pp_advance: { load: 'advance.php', save: 'advance.php', filter: 'advance.php' },
+    pp_viewstaffadvance: { load: 'viewstaffadvance.php', save: 'viewstaffadvance.php', filter: 'viewstaffadvance.php' },
+    pp_personalstaffsalaryrecord: { load: 'personalstaffsalaryrecord.php', save: 'personalstaffsalaryrecord.php', filter: 'personalstaffsalaryrecord.php' },
+    pp_viewmonthlysalaryschedule: { load: 'viewmonthlysalaryschedule.php', save: 'viewmonthlysalaryschedule.php', filter: 'viewmonthlysalaryschedule.php' },
+    pp_presalaryapproval: { load: 'presalaryapproval.php', save: 'presalaryapproval.php', filter: 'presalaryapproval.php' },
+    pp_confirmsalary: { load: 'confirmsalary.php', save: 'confirmsalary.php', filter: 'confirmsalary.php' },
+    pp_payrollclassa: { load: 'payrollclassa.php', save: 'payrollclassa.php', filter: 'payrollclassa.php' },
+    pp_payrollclassb: { load: 'payrollclassb.php', save: 'payrollclassb.php', filter: 'payrollclassb.php' }
+};
+
 const hrmMatterFields = {
     pp_query: [
         { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
@@ -788,7 +817,123 @@ function hrmRenderTable(columns, label) {
     if (!head || !body) return;
 
     head.innerHTML = `<tr>${columns.map((column) => `<th>${column}</th>`).join('')}</tr>`;
-    body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">${label} table is ready. No data loaded yet.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">${label} table is ready.</td></tr>`;
+}
+
+function hrmResolveControllerName(route, mode = 'load') {
+    const mapped = hrmHtgControllerRouting[route]?.[mode];
+    if (mapped) return mapped;
+    return hrmInterfaceRegistry[route]?.controllers?.[0]?.name || '';
+}
+
+function hrmControllerEndpoint(controllerName = '') {
+    const normalized = String(controllerName || '').trim();
+    if (!normalized) return '';
+    return `../controllers/${normalized.replace(/\.php$/i, '')}`;
+}
+
+function hrmBuildPayloadFromForm(form, route, mode) {
+    const payload = new FormData();
+    if (form) {
+        const data = new FormData(form);
+        data.forEach((value, key) => {
+            if (value === null || value === undefined || value === '') return;
+            payload.append(key, value);
+        });
+    }
+    payload.append('module', route);
+    payload.append('mode', mode);
+    return payload;
+}
+
+function hrmSetButtonLoading(button, loading) {
+    if (!button) return;
+    button.disabled = loading;
+    const loader = button.querySelector('.btnloader');
+    if (loader) loader.style.display = loading ? 'block' : 'none';
+}
+
+async function hrmRequestController(controllerName, payload = null, button = null) {
+    const endpoint = hrmControllerEndpoint(controllerName);
+    if (!endpoint) return { ok: false, message: 'Controller endpoint is missing', data: null };
+
+    try {
+        hrmSetButtonLoading(button, true);
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: payload || new FormData(),
+            headers: new Headers()
+        });
+        const raw = await response.text();
+        let parsed = raw;
+        try {
+            parsed = JSON.parse(raw);
+        } catch (error) {}
+        return { ok: response.ok, data: parsed, raw, status: response.status };
+    } catch (error) {
+        return { ok: false, message: error?.message || 'Failed to reach controller', data: null };
+    } finally {
+        hrmSetButtonLoading(button, false);
+    }
+}
+
+function hrmExtractRowsFromResponse(responseData) {
+    if (!responseData) return [];
+    if (Array.isArray(responseData)) return responseData;
+    if (Array.isArray(responseData?.data)) return responseData.data;
+    if (Array.isArray(responseData?.result)) return responseData.result;
+    if (Array.isArray(responseData?.records)) return responseData.records;
+    return [];
+}
+
+function hrmRenderRows(columns, rows) {
+    const body = document.getElementById('hrm_table_body');
+    const status = document.getElementById('hrm_table_status');
+    if (!body) return;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No records found.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        return;
+    }
+
+    body.innerHTML = rows.map((row, index) => {
+        const objectRow = (row && typeof row === 'object') ? row : { value: row };
+        const valueList = Object.values(objectRow);
+        const cells = columns.map((column, cellIndex) => {
+            if (String(column).toLowerCase() === 'action') {
+                return `<td><button type="button" class="btn hrm-ui-action" data-hrm-edit="1" data-hrm-record='${JSON.stringify(objectRow).replace(/'/g, '&apos;')}'><span>Edit</span></button></td>`;
+            }
+            if (cellIndex === 0) return `<td>${index + 1}</td>`;
+            const value = valueList[cellIndex - 1] ?? '';
+            return `<td>${value}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+    }).join('');
+
+    if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+}
+
+async function hrmLoadViewData(route, blueprint, button = null, filterForm = null) {
+    const columns = blueprint.columns || ['S/N', 'Name', 'Status', 'Action'];
+    const loadController = hrmResolveControllerName(route, filterForm ? 'filter' : 'load');
+    const payload = hrmBuildPayloadFromForm(filterForm, route, filterForm ? 'filter' : 'load');
+    const result = await hrmRequestController(loadController, payload, button);
+
+    if (!result.ok || result?.data?.status === false) {
+        notification(`Unable to load data from ${loadController}`, 0);
+        hrmRenderRows(columns, []);
+        return;
+    }
+
+    if (typeof result.data === 'string' && result.data.includes('<tr')) {
+        const body = document.getElementById('hrm_table_body');
+        if (body) body.innerHTML = result.data;
+        return;
+    }
+
+    const rows = hrmExtractRowsFromResponse(result.data);
+    hrmRenderRows(columns, rows);
 }
 
 function hrmBindWorkspaceControls(route, blueprint) {
@@ -801,10 +946,25 @@ function hrmBindWorkspaceControls(route, blueprint) {
     const batchActions = document.getElementById('hrm_batch_actions');
     const tableBody = document.getElementById('hrm_table_body');
 
-    if (saveButton) saveButton.onclick = () => notification('Interface is ready. Controller wiring will be added when you provide the endpoint.', 1);
+    if (saveButton) {
+        saveButton.onclick = async () => {
+            const saveController = hrmResolveControllerName(route, 'save');
+            const payload = hrmBuildPayloadFromForm(form, route, 'save');
+            const result = await hrmRequestController(saveController, payload, saveButton);
+            if (!result.ok || result?.data?.status === false) {
+                notification(`Save failed on ${saveController}`, 0);
+                return;
+            }
+            notification('Record submitted successfully', 1);
+            await hrmLoadViewData(route, blueprint);
+        };
+    }
     if (resetButton) resetButton.onclick = () => form?.reset();
-    if (filterButton) filterButton.onclick = () => notification('Filter controls are ready. Data loading is pending controller wiring.', 1);
-    if (filterResetButton) filterResetButton.onclick = () => filterForm?.reset();
+    if (filterButton) filterButton.onclick = async () => hrmLoadViewData(route, blueprint, filterButton, filterForm);
+    if (filterResetButton) filterResetButton.onclick = async () => {
+        filterForm?.reset();
+        await hrmLoadViewData(route, blueprint);
+    };
     if (batchActions) batchActions.innerHTML = '';
     if (tableBody) {
         tableBody.onclick = (event) => {
@@ -836,7 +996,20 @@ function hrmBindWorkspaceControls(route, blueprint) {
         button.dataset.hrmAction = label;
         button.title = label;
         button.innerHTML = `<span>${label}</span>`;
-        button.onclick = () => notification(`${label} action is ready for ${route}. Controller wiring is pending.`, 1);
+        button.onclick = async () => {
+            const saveController = hrmResolveControllerName(route, 'save');
+            const payload = hrmBuildPayloadFromForm(form, route, label.toLowerCase().replace(/\s+/g, '_'));
+            payload.append('action', label);
+            const result = await hrmRequestController(saveController, payload, button);
+            if (!result.ok || result?.data?.status === false) {
+                notification(`${label} failed on ${saveController}`, 0);
+                return;
+            }
+            notification(`${label} completed`, 1);
+            await hrmLoadViewData(route, blueprint);
+        };
         batchActions.appendChild(button);
     });
+
+    hrmLoadViewData(route, blueprint);
 }

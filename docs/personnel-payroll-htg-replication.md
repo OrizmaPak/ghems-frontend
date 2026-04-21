@@ -3,7 +3,7 @@
 ## Scope Completed
 - HTG personnel/payroll interfaces were mapped and recreated in HEMS under Administration using `pp_*` routes.
 - HEMS keeps its own design while preserving HTG logic flow per interface.
-- Each interface is wired to placeholder controller calls for now.
+- Each interface is wired to HTG-named controller endpoints through `../controllers/<controller-name>`.
 
 ## Implemented Interfaces and Placeholder Controllers
 
@@ -43,6 +43,7 @@
 - Placeholder logic + controller simulation: `js/hrm_workspace.js`
 - Script de-duplication improvement: `js/index.js`
 
-## Controller Replacement Plan
-- Replace the placeholder call in `hrmPlaceholderController(...)` inside `js/hrm_workspace.js` with real controller calls you provide.
-- Keep per-interface controller names in `hrmInterfaceRegistry` so swapping endpoint logic remains one place.
+## Controller Wiring Plan
+- Controller routing is centralized in `hrmHtgControllerRouting` inside `js/hrm_workspace.js`.
+- For each route, the module calls `load`, `filter`, and `save` endpoints using HTG controller names (for example, `personnel.php`, `viewpersonnel.php`, `presalaryapproval.php`).
+- To swap to final backend controllers later, update `hrmHtgControllerRouting` only.
