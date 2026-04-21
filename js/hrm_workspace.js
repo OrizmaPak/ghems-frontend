@@ -423,7 +423,7 @@ const hrmInterfaceBlueprints = {
             { id: 'userphotoname', label: 'Profile Photo', type: 'file' }
         ],
         filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff ID', 'Name', 'Department', 'Level', 'Status', 'Action'],
+        columns: ['S/N', 'Staff ID', 'Name', 'Phone', 'Level', 'Status', 'Action'],
         summary: ['Total Personnel', 'Pending Approval', 'Approved', 'Inactive']
     },
     pp_approvepersonnel: {
@@ -932,30 +932,38 @@ function hrmNormalizePersonnelValue(value) {
     return String(value);
 }
 
+function hrmDecodeHtmlEntities(value) {
+    const str = hrmNormalizePersonnelValue(value);
+    if (!str) return '';
+    const parser = document.createElement('textarea');
+    parser.innerHTML = str;
+    return parser.value;
+}
+
 function hrmMapPersonnelEntryToForm(entry = {}) {
     const personnel = entry?.personnel || entry || {};
     return {
         id: hrmNormalizePersonnelValue(personnel?.id),
         staffid: hrmNormalizePersonnelValue(personnel?.staffid),
-        lastname: hrmNormalizePersonnelValue(personnel?.lastname),
-        firstname: hrmNormalizePersonnelValue(personnel?.firstname),
-        othernames: hrmNormalizePersonnelValue(personnel?.othernames),
+        lastname: hrmDecodeHtmlEntities(personnel?.lastname),
+        firstname: hrmDecodeHtmlEntities(personnel?.firstname),
+        othernames: hrmDecodeHtmlEntities(personnel?.othernames),
         phonenumber: hrmNormalizePersonnelValue(personnel?.phonenumber),
-        workstatus: hrmNormalizePersonnelValue(personnel?.workstatus),
+        workstatus: hrmDecodeHtmlEntities(personnel?.workstatus),
         maritalstatus: hrmNormalizePersonnelValue(personnel?.maritalstatus),
-        residentialaddress: hrmNormalizePersonnelValue(personnel?.residentialaddress),
-        permanenthomeaddress: hrmNormalizePersonnelValue(personnel?.permanenthomeaddress),
+        residentialaddress: hrmDecodeHtmlEntities(personnel?.residentialaddress),
+        permanenthomeaddress: hrmDecodeHtmlEntities(personnel?.permanenthomeaddress),
         gender: hrmNormalizePersonnelValue(personnel?.gender),
         birthdate: hrmNormalizePersonnelValue(personnel?.birthdate),
-        nationality: hrmNormalizePersonnelValue(personnel?.nationality),
-        state: hrmNormalizePersonnelValue(personnel?.state),
-        lga: hrmNormalizePersonnelValue(personnel?.lga),
+        nationality: hrmDecodeHtmlEntities(personnel?.nationality),
+        state: hrmDecodeHtmlEntities(personnel?.state),
+        lga: hrmDecodeHtmlEntities(personnel?.lga),
         deformity: hrmNormalizePersonnelValue(personnel?.deformity),
         eyeglasses: hrmNormalizePersonnelValue(personnel?.eyeglasses),
         hearingaid: hrmNormalizePersonnelValue(personnel?.hearingaid),
         height: hrmNormalizePersonnelValue(personnel?.height),
         weight: hrmNormalizePersonnelValue(personnel?.weight),
-        bankname1: hrmNormalizePersonnelValue(personnel?.bankname1),
+        bankname1: hrmDecodeHtmlEntities(personnel?.bankname1),
         bankaccountnumber1: hrmNormalizePersonnelValue(personnel?.bankaccountnumber1),
         employmentdate: hrmNormalizePersonnelValue(personnel?.employmentdate),
         registereduseremail: hrmNormalizePersonnelValue(personnel?.registereduseremail || personnel?.user),
@@ -1561,7 +1569,7 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         hrmRenderLevelRows(rows, columns);
         return;
     }
-    if (route === 'pp_viewpersonnel') {
+    if (route === 'pp_viewpersonnel' || route === 'pp_personnel') {
         const rows = hrmNormalizePersonnelRows(result.data);
         hrmRenderPersonnelRows(rows, columns);
         return;
@@ -1646,7 +1654,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (batchActions) batchActions.innerHTML = '';
     if (tableBody) {
         tableBody.onclick = (event) => {
-            if (route === 'pp_viewpersonnel') {
+            if (route === 'pp_viewpersonnel' || route === 'pp_personnel') {
                 const rowRecord = (trigger) => {
                     const raw = decodeURIComponent(trigger?.getAttribute('data-hrm-personnel-record') || '');
                     try {
@@ -1664,8 +1672,22 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 const editTrigger = event.target.closest('[data-hrm-personnel-edit]');
                 if (editTrigger) {
                     const entry = rowRecord(editTrigger);
-                    sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
-                    if (typeof routerEvent === 'function') {
+                    if (route === 'pp_personnel') {
+                        const editRecord = hrmMapPersonnelEntryToForm(entry);
+                        Promise.resolve(hrmPopulatePersonnelLevelPicker()).finally(async () => {
+                            hrmSetActiveTab('input');
+                            hrmPopulateEntryForm(editRecord);
+                            if (editRecord?.nationality) await hrmPopulateStates(editRecord.nationality);
+                            if (editRecord?.state) await hrmPopulateCities(editRecord.nationality, editRecord.state);
+                            const levelControl = document.getElementById('levelid');
+                            if (hrmTomSelectInstances.levelid && levelControl?.value) {
+                                hrmTomSelectInstances.levelid.setValue(levelControl.value, true);
+                            }
+                            const saveLabel = saveButton?.querySelector('span:last-child');
+                            if (saveLabel) saveLabel.textContent = 'Update';
+                        });
+                    } else if (typeof routerEvent === 'function') {
+                        sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
                         routerEvent('pp_personnel');
                     } else {
                         notification('Unable to open Add Personnel for edit', 0);
