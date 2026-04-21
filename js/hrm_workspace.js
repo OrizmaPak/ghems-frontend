@@ -27,8 +27,7 @@ const hrmInterfaceRegistry = {
         flow: ['Load non-approved personnel', 'Select entries', 'Approve or decline selected personnel'],
         controllers: [
             { name: 'fetchpersonnels.php', purpose: 'Retrieve personnel pending approval' },
-            { name: 'personnelapprovals.php', purpose: 'Approve or decline personnel' },
-            { name: 'removepersonnel.php', purpose: 'Delete personnel entry' }
+            { name: 'personnelapprovals.php', purpose: 'Approve or decline personnel' }
         ]
     },
     pp_viewpersonnel: {
@@ -284,7 +283,7 @@ const hrmHiddenFrontendFields = new Set([
 const hrmHtgControllerRouting = {
     pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
     pp_personnel: { load: 'fetchpersonnels.php', save: 'personnelscript.php', filter: 'fetchpersonnels.php' },
-    pp_approvepersonnel: { load: 'approvepersonnel.php', save: 'approvepersonnel.php', filter: 'approvepersonnel.php' },
+    pp_approvepersonnel: { load: 'fetchpersonnels.php', save: 'personnelapprovals.php', filter: 'fetchpersonnels.php' },
     pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
     pp_personnelhistory: { load: 'personnelhistory.php', save: 'personnelhistory.php', filter: 'personnelhistory.php' },
     pp_guarantor: { load: 'guarantor.php', save: 'guarantor.php', filter: 'guarantor.php' },
@@ -435,12 +434,11 @@ const hrmInterfaceBlueprints = {
         context: 'Personnel approval queue',
         fields: [],
         filters: [
-            { id: 'search', label: 'Search', type: 'text', placeholder: 'Staff name or ID' },
-            { id: 'status', label: 'Approval Status', type: 'select', options: ['PENDING', 'APPROVED', 'DECLINED'] }
+            { id: 'search', label: 'Search', type: 'text', placeholder: 'Staff name, ID, phone, or email' }
         ],
         actions: ['Approve Selected', 'Decline Selected'],
-        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Level', 'Basic Salary', 'Status', 'Action'],
-        summary: ['Pending', 'Approved Today', 'Declined Today', 'Total Queue']
+        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Phone', 'Gender', 'Address', 'Email', 'Employment Date', 'Basic Salary', 'Action'],
+        summary: ['Pending Approval', 'Selected', 'Total Basic Salary', 'Allowance Lines']
     },
     pp_viewpersonnel: {
         context: 'Personnel directory',
@@ -1111,6 +1109,179 @@ function hrmRenderPersonnelRows(rows, columns) {
     if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
 }
 
+function hrmBuildApprovePersonnelLoadPayload() {
+    const payload = new FormData();
+    payload.append('status', 'NOT APPROVED');
+    return payload;
+}
+
+function hrmFilterApprovePersonnelRows(rows, filterForm = null) {
+    if (!filterForm) return rows;
+    const filterData = new FormData(filterForm);
+    const search = String(filterData.get('search') || '').trim().toLowerCase();
+    if (!search) return rows;
+
+    return rows.filter((entry) => {
+        const personnel = entry?.personnel || {};
+        const searchable = [
+            personnel.staffid,
+            personnel.firstname,
+            personnel.lastname,
+            personnel.othernames,
+            personnel.phonenumber,
+            personnel.gender,
+            personnel.residentialaddress,
+            personnel.registereduseremail,
+            personnel.user,
+            personnel.employmentdate,
+            personnel.basicsalary
+        ].map((value) => String(value || '').toLowerCase()).join(' ');
+        return searchable.includes(search);
+    });
+}
+
+function hrmRenderApprovePersonnelRows(rows, columns) {
+    const body = document.getElementById('hrm_table_body');
+    const status = document.getElementById('hrm_table_status');
+    if (!body) return;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No personnel pending approval.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
+        const selectButton = document.getElementById('hrm_approve_select_all');
+        if (selectButton) {
+            selectButton.querySelector('span').textContent = 'Select All';
+            selectButton.title = 'Select all pending personnel';
+        }
+        return;
+    }
+
+    body.innerHTML = rows.map((entry, index) => {
+        const personnel = entry?.personnel || {};
+        const salarystructure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
+        const fullName = [personnel.firstname, personnel.lastname, personnel.othernames].filter(Boolean).join(' ').trim();
+        const rowPayload = encodeURIComponent(JSON.stringify(entry));
+        const personnelId = hrmEscapeHtml(personnel?.id || '');
+
+        return `
+            <tr>
+                <td>
+                    <input type="checkbox" class="hrm-approve-personnel-checkbox" value="${personnelId}" data-personnel-id="${personnelId}" title="Select ${hrmEscapeHtml(fullName || 'personnel')}">
+                </td>
+                <td>${index + 1}</td>
+                <td>${hrmEscapeHtml(personnel?.staffid || '-')}</td>
+                <td>${hrmEscapeHtml(fullName || '-')}</td>
+                <td>${hrmEscapeHtml(personnel?.phonenumber || '-')}</td>
+                <td>${hrmEscapeHtml(personnel?.gender || '-')}</td>
+                <td class="max-w-[280px] whitespace-normal">${hrmEscapeHtml(hrmDecodeHtmlEntities(personnel?.residentialaddress) || '-')}</td>
+                <td>${hrmEscapeHtml((personnel?.registereduseremail || personnel?.user || '-').toLowerCase?.() || personnel?.registereduseremail || personnel?.user || '-')}</td>
+                <td>${hrmEscapeHtml(personnel?.employmentdate || '-')}</td>
+                <td>${hrmEscapeHtml(personnel?.basicsalary || '-')}</td>
+                <td>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="btn hrm-ui-action" data-hrm-approve-personnel-view="${personnelId}" data-hrm-personnel-record="${rowPayload}" title="View personnel" style="background:#0f766e;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">visibility</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-approve-personnel-edit="${personnelId}" data-hrm-personnel-record="${rowPayload}" title="Edit personnel" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const totalBasicSalary = rows.reduce((sum, entry) => {
+        const raw = entry?.personnel?.basicsalary ?? 0;
+        const amount = Number(String(raw).replace(/[^0-9.-]/g, ''));
+        return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+    const allowanceLines = rows.reduce((sum, entry) => {
+        const structure = Array.isArray(entry?.salarystructure) ? entry.salarystructure : [];
+        return sum + structure.filter((line) => String(line?.salaryinfotype || '').toUpperCase() === 'ALLOWANCE').length;
+    }, 0);
+
+    hrmSetSummaryValues([`${rows.length}`, '0', `${totalBasicSalary.toLocaleString()}`, `${allowanceLines}`]);
+    const selectButton = document.getElementById('hrm_approve_select_all');
+    if (selectButton) {
+        selectButton.querySelector('span').textContent = 'Select All';
+        selectButton.title = 'Select all pending personnel';
+    }
+    if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+}
+
+function hrmSelectedApprovePersonnelIds() {
+    return Array.from(document.querySelectorAll('.hrm-approve-personnel-checkbox:checked'))
+        .map((checkbox) => checkbox.getAttribute('data-personnel-id') || checkbox.value)
+        .filter(Boolean);
+}
+
+function hrmRefreshApprovePersonnelSelectionSummary() {
+    const cards = document.querySelectorAll('[data-hrm-summary-value]');
+    if (cards[1]) cards[1].textContent = `${hrmSelectedApprovePersonnelIds().length}`;
+}
+
+function hrmBuildApprovePersonnelActionPayload(action) {
+    const payload = new FormData();
+    const ids = hrmSelectedApprovePersonnelIds();
+    payload.append('buttonselected', action);
+    ids.forEach((id, index) => payload.append(`ids${index}`, id));
+    payload.append('idsize', ids.length);
+    return payload;
+}
+
+async function hrmSubmitApprovePersonnelAction(action, button, blueprint) {
+    const selectedIds = hrmSelectedApprovePersonnelIds();
+    const actionLabel = action === 'APPROVE' ? 'approval' : 'decline';
+    if (selectedIds.length === 0) {
+        notification(`No personnel has been selected for ${actionLabel}`, 0);
+        return;
+    }
+
+    const controller = hrmResolveControllerName('pp_approvepersonnel', 'save');
+    const result = await hrmRequestController(controller, hrmBuildApprovePersonnelActionPayload(action), button);
+    if (!result.ok || result?.data?.status === false) {
+        notification(hrmResultErrorMessage(result, `${actionLabel} failed on ${controller}`), 0);
+        return;
+    }
+
+    notification(result?.data?.message || `${action === 'APPROVE' ? 'Approval' : 'Decline'} completed`, 1);
+    await hrmLoadViewData('pp_approvepersonnel', blueprint);
+}
+
+function hrmRenderApprovePersonnelBatchActions(container, blueprint) {
+    if (!container) return;
+    container.innerHTML = `
+        <button type="button" class="btn hrm-ui-action" id="hrm_approve_select_all" title="Select all pending personnel" style="background:#1f2937;color:#fff;">
+            <span>Select All</span>
+        </button>
+        <button type="button" class="btn hrm-ui-action" id="hrm_approve_selected" title="Approve selected personnel" style="background:#15803d;color:#fff;">
+            <span class="material-symbols-outlined text-lg">check_circle</span>
+            <span>Approve</span>
+        </button>
+        <button type="button" class="btn hrm-ui-action" id="hrm_decline_selected" title="Decline selected personnel" style="background:#dc2626;color:#fff;">
+            <span class="material-symbols-outlined text-lg">cancel</span>
+            <span>Decline</span>
+        </button>
+    `;
+
+    const selectButton = document.getElementById('hrm_approve_select_all');
+    const approveButton = document.getElementById('hrm_approve_selected');
+    const declineButton = document.getElementById('hrm_decline_selected');
+
+    if (selectButton) {
+        selectButton.onclick = () => {
+            const checkboxes = Array.from(document.querySelectorAll('.hrm-approve-personnel-checkbox'));
+            const shouldSelect = checkboxes.some((checkbox) => !checkbox.checked);
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = shouldSelect;
+            });
+            selectButton.querySelector('span').textContent = shouldSelect ? 'Deselect All' : 'Select All';
+            selectButton.title = shouldSelect ? 'Deselect all pending personnel' : 'Select all pending personnel';
+            hrmRefreshApprovePersonnelSelectionSummary();
+        };
+    }
+    if (approveButton) approveButton.onclick = () => hrmSubmitApprovePersonnelAction('APPROVE', approveButton, blueprint);
+    if (declineButton) declineButton.onclick = () => hrmSubmitApprovePersonnelAction('DECLINE', declineButton, blueprint);
+}
+
 function hrmBuildControl(field) {
     if (hrmHiddenFrontendFields.has((field?.id || '').toLowerCase())) return '';
 
@@ -1547,7 +1718,9 @@ function hrmRenderRows(columns, rows) {
 async function hrmLoadViewData(route, blueprint, button = null, filterForm = null) {
     const columns = blueprint.columns || ['S/N', 'Name', 'Status', 'Action'];
     const loadController = hrmResolveControllerName(route, filterForm ? 'filter' : 'load');
-    const payload = hrmBuildPayloadFromForm(filterForm, route, filterForm ? 'filter' : 'load');
+    const payload = route === 'pp_approvepersonnel'
+        ? hrmBuildApprovePersonnelLoadPayload()
+        : hrmBuildPayloadFromForm(filterForm, route, filterForm ? 'filter' : 'load');
     const result = await hrmRequestController(loadController, payload, button);
 
     if (!result.ok || result?.data?.status === false) {
@@ -1570,6 +1743,11 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     if (route === 'pp_viewpersonnel' || route === 'pp_personnel') {
         const rows = hrmNormalizePersonnelRows(result.data);
         hrmRenderPersonnelRows(rows, columns);
+        return;
+    }
+    if (route === 'pp_approvepersonnel') {
+        const rows = hrmFilterApprovePersonnelRows(hrmNormalizePersonnelRows(result.data), filterForm);
+        hrmRenderApprovePersonnelRows(rows, columns);
         return;
     }
 
@@ -1650,8 +1828,41 @@ function hrmBindWorkspaceControls(route, blueprint) {
         await hrmLoadViewData(route, blueprint);
     };
     if (batchActions) batchActions.innerHTML = '';
+    if (route === 'pp_approvepersonnel') {
+        hrmRenderApprovePersonnelBatchActions(batchActions, blueprint);
+    }
     if (tableBody) {
         tableBody.onclick = (event) => {
+            if (route === 'pp_approvepersonnel') {
+                if (event.target.closest('.hrm-approve-personnel-checkbox')) {
+                    hrmRefreshApprovePersonnelSelectionSummary();
+                    return;
+                }
+                const rowRecord = (trigger) => {
+                    const raw = decodeURIComponent(trigger?.getAttribute('data-hrm-personnel-record') || '');
+                    try {
+                        return raw ? JSON.parse(raw) : {};
+                    } catch (error) {
+                        return {};
+                    }
+                };
+                const viewTrigger = event.target.closest('[data-hrm-approve-personnel-view]');
+                if (viewTrigger) {
+                    hrmOpenPersonnelModal(rowRecord(viewTrigger));
+                    return;
+                }
+                const editTrigger = event.target.closest('[data-hrm-approve-personnel-edit]');
+                if (editTrigger) {
+                    const entry = rowRecord(editTrigger);
+                    if (typeof routerEvent === 'function') {
+                        sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
+                        routerEvent('pp_personnel');
+                    } else {
+                        notification('Unable to open Add Personnel for edit', 0);
+                    }
+                    return;
+                }
+            }
             if (route === 'pp_viewpersonnel' || route === 'pp_personnel') {
                 const rowRecord = (trigger) => {
                     const raw = decodeURIComponent(trigger?.getAttribute('data-hrm-personnel-record') || '');
@@ -1756,28 +1967,30 @@ function hrmBindWorkspaceControls(route, blueprint) {
         };
     });
 
-    (blueprint.actions || []).forEach((label) => {
-        if (!batchActions) return;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'btn hrm-ui-action';
-        button.dataset.hrmAction = label;
-        button.title = label;
-        button.innerHTML = `<span>${label}</span>`;
-        button.onclick = async () => {
-            const saveController = hrmResolveControllerName(route, 'save');
-            const payload = hrmBuildPayloadFromForm(form, route, label.toLowerCase().replace(/\s+/g, '_'));
-            payload.append('action', label);
-            const result = await hrmRequestController(saveController, payload, button);
-            if (!result.ok || result?.data?.status === false) {
-                notification(hrmResultErrorMessage(result, `${label} failed on ${saveController}`), 0);
-                return;
-            }
-            notification(`${label} completed`, 1);
-            await hrmLoadViewData(route, blueprint);
-        };
-        batchActions.appendChild(button);
-    });
+    if (route !== 'pp_approvepersonnel') {
+        (blueprint.actions || []).forEach((label) => {
+            if (!batchActions) return;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn hrm-ui-action';
+            button.dataset.hrmAction = label;
+            button.title = label;
+            button.innerHTML = `<span>${label}</span>`;
+            button.onclick = async () => {
+                const saveController = hrmResolveControllerName(route, 'save');
+                const payload = hrmBuildPayloadFromForm(form, route, label.toLowerCase().replace(/\s+/g, '_'));
+                payload.append('action', label);
+                const result = await hrmRequestController(saveController, payload, button);
+                if (!result.ok || result?.data?.status === false) {
+                    notification(hrmResultErrorMessage(result, `${label} failed on ${saveController}`), 0);
+                    return;
+                }
+                notification(`${label} completed`, 1);
+                await hrmLoadViewData(route, blueprint);
+            };
+            batchActions.appendChild(button);
+        });
+    }
 
     if (route === 'pp_level') {
         const addAllowanceButton = document.getElementById('hrm_level_add_allowance');
