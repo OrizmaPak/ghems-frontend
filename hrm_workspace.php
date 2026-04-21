@@ -3,16 +3,17 @@
         <span id="hrm_page_title">Personnel & Payroll</span>
     </p>
 
-    <div id="hrm_workspace_tabs" class="mb-6">
-        <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200">
-            <li class="me-2">
-                <button id="hrm_tab_input" type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 !text-blue-600 active">Input</button>
+    <div id="hrm_workspace_tabs">
+        <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
+            <li id="hrm_tab_input" class="me-2 cp updater optioner !text-blue-600 active" name="hrm_input_tabpane" onclick="runoptioner(this)">
+                <p id="hrm_tab_input_label" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Input</p>
             </li>
-            <li class="me-2">
-                <button id="hrm_tab_view" type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View</button>
+            <li id="hrm_tab_view" class="me-2 cp viewer optioner" name="hrm_view_tabpane" onclick="runoptioner(this)">
+                <p id="hrm_tab_view_label" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View</p>
             </li>
         </ul>
     </div>
+    <hr id="hrm_tabs_separator" class="my-3">
 
     <div id="hrm_input_tabpane">
         <form id="hrm_entry_form">

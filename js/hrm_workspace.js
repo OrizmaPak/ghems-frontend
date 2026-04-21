@@ -619,11 +619,16 @@ function hrmWorkspaceActive() {
     const hasViewSection = true;
     const pageTitle = document.getElementById('hrm_page_title');
     const tableTitle = document.getElementById('hrm_table_title');
+    const inputTabLabel = document.getElementById('hrm_tab_input_label');
+    const viewTabLabel = document.getElementById('hrm_tab_view_label');
 
     if (pageTitle) pageTitle.textContent = config.title;
     if (tableTitle) tableTitle.textContent = `${config.title} Records`;
+    if (inputTabLabel) inputTabLabel.textContent = config.title;
+    if (viewTabLabel) viewTabLabel.textContent = `View ${config.title}`;
 
     hrmToggleElement('hrm_workspace_tabs', hasEntrySection && hasViewSection);
+    hrmToggleElement('hrm_tabs_separator', hasEntrySection && hasViewSection);
     hrmToggleElement('hrm_input_tabpane', hasEntrySection);
     hrmToggleElement('hrm_view_tabpane', hasViewSection);
     hrmToggleElement('hrm_entry_form', hasEntrySection);
@@ -652,6 +657,12 @@ function hrmSetActiveTab(tab) {
     const inputPane = document.getElementById('hrm_input_tabpane');
     const viewPane = document.getElementById('hrm_view_tabpane');
     const isInput = tab === 'input';
+    const activeElement = isInput ? inputButton : viewButton;
+
+    if (typeof runoptioner === 'function' && activeElement?.getAttribute('name')) {
+        runoptioner(activeElement);
+        return;
+    }
 
     if (inputButton) inputButton.classList.toggle('!text-blue-600', isInput);
     if (inputButton) inputButton.classList.toggle('active', isInput);
@@ -809,16 +820,12 @@ function hrmBindWorkspaceControls(route, blueprint) {
     const filterButton = document.getElementById('hrm_filter_btn');
     const filterResetButton = document.getElementById('hrm_filter_reset_btn');
     const batchActions = document.getElementById('hrm_batch_actions');
-    const inputTabButton = document.getElementById('hrm_tab_input');
-    const viewTabButton = document.getElementById('hrm_tab_view');
     const tableBody = document.getElementById('hrm_table_body');
 
     if (saveButton) saveButton.onclick = () => notification('Interface is ready. Controller wiring will be added when you provide the endpoint.', 1);
     if (resetButton) resetButton.onclick = () => form?.reset();
     if (filterButton) filterButton.onclick = () => notification('Filter controls are ready. Data loading is pending controller wiring.', 1);
     if (filterResetButton) filterResetButton.onclick = () => filterForm?.reset();
-    if (inputTabButton) inputTabButton.onclick = () => hrmSetActiveTab('input');
-    if (viewTabButton) viewTabButton.onclick = () => hrmSetActiveTab('view');
     if (batchActions) batchActions.innerHTML = '';
     if (tableBody) {
         tableBody.onclick = (event) => {
