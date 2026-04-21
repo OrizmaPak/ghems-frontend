@@ -307,6 +307,7 @@ const hrmHtgControllerRouting = {
 let hrmLevelEditingId = '';
 const hrmTomSelectInstances = {};
 let hrmTomSelectAssetsPromise = null;
+const hrmPersonnelLevelMetaById = {};
 
 const hrmMatterFields = {
     pp_query: [
@@ -393,15 +394,33 @@ const hrmInterfaceBlueprints = {
     pp_personnel: {
         context: 'Personnel onboarding',
         fields: [
+            { id: 'id', name: 'id', type: 'hidden' },
+            { id: 'basicsalary', name: 'basicsalary', type: 'hidden' },
             { id: 'staffid', label: 'Staff ID', type: 'text', readonly: true },
+            { id: 'maritalstatus', label: 'Marital Status', type: 'select', options: ['SINGLE', 'MARRIED', 'SEPERATED', 'WIDOW', 'WIDOWER'] },
+            { id: 'gender', label: 'Gender', type: 'select', options: ['MALE', 'FEMALE'] },
+            { id: 'deformity', label: 'Deformity', type: 'select', options: [{ value: '0', label: 'NO' }, { value: '1', label: 'YES' }] },
+            { id: 'eyeglasses', label: 'Eye Glasses', type: 'select', options: [{ value: '0', label: 'NO' }, { value: '1', label: 'YES' }] },
+            { id: 'hearingaid', label: 'Hearing Aid', type: 'select', options: [{ value: '0', label: 'NO' }, { value: '1', label: 'YES' }] },
             { id: 'firstname', label: 'First Name', type: 'text', required: true },
             { id: 'lastname', label: 'Last Name', type: 'text', required: true },
-            { id: 'email', label: 'Email', type: 'email' },
-            { id: 'phone', label: 'Phone', type: 'tel' },
+            { id: 'othernames', label: 'Other Names', type: 'text' },
+            { id: 'phonenumber', label: 'Phone', type: 'tel' },
+            { id: 'workstatus', label: 'Work Status', type: 'text' },
+            { id: 'residentialaddress', label: 'Residential Address', type: 'textarea' },
+            { id: 'permanenthomeaddress', label: 'Permanent Home Address', type: 'textarea' },
+            { id: 'birthdate', label: 'Birth Date', type: 'date' },
+            { id: 'nationality', label: 'Nationality', type: 'text', list: 'orecountry' },
+            { id: 'state', label: 'State', type: 'text', list: 'orestate' },
+            { id: 'lga', label: 'LGA', type: 'text', list: 'orelga' },
+            { id: 'height', label: 'Height', type: 'number' },
+            { id: 'weight', label: 'Weight', type: 'number' },
+            { id: 'bankaccountnumber1', label: 'Bank Account Number', type: 'text' },
+            { id: 'bankname1', label: 'Bank Name', type: 'text' },
             { id: 'levelid', label: 'Level', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'levels' },
             { id: 'employmentdate', label: 'Employment Date', type: 'date' },
-            { id: 'photo', label: 'Profile Photo', type: 'file' },
-            { id: 'address', label: 'Address', type: 'textarea' }
+            { id: 'registereduseremail', label: 'Username/Email', type: 'text', list: 'personelallemail' },
+            { id: 'userphotoname', label: 'Profile Photo', type: 'file' }
         ],
         filters: hrmCommonFilters,
         columns: ['S/N', 'Staff ID', 'Name', 'Department', 'Level', 'Status', 'Action'],
@@ -895,14 +914,26 @@ function hrmBuildControl(field) {
     const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : '';
     const name = field.name || field.id;
 
+    if (field.type === 'hidden') {
+        return `<input id="${field.id}" name="${name}" type="hidden">`;
+    }
+
     if (field.type === 'select') {
         const tomSelectFlag = field.tom_select ? 'data-hrm-tom-select="1"' : '';
+        const optionMarkup = (field.options || []).map((option) => {
+            if (option && typeof option === 'object') {
+                const value = option.value ?? option.label ?? '';
+                const label = option.label ?? option.value ?? '';
+                return `<option value="${value}">${label}</option>`;
+            }
+            return `<option value="${option}">${option}</option>`;
+        }).join('');
         return `
             <div class="form-group">
                 <label class="control-label" for="${field.id}">${field.label}</label>
                 <select id="${field.id}" name="${name}" class="form-control" ${required} ${tomSelectFlag}>
                     <option value="">-- select ${field.label.toLowerCase()} --</option>
-                    ${(field.options || []).map((option) => `<option value="${option}">${option}</option>`).join('')}
+                    ${optionMarkup}
                 </select>
             </div>
         `;
@@ -989,6 +1020,83 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     return payload;
 }
 
+function hrmEnsureDatalist(id) {
+    if (!id) return null;
+    let list = document.getElementById(id);
+    if (list) return list;
+    list = document.createElement('datalist');
+    list.id = id;
+    document.body.appendChild(list);
+    return list;
+}
+
+function hrmSetDatalistOptions(id, values = []) {
+    const list = hrmEnsureDatalist(id);
+    if (!list) return;
+    list.innerHTML = (values || [])
+        .map((value) => String(value || '').trim())
+        .filter((value, index, arr) => value && arr.indexOf(value) === index)
+        .map((value) => `<option value="${value}"></option>`)
+        .join('');
+}
+
+function hrmBuildPersonnelPayload(form, mode = 'save') {
+    const source = form ? new FormData(form) : new FormData();
+    const payload = new FormData();
+    const pick = (...keys) => {
+        for (const key of keys) {
+            const value = source.get(key);
+            if (value === null || value === undefined) continue;
+            if (typeof value === 'string' && value.trim() === '') continue;
+            return value;
+        }
+        return '';
+    };
+    const append = (key, value) => payload.append(key, value ?? '');
+
+    if (mode === 'update') append('id', pick('id'));
+
+    append('maritalstatus', pick('maritalstatus'));
+    append('gender', pick('gender'));
+    append('deformity', pick('deformity'));
+    append('eyeglasses', pick('eyeglasses'));
+    append('firstname', pick('firstname'));
+    append('hearingaid', pick('hearingaid'));
+    append('lastname', pick('lastname'));
+    append('othernames', pick('othernames'));
+    append('phonenumber', pick('phonenumber', 'phone'));
+    append('workstatus', pick('workstatus'));
+    append('residentialaddress', pick('residentialaddress', 'address'));
+    append('permanenthomeaddress', pick('permanenthomeaddress'));
+    append('birthdate', pick('birthdate'));
+    append('nationality', pick('nationality'));
+    append('state', pick('state'));
+    append('lga', pick('lga'));
+    append('height', pick('height'));
+    append('weight', pick('weight'));
+    append('bankaccountnumber1', pick('bankaccountnumber1'));
+    append('bankname1', pick('bankname1'));
+    append('bankaccountnumber2', '-');
+    append('bankname2', '-');
+    append('employmentdate', pick('employmentdate'));
+    append('registereduseremail', pick('registereduseremail', 'email'));
+    append('basicsalary', pick('basicsalary'));
+    append('departmentid', '0');
+    append('levelid', pick('levelid', 'level'));
+    append('groupid', '0');
+
+    const photo = pick('userphotoname', 'photo', 'document');
+    if (photo && typeof photo === 'object' && typeof photo.name === 'string' && photo.name) {
+        append('photofilename', photo.name);
+        append('userphotoname', photo);
+    } else {
+        append('photofilename', '-');
+        append('userphotoname', '-');
+    }
+
+    return payload;
+}
+
 function hrmEnsureTomSelectAssets() {
     if (window.TomSelect) return Promise.resolve();
     if (hrmTomSelectAssetsPromise) return hrmTomSelectAssetsPromise;
@@ -1029,7 +1137,8 @@ function hrmNormalizeLevelOptions(responseData) {
         const label = typeof item?.level === 'string'
             ? item.level
             : (nested?.level ?? item?.levelname ?? '');
-        return { id: String(id), label: String(label) };
+        const basicsalary = nested?.basicsalary ?? item?.basicsalary ?? '';
+        return { id: String(id), label: String(label), basicsalary: String(basicsalary ?? '') };
     }).filter((item) => item.id && item.label);
 }
 
@@ -1039,8 +1148,18 @@ async function hrmPopulatePersonnelLevelPicker() {
 
     const result = await hrmRequestController('fetchlevel.php', new FormData());
     const options = result.ok ? hrmNormalizeLevelOptions(result.data) : [];
+    Object.keys(hrmPersonnelLevelMetaById).forEach((key) => delete hrmPersonnelLevelMetaById[key]);
+    options.forEach((item) => {
+        hrmPersonnelLevelMetaById[item.id] = { basicsalary: item.basicsalary || '' };
+    });
 
     control.innerHTML = `<option value="">-- select level --</option>${options.map((item) => `<option value="${item.id}">${item.label.toUpperCase()}</option>`).join('')}`;
+    control.onchange = () => {
+        const basicsalaryControl = document.getElementById('basicsalary');
+        if (!basicsalaryControl) return;
+        basicsalaryControl.value = hrmPersonnelLevelMetaById[control.value]?.basicsalary || '';
+    };
+    control.dispatchEvent(new Event('change'));
 
     if (!control.dataset.hrmTomSelect) return;
     try {
@@ -1059,6 +1178,92 @@ async function hrmPopulatePersonnelLevelPicker() {
         }
     } catch (error) {
         console.log(error);
+    }
+}
+
+async function hrmPopulatePersonnelEmailList() {
+    const result = await hrmRequestController('fetchallusers.php', new FormData());
+    if (!result.ok || result?.data?.status === false) {
+        hrmSetDatalistOptions('personelallemail', []);
+        return;
+    }
+    const rows = Array.isArray(result?.data?.data) ? result.data.data : (Array.isArray(result?.data) ? result.data : []);
+    const values = rows.map((row) => row?.user || row?.email || row?.username || '').filter(Boolean);
+    hrmSetDatalistOptions('personelallemail', values);
+}
+
+async function hrmPopulateCountries() {
+    try {
+        const response = await fetch('https://countriesnow.space/api/v0.1/countries');
+        const result = await response.json();
+        const countries = Array.isArray(result?.data) ? result.data.map((item) => item?.country || '').filter(Boolean) : [];
+        hrmSetDatalistOptions('orecountry', countries);
+    } catch (error) {
+        hrmSetDatalistOptions('orecountry', []);
+    }
+}
+
+async function hrmPopulateStates(country) {
+    if (!country) {
+        hrmSetDatalistOptions('orestate', []);
+        hrmSetDatalistOptions('orelga', []);
+        return;
+    }
+    try {
+        const response = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country })
+        });
+        const result = await response.json();
+        const states = Array.isArray(result?.data?.states) ? result.data.states.map((item) => item?.name || '').filter(Boolean) : [];
+        hrmSetDatalistOptions('orestate', states);
+        hrmSetDatalistOptions('orelga', []);
+    } catch (error) {
+        hrmSetDatalistOptions('orestate', []);
+        hrmSetDatalistOptions('orelga', []);
+    }
+}
+
+async function hrmPopulateCities(country, state) {
+    if (!country || !state) {
+        hrmSetDatalistOptions('orelga', []);
+        return;
+    }
+    try {
+        const response = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country, state })
+        });
+        const result = await response.json();
+        const cities = Array.isArray(result?.data) ? result.data : [];
+        hrmSetDatalistOptions('orelga', cities);
+    } catch (error) {
+        hrmSetDatalistOptions('orelga', []);
+    }
+}
+
+async function hrmBindPersonnelLookupBehavior() {
+    hrmEnsureDatalist('personelallemail');
+    hrmEnsureDatalist('orecountry');
+    hrmEnsureDatalist('orestate');
+    hrmEnsureDatalist('orelga');
+
+    await Promise.all([hrmPopulatePersonnelEmailList(), hrmPopulateCountries()]);
+
+    const nationalityControl = document.getElementById('nationality');
+    const stateControl = document.getElementById('state');
+    if (nationalityControl) {
+        nationalityControl.onchange = async () => {
+            await hrmPopulateStates(nationalityControl.value);
+        };
+    }
+    if (stateControl) {
+        stateControl.onchange = async () => {
+            const country = nationalityControl?.value || '';
+            await hrmPopulateCities(country, stateControl.value);
+        };
     }
 }
 
@@ -1179,12 +1384,16 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (saveButton) {
         saveButton.onclick = async () => {
             const saveController = hrmResolveControllerName(route, 'save');
-            const payload = hrmBuildPayloadFromForm(form, route, 'save');
+            let payload = hrmBuildPayloadFromForm(form, route, 'save');
             if (route === 'pp_level') {
                 payload.delete('module');
                 payload.delete('mode');
                 if (hrmLevelEditingId) payload.append('id', hrmLevelEditingId);
                 hrmCollectLevelLines(payload);
+            }
+            if (route === 'pp_personnel') {
+                const mode = form?.querySelector('[name="id"]')?.value ? 'update' : 'save';
+                payload = hrmBuildPersonnelPayload(form, mode);
             }
             const result = await hrmRequestController(saveController, payload, saveButton);
             if (!result.ok || result?.data?.status === false) {
@@ -1321,6 +1530,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
 
     if (route === 'pp_personnel') {
         hrmPopulatePersonnelLevelPicker();
+        hrmBindPersonnelLookupBehavior();
     }
 
     hrmLoadViewData(route, blueprint);
