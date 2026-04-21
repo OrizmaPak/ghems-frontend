@@ -9,7 +9,6 @@ let userpermission
 let allratecodes
 const default_department = 'Main Store'
 const personnelPayrollMainRouteMap = {
-    pp_department_main: 'pp_department',
     pp_level_main: 'pp_level',
     pp_groupname_main: 'pp_groupname',
     pp_personnel_main: 'pp_personnel',

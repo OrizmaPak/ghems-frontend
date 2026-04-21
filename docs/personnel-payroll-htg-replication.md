@@ -9,7 +9,6 @@
 
 | HEMS Route ID | Interface | HTG Logic Summary | Placeholder Controllers (from HTG mapping) |
 |---|---|---|---|
-| `pp_department` | Department | Department CRUD | `fetchdepartment.php`, `department.php`, `removedepartment.php` |
 | `pp_level` | Level | Level + salary structure CRUD | `fetchlevel.php`, `level.php`, `removelevel.php`, `fetchlocation.php` |
 | `pp_groupname` | Group | Personnel grouping CRUD | `fetchgroupname.php`, `groupname.php`, `removegroup.php` |
 | `pp_personnel` | Add Personnel | Personnel onboarding and submission | `fetchpersonnels.php`, `personnelscript.php`, `personnelapprovals.php`, `fetchdepartment.php`, `fetchgroupname.php`, `fetchlevel.php` |

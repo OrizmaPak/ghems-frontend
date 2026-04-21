@@ -507,11 +507,6 @@ const routerTree = {
         startingFunction: 'generalaccountreportActive',
         scriptName: './js/generalaccountreport.js'
     },
-    pp_department: {
-        template: 'hrm_workspace',
-        startingFunction: 'hrmWorkspaceActive',
-        scriptName: './js/hrm_workspace.js'
-    },
     pp_level: {
         template: 'hrm_workspace',
         startingFunction: 'hrmWorkspaceActive',

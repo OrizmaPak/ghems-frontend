@@ -1,14 +1,4 @@
 const hrmInterfaceRegistry = {
-    pp_department: {
-        title: 'Department',
-        subtitle: 'Create, edit, and retire departments used in personnel placement and payroll grouping.',
-        flow: ['Capture department details', 'List existing departments', 'Edit or remove department records'],
-        controllers: [
-            { name: 'fetchdepartment.php', purpose: 'Retrieve departments' },
-            { name: 'department.php', purpose: 'Create or update department' },
-            { name: 'removedepartment.php', purpose: 'Delete department entry' }
-        ]
-    },
     pp_level: {
         title: 'Level',
         subtitle: 'Maintain compensation levels with basic salary and allowance/deduction structure.',
@@ -366,17 +356,6 @@ const hrmMatterFields = {
 };
 
 const hrmInterfaceBlueprints = {
-    pp_department: {
-        context: 'Department setup',
-        fields: [
-            { id: 'department', label: 'Department Name', type: 'text', required: true },
-            { id: 'description', label: 'Description', type: 'text' },
-            { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'INACTIVE'] }
-        ],
-        filters: [{ id: 'search', label: 'Search', type: 'text', placeholder: 'Department name' }, { id: 'status', label: 'Status', type: 'select', options: ['All Status', 'ACTIVE', 'INACTIVE'] }],
-        columns: ['S/N', 'Department', 'Description', 'Status', 'Action'],
-        summary: ['Total Departments', 'Active', 'Inactive', 'Last Updated']
-    },
     pp_level: {
         context: 'Salary level setup',
         fields: [
