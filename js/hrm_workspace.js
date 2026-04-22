@@ -755,6 +755,29 @@ window.hrmNavigateToInput = function(record = {}) {
     hrmPopulateEntryForm(record);
 };
 
+function hrmFocusFirstEditableInput() {
+    const form = document.getElementById('hrm_entry_form');
+    if (!form) return;
+    const target = form.querySelector('input:not([type="hidden"]):not([readonly]), select:not([readonly]), textarea:not([readonly])');
+    if (target && typeof target.focus === 'function') target.focus();
+}
+
+function hrmEnterEditMode(record = {}, saveButton = null) {
+    const form = document.getElementById('hrm_entry_form');
+    if (form) form.dataset.hrmMode = 'update';
+    window.hrmNavigateToInput(record);
+    const inputPane = document.getElementById('hrm_input_tabpane');
+    if (inputPane && typeof inputPane.scrollIntoView === 'function') {
+        inputPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    requestAnimationFrame(() => {
+        hrmPopulateEntryForm(record);
+        hrmFocusFirstEditableInput();
+    });
+    const saveLabel = saveButton?.querySelector('span:last-child');
+    if (saveLabel) saveLabel.textContent = 'Update';
+}
+
 function buildDefaultHrmBlueprint(route, config) {
     return {
         context: `${config.title} records`,
@@ -1841,6 +1864,7 @@ function hrmResetFormState(form, saveButton = null) {
     form?.reset();
     hrmClearTomSelectsWithin(form);
     hrmResetFileUploadPreviews();
+    if (form) form.dataset.hrmMode = 'save';
     const saveLabel = saveButton?.querySelector('span:last-child');
     if (saveLabel) saveLabel.textContent = 'Submit';
 }
@@ -1862,6 +1886,52 @@ function hrmSetSummaryValues(values = []) {
     cards.forEach((card, index) => {
         card.textContent = values[index] ?? '0';
     });
+}
+
+function hrmComputeGenericSummary(rows = [], route = '') {
+    const normalizedRows = Array.isArray(rows) ? rows : [];
+    const total = normalizedRows.length;
+    const withDocument = normalizedRows.filter((row) => {
+        if (!row || typeof row !== 'object') return false;
+        const documentValue = hrmRecordDocumentValue(row);
+        return Boolean(hrmNormalizePersonnelValue(documentValue));
+    }).length;
+    const personnelCount = new Set(normalizedRows
+        .map((row) => hrmNormalizePersonnelValue(hrmFirstFilled(row, 'pid', 'staffid', 'personnelid')))
+        .filter(Boolean)).size;
+    const updatedCount = normalizedRows.filter((row) => hrmNormalizePersonnelValue(hrmFirstFilled(row, 'entrydate', 'updatedat', 'createdat'))).length;
+
+    if (route === 'pp_advance') {
+        const totalAmount = normalizedRows.reduce((sum, row) => {
+            const rawAmount = hrmFirstFilled(row, 'amount');
+            const normalizedAmount = Number(String(rawAmount || '').replace(/[^0-9.-]/g, ''));
+            return sum + (Number.isFinite(normalizedAmount) ? normalizedAmount : 0);
+        }, 0);
+        return [
+            `${total}`,
+            totalAmount.toLocaleString(),
+            `${withDocument}`,
+            `${updatedCount}`
+        ];
+    }
+
+    if (route === 'pp_employerrecord') {
+        const currentEmployers = normalizedRows.filter((row) => !hrmNormalizePersonnelValue(hrmFirstFilled(row, 'reasonforleaving'))).length;
+        const pastEmployers = total - currentEmployers;
+        return [
+            `${total}`,
+            `${currentEmployers}`,
+            `${pastEmployers}`,
+            `${updatedCount}`
+        ];
+    }
+
+    return [
+        `${total}`,
+        `${personnelCount || total}`,
+        `${withDocument}`,
+        `${updatedCount}`
+    ];
 }
 
 function hrmRenderTable(columns, label) {
@@ -2346,12 +2416,31 @@ function hrmIsControllerSuccess(result) {
 }
 
 function hrmExtractRowsFromResponse(responseData) {
-    if (!responseData) return [];
-    if (Array.isArray(responseData)) return responseData;
-    if (Array.isArray(responseData?.data)) return responseData.data;
-    if (Array.isArray(responseData?.result)) return responseData.result;
-    if (Array.isArray(responseData?.records)) return responseData.records;
-    return [];
+    const scan = (candidate, depth = 0) => {
+        if (depth > 5 || candidate === null || candidate === undefined) return [];
+        if (Array.isArray(candidate)) return candidate;
+        if (typeof candidate !== 'object') return [];
+
+        const directKeys = ['data', 'result', 'records', 'rows', 'payload', 'items', 'list'];
+        for (const key of directKeys) {
+            const value = candidate[key];
+            if (Array.isArray(value)) return value;
+        }
+
+        const numericKeySet = Object.keys(candidate);
+        if (numericKeySet.length && numericKeySet.every((key) => /^\d+$/.test(key))) {
+            return numericKeySet.sort((a, b) => Number(a) - Number(b)).map((key) => candidate[key]);
+        }
+
+        for (const key of directKeys) {
+            if (candidate[key] && typeof candidate[key] === 'object') {
+                const nested = scan(candidate[key], depth + 1);
+                if (nested.length) return nested;
+            }
+        }
+        return [];
+    };
+    return scan(responseData, 0);
 }
 
 function hrmFirstFilled(record = {}, ...keys) {
@@ -2361,6 +2450,16 @@ function hrmFirstFilled(record = {}, ...keys) {
         return value;
     }
     return '';
+}
+
+function hrmFormatNumberWithCommas(value) {
+    const normalized = hrmNormalizePersonnelValue(value);
+    if (!normalized) return '';
+    const raw = String(normalized).replace(/,/g, '').trim();
+    if (!/^-?\d+(\.\d+)?$/.test(raw)) return normalized;
+    const [whole, decimal] = raw.split('.');
+    const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return decimal !== undefined ? `${formattedWhole}.${decimal}` : formattedWhole;
 }
 
 function hrmPersonnelDisplay(staffid) {
@@ -2391,7 +2490,7 @@ function hrmRouteRowValues(route, record = {}) {
         case 'pp_guarantor':
             return [hrmPersonnelDisplay(record.staffid), record.guarantorname, record.occupation, record.phonenumber, record.address];
         case 'pp_employerrecord':
-            return [hrmPersonnelDisplay(record.staffid), record.employer, record.position, record.basic, record.yearsemployed, record.reasonforleaving];
+            return [hrmPersonnelDisplay(record.staffid), record.employer, record.position, hrmFormatNumberWithCommas(record.basic), record.yearsemployed, record.reasonforleaving];
         case 'pp_referees':
             return [hrmPersonnelDisplay(record.staffid), record.fullname, record.relationship, record.occupation, record.phonenumber, record.address];
         case 'pp_qualification':
@@ -2446,6 +2545,7 @@ function hrmRenderRows(columns, rows, route = '') {
     if (!Array.isArray(rows) || rows.length === 0) {
         body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No records found.</td></tr>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
         return;
     }
 
@@ -2464,6 +2564,7 @@ function hrmRenderRows(columns, rows, route = '') {
     }).join('');
 
     if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+    hrmSetSummaryValues(hrmComputeGenericSummary(rows, route));
 }
 
 function hrmMapRouteRecordToForm(route, record = {}) {
@@ -2616,6 +2717,10 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     if (typeof result.data === 'string' && result.data.includes('<tr')) {
         const body = document.getElementById('hrm_table_body');
         if (body) body.innerHTML = result.data;
+        const noRecordCell = body ? body.querySelector('td[colspan]') : null;
+        const looksLikeNoRecord = noRecordCell ? /no records?|no data|no .*found/i.test(String(noRecordCell.textContent || '')) : false;
+        const rowCount = body && !looksLikeNoRecord ? body.querySelectorAll('tr').length : 0;
+        hrmSetSummaryValues([`${rowCount}`, `${rowCount}`, '0', '0']);
         return;
     }
 
@@ -2799,8 +2904,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                     if (route === 'pp_personnel') {
                         const editRecord = hrmMapPersonnelEntryToForm(entry);
                         Promise.resolve(hrmPopulatePersonnelLevelPicker()).finally(async () => {
-                            hrmSetActiveTab('input');
-                            hrmPopulateEntryForm(editRecord);
+                            hrmEnterEditMode(editRecord, saveButton);
                             if (editRecord?.nationality) await hrmPopulateStates(editRecord.nationality);
                             if (editRecord?.state) await hrmPopulateCities(editRecord.nationality, editRecord.state);
                             const levelControl = document.getElementById('levelid');
@@ -2815,8 +2919,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
                             if (hrmTomSelectInstances.groupid && groupControl?.value) {
                                 hrmTomSelectInstances.groupid.setValue(groupControl.value, true);
                             }
-                            const saveLabel = saveButton?.querySelector('span:last-child');
-                            if (saveLabel) saveLabel.textContent = 'Update';
                         });
                     } else if (typeof routerEvent === 'function') {
                         sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
@@ -2893,9 +2995,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
             const editTrigger = event.target.closest('[data-hrm-edit]');
             if (editTrigger) {
                 const payload = hrmMapRouteRecordToForm(route, parseRouteRecord(editTrigger));
-                window.hrmNavigateToInput(payload);
-                const saveLabel = saveButton?.querySelector('span:last-child');
-                if (saveLabel) saveLabel.textContent = 'Update';
+                hrmEnterEditMode(payload, saveButton);
             }
         };
     }
@@ -2962,8 +3062,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 const editRecord = hrmMapPersonnelEntryToForm(editEntry);
                 Promise.allSettled([levelPickerLoad, departmentPickerLoad, groupPickerLoad]).finally(() => {
                     (async () => {
-                        hrmSetActiveTab('input');
-                        hrmPopulateEntryForm(editRecord);
+                        hrmEnterEditMode(editRecord, saveButton);
                         if (editRecord?.nationality) await hrmPopulateStates(editRecord.nationality);
                         if (editRecord?.state) await hrmPopulateCities(editRecord.nationality, editRecord.state);
                         const levelControl = document.getElementById('levelid');
@@ -2978,8 +3077,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
                         if (hrmTomSelectInstances.groupid && groupControl?.value) {
                             hrmTomSelectInstances.groupid.setValue(groupControl.value, true);
                         }
-                        const saveLabel = saveButton?.querySelector('span:last-child');
-                        if (saveLabel) saveLabel.textContent = 'Update';
                         notification('Personnel record loaded for edit', 1);
                     })();
                 });
