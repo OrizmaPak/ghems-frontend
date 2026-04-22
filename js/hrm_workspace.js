@@ -456,7 +456,6 @@ const hrmInterfaceBlueprints = {
             { id: 'bankaccountnumber1', label: 'Bank Account Number', type: 'text' },
             { id: 'bankname1', label: 'Bank Name', type: 'text' },
             { id: 'levelid', label: 'Level', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'levels' },
-            { id: 'departmentid', label: 'Department', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'departments' },
             { id: 'employmentdate', label: 'Employment Date', type: 'date' },
             { id: 'registereduseremail', label: 'Username/Email', type: 'text', list: 'personelallemail' },
             { id: 'userphotoname', label: 'Profile Photo', type: 'file' }
@@ -1082,6 +1081,17 @@ function hrmNormalizePersonnelValue(value) {
     return String(value);
 }
 
+function hrmNormalizePersonnelStatus(value) {
+    return String(hrmNormalizePersonnelValue(value)).trim().toUpperCase();
+}
+
+function hrmPersonnelDisplayStatus(value) {
+    const normalized = hrmNormalizePersonnelStatus(value);
+    if (!normalized) return '-';
+    if (normalized === 'OPEN') return 'ACTIVE';
+    return normalized;
+}
+
 function hrmDecodeHtmlEntities(value) {
     const str = hrmNormalizePersonnelValue(value);
     if (!str) return '';
@@ -1150,7 +1160,7 @@ function hrmOpenPersonnelModal(entry = {}) {
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
                 ${[
-                    ['Status', personnel.status],
+                    ['Status', hrmPersonnelDisplayStatus(personnel.status)],
                     ['Work Status', personnel.workstatus],
                     ['Marital Status', personnel.maritalstatus],
                     ['Gender', personnel.gender],
@@ -1242,7 +1252,7 @@ function hrmRenderPersonnelRows(rows, columns) {
                 <td>${fullName || '-'}</td>
                 <td>${personnel?.phonenumber ?? '-'}</td>
                 <td>${personnel?.levelname || personnel?.levelid || '-'}</td>
-                <td>${personnel?.status ?? '-'}</td>
+                <td>${hrmPersonnelDisplayStatus(personnel?.status)}</td>
                 <td>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" class="btn hrm-ui-action" data-hrm-personnel-view="${personnel?.id || ''}" data-hrm-personnel-record="${rowPayload}" title="View personnel" style="background:#0f766e;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">visibility</span></button>
@@ -1253,7 +1263,10 @@ function hrmRenderPersonnelRows(rows, columns) {
         `;
     }).join('');
 
-    const activeCount = rows.filter((entry) => String(entry?.personnel?.status || '').toUpperCase() === 'APPROVED').length;
+    const activeCount = rows.filter((entry) => {
+        const status = hrmNormalizePersonnelStatus(entry?.personnel?.status);
+        return status === 'APPROVED' || status === 'ACTIVE' || status === 'OPEN';
+    }).length;
     const suspendedCount = rows.filter((entry) => String(entry?.personnel?.status || '').toUpperCase().includes('SUSP')).length;
     const terminatedCount = rows.filter((entry) => String(entry?.personnel?.status || '').toUpperCase().includes('TERM')).length;
     hrmSetSummaryValues([`${rows.length}`, `${activeCount}`, `${suspendedCount}`, `${terminatedCount}`]);
@@ -1267,12 +1280,15 @@ function hrmBuildApprovePersonnelLoadPayload() {
 }
 
 function hrmFilterApprovePersonnelRows(rows, filterForm = null) {
-    if (!filterForm) return rows;
+    const filteredRows = Array.isArray(rows)
+        ? rows.filter((entry) => hrmNormalizePersonnelStatus(entry?.personnel?.status) !== 'OPEN')
+        : [];
+    if (!filterForm) return filteredRows;
     const filterData = new FormData(filterForm);
     const search = String(filterData.get('search') || '').trim().toLowerCase();
-    if (!search) return rows;
+    if (!search) return filteredRows;
 
-    return rows.filter((entry) => {
+    return filteredRows.filter((entry) => {
         const personnel = entry?.personnel || {};
         const searchable = [
             personnel.staffid,
