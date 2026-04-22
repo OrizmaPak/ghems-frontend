@@ -215,6 +215,43 @@ async function runpermissioncheck(state=''){
     return false
 }
 
+let sessionInvalidRedirectTriggered = false
+const sessionInvalidMarkers = [
+    'invalid session data. proceed to login',
+    'invalid ssession data. proceed to login'
+]
+
+function hasInvalidSessionMarker(value='') {
+    const normalized = String(value || '').trim().toLowerCase()
+    if(!normalized)return false
+    return sessionInvalidMarkers.some(marker => normalized.includes(marker))
+}
+
+function isInvalidSessionPayload(payload=null, response=null) {
+    if(response && (response.status === 401 || response.status === 403))return true
+    if(payload == null)return false
+
+    if(typeof payload === 'string') {
+        return hasInvalidSessionMarker(payload)
+    }
+
+    if(typeof payload === 'object') {
+        return hasInvalidSessionMarker(payload.message) ||
+            hasInvalidSessionMarker(payload.code) ||
+            hasInvalidSessionMarker(payload.result)
+    }
+
+    return false
+}
+
+function redirectToLoginOnInvalidSession(payload=null, response=null) {
+    if(!isInvalidSessionPayload(payload, response))return false
+    if(sessionInvalidRedirectTriggered)return true
+    sessionInvalidRedirectTriggered = true
+    window.location.href = 'login.php'
+    return true
+}
+
 function modifyButtons() {
     // Get all button elements in the DOM
     const buttons = document.querySelectorAll('button');
@@ -267,16 +304,20 @@ async function httpRequest(url, payload=null, button=null) {
         if(payload) {
             result = await fetch(url, {method:'POST', body: payload, headers: new Headers()})
             if(result) {
-                res = await result.json()
-                if(res.message == 'Invalid ssession data. Proceed to login')return window.location.reload()
+                try{
+                    res = await result.json()
+                }catch(_){
+                    res = await result.text()
+                }
+                if(redirectToLoginOnInvalidSession(res, result))return
             }
             else return notification('Unable to perform request.', 0)
         }
         else {
            result = await fetch(url)
            if(result) {
-            if(result.message == 'Invalid ssession data. Proceed to login')return window.location.reload()
              res = await result.text() 
+             if(redirectToLoginOnInvalidSession(res, result))return
              markallcomp()
             // let rest = await result.json()
            }
@@ -334,9 +375,13 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
             result = await fetch(url, {method:'POST', body: payload, headers: new Headers()})
             if(result) {
                 // console.log('result', result)
-                res = await result.json()
+                try{
+                    res = await result.json()
+                }catch(_){
+                    res = await result.text()
+                }
                 markallcomp()
-                if(res.message == 'Invalid ssession data. Proceed to login')return window.location.reload()
+                if(redirectToLoginOnInvalidSession(res, result))return
                 // payload.forEach(function(value, key) {
                 //     console.log(key + ": " + value);
                 // });
@@ -351,7 +396,7 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
              if(type == "json")res = await result.json() 
             //  let rest = await result.json()
             markallcomp()
-            if(type != "json" && result.message == 'Invalid ssession data. Proceed to login')return window.location.reload()
+            if(redirectToLoginOnInvalidSession(res, result))return
                 // console.log('response', res)
            }
            else return notification('Unable to perform request.', 0)
