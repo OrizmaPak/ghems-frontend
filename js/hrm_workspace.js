@@ -1319,6 +1319,7 @@ function hrmBuildPersonnelHistoryLoadPayload(filterForm = null) {
 }
 
 function hrmBuildPersonnelHistoryRows(root) {
+    const personnel = root?.personnel || {};
     const sections = [
         ['advance', 'Advance', (item) => ({ title: item?.title, details: `Amount: ${item?.amount || '-'}`, entrydate: item?.entrydate, document: item?.document })],
         ['leave', 'Leave', (item) => ({ title: item?.title, details: `Start: ${item?.startdate || '-'} | End: ${item?.enddate || '-'}`, entrydate: item?.entrydate, document: item?.document })],
@@ -1336,6 +1337,40 @@ function hrmBuildPersonnelHistoryRows(root) {
     ];
 
     const rows = [];
+
+    // Always render the base personnel profile so controller mapping is visible
+    // even when activity arrays are empty.
+    const fullName = [personnel?.firstname, personnel?.lastname, personnel?.othernames].filter(Boolean).join(' ').trim();
+    if (fullName || personnel?.staffid) {
+        rows.push({
+            section: 'Profile',
+            title: fullName || '-',
+            details: `Staff ID: ${personnel?.staffid || '-'} | Phone: ${personnel?.phonenumber || '-'} | Gender: ${personnel?.gender || '-'} | Work Status: ${personnel?.workstatus || '-'}`,
+            entrydate: hrmNormalizePersonnelHistoryDate(personnel?.employmentdate),
+            document: '-'
+        });
+        rows.push({
+            section: 'Profile',
+            title: 'Location/Identity',
+            details: `Nationality: ${personnel?.nationality || '-'} | State: ${personnel?.state || '-'} | LGA: ${personnel?.lga || '-'} | Address: ${personnel?.residentialaddress || '-'}`,
+            entrydate: hrmNormalizePersonnelHistoryDate(personnel?.birthdate),
+            document: '-'
+        });
+    }
+
+    const salaryLines = Array.isArray(root?.salarystructure) ? root.salarystructure : [];
+    salaryLines.forEach((line) => {
+        const type = String(line?.salaryinfotype || '-').toUpperCase();
+        const percent = hrmNormalizePersonnelValue(line?.amountpercentage) || '0';
+        rows.push({
+            section: 'Salary Structure',
+            title: line?.salaryinfo || '-',
+            details: `${type}: ${percent}%`,
+            entrydate: '-',
+            document: '-'
+        });
+    });
+
     sections.forEach(([key, label, mapper]) => {
         const list = Array.isArray(root?.[key]) ? root[key] : [];
         list.forEach((item) => {
@@ -1399,9 +1434,13 @@ function hrmNormalizePersonnelSelectOptions(responseData) {
     return options;
 }
 
-async function hrmPopulatePersonnelHistoryFilterPicker() {
+async function hrmPopulatePersonnelHistoryFilterPicker(route, blueprint, filterForm) {
     const control = document.getElementById('hrm_filter_personnel');
     if (!control) return;
+    const autoLoad = async () => {
+        if (!control.value) return;
+        await hrmLoadViewData(route, blueprint, null, filterForm);
+    };
     const result = await hrmRequestController('fetchpersonnels.php');
     if (!result.ok || result?.data?.status === false) {
         notification(hrmResultErrorMessage(result, 'Unable to load personnel selector'), 0);
@@ -1411,6 +1450,7 @@ async function hrmPopulatePersonnelHistoryFilterPicker() {
     const selectedValue = control.value || '';
     control.innerHTML = '<option value="">-- select personnel --</option>' + options.map((option) => `<option value="${hrmEscapeHtml(option.value)}">${hrmEscapeHtml(option.text)}</option>`).join('');
     if (selectedValue) control.value = selectedValue;
+    control.onchange = autoLoad;
 
     if (!control.dataset.hrmTomSelect) return;
     try {
@@ -1425,7 +1465,10 @@ async function hrmPopulatePersonnelHistoryFilterPicker() {
                 allowEmptyOption: true,
                 maxItems: 1,
                 dropdownParent: 'body',
-                placeholder: 'Select Personnel'
+                placeholder: 'Select Personnel',
+                onChange: async () => {
+                    await autoLoad();
+                }
             });
         }
     } catch (error) {
@@ -2390,7 +2433,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
         }
     }
     if (route === 'pp_personnelhistory') {
-        hrmPopulatePersonnelHistoryFilterPicker();
+        hrmPopulatePersonnelHistoryFilterPicker(route, blueprint, filterForm);
     }
     if (route !== 'pp_personnel') {
         hrmPopulateRouteDynamicSelectors(blueprint);
