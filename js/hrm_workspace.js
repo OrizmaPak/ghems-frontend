@@ -961,6 +961,37 @@ function hrmRenderDynamicSections(sections, route = '') {
         return;
     }
 
+    if (route === 'pp_presalaryapproval') {
+        container.innerHTML = `
+            <div class="border border-slate-200 rounded-sm p-4 bg-white/90">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-semibold text-slate-700">Do Payroll View</p>
+                    <p class="text-xs text-slate-500">Runs after clicking Do Payroll</p>
+                </div>
+                <div class="table-content">
+                    <table id="hrm_payroll_input_preview_table">
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Level</th>
+                                <th>Net Payable</th>
+                                <th>Total Allowance</th>
+                                <th>Total Deduction</th>
+                                <th>Entry Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hrm_payroll_input_preview_body">
+                            <tr><td colspan="8" class="text-center opacity-70">Run Do Payroll to preview records here.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
     container.innerHTML = sections.map((section) => `
         <div class="border border-slate-200 rounded-sm p-4">
             <div class="flex items-center justify-between mb-3">
@@ -975,6 +1006,33 @@ function hrmRenderDynamicSections(sections, route = '') {
             </div>
         </div>
     `).join('');
+}
+
+function hrmRenderPayrollInputPreview(rows = []) {
+    const body = document.getElementById('hrm_payroll_input_preview_body');
+    if (!body) return;
+    const normalizedRows = Array.isArray(rows) ? rows : [];
+    if (!normalizedRows.length) {
+        body.innerHTML = '<tr><td colspan="8" class="text-center opacity-70">No payroll records returned.</td></tr>';
+        return;
+    }
+
+    body.innerHTML = normalizedRows.map((record, index) => {
+        const personnel = Array.isArray(record?.personnel) ? (record.personnel[0] || {}) : (record?.personnel || {});
+        const payroll = record?.payroll || {};
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${hrmEscapeHtml(hrmFirstFilled(personnel, 'firstname'))}</td>
+                <td>${hrmEscapeHtml(hrmFirstFilled(personnel, 'lastname'))}</td>
+                <td>${hrmEscapeHtml(hrmLevelDisplay(hrmFirstFilled(personnel, 'levelid')))}</td>
+                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(record, 'netpayable')))}</td>
+                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(payroll, 'totalallowance')))}</td>
+                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(payroll, 'totaldeduction')))}</td>
+                <td>${hrmEscapeHtml(hrmFirstFilled(payroll, 'entrydate'))}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function hrmBuildLevelLineRow(type, value = '', percent = '', removable = true) {
@@ -3934,11 +3992,12 @@ function hrmBindWorkspaceControls(route, blueprint) {
                     const inputYear = document.getElementById('year')?.value || '';
                     const filterMonth = document.getElementById('hrm_filter_month');
                     const filterYear = document.getElementById('hrm_filter_year');
+                    const previewRows = hrmExtractRowsFromResponse(result.data);
+                    hrmRenderPayrollInputPreview(previewRows);
                     if (filterMonth && inputMonth) filterMonth.value = inputMonth;
                     if (filterYear && inputYear) filterYear.value = inputYear;
                     if (hrmTomSelectInstances.hrm_filter_month && inputMonth) hrmTomSelectInstances.hrm_filter_month.setValue(inputMonth, true);
                     if (hrmTomSelectInstances.hrm_filter_year && inputYear) hrmTomSelectInstances.hrm_filter_year.setValue(inputYear, true);
-                    hrmSetActiveTab('view');
                 }
                 await hrmLoadViewData(route, blueprint);
             } catch (error) {
