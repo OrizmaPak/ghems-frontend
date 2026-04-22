@@ -285,8 +285,8 @@ const hrmMonthSelectOptions = [
 ];
 
 function hrmPayrollYearOptions() {
-    const startYear = 2036;
-    const count = 10;
+    const startYear = new Date().getFullYear();
+    const count = 11;
     return Array.from({ length: count }, (_, index) => {
         const value = startYear + index;
         return { value: String(value), label: String(value) };
