@@ -2202,8 +2202,11 @@ function hrmBuildHtgMatterPayload(source, route, mode) {
             append('level', 'level');
         }
         if (route === 'pp_advance') {
-            appendNumeric('amount', 'amount');
-            appendNumeric('monthlyinstallment', 'monthlyinstallment');
+            const normalizedAmount = hrmStripNumericFormatting(hrmPickFormDataValue(source, 'amount'));
+            const normalizedInstallment = hrmStripNumericFormatting(hrmPickFormDataValue(source, 'monthlyinstallment'));
+            payload.append('amount', normalizedAmount);
+            payload.append('monthlyinstallment', normalizedInstallment);
+            payload.append('installmentamount', normalizedInstallment);
             payload.append('level', '-1');
         }
         hrmAppendPhotoPayload(payload, hrmPickFormDataValue(source, 'attachment', 'userphotoname', 'photo', 'document'));
