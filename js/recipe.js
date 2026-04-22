@@ -472,7 +472,7 @@ async function onviewrecipeTableDataSignal() {
                     <div class="p-3">
                         <div class="table-content">
                             <table>
-                                <thead>
+                                <thead class="bg-primary-g text-white">
                                     <tr>
                                         <th>s/n</th>
                                         <th>sales point</th>
@@ -487,7 +487,18 @@ async function onviewrecipeTableDataSignal() {
                                 </thead>
                                 <tbody>
                                     ${group.records.map((record, recordIndex) => {
-                                        const members = record?.compositememberitems || []
+                                        const members = (record?.compositememberitems || []).map(member => {
+                                            const qtyValue = parseViewrecipeAmount(member?.qty || 0)
+                                            const unitPrice = getViewrecipeIngredientUnitPrice(member)
+                                            const linePrice = qtyValue * unitPrice
+                                            return {
+                                                ...member,
+                                                qtyValue,
+                                                linePrice
+                                            }
+                                        })
+                                        const previewMembers = members.slice(0, 3)
+                                        const membersTotalPrice = members.reduce((sum, item) => sum + item.linePrice, 0)
                                         return `
                                             <tr>
                                                 <td>${recordIndex + 1}</td>
@@ -495,25 +506,27 @@ async function onviewrecipeTableDataSignal() {
                                                 <td>${formatNumber(record?.compositeitemdetail?.cost || 0)}</td>
                                                 <td>${formatNumber(record?.compositeitemdetail?.price || 0)}</td>
                                                 <td>
-                                                    ${members.length > 0 ? `<table>
-                                                        ${members.map((dat, index)=> {
+                                                    ${members.length > 0 ? `<table class="w-full">
+                                                        ${previewMembers.map((dat)=> {
                                                             return (
-                                                                index < 3
-                                                                    ? `
-                                                                    <tr>
-                                                                        <td>${dat.itemname}</td>
-                                                                        <td style="width: 20px">${dat.qty}</td>
-                                                                    </tr>
-                                                                    `
-                                                                    : index == 3
-                                                                        ? `
-                                                                        <tr>
-                                                                            <td onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" style="color:green;cursor:pointer">click to view the remaining items ${members.length-3} ....</td>
-                                                                        </tr>
-                                                                        `
-                                                                        : ``
+                                                                `
+                                                                <tr>
+                                                                    <td>${dat.itemname}</td>
+                                                                    <td style="width: 70px" class="text-right">${formatNumber(dat.qtyValue)}</td>
+                                                                    <td style="width: 100px" class="text-right">${formatNumber(dat.linePrice)}</td>
+                                                                </tr>
+                                                                `
                                                             )
                                                         }).join('')}
+                                                        ${members.length > 3 ? `
+                                                            <tr>
+                                                                <td colspan="3" onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" style="color:green;cursor:pointer">Click to view more (${members.length - 3} more items)</td>
+                                                            </tr>
+                                                        ` : ``}
+                                                        <tr>
+                                                            <td colspan="2" class="text-right font-semibold">Total</td>
+                                                            <td class="text-right font-semibold">${formatNumber(membersTotalPrice)}</td>
+                                                        </tr>
                                                     </table>` : 'No Item found in this build'}
                                                 </td>
                                                 <td>${record?.compositeitemdetail?.units || ''}</td>
@@ -555,26 +568,63 @@ async function onviewrecipeTableDataSignal() {
 function modalviewrecipe (id){
     if(!id)return
     let data = viewrecipeDatasource.filter(dat=>dat.compositeitemdetail.id == id)[0]
+    if(!data) return
+    const members = (data.compositememberitems || []).map(member => {
+        const qtyValue = parseViewrecipeAmount(member?.qty || 0)
+        const unitPrice = getViewrecipeIngredientUnitPrice(member)
+        const linePrice = qtyValue * unitPrice
+        return {
+            ...member,
+            qtyValue,
+            unitPrice,
+            linePrice
+        }
+    })
+    const componentTotal = members.reduce((sum, item) => sum + item.linePrice, 0)
+    const compositePrice = parseViewrecipeAmount(data.compositeitemdetail?.price || 0)
+    const marginProfit = compositePrice - componentTotal
     did('modaldetails').innerHTML = `
-        <p class="!text-sm font-thin"><img src="../images/${data.compositeitemdetail.imageurl}" class="w-[100px] h-[100px]"></p>
-        <div>
-        <p class="!text-sm font-thin">Composite Item Name: <span class="uppercase !text-sm font-semibold" style="">${data.compositeitemdetail.itemname}</span></p>
-        <p class="!text-sm font-thin">Composite Cost: <span class="uppercase !text-sm font-semibold" style="">${formatNumber(data.compositeitemdetail.cost)}</span></p>
-        <p class="!text-sm font-thin">Composite Price: <span class="uppercase !text-sm font-semibold" style="">${formatNumber(data.compositeitemdetail.price)}</span></p>
-        <p class="!text-sm font-thin">Composite units: <span class="uppercase !text-sm font-semibold" style="">${data.compositeitemdetail.units}</span></p>
-        <p class="!text-sm font-thin">Composite group name: <span class="uppercase !text-sm font-semibold" style="">${data.compositeitemdetail.groupname}</span></p>
-        <p class="!text-sm font-thin">Composite description: <span class="uppercase !text-sm font-semibold" style="">${data.compositeitemdetail.description}</span></p>
+        <div class="rounded-lg border border-slate-200 p-3 flex gap-3 items-center">
+            <img src="../images/${data.compositeitemdetail.imageurl}" class="w-[72px] h-[72px] rounded-md object-cover">
+            <div>
+                <p class="text-xs text-slate-500">Composite Item</p>
+                <p class="text-sm font-semibold uppercase">${data.compositeitemdetail.itemname}</p>
+            </div>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">Composite Price</p>
+            <p class="text-lg font-semibold">${formatNumber(compositePrice)}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">Component Total</p>
+            <p class="text-lg font-semibold">${formatNumber(componentTotal)}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">Margin Profit</p>
+            <p class="text-lg font-semibold ${marginProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatNumber(marginProfit)}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3 md:col-span-2 xl:col-span-4">
+            <p class="text-xs text-slate-500">Meta</p>
+            <p class="text-sm"><span class="font-medium">Units:</span> ${data.compositeitemdetail.units || ''}</p>
+            <p class="text-sm"><span class="font-medium">Group:</span> ${data.compositeitemdetail.groupname || ''}</p>
+            <p class="text-sm"><span class="font-medium">Description:</span> ${data.compositeitemdetail.description || ''}</p>
         </div>
     `;
-     did('tabledata2').innerHTML = 'No Items set for this composite item'
-     if(data.compositememberitems.length > 0)did('tabledata2').innerHTML = data.compositememberitems.map((dat, i)=>`
+     did('tabledata2').innerHTML = '<tr><td colspan="100%" class="text-center opacity-70">No Items set for this composite item</td></tr>'
+     if(members.length > 0)did('tabledata2').innerHTML = members.map((dat, i)=>`
             <tr>
                 <td>${i+1}</td>
-                <td>${dat.itemid}</td>
                 <td>${dat.itemname}</td>
-                <td style="width: 20px">${formatNumber(dat.qty)}</td>
+                <td style="width: 20px">${formatNumber(dat.qtyValue)}</td>
+                <td style="width: 20px">${formatNumber(dat.unitPrice)}</td>
+                <td style="width: 20px">${formatNumber(dat.linePrice)}</td>
             </tr> 
-     `);
+     `).join('') + `
+            <tr>
+                <td colspan="4" class="text-right font-semibold">Total</td>
+                <td class="font-semibold">${formatNumber(componentTotal)}</td>
+            </tr>
+     `;
      did('viewrecipemodal').classList.remove('hidden')
 }
  

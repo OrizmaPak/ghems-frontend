@@ -174,25 +174,26 @@
             <div class="table-status"></div>
         </div>
 
-        <div id="viewrecipemodal" onclick="if(event.target.id === 'viewrecipemodal')this.classList.add('hidden')" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
-            <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-white p-2 rounded-md shadow-lg">
-                <div class="w-full py-2 flex justify-between">
-                    <p id="modaltitle" class="text-md font-bold">ITEMS BUILD</p>
-                    <span onclick="document.getElementById('viewrecipemodal').classList.add('hidden')" class="cp material-symbols-outlined group-hover:text-primary-g" style="font-size: 20px;">close</span>
+        <div id="viewrecipemodal" onclick="if(event.target.id === 'viewrecipemodal')this.classList.add('hidden')" class="hidden w-full h-full bg-[#00000080] fixed top-0 left-0 overflow-y-auto flex justify-center items-center p-4 z-[700]">
+            <div class="w-full max-w-[1200px] mt-8 h-fit min-h-[420px] bg-white p-5 rounded-xl shadow-2xl border border-slate-100">
+                <div class="w-full py-2 flex justify-between items-center">
+                    <p id="modaltitle" class="text-lg font-semibold text-slate-800">Recipe Breakdown</p>
+                    <span onclick="document.getElementById('viewrecipemodal').classList.add('hidden')" class="cp material-symbols-outlined text-slate-500 hover:text-primary-g" style="font-size: 24px;">close</span>
                 </div>
 
-                <hr class="mb-4">
+                <hr class="mb-5">
 
-                <div id="modaldetails" class="flex gap-7 items-end max-w-[500px]"></div>
+                <div id="modaldetails" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4"></div>
 
                 <div class="table-content my-4">
                     <table>
                         <thead>
                             <tr>
                                 <th>s/n </th>
-                                <th> Item ID </th>
                                 <th> Item Name </th>
                                 <th> Quantity </th>
+                                <th> Unit Price </th>
+                                <th> Price </th>
                             </tr>
                         </thead>
                         <tbody id="tabledata2">
