@@ -458,7 +458,6 @@ const hrmInterfaceBlueprints = {
             { id: 'bankname1', label: 'Bank Name', type: 'text' },
             { id: 'levelid', label: 'Level', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'levels' },
             { id: 'departmentid', label: 'Department', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'departments' },
-            { id: 'groupid', label: 'Group', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'groups' },
             { id: 'employmentdate', label: 'Employment Date', type: 'date' },
             { id: 'registereduseremail', label: 'Username/Email', type: 'text', list: 'personelallemail' },
             { id: 'userphotoname', label: 'Profile Photo', type: 'file' }
@@ -2270,7 +2269,7 @@ function hrmBuildPersonnelPayload(form, mode = 'save') {
     append('basicsalary', pick('basicsalary'));
     append('departmentid', pick('departmentid', 'department'));
     append('levelid', pick('levelid', 'level'));
-    append('groupid', pick('groupid', 'groupname'));
+    append('groupid', '0');
 
     const photo = pick('userphotoname', 'photo', 'document');
     if (photo && typeof photo === 'object' && typeof photo.name === 'string' && photo.name) {
@@ -3051,7 +3050,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
             if (route === 'pp_personnel') {
                 const levelControl = document.getElementById('levelid');
                 const departmentControl = document.getElementById('departmentid');
-                const groupControl = document.getElementById('groupid');
                 if (hrmTomSelectInstances.levelid) {
                     hrmTomSelectInstances.levelid.clear(true);
                 } else if (levelControl) {
@@ -3061,11 +3059,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
                     hrmTomSelectInstances.departmentid.clear(true);
                 } else if (departmentControl) {
                     departmentControl.value = '';
-                }
-                if (hrmTomSelectInstances.groupid) {
-                    hrmTomSelectInstances.groupid.clear(true);
-                } else if (groupControl) {
-                    groupControl.value = '';
                 }
                 const basicSalaryControl = document.getElementById('basicsalary');
                 const idControl = document.getElementById('id');
@@ -3085,7 +3078,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
             if (route === 'pp_personnel') {
                 if (hrmTomSelectInstances.levelid) hrmTomSelectInstances.levelid.clear(true);
                 if (hrmTomSelectInstances.departmentid) hrmTomSelectInstances.departmentid.clear(true);
-                if (hrmTomSelectInstances.groupid) hrmTomSelectInstances.groupid.clear(true);
             }
         };
     }
@@ -3184,10 +3176,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
                             const departmentControl = document.getElementById('departmentid');
                             if (hrmTomSelectInstances.departmentid && departmentControl?.value) {
                                 hrmTomSelectInstances.departmentid.setValue(departmentControl.value, true);
-                            }
-                            const groupControl = document.getElementById('groupid');
-                            if (hrmTomSelectInstances.groupid && groupControl?.value) {
-                                hrmTomSelectInstances.groupid.setValue(groupControl.value, true);
                             }
                         });
                     } else if (typeof routerEvent === 'function') {
@@ -3323,14 +3311,13 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (route === 'pp_personnel') {
         const levelPickerLoad = hrmPopulatePersonnelLevelPicker();
         const departmentPickerLoad = hrmPopulateDynamicSelect('departmentid', 'departments');
-        const groupPickerLoad = hrmPopulateDynamicSelect('groupid', 'groups');
         hrmBindPersonnelLookupBehavior();
         const editRecordRaw = sessionStorage.getItem('hrm_personnel_edit_record');
         if (editRecordRaw) {
             try {
                 const editEntry = JSON.parse(editRecordRaw);
                 const editRecord = hrmMapPersonnelEntryToForm(editEntry);
-                Promise.allSettled([levelPickerLoad, departmentPickerLoad, groupPickerLoad]).finally(() => {
+                Promise.allSettled([levelPickerLoad, departmentPickerLoad]).finally(() => {
                     (async () => {
                         hrmEnterEditMode(editRecord, saveButton);
                         if (editRecord?.nationality) await hrmPopulateStates(editRecord.nationality);
@@ -3342,10 +3329,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
                         const departmentControl = document.getElementById('departmentid');
                         if (hrmTomSelectInstances.departmentid && departmentControl?.value) {
                             hrmTomSelectInstances.departmentid.setValue(departmentControl.value, true);
-                        }
-                        const groupControl = document.getElementById('groupid');
-                        if (hrmTomSelectInstances.groupid && groupControl?.value) {
-                            hrmTomSelectInstances.groupid.setValue(groupControl.value, true);
                         }
                         notification('Personnel record loaded for edit', 1);
                     })();
