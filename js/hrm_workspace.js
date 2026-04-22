@@ -315,9 +315,9 @@ const hrmHiddenFrontendFields = new Set([
 
 const hrmHtgControllerRouting = {
     pp_level: { load: 'fetchlevel.php', save: 'level.php', filter: 'fetchlevel.php', delete: 'removelevel.php' },
-    pp_personnel: { load: 'fetchpersonnels.php', save: 'personnelscript.php', filter: 'fetchpersonnels.php' },
+    pp_personnel: { load: 'fetchpersonnels.php', save: 'personnelscript.php', filter: 'fetchpersonnels.php', delete: 'removepersonnel.php' },
     pp_approvepersonnel: { load: 'fetchpersonnels.php', save: 'personnelapprovals.php', filter: 'fetchpersonnels.php' },
-    pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
+    pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php', delete: 'removepersonnel.php' },
     pp_personnelhistory: { load: 'fetchpersonnelhistory.php', save: 'fetchpersonnelhistory.php', filter: 'fetchpersonnelhistory.php' },
     pp_guarantor: { load: 'fetchguarantors.php', save: 'guarantorscript.php', filter: 'fetchguarantors.php', delete: 'removeguarantor.php' },
     pp_employerrecord: { load: 'fetchemploymentrecords.php', save: 'employmentrecordscript.php', filter: 'fetchemploymentrecords.php', delete: 'removeemploymentrecord.php' },
@@ -1304,6 +1304,7 @@ function hrmRenderPersonnelRows(rows, columns) {
                     <div class="flex flex-wrap gap-2">
                         <button type="button" class="btn hrm-ui-action" data-hrm-personnel-view="${personnel?.id || ''}" data-hrm-personnel-record="${rowPayload}" title="View personnel" style="background:#0f766e;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">visibility</span></button>
                         <button type="button" class="btn hrm-ui-action" data-hrm-personnel-edit="${personnel?.id || ''}" data-hrm-personnel-record="${rowPayload}" title="Edit personnel" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
+                        <button type="button" class="btn hrm-ui-action" data-hrm-personnel-delete="${personnel?.staffid || personnel?.id || ''}" data-hrm-personnel-record="${rowPayload}" title="Delete personnel" style="background:#dc2626;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>
                     </div>
                 </td>
             </tr>
@@ -1481,6 +1482,21 @@ function hrmBuildPayrollActionPayload(action) {
     return payload;
 }
 
+function hrmSelectedMonthlyScheduleIds() {
+    return Array.from(document.querySelectorAll('.confirmmonthpayrollcheckbox:checked'))
+        .map((checkbox) => checkbox.getAttribute('data-payroll-id') || checkbox.id || checkbox.value)
+        .filter(Boolean);
+}
+
+function hrmBuildMonthlyScheduleActionPayload(action) {
+    const payload = new FormData();
+    const ids = hrmSelectedMonthlyScheduleIds();
+    payload.append('buttonselected', action);
+    ids.forEach((id, index) => payload.append(`ids${index}`, id));
+    payload.append('idsize', ids.length);
+    return payload;
+}
+
 function hrmBuildConfirmPayrollActionPayload(action) {
     const payload = new FormData();
     const ids = hrmSelectedConfirmPayrollIds();
@@ -1504,6 +1520,22 @@ async function hrmSubmitPayrollDeleteSelected(button, blueprint) {
     }
     notification(hrmResultSuccessMessage(result, 'Selected payroll records deleted successfully'), 1);
     await hrmLoadViewData('pp_presalaryapproval', blueprint);
+}
+
+async function hrmSubmitMonthlyScheduleAction(action, button, blueprint) {
+    const selectedIds = hrmSelectedMonthlyScheduleIds();
+    if (selectedIds.length === 0) {
+        notification(`No payroll has been selected for ${action === 'APPROVE' ? 'approval' : 'delete'}`, 0);
+        return;
+    }
+    const controller = hrmResolveControllerName('pp_viewmonthlysalaryschedule', 'save');
+    const result = await hrmRequestController(controller, hrmBuildMonthlyScheduleActionPayload(action), button);
+    if (!result.ok || result?.data?.status === false) {
+        notification(hrmResultErrorMessage(result, `${action === 'APPROVE' ? 'Approval' : 'Delete'} failed on ${controller}`), 0);
+        return;
+    }
+    notification(hrmResultSuccessMessage(result, action === 'APPROVE' ? 'Selected payroll approved successfully' : 'Selected payroll deleted successfully'), 1);
+    await hrmLoadViewData('pp_viewmonthlysalaryschedule', blueprint);
 }
 
 function hrmRenderPayrollBatchActions(container, blueprint) {
@@ -1533,6 +1565,41 @@ function hrmRenderPayrollBatchActions(container, blueprint) {
         };
     }
     if (deleteButton) deleteButton.onclick = () => hrmSubmitPayrollDeleteSelected(deleteButton, blueprint);
+}
+
+function hrmRenderMonthlyScheduleBatchActions(container, blueprint) {
+    if (!container) return;
+    container.innerHTML = `
+        <button type="button" class="btn hrm-ui-action" id="hrm_monthly_schedule_select_all" title="Select all payroll rows" style="background:#1f2937 !important;color:#fff !important;">
+            <span>Select All</span>
+        </button>
+        <button type="button" class="btn hrm-ui-action" id="hrm_monthly_schedule_approve_selected" title="Approve selected payroll rows" style="background:#15803d !important;color:#fff !important;">
+            <span class="material-symbols-outlined text-lg">check_circle</span>
+            <span>Approve Selected</span>
+        </button>
+        <button type="button" class="btn hrm-ui-action" id="hrm_monthly_schedule_delete_selected" title="Delete selected payroll rows" style="background:#dc2626 !important;color:#fff !important;">
+            <span class="material-symbols-outlined text-lg">delete</span>
+            <span>Delete Selected</span>
+        </button>
+    `;
+
+    const selectButton = document.getElementById('hrm_monthly_schedule_select_all');
+    const approveButton = document.getElementById('hrm_monthly_schedule_approve_selected');
+    const deleteButton = document.getElementById('hrm_monthly_schedule_delete_selected');
+
+    if (selectButton) {
+        selectButton.onclick = () => {
+            const checkboxes = Array.from(document.querySelectorAll('.confirmmonthpayrollcheckbox'));
+            const shouldSelect = checkboxes.some((checkbox) => !checkbox.checked);
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = shouldSelect;
+            });
+            selectButton.querySelector('span').textContent = shouldSelect ? 'Deselect All' : 'Select All';
+            selectButton.title = shouldSelect ? 'Deselect all payroll rows' : 'Select all payroll rows';
+        };
+    }
+    if (approveButton) approveButton.onclick = () => hrmSubmitMonthlyScheduleAction('APPROVE', approveButton, blueprint);
+    if (deleteButton) deleteButton.onclick = () => hrmSubmitMonthlyScheduleAction('DELETE', deleteButton, blueprint);
 }
 
 async function hrmSubmitConfirmPayrollAction(action, button, blueprint) {
@@ -3445,15 +3512,31 @@ function hrmOpenRecordDetailModal(route, record = {}, blueprint = {}) {
 }
 
 async function hrmDeleteRouteRecord(route, record = {}, blueprint = {}, button = null) {
-    const id = hrmFirstFilled(record, 'id');
     const deleteController = hrmResolveControllerName(route, 'delete');
-    if (!id || !deleteController) {
+    if (!deleteController) {
         notification('Delete is not available for this record', 0);
+        return;
+    }
+    const isPersonnelRoute = route === 'pp_personnel' || route === 'pp_viewpersonnel';
+    const id = hrmFirstFilled(record, 'id');
+    const personnel = record?.personnel || {};
+    const staffId = hrmFirstFilled(record, 'staffid') || hrmFirstFilled(personnel, 'staffid');
+    if (!isPersonnelRoute && !id) {
+        notification('Delete is not available for this record', 0);
+        return;
+    }
+    if (isPersonnelRoute && !staffId) {
+        notification('Unable to determine staff ID for delete action', 0);
         return;
     }
     if (!window.confirm('Delete this record?')) return;
     const payload = new FormData();
-    payload.append('id', id);
+    if (isPersonnelRoute) {
+        payload.append('staffid', staffId);
+        payload.append('removesavings', 'NO');
+    } else {
+        payload.append('id', id);
+    }
     const result = await hrmRequestController(deleteController, payload, button);
     if (!hrmIsControllerSuccess(result)) {
         notification(hrmResultErrorMessage(result, `Delete failed on ${deleteController}`), 0);
@@ -3736,6 +3819,12 @@ function hrmBindWorkspaceControls(route, blueprint) {
             targetBatchActions.classList.remove('hidden');
             hrmRenderConfirmPayrollBatchActions(targetBatchActions, blueprint);
         }
+    } else if (route === 'pp_viewmonthlysalaryschedule') {
+        const targetBatchActions = tableBatchActions || batchActions;
+        if (targetBatchActions) {
+            targetBatchActions.classList.remove('hidden');
+            hrmRenderMonthlyScheduleBatchActions(targetBatchActions, blueprint);
+        }
     }
     if (tableBody) {
         tableBody.onclick = (event) => {
@@ -3808,6 +3897,12 @@ function hrmBindWorkspaceControls(route, blueprint) {
                     } else {
                         notification('Unable to open Personnel for edit', 0);
                     }
+                    return;
+                }
+                const deleteTrigger = event.target.closest('[data-hrm-personnel-delete]');
+                if (deleteTrigger) {
+                    const entry = rowRecord(deleteTrigger);
+                    hrmDeleteRouteRecord(route, entry, blueprint, deleteTrigger);
                     return;
                 }
             }
