@@ -28,8 +28,16 @@ function getBuildMemberUnitPrice(member = {}) {
     return parseBuildAmount(member?.price ?? member?.unitprice ?? member?.unit_price ?? member?.cost ?? 0)
 }
 
+function resolveBuildImagePath(imageValue) {
+    const normalized = String(imageValue ?? '').trim()
+    if (!normalized || normalized === '-' || normalized.length <= 1) return '../images/default-avatar.png'
+    return `../images/${normalized}`
+}
+
 function getBuildInvoiceComputedData(record = {}) {
-    const buildQty = getBuildQuantityMultiplier(record?.itembuiltdetail || {})
+    const detail = record?.itembuiltdetail || {}
+    const buildQty = getBuildQuantityMultiplier(detail)
+    const itemPrice = parseBuildAmount(detail?.itemprice || 0)
     const members = (record?.itembuiltmemberitems || []).map((member) => {
         const baseQty = parseBuildAmount(member?.qty || 0)
         const finalQty = baseQty * buildQty
@@ -43,11 +51,16 @@ function getBuildInvoiceComputedData(record = {}) {
             linePrice
         }
     })
-    const total = members.reduce((sum, item) => sum + item.linePrice, 0)
+    const componentTotal = members.reduce((sum, item) => sum + item.linePrice, 0)
+    const totalBuildPrice = buildQty * itemPrice
+    const marginProfit = totalBuildPrice - componentTotal
     return {
         buildQty,
+        itemPrice,
+        totalBuildPrice,
+        marginProfit,
         members,
-        total
+        total: componentTotal
     }
 }
 
@@ -122,6 +135,8 @@ function printBuildInvoice(id) {
                     <p><strong>Sales Point:</strong> ${sanitizePrintValue(salesPoint)}</p>
                     <p><strong>Build Date:</strong> ${sanitizePrintValue(buildDate)}</p>
                     <p><strong>Build Quantity:</strong> ${formatNumber(computed.buildQty)}</p>
+                    <p><strong>Item Price:</strong> ${formatNumber(computed.itemPrice)}</p>
+                    <p><strong>Total Build Price:</strong> ${formatNumber(computed.totalBuildPrice)}</p>
                 </div>
 
                 <table>
@@ -145,7 +160,7 @@ function printBuildInvoice(id) {
                     </tbody>
                 </table>
 
-                <p class="footer-note">Final Qty = Base Qty x Build Qty. Price = Final Qty x Unit Price.</p>
+                <p class="footer-note">Final Qty = Base Qty x Build Qty. Price = Final Qty x Unit Price. Component Total: ${formatNumber(computed.total)} | Build Price Total: ${formatNumber(computed.totalBuildPrice)}</p>
             </body>
         </html>
     `)
@@ -341,11 +356,17 @@ async function onviewbuildTableDataSignal() {
     let rows = getSignaledDatasource().map((item) => {
         const computed = getBuildInvoiceComputedData(item)
         const previewMembers = computed.members.slice(0, 3)
+        const imagePath = resolveBuildImagePath(item?.itembuiltdetail?.imageurl)
         return `
     <tr>
         <td>${item.index + 1}</td>
         <td>${item.itembuiltdetail.salespoint}</td>
-        <td>${item.itembuiltdetail.itemname}</td>
+        <td>
+            <div class="flex items-center gap-2">
+                <img src="${imagePath}" onerror="this.onerror=null;this.src='../images/default-avatar.png';" class="w-8 h-8 rounded-full object-cover border border-slate-200">
+                <span>${item.itembuiltdetail.itemname}</span>
+            </div>
+        </td>
         <td>
            ${computed.members.length > 0 ? `<table class="w-full">
                 ${previewMembers.map((dat) => `
@@ -366,6 +387,8 @@ async function onviewbuildTableDataSignal() {
                 </tr>
             </table>` : 'No Item found in this build'}
         </td>
+        <td class="text-right">${formatNumber(computed.itemPrice)}</td>
+        <td class="text-right font-semibold">${formatNumber(computed.totalBuildPrice)}</td>
         <td>${specialformatDateTime(item.itembuiltdetail.builddate)}</td>
         <td class="flex items-center gap-3">
             <button title="View Item" onclick="modalviewbuild('${item.itembuiltdetail.id}')" class="material-symbols-outlined rounded-full bg-green-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
@@ -385,11 +408,11 @@ function modalviewbuild(id) {
 
     const computed = getBuildInvoiceComputedData(data)
     const detail = data.itembuiltdetail || {}
-    const imagePath = detail.imageurl ? `../images/${detail.imageurl}` : ''
+    const imagePath = resolveBuildImagePath(detail.imageurl)
 
     did('modaldetails').innerHTML = `
         <div class="rounded-lg border border-slate-200 p-3 flex gap-3 items-center">
-            ${imagePath ? `<img src="${imagePath}" class="w-[72px] h-[72px] rounded-md object-cover">` : `<div class="w-[72px] h-[72px] rounded-md bg-slate-100"></div>`}
+            <img src="${imagePath}" onerror="this.onerror=null;this.src='../images/default-avatar.png';" class="w-[72px] h-[72px] rounded-md object-cover">
             <div>
                 <p class="text-xs text-slate-500">Build Item</p>
                 <p class="text-sm font-semibold uppercase">${detail.itemname || ''}</p>
@@ -402,6 +425,18 @@ function modalviewbuild(id) {
         <div class="rounded-lg border border-slate-200 p-3">
             <p class="text-xs text-slate-500">Total Component Value</p>
             <p class="text-lg font-semibold">${formatNumber(computed.total)}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">Item Price</p>
+            <p class="text-lg font-semibold">${formatNumber(computed.itemPrice)}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">Total Build Price</p>
+            <p class="text-lg font-semibold">${formatNumber(computed.totalBuildPrice)}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">Margin Profit</p>
+            <p class="text-lg font-semibold ${computed.marginProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${formatNumber(computed.marginProfit)}</p>
         </div>
         <div class="rounded-lg border border-slate-200 p-3">
             <p class="text-xs text-slate-500">Build Date</p>

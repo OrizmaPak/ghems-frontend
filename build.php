@@ -122,6 +122,8 @@
                             <th>sales point</th>
                             <th>Item Name</th>
                             <th>ITEM&nbsp;NAME&nbsp;|&nbsp;[QUANTITY]</th>
+                            <th>Item Price</th>
+                            <th>Total Build Price</th>
                             <th>build Date</th>
                             <th>action</th>
                         </tr>
