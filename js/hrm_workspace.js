@@ -206,12 +206,11 @@ const hrmInterfaceRegistry = {
     },
     pp_personalstaffsalaryrecord: {
         title: 'Staff Salary Record',
-        subtitle: 'Build and inspect per-staff salary records before payroll run.',
-        flow: ['Select staff and period', 'Generate salary record', 'Prepare records for payroll approval'],
+        subtitle: 'Review payroll records for a selected personnel.',
+        flow: ['Select personnel', 'Load payroll records', 'Review salary components and net payable'],
         controllers: [
             { name: 'fetchpersonnels.php', purpose: 'Retrieve personnel list' },
-            { name: 'approvepayroll.php', purpose: 'Create/update salary staging records' },
-            { name: 'controller.php', purpose: 'Generic action endpoint used by HTG module' }
+            { name: 'fetchstaffpayroll.php', purpose: 'Retrieve selected staff payroll records' }
         ]
     },
     pp_viewmonthlysalaryschedule: {
@@ -295,7 +294,7 @@ const hrmHtgControllerRouting = {
     pp_monitorevaluation: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_advance: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_viewstaffadvance: { load: 'viewstaffadvance.php', save: 'viewstaffadvance.php', filter: 'viewstaffadvance.php' },
-    pp_personalstaffsalaryrecord: { load: 'personalstaffsalaryrecord.php', save: 'personalstaffsalaryrecord.php', filter: 'personalstaffsalaryrecord.php' },
+    pp_personalstaffsalaryrecord: { load: 'fetchstaffpayroll.php', save: 'fetchstaffpayroll.php', filter: 'fetchstaffpayroll.php' },
     pp_viewmonthlysalaryschedule: { load: 'viewmonthlysalaryschedule.php', save: 'viewmonthlysalaryschedule.php', filter: 'viewmonthlysalaryschedule.php' },
     pp_presalaryapproval: { load: 'presalaryapproval.php', save: 'presalaryapproval.php', filter: 'presalaryapproval.php' },
     pp_confirmsalary: { load: 'confirmsalary.php', save: 'confirmsalary.php', filter: 'confirmsalary.php' },
@@ -583,19 +582,11 @@ const hrmInterfaceBlueprints = {
         summary: ['Total Advance', 'Recovered', 'Outstanding', 'Open Records']
     },
     pp_personalstaffsalaryrecord: {
-        context: 'Staff salary staging',
-        fields: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-            { id: 'month', label: 'Salary Month', type: 'month', required: true },
-            { id: 'basicsalary', label: 'Basic Salary', type: 'number' },
-            { id: 'allowance', label: 'Allowance', type: 'number' },
-            { id: 'deduction', label: 'Deduction', type: 'number' },
-            { id: 'netpay', label: 'Net Pay', type: 'number', readonly: true }
-        ],
-        filters: [{ id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' }, { id: 'month', label: 'Month', type: 'month' }],
-        actions: ['Generate Salary Record'],
-        columns: ['S/N', 'Staff ID', 'Name', 'Month', 'Basic Salary', 'Allowance', 'Deduction', 'Net Pay', 'Action'],
-        summary: ['Gross Pay', 'Deductions', 'Net Pay', 'Records']
+        context: 'Staff salary record review',
+        fields: [],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Entry Date', 'Month', 'Year', 'Total Allowance', 'Total Deduction', 'With Attendance', 'Net Payable'],
+        summary: ['Records', 'Total Allowance', 'Total Deduction', 'Net Payable']
     },
     pp_viewmonthlysalaryschedule: {
         context: 'Approved salary schedule',
@@ -2220,6 +2211,14 @@ function hrmBuildHtgMatterPayload(source, route, mode) {
 }
 
 function hrmBuildPayloadFromForm(form, route, mode) {
+    if (route === 'pp_personalstaffsalaryrecord') {
+        const source = form ? new FormData(form) : new FormData();
+        const payload = new FormData();
+        const staffid = hrmExtractPersonnelId(hrmPickFormDataValue(source, 'personnel', 'staffid'));
+        if (staffid) payload.append('staffid', staffid);
+        return payload;
+    }
+
     if (hrmHtgPayloadRoutes.has(route)) {
         const source = form ? new FormData(form) : new FormData();
         if (hrmHtgSubrecordRoutes.has(route)) return hrmBuildHtgSubrecordPayload(source, route, mode);
@@ -2815,6 +2814,26 @@ function hrmDocumentTableCell(value) {
 
 function hrmRouteRowValues(route, record = {}) {
     switch (route) {
+        case 'pp_personalstaffsalaryrecord': {
+            const payrollPersonnelId = hrmFirstFilled(record, 'staffid', 'pid', 'personnelid', 'personnel');
+            const fallbackPersonnel = hrmExtractPersonnelId(document.getElementById('hrm_filter_personnel')?.value || '');
+            const personnelId = payrollPersonnelId || fallbackPersonnel;
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthNumber = Number(String(hrmFirstFilled(record, 'month') || '').trim());
+            const monthLabel = Number.isFinite(monthNumber) && monthNumber >= 1 && monthNumber <= 12
+                ? monthNames[monthNumber - 1]
+                : hrmFirstFilled(record, 'month');
+            return [
+                hrmPersonnelDisplay(personnelId),
+                hrmFirstFilled(record, 'entrydate'),
+                monthLabel,
+                hrmFirstFilled(record, 'year'),
+                hrmFirstFilled(record, 'totalallowance'),
+                hrmFirstFilled(record, 'totaldeduction'),
+                hrmFirstFilled(record, 'withattendance'),
+                hrmFirstFilled(record, 'netpayable')
+            ];
+        }
         case 'pp_guarantor':
             return [hrmPersonnelDisplay(record.staffid), record.guarantorname, record.occupation, record.phonenumber, record.address];
         case 'pp_employerrecord':
@@ -3044,6 +3063,14 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         const historySections = document.getElementById('hrm_personnelhistory_sections');
         if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select a personnel to load history.</td></tr>`;
         if (historySections) historySections.innerHTML = `<div class="border border-slate-200 rounded-sm p-4 bg-white/90 text-sm text-slate-600">Select a personnel to load history.</div>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
+        return;
+    }
+    if (route === 'pp_personalstaffsalaryrecord' && !payload.get('staffid')) {
+        const body = document.getElementById('hrm_table_body');
+        const status = document.getElementById('hrm_table_status');
+        if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select a personnel to load staff salary records.</td></tr>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
         hrmSetSummaryValues(['0', '0', '0', '0']);
         return;
