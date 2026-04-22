@@ -2173,6 +2173,38 @@ function hrmResultErrorMessage(result, fallback = 'Request failed') {
     return fallback;
 }
 
+function hrmResultSuccessMessage(result, fallback = 'Request completed successfully') {
+    if (result?.data && typeof result.data === 'object' && result.data.message) {
+        return String(result.data.message);
+    }
+    if (typeof result?.data === 'string' && /success|successful|completed/i.test(result.data)) {
+        return result.data.trim();
+    }
+    if (typeof result?.raw === 'string' && /success|successful|completed/i.test(result.raw)) {
+        return result.raw.trim();
+    }
+    return fallback;
+}
+
+function hrmIsControllerSuccess(result) {
+    if (!result || result.ok !== true) return false;
+
+    const data = result.data;
+    if (data && typeof data === 'object') {
+        if (data.status === false || data.success === false) return false;
+        if (Number(data.code) === 200) return true;
+        if (data.status === true || data.success === true) return true;
+        if (typeof data.message === 'string' && /success|successful|completed/i.test(data.message)) return true;
+    }
+
+    if (typeof data === 'string') {
+        if (/error|failed|invalid|unable/i.test(data)) return false;
+        if (/success|successful|completed/i.test(data)) return true;
+    }
+
+    return Number(result.status) === 200;
+}
+
 function hrmExtractRowsFromResponse(responseData) {
     if (!responseData) return [];
     if (Array.isArray(responseData)) return responseData;
@@ -2293,20 +2325,20 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 payload = hrmBuildPersonnelPayload(form, mode);
             }
             const result = await hrmRequestController(saveController, payload, saveButton);
-            if (!result.ok || result?.data?.status === false) {
+            if (!hrmIsControllerSuccess(result)) {
                 notification(hrmResultErrorMessage(result, `Save failed on ${saveController}`), 0);
                 return;
             }
-            notification(result?.data?.message || 'Record submitted successfully', 1);
-            if (route === 'pp_level') {
+            notification(hrmResultSuccessMessage(result, 'Code 200: Record submitted successfully'), 1);
+            if (Array.isArray(blueprint?.fields) && blueprint.fields.length > 0) {
                 form?.reset();
                 hrmResetFileUploadPreviews();
+            }
+            if (route === 'pp_level') {
                 hrmLevelEditingId = '';
                 hrmRenderLevelLineEditors([], []);
             }
             if (route === 'pp_personnel') {
-                form?.reset();
-                hrmResetFileUploadPreviews();
                 const levelControl = document.getElementById('levelid');
                 if (hrmTomSelectInstances.levelid) {
                     hrmTomSelectInstances.levelid.clear(true);
