@@ -1194,3 +1194,32 @@ input.comp:comp + label::after {
     font-size: 1rem;
     padding-bottom: 0.08rem;
 }
+
+/* Keep only the workspace frame scroll; prevent outer page double-scroll. */
+html,
+body {
+    height: 100%;
+    overflow: hidden !important;
+}
+
+main.app-shell,
+.app-layout,
+.content-scaffold {
+    overflow: hidden;
+}
+
+.content-scaffold {
+    min-height: 0;
+}
+
+.content-scroll {
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+@media (max-width: 1279px) {
+    body {
+        overflow: hidden !important;
+    }
+}
