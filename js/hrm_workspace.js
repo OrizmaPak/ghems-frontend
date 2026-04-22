@@ -225,12 +225,11 @@ const hrmInterfaceRegistry = {
     },
     pp_presalaryapproval: {
         title: 'Payroll',
-        subtitle: 'Run do-payroll and review monthly salary schedule in view payroll.',
-        flow: ['Enter payroll parameters', 'Run do-payroll and see payroll table in this tab', 'Use View Payroll tab for monthly salary schedule'],
+        subtitle: 'Run payroll staging and submit entries for payroll approval.',
+        flow: ['Load pending payroll batch', 'Run payroll action', 'Send payroll for final confirmation'],
         controllers: [
-            { name: 'dopayroll.php', purpose: 'Execute payroll run action' },
-            { name: 'fetchapprovedpayroll.php', purpose: 'Retrieve approved payroll schedule for view tab' },
-            { name: 'approvepayroll.php', purpose: 'Approve/delete selected payroll rows' }
+            { name: 'approvepayroll.php', purpose: 'Payroll staging and updates' },
+            { name: 'dopayroll.php', purpose: 'Execute payroll run action' }
         ]
     },
     pp_confirmsalary: {
@@ -336,7 +335,7 @@ const hrmHtgControllerRouting = {
     pp_viewstaffadvance: { load: 'viewstaffadvance.php', save: 'viewstaffadvance.php', filter: 'viewstaffadvance.php' },
     pp_personalstaffsalaryrecord: { load: 'fetchstaffpayroll.php', save: 'fetchstaffpayroll.php', filter: 'fetchstaffpayroll.php' },
     pp_viewmonthlysalaryschedule: { load: 'fetchapprovedpayroll.php', save: 'approvepayroll.php', filter: 'fetchapprovedpayroll.php' },
-    pp_presalaryapproval: { load: 'fetchapprovedpayroll.php', save: 'dopayroll.php', filter: 'fetchapprovedpayroll.php' },
+    pp_presalaryapproval: { load: 'dopayroll.php', save: 'approvepayroll.php', filter: 'dopayroll.php' },
     pp_confirmsalary: { load: 'fetchnonapprovedpayroll.php', save: 'approvepayroll.php', filter: 'fetchnonapprovedpayroll.php' },
     pp_payrollclassa: { load: 'payrollclassa.php', save: 'payrollclassa.php', filter: 'payrollclassa.php' },
     pp_payrollclassb: { load: 'payrollclassb.php', save: 'payrollclassb.php', filter: 'payrollclassb.php' }
@@ -639,16 +638,13 @@ const hrmInterfaceBlueprints = {
     },
     pp_presalaryapproval: {
         context: 'Payroll processing',
-        fields: [
-            { id: 'applyattendance', label: 'Apply Attendance', type: 'select', options: ['NO', 'YES'], required: true },
-            { id: 'month', label: 'Select Month to Approval', type: 'select', options: hrmMonthSelectOptions, required: true },
-            { id: 'year', label: 'Year', type: 'select', options: hrmOperationalPayrollYearOptions(), required: true }
-        ],
+        fields: [],
         filters: [
-            { id: 'month', label: 'Select Month', type: 'select', options: hrmMonthSelectOptions },
-            { id: 'year', label: 'Year', type: 'select', options: hrmPayrollYearOptions() }
+            { id: 'applyattendance', label: 'Apply Attendance', type: 'select', options: ['NO', 'YES'] },
+            { id: 'month', label: 'Select Month to Approval', type: 'select', options: hrmMonthSelectOptions },
+            { id: 'year', label: 'Year', type: 'select', options: hrmOperationalPayrollYearOptions() }
         ],
-        columns: ['S/N', '', 'First Name', 'Other Names', 'Last Name', 'Department', 'Level', 'Net Payable', 'Total Allowance', 'Total Deduction', 'Allowances', 'Deductions', 'Entry Date'],
+        columns: ['S/N', '', 'First Name', 'Last Name', 'Level', 'Net Payable', 'Basic Salary', 'T. Allowance', 'T. Deduction', 'Allowances', 'Deductions', 'Entry Date'],
         summary: ['Total Net Payables', 'Total Allowance', 'Total Deductions', 'Total Basic Salary', 'Month', 'Year']
     },
     pp_confirmsalary: {
@@ -697,8 +693,7 @@ function hrmWorkspaceActive() {
     const requestedRoute = new URLSearchParams(window.location.search).get('r') || '';
     const routeAliases = {
         pp_viewstaffadvance: 'pp_advance',
-        pp_viewpersonnel: 'pp_personnel',
-        pp_viewmonthlysalaryschedule: 'pp_presalaryapproval'
+        pp_viewpersonnel: 'pp_personnel'
     };
     const route = routeAliases[requestedRoute] || requestedRoute;
     const config = hrmInterfaceRegistry[route];
@@ -744,7 +739,7 @@ function hrmWorkspaceActive() {
 }
 
 function hrmHideDeprecatedHrmNavigation() {
-    ['pp_viewstaffadvance', 'pp_viewstaffadvance_main', 'pp_viewpersonnel', 'pp_viewpersonnel_main', 'pp_viewmonthlysalaryschedule', 'pp_viewmonthlysalaryschedule_main'].forEach((id) => {
+    ['pp_viewstaffadvance', 'pp_viewstaffadvance_main', 'pp_viewpersonnel', 'pp_viewpersonnel_main'].forEach((id) => {
         const element = document.getElementById(id);
         if (element) element.classList.add('hidden');
     });
@@ -960,37 +955,6 @@ function hrmRenderDynamicSections(sections, route = '') {
         return;
     }
 
-    if (route === 'pp_presalaryapproval') {
-        container.innerHTML = `
-            <div class="border border-slate-200 rounded-sm p-4 bg-white/90">
-                <div class="flex items-center justify-between mb-3">
-                    <p class="text-sm font-semibold text-slate-700">Payroll Table</p>
-                    <p class="text-xs text-slate-500">Runs after clicking Do Payroll</p>
-                </div>
-                <div class="table-content">
-                    <table id="hrm_payroll_input_preview_table">
-                        <thead>
-                            <tr>
-                                <th>S/N</th>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Level</th>
-                                <th>Net Payable</th>
-                                <th>Total Allowance</th>
-                                <th>Total Deduction</th>
-                                <th>Entry Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="hrm_payroll_input_preview_body">
-                            <tr><td colspan="8" class="text-center opacity-70">Run Do Payroll to view records here.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        return;
-    }
-
     container.innerHTML = sections.map((section) => `
         <div class="border border-slate-200 rounded-sm p-4">
             <div class="flex items-center justify-between mb-3">
@@ -1005,33 +969,6 @@ function hrmRenderDynamicSections(sections, route = '') {
             </div>
         </div>
     `).join('');
-}
-
-function hrmRenderPayrollInputPreview(rows = []) {
-    const body = document.getElementById('hrm_payroll_input_preview_body');
-    if (!body) return;
-    const normalizedRows = Array.isArray(rows) ? rows : [];
-    if (!normalizedRows.length) {
-        body.innerHTML = '<tr><td colspan="8" class="text-center opacity-70">No payroll records returned.</td></tr>';
-        return;
-    }
-
-    body.innerHTML = normalizedRows.map((record, index) => {
-        const personnel = Array.isArray(record?.personnel) ? (record.personnel[0] || {}) : (record?.personnel || {});
-        const payroll = record?.payroll || {};
-        return `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${hrmEscapeHtml(hrmFirstFilled(personnel, 'firstname'))}</td>
-                <td>${hrmEscapeHtml(hrmFirstFilled(personnel, 'lastname'))}</td>
-                <td>${hrmEscapeHtml(hrmLevelDisplay(hrmFirstFilled(personnel, 'levelid')))}</td>
-                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(record, 'netpayable')))}</td>
-                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(payroll, 'totalallowance')))}</td>
-                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(payroll, 'totaldeduction')))}</td>
-                <td>${hrmEscapeHtml(hrmFirstFilled(payroll, 'entrydate'))}</td>
-            </tr>
-        `;
-    }).join('');
 }
 
 function hrmBuildLevelLineRow(type, value = '', percent = '', removable = true) {
@@ -1591,14 +1528,14 @@ async function hrmSubmitMonthlyScheduleAction(action, button, blueprint) {
         notification(`No payroll has been selected for ${action === 'APPROVE' ? 'approval' : 'delete'}`, 0);
         return;
     }
-    const controller = 'approvepayroll.php';
+    const controller = hrmResolveControllerName('pp_viewmonthlysalaryschedule', 'save');
     const result = await hrmRequestController(controller, hrmBuildMonthlyScheduleActionPayload(action), button);
     if (!result.ok || result?.data?.status === false) {
         notification(hrmResultErrorMessage(result, `${action === 'APPROVE' ? 'Approval' : 'Delete'} failed on ${controller}`), 0);
         return;
     }
     notification(hrmResultSuccessMessage(result, action === 'APPROVE' ? 'Selected payroll approved successfully' : 'Selected payroll deleted successfully'), 1);
-    await hrmLoadViewData('pp_presalaryapproval', blueprint);
+    await hrmLoadViewData('pp_viewmonthlysalaryschedule', blueprint);
 }
 
 function hrmRenderPayrollBatchActions(container, blueprint) {
@@ -2655,7 +2592,7 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     if (route === 'pp_presalaryapproval') {
         const source = form ? new FormData(form) : new FormData();
         const payload = new FormData();
-        if (mode === 'save' || mode === 'update') payload.append('applyattendance', hrmPickFormDataValue(source, 'applyattendance') || 'NO');
+        payload.append('applyattendance', hrmPickFormDataValue(source, 'applyattendance') || 'NO');
         payload.append('month', hrmPickFormDataValue(source, 'month'));
         payload.append('year', hrmPickFormDataValue(source, 'year'));
         return payload;
@@ -3317,13 +3254,12 @@ function hrmRouteRowValues(route, record = {}) {
             const deductionLines = paydetail.filter((line) => String(line?.salaryinfotype || '').toUpperCase() === 'DEDUCTION');
             const rowId = hrmEscapeHtml(hrmFirstFilled(payroll, 'id') || hrmFirstFilled(record, 'id'));
             return [
-                `<input class="confirmmonthpayrollcheckbox" type="checkbox" id="${rowId}" data-payroll-id="${rowId}">`,
+                `<input class="hrm-payroll-checkbox" type="checkbox" id="${rowId}" data-payroll-id="${rowId}">`,
                 hrmFirstFilled(personnel, 'firstname'),
-                hrmFirstFilled(personnel, 'othernames'),
                 hrmFirstFilled(personnel, 'lastname'),
-                hrmFirstFilled(personnel, 'department', 'departmentname'),
                 hrmLevelDisplay(hrmFirstFilled(personnel, 'levelid')),
                 hrmFirstFilled(record, 'netpayable'),
+                hrmFirstFilled(personnel, 'basicsalary'),
                 hrmFirstFilled(payroll, 'totalallowance'),
                 hrmFirstFilled(payroll, 'totaldeduction'),
                 hrmBuildPayrollLineTable(allowanceLines),
@@ -3816,7 +3752,7 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     if (route === 'pp_presalaryapproval' && (!hrmNormalizePersonnelValue(payload.get('month')) || !hrmNormalizePersonnelValue(payload.get('year')))) {
         const body = document.getElementById('hrm_table_body');
         const status = document.getElementById('hrm_table_status');
-        if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select month and year, then click Fetch.</td></tr>`;
+        if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select month and year, then click Do payroll.</td></tr>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
         hrmSetSummaryValues(['0', '0', '0', '0', '-', '-']);
         return;
@@ -3923,8 +3859,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
     hrmTogglePersonnelHistoryLayout(route === 'pp_personnelhistory');
 
     if (saveButton) {
-        const saveLabel = saveButton.querySelector('span:last-child');
-        if (saveLabel) saveLabel.textContent = route === 'pp_presalaryapproval' ? 'Do Payroll' : 'Submit';
         saveButton.onclick = async () => {
             let payloadMode = 'save';
             try {
@@ -3986,10 +3920,6 @@ function hrmBindWorkspaceControls(route, blueprint) {
                     if (basicSalaryControl) basicSalaryControl.value = '';
                     if (idControl) idControl.value = '';
                 }
-                if (route === 'pp_presalaryapproval') {
-                    const previewRows = hrmExtractRowsFromResponse(result.data);
-                    hrmRenderPayrollInputPreview(previewRows);
-                }
                 await hrmLoadViewData(route, blueprint);
             } catch (error) {
                 const failedLabel = payloadMode === 'update' ? 'update' : 'submit';
@@ -4015,7 +3945,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
         if (filterLabel) filterLabel.textContent = route === 'pp_viewmonthlysalaryschedule'
             ? 'Fetch'
             : route === 'pp_presalaryapproval'
-                ? 'Fetch'
+                ? 'Do Payroll'
                 : route === 'pp_confirmsalary'
                     ? 'Fetch'
                 : 'Filter';
@@ -4033,8 +3963,8 @@ function hrmBindWorkspaceControls(route, blueprint) {
         filterForm?.reset();
         hrmClearTomSelectsWithin(filterForm);
         if (route === 'pp_presalaryapproval') {
-            const attendanceControl = document.getElementById('applyattendance');
-            if (attendanceControl && !hrmNormalizePersonnelValue(attendanceControl.value)) attendanceControl.value = 'NO';
+            const attendanceControl = document.getElementById('hrm_filter_applyattendance');
+            if (attendanceControl) attendanceControl.value = 'NO';
         }
         await hrmLoadViewData(route, blueprint);
     };
@@ -4057,7 +3987,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
         const targetBatchActions = tableBatchActions || batchActions;
         if (targetBatchActions) {
             targetBatchActions.classList.remove('hidden');
-            hrmRenderMonthlyScheduleBatchActions(targetBatchActions, blueprint);
+            hrmRenderPayrollBatchActions(targetBatchActions, blueprint);
         }
     } else if (route === 'pp_confirmsalary') {
         const targetBatchActions = tableBatchActions || batchActions;
@@ -4302,7 +4232,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
         }
     }
     if (route === 'pp_presalaryapproval') {
-        const attendanceControl = document.getElementById('applyattendance');
+        const attendanceControl = document.getElementById('hrm_filter_applyattendance');
         if (attendanceControl && !hrmNormalizePersonnelValue(attendanceControl.value)) {
             attendanceControl.value = 'NO';
         }
