@@ -311,6 +311,7 @@ let hrmLevelEditingId = '';
 const hrmTomSelectInstances = {};
 let hrmTomSelectAssetsPromise = null;
 const hrmPersonnelLevelMetaById = {};
+const hrmFilePreviewUrls = {};
 
 const hrmMatterFields = {
     pp_query: [
@@ -654,6 +655,7 @@ function hrmWorkspaceActive() {
     hrmRenderDynamicSections(blueprint.sections || [], route);
     hrmRenderSummary(blueprint.summary || ['Records', 'Pending', 'Approved', 'Updated']);
     hrmRenderTable(blueprint.columns || ['S/N', 'Name', 'Status', 'Action'], config.title);
+    hrmBindFileUploadPreviews();
     hrmBindWorkspaceControls(route, blueprint);
 }
 
@@ -1577,12 +1579,134 @@ function hrmBuildControl(field) {
         `;
     }
 
+    if (field.type === 'file') {
+        const previewId = `${field.id}_preview`;
+        const accept = field.accept ? `accept="${field.accept}"` : '';
+        return `
+            <div class="form-group lg:col-span-2">
+                <label class="control-label" for="${field.id}">${field.label}</label>
+                <div class="flex flex-col gap-2">
+                    <input id="${field.id}" name="${name}" type="file" class="form-control hidden" ${required} ${accept} data-hrm-file-input="1" data-hrm-preview-target="${previewId}">
+                    <button type="button" class="btn hrm-ui-action self-start" data-hrm-file-trigger="${field.id}">
+                        <span class="material-symbols-outlined text-lg">upload_file</span>
+                        <span>Select File</span>
+                    </button>
+                    <div id="${previewId}" class="border border-slate-200 rounded-sm p-3 bg-slate-50/70 text-sm text-slate-600">
+                        No file selected.
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     return `
         <div class="form-group">
             <label class="control-label" for="${field.id}">${field.label}</label>
             <input id="${field.id}" name="${name}" type="${field.type || 'text'}" class="form-control" ${list} ${required} ${readonly} ${placeholder}>
         </div>
     `;
+}
+
+function hrmGetFileExtension(name = '') {
+    const filename = String(name || '').trim();
+    const lastDot = filename.lastIndexOf('.');
+    if (lastDot === -1 || lastDot === filename.length - 1) return 'FILE';
+    return filename.slice(lastDot + 1).toUpperCase();
+}
+
+function hrmIsImageFile(file) {
+    if (!file) return false;
+    if (String(file.type || '').toLowerCase().startsWith('image/')) return true;
+    const ext = hrmGetFileExtension(file.name || '').toLowerCase();
+    return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg'].includes(ext);
+}
+
+function hrmGetDocumentIcon(file) {
+    const ext = hrmGetFileExtension(file?.name || '').toLowerCase();
+    if (ext === 'pdf') return 'picture_as_pdf';
+    if (['doc', 'docx'].includes(ext)) return 'description';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'table';
+    if (['ppt', 'pptx'].includes(ext)) return 'slideshow';
+    if (['zip', 'rar', '7z'].includes(ext)) return 'folder_zip';
+    return 'insert_drive_file';
+}
+
+function hrmRevokePreviewUrl(inputId) {
+    const existing = hrmFilePreviewUrls[inputId];
+    if (existing) {
+        URL.revokeObjectURL(existing);
+        delete hrmFilePreviewUrls[inputId];
+    }
+}
+
+function hrmRenderSelectedFilePreview(input) {
+    const previewId = input?.dataset?.hrmPreviewTarget || '';
+    const preview = previewId ? document.getElementById(previewId) : null;
+    if (!input || !preview) return;
+
+    const inputId = input.id || previewId;
+    hrmRevokePreviewUrl(inputId);
+
+    const file = input.files?.[0];
+    if (!file) {
+        preview.innerHTML = 'No file selected.';
+        return;
+    }
+
+    const fileUrl = URL.createObjectURL(file);
+    hrmFilePreviewUrls[inputId] = fileUrl;
+    const fileType = hrmGetFileExtension(file.name);
+
+    if (hrmIsImageFile(file)) {
+        preview.innerHTML = `
+            <a href="${fileUrl}" download="${hrmEscapeHtml(file.name)}" class="flex items-center gap-3" title="Download ${hrmEscapeHtml(file.name)}">
+                <img src="${fileUrl}" alt="${hrmEscapeHtml(file.name)}" class="w-16 h-16 object-cover rounded border border-slate-200">
+                <div class="flex flex-col">
+                    <span class="font-medium text-slate-800">${hrmEscapeHtml(file.name)}</span>
+                    <span class="text-xs uppercase tracking-wide text-emerald-700">${hrmEscapeHtml(fileType)} image</span>
+                    <span class="text-xs text-slate-500">Click to download</span>
+                </div>
+            </a>
+        `;
+        return;
+    }
+
+    const icon = hrmGetDocumentIcon(file);
+    preview.innerHTML = `
+        <a href="${fileUrl}" download="${hrmEscapeHtml(file.name)}" class="flex items-center gap-3" title="Download ${hrmEscapeHtml(file.name)}">
+            <div class="w-16 h-16 rounded border border-slate-200 bg-white flex items-center justify-center">
+                <span class="material-symbols-outlined text-3xl text-slate-500">${icon}</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-medium text-slate-800">${hrmEscapeHtml(file.name)}</span>
+                <span class="text-xs uppercase tracking-wide text-indigo-700">${hrmEscapeHtml(fileType)} document</span>
+                <span class="text-xs text-slate-500">Click to download</span>
+            </div>
+        </a>
+    `;
+}
+
+function hrmBindFileUploadPreviews() {
+    document.querySelectorAll('[data-hrm-file-trigger]').forEach((button) => {
+        button.onclick = () => {
+            const targetId = button.getAttribute('data-hrm-file-trigger') || '';
+            const input = targetId ? document.getElementById(targetId) : null;
+            if (input) input.click();
+        };
+    });
+
+    document.querySelectorAll('input[data-hrm-file-input="1"]').forEach((input) => {
+        input.onchange = () => hrmRenderSelectedFilePreview(input);
+    });
+}
+
+function hrmResetFileUploadPreviews() {
+    document.querySelectorAll('input[data-hrm-file-input="1"]').forEach((input) => {
+        hrmRevokePreviewUrl(input.id || input.dataset.hrmPreviewTarget || '');
+        const previewId = input.dataset.hrmPreviewTarget || '';
+        const preview = previewId ? document.getElementById(previewId) : null;
+        if (preview) preview.innerHTML = 'No file selected.';
+    });
 }
 
 function hrmRenderSummary(items) {
@@ -2176,11 +2300,13 @@ function hrmBindWorkspaceControls(route, blueprint) {
             notification(result?.data?.message || 'Record submitted successfully', 1);
             if (route === 'pp_level') {
                 form?.reset();
+                hrmResetFileUploadPreviews();
                 hrmLevelEditingId = '';
                 hrmRenderLevelLineEditors([], []);
             }
             if (route === 'pp_personnel') {
                 form?.reset();
+                hrmResetFileUploadPreviews();
                 const levelControl = document.getElementById('levelid');
                 if (hrmTomSelectInstances.levelid) {
                     hrmTomSelectInstances.levelid.clear(true);
@@ -2200,6 +2326,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (resetButton) {
         resetButton.onclick = () => {
             form?.reset();
+            hrmResetFileUploadPreviews();
             if (route === 'pp_level') {
                 hrmLevelEditingId = '';
                 hrmRenderLevelLineEditors([], []);
