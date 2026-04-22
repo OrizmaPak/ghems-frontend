@@ -693,7 +693,7 @@ function hrmWorkspaceActive() {
     hrmSetActiveTab((hasEntrySection && hasViewSection) ? 'input' : 'view');
 
     hrmRenderFields('hrm_entry_grid', fields);
-    hrmRenderFilters(filters);
+    hrmRenderFilters(filters, route);
     hrmRenderDynamicSections(blueprint.sections || [], route);
     hrmRenderSummary(blueprint.summary || ['Records', 'Pending', 'Approved', 'Updated']);
     hrmRenderTable(blueprint.columns || ['S/N', 'Name', 'Status', 'Action'], config.title);
@@ -836,11 +836,20 @@ function hrmRenderFields(containerId, fields) {
     container.innerHTML = visibleFields.map((field) => hrmBuildControl(field)).join('');
 }
 
-function hrmRenderFilters(fields) {
+function hrmIsPersonnelOnlyFilter(fields = []) {
+    const visibleFields = (Array.isArray(fields) ? fields : []).filter((field) => !hrmHiddenFrontendFields.has((field?.id || '').toLowerCase()));
+    return visibleFields.length === 1 && String(visibleFields[0]?.id || '').toLowerCase() === 'personnel';
+}
+
+function hrmRenderFilters(fields, route = '') {
+    const personnelOnlyFilter = hrmIsPersonnelOnlyFilter(fields);
     const filterFields = fields.map((field) => ({
         ...field,
         id: `hrm_filter_${field.id}`,
-        name: field.name || field.id
+        name: field.name || field.id,
+        wrapper_class: personnelOnlyFilter && String(field?.id || '').toLowerCase() === 'personnel'
+            ? `${field.wrapper_class || ''} lg:col-span-4`
+            : field.wrapper_class
     }));
     hrmRenderFields('hrm_filter_grid', filterFields);
 }
@@ -980,7 +989,7 @@ function hrmRenderLevelRows(rows, columns) {
             <tr>
                 <td>${index + 1}</td>
                 <td>${level?.level ?? ''}</td>
-                <td>${level?.basicsalary ?? ''}</td>
+                <td>${hrmFormatNumberWithCommas(level?.basicsalary ?? '')}</td>
                 <td>${allowanceValues.length ? allowanceValues.join(', ') : '-'}</td>
                 <td>${deductionValues.length ? deductionValues.join(', ') : '-'}</td>
                 <td>
@@ -1123,7 +1132,7 @@ function hrmOpenPersonnelModal(entry = {}) {
                     ['Birth Date', personnel.birthdate],
                     ['Employment Date', personnel.employmentdate],
                     ['Level', personnel.levelname || personnel.levelid],
-                    ['Basic Salary', personnel.basicsalary],
+                    ['Basic Salary', hrmFormatNumberWithCommas(personnel.basicsalary)],
                     ['Deformity', personnel.deformity === '1' ? 'YES' : 'NO'],
                     ['Eye Glasses', personnel.eyeglasses === '1' ? 'YES' : 'NO'],
                     ['Hearing Aid', personnel.hearingaid === '1' ? 'YES' : 'NO'],
@@ -1289,7 +1298,7 @@ function hrmRenderApprovePersonnelRows(rows, columns) {
                 <td class="max-w-[280px] whitespace-normal">${hrmEscapeHtml(hrmDecodeHtmlEntities(personnel?.residentialaddress) || '-')}</td>
                 <td>${hrmEscapeHtml((personnel?.registereduseremail || personnel?.user || '-').toLowerCase?.() || personnel?.registereduseremail || personnel?.user || '-')}</td>
                 <td>${hrmEscapeHtml(personnel?.employmentdate || '-')}</td>
-                <td>${hrmEscapeHtml(personnel?.basicsalary || '-')}</td>
+                <td>${hrmEscapeHtml(hrmFormatNumberWithCommas(personnel?.basicsalary || '-'))}</td>
                 <td>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" class="btn hrm-ui-action" data-hrm-approve-personnel-view="${personnelId}" data-hrm-personnel-record="${rowPayload}" title="View personnel" style="background:#0f766e;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">visibility</span></button>
@@ -1474,7 +1483,7 @@ function hrmBuildPersonnelHistoryProfileBlock(root) {
         ['Height', personnel?.height],
         ['Weight', personnel?.weight],
         ['Employment Date', hrmNormalizePersonnelHistoryDate(personnel?.employmentdate)],
-        ['Basic Salary', personnel?.basicsalary],
+        ['Basic Salary', hrmFormatNumberWithCommas(personnel?.basicsalary)],
         ['Level', personnel?.level || personnel?.levelname || personnel?.levelid],
         ['Bank Account (Basic)', personnel?.bankaccountnumber1],
         ['Bank Name (Basic)', personnel?.bankname1],
@@ -1510,7 +1519,7 @@ function hrmRenderPersonnelHistoryRows(root) {
         .map((item, index) => [String(index + 1), hrmEscapeHtml(item?.salaryinfo || '-'), `${hrmEscapeHtml(item?.amountpercentage || '0')}%`]);
 
     const sections = [
-        ['Advance', ['S/N', 'Title', 'Amount', 'Entry Date'], (root?.advance || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(item?.amount || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate))])],
+        ['Advance', ['S/N', 'Title', 'Amount', 'Entry Date'], (root?.advance || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmFormatNumberWithCommas(item?.amount || '-')), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate))])],
         ['Employee Records', ['S/N', 'Employer Name', 'Position', 'Years Employed', 'Reason For Leaving', 'Document'], (root?.employeerecords || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.employer || '-'), hrmEscapeHtml(item?.position || '-'), hrmEscapeHtml(item?.yearsemployed || '-'), hrmEscapeHtml(item?.reasonforleaving || '-'), hrmPersonnelHistoryDocumentCell(item?.doc)])],
         ['Guarantors', ['S/N', 'Guarantor Name', 'Years Known', 'Occupation', 'Phone Number', 'Address', 'Document'], (root?.guarantors || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.guarantorname || '-'), hrmEscapeHtml(item?.yearsknown || '-'), hrmEscapeHtml(item?.occupation || '-'), hrmEscapeHtml(item?.phonenumber || '-'), hrmEscapeHtml(item?.address || '-'), hrmPersonnelHistoryDocumentCell(item?.doc)])],
         ['Leave', ['S/N', 'Title', 'Entry Date', 'Start Date', 'End Date', 'Document'], (root?.leave || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.startdate)), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.enddate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
@@ -2511,6 +2520,20 @@ function hrmFormatNumberWithCommas(value) {
     return decimal !== undefined ? `${formattedWhole}.${decimal}` : formattedWhole;
 }
 
+function hrmIsMonetaryColumn(column = '') {
+    const label = String(column || '').toLowerCase();
+    return /amount|salary|basic|allowance|deduction|gross|net pay|netpay|installment|monthly/i.test(label);
+}
+
+function hrmFormatMonetaryColumnValue(column = '', value = '') {
+    if (!hrmIsMonetaryColumn(column)) return value;
+    const normalized = hrmNormalizePersonnelValue(value);
+    if (!normalized || normalized.includes('%') || normalized.includes('<')) return value;
+    const raw = String(normalized).replace(/,/g, '').trim();
+    if (!/^-?\d+(\.\d+)?$/.test(raw)) return value;
+    return hrmFormatNumberWithCommas(raw);
+}
+
 function hrmExtractIdFromActionHtml(html = '') {
     const raw = String(html || '');
     const idMatch = raw.match(/\((\d+)\)/) || raw.match(/['"]id['"]\s*[:,=]\s*['"]?(\d+)['"]?/i) || raw.match(/data-[a-z0-9_-]*id=['"]?(\d+)['"]?/i);
@@ -2709,7 +2732,8 @@ function hrmRenderRows(columns, rows, route = '') {
                 return hrmRouteActionCell(route, objectRow);
             }
             if (cellIndex === 0) return `<td>${index + 1}</td>`;
-            const value = valueList[cellIndex - 1] ?? '';
+            const rawValue = valueList[cellIndex - 1] ?? '';
+            const value = hrmFormatMonetaryColumnValue(column, rawValue);
             return `<td>${String(value).includes('<a ') ? value : hrmEscapeHtml(value)}</td>`;
         }).join('');
         return `<tr>${cells}</tr>`;
@@ -2936,6 +2960,8 @@ function hrmBindWorkspaceControls(route, blueprint) {
     const batchActions = document.getElementById('hrm_batch_actions');
     const tableBatchActions = document.getElementById('hrm_table_batch_actions');
     const tableBody = document.getElementById('hrm_table_body');
+    const personnelOnlyFilter = hrmIsPersonnelOnlyFilter(blueprint?.filters || []);
+    const autoLoadFromPersonnelFilter = async () => hrmLoadViewData(route, blueprint, null, filterForm);
     hrmTogglePersonnelHistoryLayout(route === 'pp_personnelhistory');
 
     if (saveButton) {
@@ -3011,7 +3037,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
         };
     }
     if (filterButton) {
-        if (route === 'pp_personnelhistory') {
+        if (route === 'pp_personnelhistory' || personnelOnlyFilter) {
             filterButton.classList.add('hidden');
             filterButton.disabled = true;
             filterButton.onclick = null;
@@ -3026,6 +3052,10 @@ function hrmBindWorkspaceControls(route, blueprint) {
         hrmClearTomSelectsWithin(filterForm);
         await hrmLoadViewData(route, blueprint);
     };
+    if (personnelOnlyFilter) {
+        const personnelFilterControl = document.getElementById('hrm_filter_personnel');
+        if (personnelFilterControl) personnelFilterControl.onchange = autoLoadFromPersonnelFilter;
+    }
     if (batchActions) batchActions.innerHTML = '';
     if (tableBatchActions) {
         tableBatchActions.innerHTML = '';
@@ -3276,6 +3306,16 @@ function hrmBindWorkspaceControls(route, blueprint) {
     }
     if (route !== 'pp_personnel') {
         hrmPopulateRouteDynamicSelectors(blueprint);
+    }
+    if (personnelOnlyFilter) {
+        setTimeout(() => {
+            const personnelFilterControl = document.getElementById('hrm_filter_personnel');
+            if (personnelFilterControl) personnelFilterControl.onchange = autoLoadFromPersonnelFilter;
+            const picker = hrmTomSelectInstances.hrm_filter_personnel;
+            if (picker && typeof picker.on === 'function') {
+                picker.on('change', () => { autoLoadFromPersonnelFilter(); });
+            }
+        }, 300);
     }
 
     hrmLoadViewData(route, blueprint);
