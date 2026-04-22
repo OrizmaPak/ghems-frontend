@@ -423,9 +423,9 @@ const routerTree = {
         scriptName: './js/build.js'
     },
     viewbuild: {
-        template: 'viewbuild',
-        startingFunction: 'viewbuildActive',
-        scriptName: './js/viewbuild.js'
+        template: 'build',
+        startingFunction: 'buildActive',
+        scriptName: './js/build.js'
     },
     salesreport: {
         template: 'salesreport',
