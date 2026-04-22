@@ -1,39 +1,7 @@
 let recipeid
 
-function openRecipeWorkspaceTab(tabName = 'recipe') {
-    const tabs = {
-        recipe: {
-            button: did('recipe-workspace-tab-recipe'),
-            panel: did('recipe-workspace-panel-recipe')
-        },
-        view: {
-            button: did('recipe-workspace-tab-view'),
-            panel: did('recipe-workspace-panel-view')
-        }
-    }
-
-    Object.keys(tabs).forEach(key => {
-        const tab = tabs[key]
-        if (!tab.button || !tab.panel) return
-        const isActive = key === tabName
-        tab.panel.classList.toggle('hidden', !isActive)
-        tab.button.classList.toggle('bg-primary-g', isActive)
-        tab.button.classList.toggle('text-white', isActive)
-    })
-}
-
-function initializeRecipeWorkspaceTabs() {
-    const recipeTabButton = did('recipe-workspace-tab-recipe')
-    const viewTabButton = did('recipe-workspace-tab-view')
-    if (!recipeTabButton || !viewTabButton) return
-
-    recipeTabButton.addEventListener('click', () => openRecipeWorkspaceTab('recipe'))
-    viewTabButton.addEventListener('click', () => openRecipeWorkspaceTab('view'))
-}
-
 async function recipeActive() {
     recalldatalist()
-    initializeRecipeWorkspaceTabs()
 
     let form = document.querySelector('#recipeform')
     if (form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', recipeFormSubmitHandler)
@@ -43,14 +11,17 @@ async function recipeActive() {
     await handlerecipedepartment(default_department)
 
     const activeRoute = new URLSearchParams(window.location.search).get('r')
-    openRecipeWorkspaceTab(activeRoute === 'viewrecipe' ? 'view' : 'recipe')
+    const defaultTabElement = activeRoute === 'viewrecipe'
+        ? did('recipeoptioner_view')
+        : did('recipeoptioner_recipe')
+    if (defaultTabElement) runoptioner(defaultTabElement)
 
     await viewrecipeActive()
 
     if (sessionStorage.getItem('recipeid')) {
         recipeid = sessionStorage.getItem('recipeid')
         sessionStorage.removeItem('recipeid')
-        openRecipeWorkspaceTab('recipe')
+        if (did('recipeoptioner_recipe')) runoptioner(did('recipeoptioner_recipe'))
         await fetchrecipe(recipeid)
     }
 }

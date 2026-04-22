@@ -3,14 +3,16 @@
         <span>RECIPE</span>
     </p>
 
-    <div class="bg-white/90 rounded-sm p-2 mb-5">
-        <div class="flex flex-wrap gap-2" id="recipe-workspace-tabs">
-            <button type="button" id="recipe-workspace-tab-recipe" data-tab="recipe" class="btn bg-primary-g text-white">Recipe</button>
-            <button type="button" id="recipe-workspace-tab-view" data-tab="view" class="btn">View Recipe</button>
-        </div>
-    </div>
+    <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
+        <li id="recipeoptioner_recipe" class="me-2 cp optioner !text-blue-600 active" name="recipeformpanel" onclick="runoptioner(this)">
+            <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Recipe</p>
+        </li>
+        <li id="recipeoptioner_view" class="me-2 cp optioner" name="viewrecipepanel" onclick="runoptioner(this)">
+            <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Recipe</p>
+        </li>
+    </ul>
 
-    <div id="recipe-workspace-panel-recipe">
+    <div id="recipeformpanel">
         <form id="recipeform">
             <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                 <div class="grid grid-cols-1 lg:grid-cols-1 gap-10 p-3 bg-[#3b82f6] text-white rounded shadow-sm">
@@ -89,7 +91,7 @@
         </form>
     </div>
 
-    <div id="recipe-workspace-panel-view" class="hidden">
+    <div id="viewrecipepanel" class="hidden">
         <form id="viewrecipeform" class="hidden">
             <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
