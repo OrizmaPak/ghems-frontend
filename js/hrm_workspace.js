@@ -311,6 +311,7 @@ const hrmFilePreviewUrls = {};
 
 const hrmMatterFields = {
     pp_query: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -319,6 +320,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_promotions: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -326,6 +328,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_termination: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
         { id: 'exit_type', label: 'Exit Type', type: 'select', options: ['TERMINATION', 'RESIGNATION', 'RETIREMENT'] },
         { id: 'effectivedate', label: 'Effective Date', type: 'date', required: true },
@@ -334,6 +337,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_suspension: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -342,6 +346,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_leave: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -350,6 +355,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_warning: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -358,6 +364,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_monitorevaluation: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -366,6 +373,7 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_advance: [
+        { id: 'id', name: 'id', type: 'hidden' },
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
@@ -478,6 +486,7 @@ const hrmInterfaceBlueprints = {
     pp_guarantor: {
         context: 'Guarantor records',
         fields: [
+            { id: 'id', name: 'id', type: 'hidden' },
             { id: 'personnel', label: 'Staff ID', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'guarantorname', label: 'Guarantor Name', type: 'text', required: true },
             { id: 'occupation', label: 'Occupation', type: 'text' },
@@ -494,11 +503,12 @@ const hrmInterfaceBlueprints = {
     pp_employerrecord: {
         context: 'Previous employment records',
         fields: [
+            { id: 'id', name: 'id', type: 'hidden' },
             { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'employer', label: 'Employer', type: 'text', required: true },
             { id: 'position', label: 'Position', type: 'text' },
             { id: 'basic', label: 'Basic Salary', type: 'number' },
-            { id: 'yearsemployed', label: 'Years Employed', type: 'text' },
+            { id: 'yearsemployed', label: 'Years Employed', type: 'number' },
             { id: 'reasonforleaving', label: 'Reason For Leaving', type: 'text' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
@@ -509,6 +519,7 @@ const hrmInterfaceBlueprints = {
     pp_referees: {
         context: 'Referee records',
         fields: [
+            { id: 'id', name: 'id', type: 'hidden' },
             { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'fullname', label: 'Referee Name', type: 'text', required: true },
             { id: 'relationship', label: 'Relationship', type: 'text' },
@@ -524,6 +535,7 @@ const hrmInterfaceBlueprints = {
     pp_qualification: {
         context: 'Qualification records',
         fields: [
+            { id: 'id', name: 'id', type: 'hidden' },
             { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'institution', label: 'Institution', type: 'text' },
             { id: 'qualification', label: 'Qualification', type: 'text', required: true },
@@ -537,6 +549,7 @@ const hrmInterfaceBlueprints = {
     pp_parentsguardians: {
         context: 'Parent and guardian records',
         fields: [
+            { id: 'id', name: 'id', type: 'hidden' },
             { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'parentone', label: 'Parent/Guardian One', type: 'text', required: true },
             { id: 'parenttwo', label: 'Parent/Guardian Two', type: 'text' },
@@ -2388,7 +2401,11 @@ function hrmBindWorkspaceControls(route, blueprint) {
     if (saveButton) {
         saveButton.onclick = async () => {
             const saveController = hrmResolveControllerName(route, 'save');
-            let payload = hrmBuildPayloadFromForm(form, route, 'save');
+            let payloadMode = 'save';
+            if (hrmHtgPayloadRoutes.has(route) && form?.querySelector('[name="id"]')?.value) {
+                payloadMode = 'update';
+            }
+            let payload = hrmBuildPayloadFromForm(form, route, payloadMode);
             if (route === 'pp_level') {
                 payload.delete('module');
                 payload.delete('mode');
@@ -2415,10 +2432,22 @@ function hrmBindWorkspaceControls(route, blueprint) {
             }
             if (route === 'pp_personnel') {
                 const levelControl = document.getElementById('levelid');
+                const departmentControl = document.getElementById('departmentid');
+                const groupControl = document.getElementById('groupid');
                 if (hrmTomSelectInstances.levelid) {
                     hrmTomSelectInstances.levelid.clear(true);
                 } else if (levelControl) {
                     levelControl.value = '';
+                }
+                if (hrmTomSelectInstances.departmentid) {
+                    hrmTomSelectInstances.departmentid.clear(true);
+                } else if (departmentControl) {
+                    departmentControl.value = '';
+                }
+                if (hrmTomSelectInstances.groupid) {
+                    hrmTomSelectInstances.groupid.clear(true);
+                } else if (groupControl) {
+                    groupControl.value = '';
                 }
                 const basicSalaryControl = document.getElementById('basicsalary');
                 const idControl = document.getElementById('id');
@@ -2440,6 +2469,8 @@ function hrmBindWorkspaceControls(route, blueprint) {
             }
             if (route === 'pp_personnel') {
                 if (hrmTomSelectInstances.levelid) hrmTomSelectInstances.levelid.clear(true);
+                if (hrmTomSelectInstances.departmentid) hrmTomSelectInstances.departmentid.clear(true);
+                if (hrmTomSelectInstances.groupid) hrmTomSelectInstances.groupid.clear(true);
                 const saveLabel = saveButton?.querySelector('span:last-child');
                 if (saveLabel) saveLabel.textContent = 'Submit';
             }
@@ -2522,6 +2553,14 @@ function hrmBindWorkspaceControls(route, blueprint) {
                             const levelControl = document.getElementById('levelid');
                             if (hrmTomSelectInstances.levelid && levelControl?.value) {
                                 hrmTomSelectInstances.levelid.setValue(levelControl.value, true);
+                            }
+                            const departmentControl = document.getElementById('departmentid');
+                            if (hrmTomSelectInstances.departmentid && departmentControl?.value) {
+                                hrmTomSelectInstances.departmentid.setValue(departmentControl.value, true);
+                            }
+                            const groupControl = document.getElementById('groupid');
+                            if (hrmTomSelectInstances.groupid && groupControl?.value) {
+                                hrmTomSelectInstances.groupid.setValue(groupControl.value, true);
                             }
                             const saveLabel = saveButton?.querySelector('span:last-child');
                             if (saveLabel) saveLabel.textContent = 'Update';
@@ -2641,13 +2680,15 @@ function hrmBindWorkspaceControls(route, blueprint) {
 
     if (route === 'pp_personnel') {
         const levelPickerLoad = hrmPopulatePersonnelLevelPicker();
+        const departmentPickerLoad = hrmPopulateDynamicSelect('departmentid', 'departments');
+        const groupPickerLoad = hrmPopulateDynamicSelect('groupid', 'groups');
         hrmBindPersonnelLookupBehavior();
         const editRecordRaw = sessionStorage.getItem('hrm_personnel_edit_record');
         if (editRecordRaw) {
             try {
                 const editEntry = JSON.parse(editRecordRaw);
                 const editRecord = hrmMapPersonnelEntryToForm(editEntry);
-                Promise.resolve(levelPickerLoad).finally(() => {
+                Promise.allSettled([levelPickerLoad, departmentPickerLoad, groupPickerLoad]).finally(() => {
                     (async () => {
                         hrmSetActiveTab('input');
                         hrmPopulateEntryForm(editRecord);
@@ -2656,6 +2697,14 @@ function hrmBindWorkspaceControls(route, blueprint) {
                         const levelControl = document.getElementById('levelid');
                         if (hrmTomSelectInstances.levelid && levelControl?.value) {
                             hrmTomSelectInstances.levelid.setValue(levelControl.value, true);
+                        }
+                        const departmentControl = document.getElementById('departmentid');
+                        if (hrmTomSelectInstances.departmentid && departmentControl?.value) {
+                            hrmTomSelectInstances.departmentid.setValue(departmentControl.value, true);
+                        }
+                        const groupControl = document.getElementById('groupid');
+                        if (hrmTomSelectInstances.groupid && groupControl?.value) {
+                            hrmTomSelectInstances.groupid.setValue(groupControl.value, true);
                         }
                         const saveLabel = saveButton?.querySelector('span:last-child');
                         if (saveLabel) saveLabel.textContent = 'Update';
