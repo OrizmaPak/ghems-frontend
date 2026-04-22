@@ -298,6 +298,15 @@ function hrmOperationalPayrollYearOptions() {
     return [year - 1, year, year + 1].map((value) => ({ value: String(value), label: String(value) }));
 }
 
+function hrmCurrentYearNextTenOptions() {
+    const startYear = new Date().getFullYear();
+    const count = 11;
+    return Array.from({ length: count }, (_, index) => {
+        const value = startYear + index;
+        return { value: String(value), label: String(value) };
+    });
+}
+
 const hrmHiddenFrontendFields = new Set([
     'accountnumber',
     'bankaccountnumber2',
@@ -642,9 +651,8 @@ const hrmInterfaceBlueprints = {
         context: 'Payroll approval',
         fields: [],
         filters: [
-            { id: 'branch', label: 'Select by Branch', type: 'select', options: [], dynamic_source: 'locations' },
             { id: 'month', label: 'Select Month', type: 'select', options: hrmMonthSelectOptions },
-            { id: 'year', label: 'Year', type: 'select', options: hrmOperationalPayrollYearOptions() }
+            { id: 'year', label: 'Year', type: 'select', options: hrmCurrentYearNextTenOptions() }
         ],
         columns: ['S/N', '', 'First Name', 'Last Name', 'Level', 'Net Payable', 'Total Allowance', 'Total Deduction', 'Allowances', 'Deductions', 'Entry Date'],
         summary: ['Total Net Payables', 'Total Allowance', 'Total Deductions', 'Total Basic Salary', 'Month', 'Year']
@@ -2509,7 +2517,6 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     if (route === 'pp_confirmsalary') {
         const source = form ? new FormData(form) : new FormData();
         const payload = new FormData();
-        payload.append('branch', hrmPickFormDataValue(source, 'branch'));
         payload.append('month', hrmPickFormDataValue(source, 'month'));
         payload.append('year', hrmPickFormDataValue(source, 'year'));
         return payload;
