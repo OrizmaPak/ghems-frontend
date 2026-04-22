@@ -194,12 +194,17 @@ async function recipeFormSubmitHandler() {
         let param = new FormData()
         param.append('salespoint', document.getElementById('salespointname').value)
         param.append('itemtobuildid', document.getElementById('itembuild').value)
-        for (let i = 0; i < document.getElementsByName('qty').length; i++) {
-            if (document.getElementsByName('qty')[i].value)
-                param.append(`itemid${i + 1}`, document.getElementsByName('itemid')[i].textContent)
-            param.append(`qty${i + 1}`, document.getElementsByName('qty')[i].value)
+        const qtyElements = document.getElementsByName('qty')
+        const itemIdElements = document.getElementsByName('itemid')
+        const rowTotalElements = document.querySelectorAll('#recipetabledata .recipe-item-total')
+        for (let i = 0; i < qtyElements.length; i++) {
+            const qtyValue = parseRecipeAmount(qtyElements[i].value)
+            const rowPrice = parseRecipeAmount(rowTotalElements[i]?.dataset?.raw || 0)
+            if (qtyValue) param.append(`itemid${i + 1}`, itemIdElements[i].textContent)
+            param.append(`qty${i + 1}`, qtyValue)
+            param.append(`price${i + 1}`, rowPrice)
         }
-        param.append('gridsize', document.getElementsByName('qty').length)
+        param.append('gridsize', qtyElements.length)
         return param
     }
     let request = await httpRequest2('../controllers/builditemscript.php', payload(), document.querySelector('#recipeform #submit'))
