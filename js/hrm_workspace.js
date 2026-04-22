@@ -288,7 +288,7 @@ const hrmHtgControllerRouting = {
     pp_parentsguardians: { load: 'fetchparents.php', save: 'parentscript.php', filter: 'fetchparents.php', delete: 'removeparentsguardians.php' },
     pp_query: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_promotions: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
-    pp_termination: { load: 'termination.php', save: 'termination.php', filter: 'termination.php' },
+    pp_termination: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_suspension: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_leave: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_warning: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
@@ -307,6 +307,8 @@ let hrmLevelEditingId = '';
 const hrmTomSelectInstances = {};
 let hrmTomSelectAssetsPromise = null;
 const hrmPersonnelLevelMetaById = {};
+const hrmPersonnelLabelByStaffId = {};
+const hrmLevelLabelById = {};
 const hrmFilePreviewUrls = {};
 
 const hrmMatterFields = {
@@ -329,11 +331,11 @@ const hrmMatterFields = {
     ],
     pp_termination: [
         { id: 'id', name: 'id', type: 'hidden' },
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'exit_type', label: 'Exit Type', type: 'select', options: ['TERMINATION', 'RESIGNATION', 'RETIREMENT'] },
-        { id: 'effectivedate', label: 'Effective Date', type: 'date', required: true },
-        { id: 'reason', label: 'Reason', type: 'textarea' },
-        { id: 'finalentitlement', label: 'Final Entitlement', type: 'number' },
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'startdate', label: 'Start Date', type: 'date' },
+        { id: 'enddate', label: 'End Date', type: 'date' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_suspension: [
@@ -377,7 +379,7 @@ const hrmMatterFields = {
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
-        { id: 'amount', label: 'Amount', type: 'number', required: true },
+        { id: 'amount', label: 'Amount', type: 'text', required: true },
         { id: 'monthlyinstallment', label: 'Monthly Installment', type: 'number' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ]
@@ -386,6 +388,7 @@ const hrmMatterFields = {
 const hrmHtgPersonnelMatterByRoute = {
     pp_query: 'QUERY',
     pp_promotions: 'PROMOTION',
+    pp_termination: 'TERMINATION',
     pp_suspension: 'SUSPENSION',
     pp_leave: 'leave',
     pp_warning: 'WARNING',
@@ -403,6 +406,14 @@ const hrmHtgSubrecordRoutes = new Set([
 
 const hrmHtgMatterRoutes = new Set(Object.keys(hrmHtgPersonnelMatterByRoute));
 const hrmHtgPayloadRoutes = new Set([...hrmHtgSubrecordRoutes, ...hrmHtgMatterRoutes]);
+const hrmHtgActionRoutes = new Set([...hrmHtgPayloadRoutes, 'pp_viewstaffadvance']);
+
+function hrmPersonnelFilterFields(extra = []) {
+    return [
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels' },
+        ...extra
+    ];
+}
 
 const hrmInterfaceBlueprints = {
     pp_level: {
@@ -496,8 +507,8 @@ const hrmInterfaceBlueprints = {
             { id: 'yearsknown', label: 'Years Known', type: 'text' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
-        filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff ID', 'Guarantor', 'Relationship', 'Phone', 'Occupation', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Guarantor Name', 'Occupation', 'Phone Number', 'Residential Address', 'Action'],
         summary: ['Total Guarantors', 'With Attachment', 'Missing Phone', 'Updated This Month']
     },
     pp_employerrecord: {
@@ -507,13 +518,13 @@ const hrmInterfaceBlueprints = {
             { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'employer', label: 'Employer', type: 'text', required: true },
             { id: 'position', label: 'Position', type: 'text' },
-            { id: 'basic', label: 'Basic Salary', type: 'number' },
+            { id: 'basic', label: 'Basic Salary', type: 'text' },
             { id: 'yearsemployed', label: 'Years Employed', type: 'number' },
             { id: 'reasonforleaving', label: 'Reason For Leaving', type: 'text' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
-        filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff Name', 'Employer', 'Position', 'Start Date', 'End Date', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Employer', 'Position', 'Basic', 'Years Employed', 'Reason For Leaving', 'Action'],
         summary: ['Records', 'Current Employers', 'Past Employers', 'Updated This Month']
     },
     pp_referees: {
@@ -528,8 +539,8 @@ const hrmInterfaceBlueprints = {
             { id: 'address', label: 'Address', type: 'text' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
-        filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff Name', 'Referee', 'Relationship', 'Phone', 'Email', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Referee', 'Relationship', 'Occupation', 'Phone Number', 'Address', 'Action'],
         summary: ['Referees', 'Complete Records', 'Missing Email', 'Updated This Month']
     },
     pp_qualification: {
@@ -542,8 +553,8 @@ const hrmInterfaceBlueprints = {
             { id: 'certificationdate', label: 'Certification Date', type: 'date' },
             { id: 'attachment', label: 'Certificate', type: 'file' }
         ],
-        filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff Name', 'Qualification', 'Institution', 'Course', 'Year', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Institution', 'Qualification', 'Certification Date', 'Document', 'Action'],
         summary: ['Qualifications', 'With Certificate', 'Professional', 'Academic']
     },
     pp_parentsguardians: {
@@ -561,19 +572,15 @@ const hrmInterfaceBlueprints = {
             { id: 'officeaddress', label: 'Office Address', type: 'textarea' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
-        filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff Name', 'Parent/Guardian', 'Relationship', 'Phone', 'Email', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Parent One', 'Parent Two', 'Parent One Occupation', 'Parent Two Occupation', 'Parent One Phone', 'Parent Two Phone', 'Home Address', 'Office Address', 'Action'],
         summary: ['Guardians', 'Emergency Contacts', 'Missing Phone', 'Updated This Month']
     },
     pp_viewstaffadvance: {
         context: 'Advance report',
         fields: [],
-        filters: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' },
-            { id: 'month', label: 'Month', type: 'month' },
-            { id: 'status', label: 'Status', type: 'select', options: ['All Status', 'OPEN', 'PAID', 'CANCELLED'] }
-        ],
-        columns: ['S/N', 'Staff ID', 'Name', 'Advance Amount', 'Paid', 'Balance', 'Status', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: ['S/N', 'Personnel', 'Title', 'Amount', 'Entry Date', 'Action'],
         summary: ['Total Advance', 'Recovered', 'Outstanding', 'Open Records']
     },
     pp_personalstaffsalaryrecord: {
@@ -631,17 +638,24 @@ const hrmInterfaceBlueprints = {
 };
 
 ['pp_query', 'pp_promotions', 'pp_termination', 'pp_suspension', 'pp_leave', 'pp_warning', 'pp_monitorevaluation', 'pp_advance'].forEach((route) => {
+    const columnsByRoute = {
+        pp_promotions: ['S/N', 'Personnel', 'Level', 'Title', 'Entry Date', 'Action'],
+        pp_leave: ['S/N', 'Personnel', 'Entry Date', 'Title', 'Start Date', 'End Date', 'Action'],
+        pp_advance: ['S/N', 'Personnel', 'Title', 'Amount', 'Entry Date', 'Action']
+    };
     hrmInterfaceBlueprints[route] = {
         context: `${hrmInterfaceRegistry[route].title} records`,
         fields: hrmMatterFields[route],
-        filters: hrmCommonFilters.concat([{ id: 'status', label: 'Status', type: 'select', options: ['All Status', 'OPEN', 'CLOSED', 'APPROVED'] }]),
-        columns: ['S/N', 'Staff ID', 'Name', 'Matter Type', 'Effective Date', 'Status', 'Attachment', 'Action'],
+        filters: hrmPersonnelFilterFields(),
+        columns: columnsByRoute[route] || ['S/N', 'Personnel', 'Entry Date', 'Title', 'Action'],
         summary: ['Total Records', 'Open', 'Closed', 'Updated This Month']
     };
 });
 
 function hrmWorkspaceActive() {
-    const route = new URLSearchParams(window.location.search).get('r') || '';
+    hrmHideDeprecatedHrmNavigation();
+    const requestedRoute = new URLSearchParams(window.location.search).get('r') || '';
+    const route = requestedRoute === 'pp_viewstaffadvance' ? 'pp_advance' : requestedRoute;
     const config = hrmInterfaceRegistry[route];
     if (!config) return;
 
@@ -681,6 +695,13 @@ function hrmWorkspaceActive() {
     hrmBindWorkspaceControls(route, blueprint);
 }
 
+function hrmHideDeprecatedHrmNavigation() {
+    ['pp_viewstaffadvance', 'pp_viewstaffadvance_main'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.classList.add('hidden');
+    });
+}
+
 function hrmToggleElement(id, shouldShow) {
     const element = document.getElementById(id);
     if (!element) return;
@@ -718,6 +739,9 @@ function hrmPopulateEntryForm(record = {}) {
             return;
         }
         control.value = record[key] ?? '';
+        if (hrmTomSelectInstances[key]) {
+            hrmTomSelectInstances[key].setValue(control.value, true);
+        }
     });
 }
 
@@ -1479,6 +1503,7 @@ function hrmNormalizePersonnelSelectOptions(responseData) {
         const staffid = hrmNormalizePersonnelValue(personnel?.staffid);
         if (!staffid) return;
         const fullname = [personnel?.firstname, personnel?.lastname].filter(Boolean).join(' ').trim();
+        hrmPersonnelLabelByStaffId[staffid] = fullname || staffid;
         options.push({ value: staffid, text: `${staffid} || ${fullname || 'Unnamed Personnel'}` });
     });
     return options;
@@ -1546,6 +1571,24 @@ async function hrmPopulatePersonnelHistoryFilterPicker(route, blueprint, filterF
     } catch (error) {
         notification('Unable to initialize personnel selector search', 0);
     }
+}
+
+async function hrmEnsurePersonnelLookup() {
+    if (Object.keys(hrmPersonnelLabelByStaffId).length > 0) return;
+    const result = await hrmRequestController('fetchpersonnels.php', new FormData());
+    if (result.ok && result?.data?.status !== false) hrmNormalizePersonnelSelectOptions(result.data);
+}
+
+async function hrmEnsureLevelLookup() {
+    if (Object.keys(hrmLevelLabelById).length > 0) return;
+    const result = await hrmRequestController('fetchlevel.php', new FormData());
+    if (result.ok && result?.data?.status !== false) hrmNormalizeLevelOptions(result.data);
+}
+
+async function hrmEnsureHtgDisplayLookups(route) {
+    if (!hrmHtgActionRoutes.has(route)) return;
+    await hrmEnsurePersonnelLookup();
+    if (route === 'pp_promotions') await hrmEnsureLevelLookup();
 }
 
 async function hrmPopulateDynamicSelect(controlId, source) {
@@ -1787,6 +1830,21 @@ function hrmResetFileUploadPreviews() {
     });
 }
 
+function hrmClearTomSelectsWithin(container) {
+    if (!container) return;
+    container.querySelectorAll('select[id]').forEach((control) => {
+        if (hrmTomSelectInstances[control.id]) hrmTomSelectInstances[control.id].clear(true);
+    });
+}
+
+function hrmResetFormState(form, saveButton = null) {
+    form?.reset();
+    hrmClearTomSelectsWithin(form);
+    hrmResetFileUploadPreviews();
+    const saveLabel = saveButton?.querySelector('span:last-child');
+    if (saveLabel) saveLabel.textContent = 'Submit';
+}
+
 function hrmRenderSummary(items) {
     const container = document.getElementById('hrm_summary_grid');
     if (!container) return;
@@ -1818,6 +1876,7 @@ function hrmRenderTable(columns, label) {
 function hrmResolveControllerName(route, mode = 'load') {
     const mapped = hrmHtgControllerRouting[route]?.[mode];
     if (mapped) return mapped;
+    if (mode === 'delete') return '';
     return hrmInterfaceRegistry[route]?.controllers?.[0]?.name || '';
 }
 
@@ -1925,16 +1984,11 @@ function hrmBuildHtgMatterPayload(source, route, mode) {
             append('startdate', 'startdate');
             append('enddate', 'enddate');
         }
-        if (route === 'pp_suspension' || route === 'pp_warning' || route === 'pp_monitorevaluation') {
-            append('startdate', 'startdate');
-            append('enddate', 'enddate');
-        }
         if (route === 'pp_promotions') {
             append('level', 'level');
         }
         if (route === 'pp_advance') {
             append('amount', 'amount');
-            append('monthlyinstallment', 'monthlyinstallment');
             payload.append('level', '-1');
         }
         hrmAppendPhotoPayload(payload, hrmPickFormDataValue(source, 'attachment', 'userphotoname', 'photo', 'document'));
@@ -2090,6 +2144,7 @@ function hrmNormalizeLevelOptions(responseData) {
             ? item.level
             : (nested?.level ?? item?.levelname ?? '');
         const basicsalary = nested?.basicsalary ?? item?.basicsalary ?? '';
+        if (id && label) hrmLevelLabelById[String(id)] = String(label);
         return { id: String(id), label: String(label), basicsalary: String(basicsalary ?? '') };
     }).filter((item) => item.id && item.label);
 }
@@ -2299,7 +2354,91 @@ function hrmExtractRowsFromResponse(responseData) {
     return [];
 }
 
-function hrmRenderRows(columns, rows) {
+function hrmFirstFilled(record = {}, ...keys) {
+    for (const key of keys) {
+        const value = record?.[key];
+        if (value === null || value === undefined || value === '') continue;
+        return value;
+    }
+    return '';
+}
+
+function hrmPersonnelDisplay(staffid) {
+    const key = hrmNormalizePersonnelValue(staffid);
+    if (!key) return '-';
+    return hrmPersonnelLabelByStaffId[key] || key;
+}
+
+function hrmLevelDisplay(levelid) {
+    const key = hrmNormalizePersonnelValue(levelid);
+    if (!key || key === '-1') return key === '-1' ? '-' : '-';
+    return hrmLevelLabelById[key] || key;
+}
+
+function hrmRecordDocumentValue(record = {}) {
+    return hrmFirstFilled(record, 'doc', 'document', 'filename', 'photofilename');
+}
+
+function hrmDocumentTableCell(value) {
+    const documentName = hrmNormalizePersonnelValue(value);
+    if (!documentName || documentName === '-') return '-';
+    const href = `../images/personnel/${encodeURIComponent(documentName)}`;
+    return `<a href="${href}" target="_blank" rel="noopener" class="text-blue-700 underline">${hrmEscapeHtml(documentName)}</a>`;
+}
+
+function hrmRouteRowValues(route, record = {}) {
+    switch (route) {
+        case 'pp_guarantor':
+            return [hrmPersonnelDisplay(record.staffid), record.guarantorname, record.occupation, record.phonenumber, record.address];
+        case 'pp_employerrecord':
+            return [hrmPersonnelDisplay(record.staffid), record.employer, record.position, record.basic, record.yearsemployed, record.reasonforleaving];
+        case 'pp_referees':
+            return [hrmPersonnelDisplay(record.staffid), record.fullname, record.relationship, record.occupation, record.phonenumber, record.address];
+        case 'pp_qualification':
+            return [hrmPersonnelDisplay(record.staffid), record.institution, record.qualification, record.certificationdate, hrmDocumentTableCell(record.doc)];
+        case 'pp_parentsguardians':
+            return [hrmPersonnelDisplay(record.staffid), record.parentone, record.parenttwo, record.parentoneoccupation, record.parenttwooccupation, record.parentonephone, record.parenttwophone, record.homeaddress, record.officeaddress];
+        case 'pp_promotions':
+            return [hrmPersonnelDisplay(record.pid), hrmLevelDisplay(record.level), record.title, record.entrydate];
+        case 'pp_leave':
+            return [hrmPersonnelDisplay(record.pid), record.entrydate, record.title, record.startdate, record.enddate];
+        case 'pp_advance':
+        case 'pp_viewstaffadvance':
+            return [hrmPersonnelDisplay(record.pid), record.title, record.amount, record.entrydate];
+        case 'pp_query':
+        case 'pp_termination':
+        case 'pp_suspension':
+        case 'pp_warning':
+        case 'pp_monitorevaluation':
+            return [hrmPersonnelDisplay(record.pid), record.entrydate, record.title];
+        default:
+            return Object.values(record || {});
+    }
+}
+
+function hrmEncodeRecord(record = {}) {
+    return encodeURIComponent(JSON.stringify(record || {}));
+}
+
+function hrmRouteActionCell(route, record = {}) {
+    const encoded = hrmEncodeRecord(record);
+    const id = hrmEscapeHtml(hrmFirstFilled(record, 'id'));
+    const deleteController = hrmResolveControllerName(route, 'delete');
+    const deleteButton = id && deleteController
+        ? `<button type="button" class="btn hrm-ui-action" data-hrm-delete="1" data-hrm-id="${id}" data-hrm-record="${encoded}" title="Delete record" style="background-color:#dc2626 !important;color:#fff !important;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">delete</span></button>`
+        : '';
+    return `
+        <td>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn hrm-ui-action" data-hrm-view="1" data-hrm-record="${encoded}" title="View record" style="background:#0f766e;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">visibility</span></button>
+                <button type="button" class="btn hrm-ui-action" data-hrm-edit="1" data-hrm-record="${encoded}" title="Edit record" style="background:#2563eb;color:#fff;min-width:38px;padding:6px 10px;"><span class="material-symbols-outlined" style="font-size:16px;line-height:1;">edit</span></button>
+                ${deleteButton}
+            </div>
+        </td>
+    `;
+}
+
+function hrmRenderRows(columns, rows, route = '') {
     const body = document.getElementById('hrm_table_body');
     const status = document.getElementById('hrm_table_status');
     if (!body) return;
@@ -2312,19 +2451,137 @@ function hrmRenderRows(columns, rows) {
 
     body.innerHTML = rows.map((row, index) => {
         const objectRow = (row && typeof row === 'object') ? row : { value: row };
-        const valueList = Object.values(objectRow);
+        const valueList = hrmRouteRowValues(route, objectRow);
         const cells = columns.map((column, cellIndex) => {
             if (String(column).toLowerCase() === 'action') {
-                return `<td><button type="button" class="btn hrm-ui-action" data-hrm-edit="1" data-hrm-record='${JSON.stringify(objectRow).replace(/'/g, '&apos;')}'><span>Edit</span></button></td>`;
+                return hrmRouteActionCell(route, objectRow);
             }
             if (cellIndex === 0) return `<td>${index + 1}</td>`;
             const value = valueList[cellIndex - 1] ?? '';
-            return `<td>${value}</td>`;
+            return `<td>${String(value).includes('<a ') ? value : hrmEscapeHtml(value)}</td>`;
         }).join('');
         return `<tr>${cells}</tr>`;
     }).join('');
 
     if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+}
+
+function hrmMapRouteRecordToForm(route, record = {}) {
+    const personnel = hrmFirstFilled(record, 'staffid', 'pid', 'personnelid');
+    const baseMatter = {
+        id: hrmFirstFilled(record, 'id'),
+        personnel,
+        entrydate: hrmFirstFilled(record, 'entrydate'),
+        title: hrmFirstFilled(record, 'title'),
+        startdate: hrmFirstFilled(record, 'startdate'),
+        enddate: hrmFirstFilled(record, 'enddate')
+    };
+
+    switch (route) {
+        case 'pp_guarantor':
+            return { id: record.id, personnel, guarantorname: record.guarantorname, occupation: record.occupation, phonenumber: record.phonenumber, address: record.address, officeaddress: record.officeaddress, yearsknown: record.yearsknown };
+        case 'pp_employerrecord':
+            return { id: record.id, personnel, employer: record.employer, position: record.position, basic: record.basic, yearsemployed: record.yearsemployed, reasonforleaving: record.reasonforleaving };
+        case 'pp_referees':
+            return { id: record.id, personnel, fullname: record.fullname, relationship: record.relationship, occupation: record.occupation, phonenumber: record.phonenumber, address: record.address };
+        case 'pp_qualification':
+            return { id: record.id, personnel, institution: record.institution, qualification: record.qualification, certificationdate: record.certificationdate };
+        case 'pp_parentsguardians':
+            return { id: record.id, personnel, parentone: record.parentone, parenttwo: record.parenttwo, parentoneoccupation: record.parentoneoccupation, parenttwooccupation: record.parenttwooccupation, parentonephone: record.parentonephone, parenttwophone: record.parenttwophone, homeaddress: record.homeaddress, officeaddress: record.officeaddress };
+        case 'pp_promotions':
+            return { ...baseMatter, level: record.level };
+        case 'pp_advance':
+        case 'pp_viewstaffadvance':
+            return { ...baseMatter, amount: record.amount, monthlyinstallment: record.monthlyinstallment };
+        default:
+            return baseMatter;
+    }
+}
+
+function hrmRecordDetailPairs(route, record = {}) {
+    const commonMatter = [
+        ['Personnel', hrmPersonnelDisplay(hrmFirstFilled(record, 'pid', 'staffid', 'personnelid'))],
+        ['Entry Date', record.entrydate],
+        ['Title', record.title],
+        ['Start Date', record.startdate],
+        ['End Date', record.enddate],
+        ['Document', hrmRecordDocumentValue(record)]
+    ];
+    const routePairs = {
+        pp_guarantor: [['Personnel', hrmPersonnelDisplay(record.staffid)], ['Guarantor Name', record.guarantorname], ['Occupation', record.occupation], ['Phone Number', record.phonenumber], ['Residential Address', record.address], ['Office Address', record.officeaddress], ['Years Known', record.yearsknown], ['Document', hrmRecordDocumentValue(record)]],
+        pp_employerrecord: [['Personnel', hrmPersonnelDisplay(record.staffid)], ['Employer', record.employer], ['Position', record.position], ['Basic', record.basic], ['Years Employed', record.yearsemployed], ['Reason For Leaving', record.reasonforleaving], ['Document', hrmRecordDocumentValue(record)]],
+        pp_referees: [['Personnel', hrmPersonnelDisplay(record.staffid)], ['Referee', record.fullname], ['Relationship', record.relationship], ['Occupation', record.occupation], ['Phone Number', record.phonenumber], ['Address', record.address], ['Document', hrmRecordDocumentValue(record)]],
+        pp_qualification: [['Personnel', hrmPersonnelDisplay(record.staffid)], ['Institution', record.institution], ['Qualification', record.qualification], ['Certification Date', record.certificationdate], ['Document', hrmRecordDocumentValue(record)]],
+        pp_parentsguardians: [['Personnel', hrmPersonnelDisplay(record.staffid)], ['Parent One', record.parentone], ['Parent Two', record.parenttwo], ['Parent One Occupation', record.parentoneoccupation], ['Parent Two Occupation', record.parenttwooccupation], ['Parent One Phone', record.parentonephone], ['Parent Two Phone', record.parenttwophone], ['Home Address', record.homeaddress], ['Office Address', record.officeaddress], ['Document', hrmRecordDocumentValue(record)]],
+        pp_promotions: [['Personnel', hrmPersonnelDisplay(record.pid)], ['Level', hrmLevelDisplay(record.level)], ['Title', record.title], ['Entry Date', record.entrydate], ['Document', hrmRecordDocumentValue(record)]],
+        pp_advance: [['Personnel', hrmPersonnelDisplay(record.pid)], ['Title', record.title], ['Amount', record.amount], ['Monthly Installment', record.monthlyinstallment], ['Entry Date', record.entrydate], ['Document', hrmRecordDocumentValue(record)]],
+        pp_viewstaffadvance: [['Personnel', hrmPersonnelDisplay(record.pid)], ['Title', record.title], ['Amount', record.amount], ['Entry Date', record.entrydate], ['Document', hrmRecordDocumentValue(record)]]
+    };
+    const pairs = routePairs[route] || commonMatter;
+    const seen = new Set(pairs.map(([label]) => label.toLowerCase().replace(/\s+/g, '')));
+    Object.entries(record || {}).forEach(([key, value]) => {
+        const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (seen.has(normalized) || value === null || typeof value === 'object') return;
+        pairs.push([key, value]);
+    });
+    return pairs;
+}
+
+function hrmOpenRecordDetailModal(route, record = {}, blueprint = {}) {
+    const previous = document.getElementById('hrm_record_detail_modal');
+    if (previous) previous.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'hrm_record_detail_modal';
+    modal.className = 'fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4';
+    const title = hrmInterfaceRegistry[route]?.title || blueprint?.context || 'Record';
+    modal.innerHTML = `
+        <div class="bg-white rounded-md shadow-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <p class="text-lg font-semibold text-slate-800">${hrmEscapeHtml(title)} Details</p>
+                <button type="button" id="hrm_record_detail_close" class="btn" title="Close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                ${hrmRecordDetailPairs(route, record).map(([label, value]) => {
+                    const isDocument = String(label).toLowerCase().includes('document');
+                    const rendered = isDocument ? hrmDocumentTableCell(value) : hrmEscapeHtml(value || '-');
+                    return `
+                        <div class="border border-slate-200 rounded-sm p-3 bg-slate-50/60">
+                            <p class="text-xs uppercase tracking-wide text-slate-500">${hrmEscapeHtml(label)}</p>
+                            <p class="text-sm font-medium text-slate-800 mt-1 break-words">${rendered}</p>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    const close = () => document.getElementById('hrm_record_detail_modal')?.remove();
+    modal.querySelector('#hrm_record_detail_close')?.addEventListener('click', close);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) close();
+    });
+}
+
+async function hrmDeleteRouteRecord(route, record = {}, blueprint = {}, button = null) {
+    const id = hrmFirstFilled(record, 'id');
+    const deleteController = hrmResolveControllerName(route, 'delete');
+    if (!id || !deleteController) {
+        notification('Delete is not available for this record', 0);
+        return;
+    }
+    if (!window.confirm('Delete this record?')) return;
+    const payload = new FormData();
+    payload.append('id', id);
+    const result = await hrmRequestController(deleteController, payload, button);
+    if (!hrmIsControllerSuccess(result)) {
+        notification(hrmResultErrorMessage(result, `Delete failed on ${deleteController}`), 0);
+        return;
+    }
+    notification(hrmResultSuccessMessage(result, 'Code 200: Record deleted successfully'), 1);
+    await hrmLoadViewData(route === 'pp_viewstaffadvance' ? 'pp_advance' : route, blueprint);
 }
 
 async function hrmLoadViewData(route, blueprint, button = null, filterForm = null) {
@@ -2347,6 +2604,7 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         return;
     }
 
+    await hrmEnsureHtgDisplayLookups(route);
     const result = await hrmRequestController(loadController, payload, button);
 
     if (!result.ok || result?.data?.status === false) {
@@ -2383,7 +2641,7 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     }
 
     const rows = hrmExtractRowsFromResponse(result.data);
-    hrmRenderRows(columns, rows);
+    hrmRenderRows(columns, rows, route);
 }
 
 function hrmBindWorkspaceControls(route, blueprint) {
@@ -2423,8 +2681,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
             }
             notification(hrmResultSuccessMessage(result, 'Code 200: Record submitted successfully'), 1);
             if (Array.isArray(blueprint?.fields) && blueprint.fields.length > 0) {
-                form?.reset();
-                hrmResetFileUploadPreviews();
+                hrmResetFormState(form, saveButton);
             }
             if (route === 'pp_level') {
                 hrmLevelEditingId = '';
@@ -2453,16 +2710,13 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 const idControl = document.getElementById('id');
                 if (basicSalaryControl) basicSalaryControl.value = '';
                 if (idControl) idControl.value = '';
-                const saveLabel = saveButton?.querySelector('span:last-child');
-                if (saveLabel) saveLabel.textContent = 'Submit';
             }
             await hrmLoadViewData(route, blueprint);
         };
     }
     if (resetButton) {
         resetButton.onclick = () => {
-            form?.reset();
-            hrmResetFileUploadPreviews();
+            hrmResetFormState(form, saveButton);
             if (route === 'pp_level') {
                 hrmLevelEditingId = '';
                 hrmRenderLevelLineEditors([], []);
@@ -2471,14 +2725,13 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 if (hrmTomSelectInstances.levelid) hrmTomSelectInstances.levelid.clear(true);
                 if (hrmTomSelectInstances.departmentid) hrmTomSelectInstances.departmentid.clear(true);
                 if (hrmTomSelectInstances.groupid) hrmTomSelectInstances.groupid.clear(true);
-                const saveLabel = saveButton?.querySelector('span:last-child');
-                if (saveLabel) saveLabel.textContent = 'Submit';
             }
         };
     }
     if (filterButton) filterButton.onclick = async () => hrmLoadViewData(route, blueprint, filterButton, filterForm);
     if (filterResetButton) filterResetButton.onclick = async () => {
         filterForm?.reset();
+        hrmClearTomSelectsWithin(filterForm);
         await hrmLoadViewData(route, blueprint);
     };
     if (batchActions) batchActions.innerHTML = '';
@@ -2616,14 +2869,33 @@ function hrmBindWorkspaceControls(route, blueprint) {
                 }
             }
 
+            const parseRouteRecord = (trigger) => {
+                const rawRecord = trigger?.dataset?.hrmRecord || '';
+                try {
+                    return rawRecord ? JSON.parse(decodeURIComponent(rawRecord)) : {};
+                } catch (error) {
+                    return {};
+                }
+            };
+
+            const viewTrigger = event.target.closest('[data-hrm-view]');
+            if (viewTrigger) {
+                hrmOpenRecordDetailModal(route, parseRouteRecord(viewTrigger), blueprint);
+                return;
+            }
+
+            const deleteTrigger = event.target.closest('[data-hrm-delete]');
+            if (deleteTrigger) {
+                hrmDeleteRouteRecord(route, parseRouteRecord(deleteTrigger), blueprint, deleteTrigger);
+                return;
+            }
+
             const editTrigger = event.target.closest('[data-hrm-edit]');
             if (editTrigger) {
-                let payload = {};
-                const rawRecord = editTrigger.dataset.hrmRecord || '';
-                try {
-                    payload = rawRecord ? JSON.parse(rawRecord) : {};
-                } catch (error) {}
+                const payload = hrmMapRouteRecordToForm(route, parseRouteRecord(editTrigger));
                 window.hrmNavigateToInput(payload);
+                const saveLabel = saveButton?.querySelector('span:last-child');
+                if (saveLabel) saveLabel.textContent = 'Update';
             }
         };
     }
