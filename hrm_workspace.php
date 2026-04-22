@@ -90,7 +90,7 @@
                 </div>
             </div>
 
-            <div class="table-content">
+            <div class="table-content" id="hrm_table_container">
                 <table id="hrm_records_table">
                     <thead id="hrm_table_head"></thead>
                     <tbody id="hrm_table_body"></tbody>
@@ -98,6 +98,7 @@
             </div>
             <div id="hrm_table_batch_actions" class="hidden flex flex-wrap justify-start gap-2 mt-4 mb-4"></div>
             <div class="table-status" id="hrm_table_status">Showing 0 to 0 of 0 records</div>
+            <div id="hrm_personnelhistory_sections" class="hidden flex flex-col gap-6"></div>
         </div>
     </div>
 </section>

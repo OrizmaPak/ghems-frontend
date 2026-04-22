@@ -272,11 +272,7 @@ const hrmCommonFilters = [
 const hrmHiddenFrontendFields = new Set([
     'accountnumber',
     'bankaccountnumber2',
-    'bankname2',
-    'department',
-    'departmentid',
-    'groupid',
-    'groupname'
+    'bankname2'
 ]);
 
 const hrmHtgControllerRouting = {
@@ -341,6 +337,8 @@ const hrmMatterFields = {
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'startdate', label: 'Start Date', type: 'date' },
+        { id: 'enddate', label: 'End Date', type: 'date' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_leave: [
@@ -355,12 +353,16 @@ const hrmMatterFields = {
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'startdate', label: 'Start Date', type: 'date' },
+        { id: 'enddate', label: 'End Date', type: 'date' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_monitorevaluation: [
         { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'startdate', label: 'Start Date', type: 'date' },
+        { id: 'enddate', label: 'End Date', type: 'date' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_advance: [
@@ -368,6 +370,7 @@ const hrmMatterFields = {
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
         { id: 'amount', label: 'Amount', type: 'number', required: true },
+        { id: 'monthlyinstallment', label: 'Monthly Installment', type: 'number' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ]
 };
@@ -435,6 +438,8 @@ const hrmInterfaceBlueprints = {
             { id: 'bankaccountnumber1', label: 'Bank Account Number', type: 'text' },
             { id: 'bankname1', label: 'Bank Name', type: 'text' },
             { id: 'levelid', label: 'Level', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'levels' },
+            { id: 'departmentid', label: 'Department', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'departments' },
+            { id: 'groupid', label: 'Group', type: 'select', options: [], required: true, tom_select: true, dynamic_source: 'groups' },
             { id: 'employmentdate', label: 'Employment Date', type: 'date' },
             { id: 'registereduseremail', label: 'Username/Email', type: 'text', list: 'personelallemail' },
             { id: 'userphotoname', label: 'Profile Photo', type: 'file' }
@@ -473,15 +478,17 @@ const hrmInterfaceBlueprints = {
     pp_guarantor: {
         context: 'Guarantor records',
         fields: [
-            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+            { id: 'personnel', label: 'Staff ID', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'guarantorname', label: 'Guarantor Name', type: 'text', required: true },
             { id: 'occupation', label: 'Occupation', type: 'text' },
             { id: 'phonenumber', label: 'Phone Number', type: 'tel' },
-            { id: 'address', label: 'Address', type: 'textarea' },
+            { id: 'address', label: 'Residential Address', type: 'text' },
+            { id: 'officeaddress', label: 'Office Address', type: 'text' },
+            { id: 'yearsknown', label: 'Years Known', type: 'text' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
         filters: hrmCommonFilters,
-        columns: ['S/N', 'Staff Name', 'Guarantor', 'Relationship', 'Phone', 'Occupation', 'Action'],
+        columns: ['S/N', 'Staff ID', 'Guarantor', 'Relationship', 'Phone', 'Occupation', 'Action'],
         summary: ['Total Guarantors', 'With Attachment', 'Missing Phone', 'Updated This Month']
     },
     pp_employerrecord: {
@@ -492,7 +499,8 @@ const hrmInterfaceBlueprints = {
             { id: 'position', label: 'Position', type: 'text' },
             { id: 'basic', label: 'Basic Salary', type: 'number' },
             { id: 'yearsemployed', label: 'Years Employed', type: 'text' },
-            { id: 'reasonforleaving', label: 'Reason For Leaving', type: 'textarea' }
+            { id: 'reasonforleaving', label: 'Reason For Leaving', type: 'text' },
+            { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
         filters: hrmCommonFilters,
         columns: ['S/N', 'Staff Name', 'Employer', 'Position', 'Start Date', 'End Date', 'Action'],
@@ -506,7 +514,8 @@ const hrmInterfaceBlueprints = {
             { id: 'relationship', label: 'Relationship', type: 'text' },
             { id: 'occupation', label: 'Occupation', type: 'text' },
             { id: 'phonenumber', label: 'Phone Number', type: 'tel' },
-            { id: 'address', label: 'Address', type: 'textarea' }
+            { id: 'address', label: 'Address', type: 'text' },
+            { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
         filters: hrmCommonFilters,
         columns: ['S/N', 'Staff Name', 'Referee', 'Relationship', 'Phone', 'Email', 'Action'],
@@ -981,6 +990,8 @@ function hrmMapPersonnelEntryToForm(entry = {}) {
         employmentdate: hrmNormalizePersonnelValue(personnel?.employmentdate),
         registereduseremail: hrmNormalizePersonnelValue(personnel?.registereduseremail || personnel?.user),
         levelid: hrmNormalizePersonnelValue(personnel?.levelid),
+        departmentid: hrmNormalizePersonnelValue(personnel?.departmentid),
+        groupid: hrmNormalizePersonnelValue(personnel?.groupid),
         basicsalary: hrmNormalizePersonnelValue(personnel?.basicsalary)
     };
 }
@@ -1320,107 +1331,131 @@ function hrmBuildPersonnelHistoryLoadPayload(filterForm = null) {
     return payload;
 }
 
-function hrmBuildPersonnelHistoryRows(root) {
-    const personnel = root?.personnel || {};
-    const sections = [
-        ['advance', 'Advance', (item) => ({ title: item?.title, details: `Amount: ${item?.amount || '-'}`, entrydate: item?.entrydate, document: item?.document })],
-        ['leave', 'Leave', (item) => ({ title: item?.title, details: `Start: ${item?.startdate || '-'} | End: ${item?.enddate || '-'}`, entrydate: item?.entrydate, document: item?.document })],
-        ['employeerecords', 'Employee Records', (item) => ({ title: item?.employer, details: `Position: ${item?.position || '-'} | Years: ${item?.yearsemployed || '-'} | Reason: ${item?.reasonforleaving || '-'}`, entrydate: item?.entrydate, document: item?.doc })],
-        ['guarantors', 'Guarantors', (item) => ({ title: item?.guarantorname, details: `Occupation: ${item?.occupation || '-'} | Phone: ${item?.phonenumber || '-'}`, entrydate: item?.entrydate, document: item?.doc })],
-        ['promotion', 'Promotion', (item) => ({ title: item?.title, details: `Level: ${item?.level || '-'}`, entrydate: item?.entrydate, document: item?.document })],
-        ['qualifications', 'Qualifications', (item) => ({ title: item?.qualification, details: `Institution: ${item?.institution || '-'}`, entrydate: item?.certificationdate, document: item?.doc })],
-        ['query', 'Query', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
-        ['referees', 'Referees', (item) => ({ title: item?.fullname, details: `Relationship: ${item?.relationship || '-'} | Phone: ${item?.phonenumber || '-'}`, entrydate: item?.entrydate, document: item?.doc })],
-        ['suspension', 'Suspension', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
-        ['termination', 'Termination', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
-        ['warning', 'Warning', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
-        ['evaluation', 'Monitoring/Evaluation', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
-        ['parents', 'Parents/Guardians', (item) => ({ title: `${item?.parentone || '-'} / ${item?.parenttwo || '-'}`, details: `Home: ${item?.homeaddress || '-'} | Office: ${item?.officeaddress || '-'}`, entrydate: item?.entrydate, document: item?.doc })]
-    ];
-
-    const rows = [];
-
-    // Always render the base personnel profile so controller mapping is visible
-    // even when activity arrays are empty.
-    const fullName = [personnel?.firstname, personnel?.lastname, personnel?.othernames].filter(Boolean).join(' ').trim();
-    if (fullName || personnel?.staffid) {
-        rows.push({
-            section: 'Profile',
-            title: fullName || '-',
-            details: `Staff ID: ${personnel?.staffid || '-'} | Phone: ${personnel?.phonenumber || '-'} | Gender: ${personnel?.gender || '-'} | Work Status: ${personnel?.workstatus || '-'}`,
-            entrydate: hrmNormalizePersonnelHistoryDate(personnel?.employmentdate),
-            document: '-'
-        });
-        rows.push({
-            section: 'Profile',
-            title: 'Location/Identity',
-            details: `Nationality: ${personnel?.nationality || '-'} | State: ${personnel?.state || '-'} | LGA: ${personnel?.lga || '-'} | Address: ${personnel?.residentialaddress || '-'}`,
-            entrydate: hrmNormalizePersonnelHistoryDate(personnel?.birthdate),
-            document: '-'
-        });
-    }
-
-    const salaryLines = Array.isArray(root?.salarystructure) ? root.salarystructure : [];
-    salaryLines.forEach((line) => {
-        const type = String(line?.salaryinfotype || '-').toUpperCase();
-        const percent = hrmNormalizePersonnelValue(line?.amountpercentage) || '0';
-        rows.push({
-            section: 'Salary Structure',
-            title: line?.salaryinfo || '-',
-            details: `${type}: ${percent}%`,
-            entrydate: '-',
-            document: '-'
-        });
-    });
-
-    sections.forEach(([key, label, mapper]) => {
-        const list = Array.isArray(root?.[key]) ? root[key] : [];
-        list.forEach((item) => {
-            const mapped = mapper(item) || {};
-            rows.push({
-                section: label,
-                title: mapped.title || '-',
-                details: mapped.details || '-',
-                entrydate: hrmNormalizePersonnelHistoryDate(mapped.entrydate),
-                document: mapped.document || '-'
-            });
-        });
-    });
-    return rows;
+function hrmTogglePersonnelHistoryLayout(active) {
+    const tableContainer = document.getElementById('hrm_table_container');
+    const historySections = document.getElementById('hrm_personnelhistory_sections');
+    if (tableContainer) tableContainer.classList.toggle('hidden', active);
+    if (historySections) historySections.classList.toggle('hidden', !active);
 }
 
-function hrmRenderPersonnelHistoryRows(root, columns) {
-    const body = document.getElementById('hrm_table_body');
-    const status = document.getElementById('hrm_table_status');
-    if (!body) return;
+function hrmPersonnelHistoryDocumentCell(rawDocument) {
+    const doc = hrmNormalizePersonnelValue(rawDocument);
+    if (!doc) return 'No Document';
+    const url = /^https?:\/\//i.test(doc) ? doc : `../images/personnel/${encodeURIComponent(doc)}`;
+    return `<a href="${hrmEscapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="inline-block px-3 py-1 text-xs font-semibold rounded-sm" style="background:#15803d;color:#fff;">View Document</a>`;
+}
 
-    const rows = hrmBuildPersonnelHistoryRows(root);
-    if (rows.length === 0) {
-        body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No personnel history records found for the selected personnel.</td></tr>`;
+function hrmBuildPersonnelHistorySectionTable(title, columns, rows) {
+    const bodyRows = rows.length
+        ? rows.map((row) => `<tr>${row.map((value) => `<td>${value}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${columns.length}" class="text-center opacity-70">No records</td></tr>`;
+
+    return `
+        <div class="border border-slate-200 rounded-sm p-3 bg-white/90">
+            <h4 class="text-sm font-semibold text-slate-800 mb-3">${hrmEscapeHtml(title)}</h4>
+            <div class="table-content">
+                <table>
+                    <thead><tr>${columns.map((column) => `<th>${hrmEscapeHtml(column)}</th>`).join('')}</tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function hrmBuildPersonnelHistoryProfileBlock(root) {
+    const personnel = root?.personnel || {};
+    const fullName = [personnel?.firstname, personnel?.lastname, personnel?.othernames].filter(Boolean).join(' ').trim();
+    const fields = [
+        ['Staff ID', personnel?.staffid],
+        ['Name', fullName],
+        ['Phone Number', personnel?.phonenumber],
+        ['Work Status', personnel?.workstatus],
+        ['Marital Status', personnel?.maritalstatus],
+        ['Residential Address', personnel?.residentialaddress],
+        ['Permanent Home Address', personnel?.permanenthomeaddress],
+        ['Gender', personnel?.gender],
+        ['Birth Date', hrmNormalizePersonnelHistoryDate(personnel?.birthdate)],
+        ['Nationality', personnel?.nationality],
+        ['State', personnel?.state],
+        ['LGA', personnel?.lga],
+        ['Deformity', personnel?.deformity === '1' ? 'YES' : 'NO'],
+        ['Eye Glasses', personnel?.eyeglasses === '1' ? 'YES' : 'NO'],
+        ['Hearing Aid', personnel?.hearingaid === '1' ? 'YES' : 'NO'],
+        ['Height', personnel?.height],
+        ['Weight', personnel?.weight],
+        ['Employment Date', hrmNormalizePersonnelHistoryDate(personnel?.employmentdate)],
+        ['Basic Salary', personnel?.basicsalary],
+        ['Level', personnel?.level || personnel?.levelname || personnel?.levelid],
+        ['Bank Account (Basic)', personnel?.bankaccountnumber1],
+        ['Bank Name (Basic)', personnel?.bankname1],
+        ['Username/Email', personnel?.registereduseremail || personnel?.user]
+    ];
+
+    return `
+        <div class="border border-slate-200 rounded-sm p-4 bg-white/90">
+            <h4 class="text-sm font-semibold text-slate-800 mb-3">Bio Data</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                ${fields.map(([label, value]) => `
+                    <div class="border border-slate-200 rounded-sm p-3 bg-slate-50/60">
+                        <p class="text-xs uppercase tracking-wide text-slate-500">${hrmEscapeHtml(label)}</p>
+                        <p class="text-sm font-medium text-slate-800 mt-1 break-words">${hrmEscapeHtml(hrmNormalizePersonnelValue(value) || '-')}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function hrmRenderPersonnelHistoryRows(root) {
+    const status = document.getElementById('hrm_table_status');
+    const container = document.getElementById('hrm_personnelhistory_sections');
+    if (!container) return;
+
+    const salaryRows = Array.isArray(root?.salarystructure) ? root.salarystructure : [];
+    const allowanceRows = salaryRows
+        .filter((item) => String(item?.salaryinfotype || '').toUpperCase() === 'ALLOWANCE')
+        .map((item, index) => [String(index + 1), hrmEscapeHtml(item?.salaryinfo || '-'), `${hrmEscapeHtml(item?.amountpercentage || '0')}%`]);
+    const deductionRows = salaryRows
+        .filter((item) => String(item?.salaryinfotype || '').toUpperCase() === 'DEDUCTION')
+        .map((item, index) => [String(index + 1), hrmEscapeHtml(item?.salaryinfo || '-'), `${hrmEscapeHtml(item?.amountpercentage || '0')}%`]);
+
+    const sections = [
+        ['Advance', ['S/N', 'Title', 'Amount', 'Entry Date'], (root?.advance || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(item?.amount || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate))])],
+        ['Employee Records', ['S/N', 'Employer Name', 'Position', 'Years Employed', 'Reason For Leaving', 'Document'], (root?.employeerecords || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.employer || '-'), hrmEscapeHtml(item?.position || '-'), hrmEscapeHtml(item?.yearsemployed || '-'), hrmEscapeHtml(item?.reasonforleaving || '-'), hrmPersonnelHistoryDocumentCell(item?.doc)])],
+        ['Guarantors', ['S/N', 'Guarantor Name', 'Years Known', 'Occupation', 'Phone Number', 'Address', 'Document'], (root?.guarantors || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.guarantorname || '-'), hrmEscapeHtml(item?.yearsknown || '-'), hrmEscapeHtml(item?.occupation || '-'), hrmEscapeHtml(item?.phonenumber || '-'), hrmEscapeHtml(item?.address || '-'), hrmPersonnelHistoryDocumentCell(item?.doc)])],
+        ['Leave', ['S/N', 'Title', 'Entry Date', 'Start Date', 'End Date', 'Document'], (root?.leave || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.startdate)), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.enddate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Promotion', ['S/N', 'Title', 'Level', 'Entry Date', 'Document'], (root?.promotion || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(item?.level || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Qualifications', ['S/N', 'Institution', 'Qualification', 'Certification Date', 'Document'], (root?.qualifications || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.institution || '-'), hrmEscapeHtml(item?.qualification || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.certificationdate)), hrmPersonnelHistoryDocumentCell(item?.doc)])],
+        ['Query', ['S/N', 'Title', 'Entry Date', 'Document'], (root?.query || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Referees', ['S/N', 'Referees Full Name', 'Relationship', 'Occupation', 'Phone Number', 'Address', 'Document'], (root?.referees || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.fullname || '-'), hrmEscapeHtml(item?.relationship || '-'), hrmEscapeHtml(item?.occupation || '-'), hrmEscapeHtml(item?.phonenumber || '-'), hrmEscapeHtml(item?.address || '-'), hrmPersonnelHistoryDocumentCell(item?.doc)])],
+        ['Suspension', ['S/N', 'Title', 'Entry Date', 'Document'], (root?.suspension || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Termination', ['S/N', 'Title', 'Entry Date', 'Document'], (root?.termination || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Warning', ['S/N', 'Title', 'Entry Date', 'Document'], (root?.warning || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Monitor/Evaluation', ['S/N', 'Title', 'Entry Date', 'Document'], (root?.evaluation || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.title || '-'), hrmEscapeHtml(hrmNormalizePersonnelHistoryDate(item?.entrydate)), hrmPersonnelHistoryDocumentCell(item?.document)])],
+        ['Parents/Guardians', ['S/N', 'Parent One', 'Parent Two', 'Parent One Occupation', 'Parent Two Occupation', 'Parent One Phone', 'Parent Two Phone', 'Home Address', 'Office Address', 'Doc'], (root?.parents || []).map((item, index) => [String(index + 1), hrmEscapeHtml(item?.parentone || '-'), hrmEscapeHtml(item?.parenttwo || '-'), hrmEscapeHtml(item?.parentoneoccupation || '-'), hrmEscapeHtml(item?.parenttwooccupation || '-'), hrmEscapeHtml(item?.parentonephone || '-'), hrmEscapeHtml(item?.parenttwophone || '-'), hrmEscapeHtml(item?.homeaddress || '-'), hrmEscapeHtml(item?.officeaddress || '-'), hrmPersonnelHistoryDocumentCell(item?.doc)])]
+    ];
+
+    const hasAnyHistory = sections.some(([, , rows]) => rows.length > 0) || allowanceRows.length > 0 || deductionRows.length > 0 || Boolean(root?.personnel);
+    if (!hasAnyHistory) {
+        container.innerHTML = `<div class="border border-slate-200 rounded-sm p-4 bg-white/90 text-sm text-slate-600">No personnel history records found for the selected personnel.</div>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
         hrmSetSummaryValues(['0', '0', '0', '0']);
         return;
     }
 
-    body.innerHTML = rows.map((row, index) => {
-        const hasDocument = row.document && row.document !== '-';
-        return `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${hrmEscapeHtml(row.section)}</td>
-                <td>${hrmEscapeHtml(row.title)}</td>
-                <td class="whitespace-normal max-w-[420px]">${hrmEscapeHtml(row.details)}</td>
-                <td>${hrmEscapeHtml(row.entrydate)}</td>
-                <td>${hasDocument ? '<span class="text-emerald-700 font-medium">Available</span>' : '-'}</td>
-            </tr>
-        `;
-    }).join('');
+    container.innerHTML = [
+        hrmBuildPersonnelHistoryProfileBlock(root),
+        hrmBuildPersonnelHistorySectionTable('Allowances', ['S/N', 'Allowance Name', 'Percentage %'], allowanceRows),
+        hrmBuildPersonnelHistorySectionTable('Deductions', ['S/N', 'Deduction Name', 'Percentage %'], deductionRows),
+        ...sections.map(([title, columns, rows]) => hrmBuildPersonnelHistorySectionTable(title, columns, rows))
+    ].join('');
 
-    const sectionsCount = new Set(rows.map((item) => item.section)).size;
-    const documentsCount = rows.filter((item) => item.document && item.document !== '-').length;
-    const salaryLines = (Array.isArray(root?.salarystructure) ? root.salarystructure.length : 0);
-    hrmSetSummaryValues([`${sectionsCount}`, `${rows.length}`, `${documentsCount}`, `${salaryLines}`]);
-    if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+    const nonEmptySections = sections.filter(([, , rows]) => rows.length > 0).length + (allowanceRows.length > 0 ? 1 : 0) + (deductionRows.length > 0 ? 1 : 0) + (root?.personnel ? 1 : 0);
+    const totalRows = sections.reduce((sum, [, , rows]) => sum + rows.length, 0) + allowanceRows.length + deductionRows.length;
+    const withDocuments = sections.reduce((sum, [, , rows]) => sum + rows.filter((row) => String(row[row.length - 1] || '').includes('View Document')).length, 0);
+    hrmSetSummaryValues([`${nonEmptySections}`, `${totalRows}`, `${withDocuments}`, `${salaryRows.length}`]);
+    if (status) status.textContent = `Showing ${totalRows > 0 ? 1 : 0} to ${totalRows} of ${totalRows} records`;
 }
 
 function hrmNormalizePersonnelSelectOptions(responseData) {
@@ -1434,6 +1469,28 @@ function hrmNormalizePersonnelSelectOptions(responseData) {
         options.push({ value: staffid, text: `${staffid} || ${fullname || 'Unnamed Personnel'}` });
     });
     return options;
+}
+
+function hrmNormalizeDepartmentSelectOptions(responseData) {
+    const rows = Array.isArray(responseData?.data?.data)
+        ? responseData.data.data
+        : (Array.isArray(responseData?.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []));
+    return rows.map((item) => {
+        const id = item?.id ?? '';
+        const label = item?.department ?? item?.name ?? item?.title ?? '';
+        return { value: String(id), text: String(label) };
+    }).filter((item) => item.value && item.text);
+}
+
+function hrmNormalizeGroupSelectOptions(responseData) {
+    const rows = Array.isArray(responseData?.data?.data)
+        ? responseData.data.data
+        : (Array.isArray(responseData?.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []));
+    return rows.map((item) => {
+        const id = item?.id ?? '';
+        const label = item?.groupname ?? item?.group ?? item?.name ?? '';
+        return { value: String(id), text: String(label) };
+    }).filter((item) => item.value && item.text);
 }
 
 async function hrmPopulatePersonnelHistoryFilterPicker(route, blueprint, filterForm) {
@@ -1491,6 +1548,14 @@ async function hrmPopulateDynamicSelect(controlId, source) {
         const result = await hrmRequestController('fetchlevel.php', new FormData());
         if (!result.ok || result?.data?.status === false) return;
         options = hrmNormalizeLevelOptions(result.data).map((item) => ({ value: item.id, text: item.label }));
+    } else if (source === 'departments') {
+        const result = await hrmRequestController('fetchdepartment.php', new FormData());
+        if (!result.ok || result?.data?.status === false) return;
+        options = hrmNormalizeDepartmentSelectOptions(result.data);
+    } else if (source === 'groups') {
+        const result = await hrmRequestController('fetchgroupname.php', new FormData());
+        if (!result.ok || result?.data?.status === false) return;
+        options = hrmNormalizeGroupSelectOptions(result.data);
     } else {
         return;
     }
@@ -1789,6 +1854,8 @@ function hrmBuildHtgSubrecordPayload(source, route, mode) {
             append('occupation', 'occupation');
             append('phonenumber', 'phonenumber');
             append('address', 'address');
+            append('officeaddress', 'officeaddress');
+            append('yearsknown', 'yearsknown');
         } else if (route === 'pp_employerrecord') {
             append('employer', 'employer');
             append('position', 'position');
@@ -1845,11 +1912,16 @@ function hrmBuildHtgMatterPayload(source, route, mode) {
             append('startdate', 'startdate');
             append('enddate', 'enddate');
         }
+        if (route === 'pp_suspension' || route === 'pp_warning' || route === 'pp_monitorevaluation') {
+            append('startdate', 'startdate');
+            append('enddate', 'enddate');
+        }
         if (route === 'pp_promotions') {
             append('level', 'level');
         }
         if (route === 'pp_advance') {
             append('amount', 'amount');
+            append('monthlyinstallment', 'monthlyinstallment');
             payload.append('level', '-1');
         }
         hrmAppendPhotoPayload(payload, hrmPickFormDataValue(source, 'attachment', 'userphotoname', 'photo', 'document'));
@@ -1948,9 +2020,9 @@ function hrmBuildPersonnelPayload(form, mode = 'save') {
     append('employmentdate', pick('employmentdate'));
     append('registereduseremail', pick('registereduseremail', 'email'));
     append('basicsalary', pick('basicsalary'));
-    append('departmentid', '0');
+    append('departmentid', pick('departmentid', 'department'));
     append('levelid', pick('levelid', 'level'));
-    append('groupid', '0');
+    append('groupid', pick('groupid', 'groupname'));
 
     const photo = pick('userphotoname', 'photo', 'document');
     if (photo && typeof photo === 'object' && typeof photo.name === 'string' && photo.name) {
@@ -2254,7 +2326,9 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     if (route === 'pp_personnelhistory' && !payload.get('staffid')) {
         const body = document.getElementById('hrm_table_body');
         const status = document.getElementById('hrm_table_status');
+        const historySections = document.getElementById('hrm_personnelhistory_sections');
         if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select a personnel to load history.</td></tr>`;
+        if (historySections) historySections.innerHTML = `<div class="border border-slate-200 rounded-sm p-4 bg-white/90 text-sm text-slate-600">Select a personnel to load history.</div>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
         hrmSetSummaryValues(['0', '0', '0', '0']);
         return;
@@ -2309,6 +2383,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
     const batchActions = document.getElementById('hrm_batch_actions');
     const tableBatchActions = document.getElementById('hrm_table_batch_actions');
     const tableBody = document.getElementById('hrm_table_body');
+    hrmTogglePersonnelHistoryLayout(route === 'pp_personnelhistory');
 
     if (saveButton) {
         saveButton.onclick = async () => {
