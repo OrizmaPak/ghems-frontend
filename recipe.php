@@ -84,10 +84,18 @@
                             <span>Total: </span>
                             <span id="recipetabletotal">0.00</span>
                         </div>
-                        <div class="flex justify-end mt-5">
-                            <button id="submit" onclick="addbuilditem()" type="button" class="btn">
+                        <div class="flex justify-end mt-5 gap-3">
+                            <button id="recipesubmit" type="button" class="btn">
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Submit</span>
+                            </button>
+                            <button id="recipereset" type="button" class="btn hidden">
+                                <div class="btnloader" style="display: none;"></div>
+                                <span>Reset</span>
+                            </button>
+                            <button id="recipeupdate" type="button" class="btn hidden">
+                                <div class="btnloader" style="display: none;"></div>
+                                <span>Update</span>
                             </button>
                         </div>
                         <div class="recipe-table-status"></div>

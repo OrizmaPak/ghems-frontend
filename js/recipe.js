@@ -38,12 +38,33 @@ function updateRecipeRowTotal(quantityInput) {
     refreshRecipeTableTotal()
 }
 
+function setRecipeActionMode(isEditing) {
+    const submitButton = did('recipesubmit')
+    const resetButton = did('recipereset')
+    const updateButton = did('recipeupdate')
+    if (submitButton) submitButton.classList.toggle('hidden', !!isEditing)
+    if (resetButton) resetButton.classList.toggle('hidden', !isEditing)
+    if (updateButton) updateButton.classList.toggle('hidden', !isEditing)
+}
+
+async function resetRecipeEditorToCreateMode() {
+    recipeid = null
+    clearRecipeManageTable()
+    if (did('recipeform')) did('recipeform').reset()
+    setRecipeActionMode(false)
+    const currentSalesPoint = String(did('salespointname')?.value || '').trim()
+    await handlerecipedepartment(currentSalesPoint || default_department)
+}
+
 async function recipeActive() {
     recalldatalist()
 
     let form = document.querySelector('#recipeform')
-    if (form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', recipeFormSubmitHandler)
+    if (form.querySelector('#recipesubmit')) form.querySelector('#recipesubmit').addEventListener('click', recipeFormSubmitHandler)
+    if (form.querySelector('#recipeupdate')) form.querySelector('#recipeupdate').addEventListener('click', recipeFormSubmitHandler)
+    if (form.querySelector('#recipereset')) form.querySelector('#recipereset').addEventListener('click', resetRecipeEditorToCreateMode)
     if (document.querySelector('#salespointname')) document.querySelector('#salespointname').addEventListener('change', e => handlerecipedepartment())
+    setRecipeActionMode(false)
 
     datasource = []
     await handlerecipedepartment(default_department)
@@ -156,6 +177,7 @@ function setItemToBuildValueFromCompositeData(data) {
 async function fetchrecipe(id) {
     if (!id) return
     recipeid = id
+    setRecipeActionMode(true)
     function getparamm() {
         let paramstr = new FormData()
         paramstr.append('id', id)
@@ -254,9 +276,12 @@ async function recipeFormSubmitHandler() {
         param.append('gridsize', qtyElements.length)
         return param
     }
-    let request = await httpRequest2('../controllers/builditemscript.php', payload(), document.querySelector('#recipeform #submit'))
+    const actionButton = recipeid ? document.querySelector('#recipeform #recipeupdate') : document.querySelector('#recipeform #recipesubmit')
+    let request = await httpRequest2('../controllers/builditemscript.php', payload(), actionButton)
     if (request.status) {
         notification('Record saved successfully!', 1)
+        recipeid = null
+        setRecipeActionMode(false)
         document.querySelector('#recipe').click()
         return
     }
