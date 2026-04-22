@@ -284,8 +284,12 @@ const hrmMonthSelectOptions = [
 ];
 
 function hrmPayrollYearOptions() {
-    const year = new Date().getFullYear();
-    return [year - 1, year, year + 1].map((value) => ({ value: String(value), label: String(value) }));
+    const startYear = 2036;
+    const count = 10;
+    return Array.from({ length: count }, (_, index) => {
+        const value = startYear + index;
+        return { value: String(value), label: String(value) };
+    });
 }
 
 const hrmHiddenFrontendFields = new Set([
