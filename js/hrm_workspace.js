@@ -489,10 +489,10 @@ const hrmInterfaceBlueprints = {
         context: 'Personnel audit trail',
         fields: [],
         filters: [
-            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnel_history_personnels' }
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnel_history_personnels', wrapper_class: 'lg:col-span-3' }
         ],
         columns: ['S/N', 'Section', 'Title', 'Details', 'Entry Date', 'Document'],
-        summary: ['Sections', 'History Records', 'With Documents', 'Salary Lines']
+        summary: []
     },
     pp_guarantor: {
         context: 'Guarantor records',
@@ -669,6 +669,7 @@ function hrmWorkspaceActive() {
     const sections = blueprint.sections || [];
     const hasEntrySection = fields.length > 0 || sections.length > 0;
     const hasFilters = filters.length > 0;
+    const hasSummary = Array.isArray(blueprint.summary) && blueprint.summary.length > 0;
     const hasViewSection = true;
     const pageTitle = document.getElementById('hrm_page_title');
     const tableTitle = document.getElementById('hrm_table_title');
@@ -688,6 +689,7 @@ function hrmWorkspaceActive() {
     hrmToggleElement('hrm_form_actions', hasEntrySection);
     hrmToggleElement('hrm_filter_panel', hasFilters);
     hrmToggleElement('hrm_filter_separator', hasFilters);
+    hrmToggleElement('hrm_summary_grid', hasSummary);
     hrmSetActiveTab((hasEntrySection && hasViewSection) ? 'input' : 'view');
 
     hrmRenderFields('hrm_entry_grid', fields);
@@ -1715,6 +1717,7 @@ function hrmBuildControl(field) {
     const list = field.list ? `list="${field.list}"` : '';
     const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : '';
     const name = field.name || field.id;
+    const wrapperClass = `form-group ${field.wrapper_class || ''}`.trim();
 
     if (field.type === 'hidden') {
         return `<input id="${field.id}" name="${name}" type="hidden">`;
@@ -1731,7 +1734,7 @@ function hrmBuildControl(field) {
             return `<option value="${option}">${option}</option>`;
         }).join('');
         return `
-            <div class="form-group">
+            <div class="${wrapperClass}">
                 <label class="control-label" for="${field.id}">${field.label}</label>
                 <select id="${field.id}" name="${name}" class="form-control" ${required} ${tomSelectFlag}>
                     <option value="">-- select ${field.label.toLowerCase()} --</option>
@@ -1742,8 +1745,9 @@ function hrmBuildControl(field) {
     }
 
     if (field.type === 'textarea') {
+        const textareaWrapperClass = `form-group lg:col-span-2 ${field.wrapper_class || ''}`.trim();
         return `
-            <div class="form-group lg:col-span-2">
+            <div class="${textareaWrapperClass}">
                 <label class="control-label" for="${field.id}">${field.label}</label>
                 <textarea id="${field.id}" name="${name}" class="form-control" rows="3" ${required} ${placeholder}></textarea>
             </div>
@@ -1753,8 +1757,9 @@ function hrmBuildControl(field) {
     if (field.type === 'file') {
         const previewId = `${field.id}_preview`;
         const accept = field.accept ? `accept="${field.accept}"` : '';
+        const fileWrapperClass = `form-group lg:col-span-2 ${field.wrapper_class || ''}`.trim();
         return `
-            <div class="form-group lg:col-span-2">
+            <div class="${fileWrapperClass}">
                 <label class="control-label" for="${field.id}">${field.label}</label>
                 <div class="flex flex-col gap-2">
                     <input id="${field.id}" name="${name}" type="file" class="form-control hidden" ${required} ${accept} data-hrm-file-input="1" data-hrm-preview-target="${previewId}">
@@ -1771,7 +1776,7 @@ function hrmBuildControl(field) {
     }
 
     return `
-        <div class="form-group">
+        <div class="${wrapperClass}">
             <label class="control-label" for="${field.id}">${field.label}</label>
             <input id="${field.id}" name="${name}" type="${field.type || 'text'}" class="form-control" ${list} ${required} ${readonly} ${placeholder}>
         </div>
@@ -3005,7 +3010,17 @@ function hrmBindWorkspaceControls(route, blueprint) {
             }
         };
     }
-    if (filterButton) filterButton.onclick = async () => hrmLoadViewData(route, blueprint, filterButton, filterForm);
+    if (filterButton) {
+        if (route === 'pp_personnelhistory') {
+            filterButton.classList.add('hidden');
+            filterButton.disabled = true;
+            filterButton.onclick = null;
+        } else {
+            filterButton.classList.remove('hidden');
+            filterButton.disabled = false;
+            filterButton.onclick = async () => hrmLoadViewData(route, blueprint, filterButton, filterForm);
+        }
+    }
     if (filterResetButton) filterResetButton.onclick = async () => {
         filterForm?.reset();
         hrmClearTomSelectsWithin(filterForm);
