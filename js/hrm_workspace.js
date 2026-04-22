@@ -380,7 +380,7 @@ const hrmMatterFields = {
         { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
         { id: 'title', label: 'Title', type: 'text', required: true },
         { id: 'amount', label: 'Amount', type: 'text', required: true },
-        { id: 'monthlyinstallment', label: 'Monthly Installment', type: 'number' },
+        { id: 'monthlyinstallment', label: 'Monthly Installment', type: 'text' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ]
 };
@@ -697,6 +697,7 @@ function hrmWorkspaceActive() {
     hrmRenderSummary(blueprint.summary || ['Records', 'Pending', 'Approved', 'Updated']);
     hrmRenderTable(blueprint.columns || ['S/N', 'Name', 'Status', 'Action'], config.title);
     hrmBindFileUploadPreviews();
+    hrmBindAmountInputFormatting(blueprint);
     hrmBindWorkspaceControls(route, blueprint);
 }
 
@@ -744,6 +745,12 @@ function hrmPopulateEntryForm(record = {}) {
             return;
         }
         control.value = record[key] ?? '';
+        if (control.type === 'text' && /amount|salary|installment/i.test(String(key || ''))) {
+            const normalized = hrmStripNumericFormatting(control.value || '');
+            if (normalized && /^-?\d*\.?\d*$/.test(normalized)) {
+                control.value = hrmFormatNumberWithCommas(normalized);
+            }
+        }
         if (hrmTomSelectInstances[key]) {
             hrmTomSelectInstances[key].setValue(control.value, true);
         }
@@ -840,6 +847,32 @@ function hrmRenderFields(containerId, fields) {
     }
 
     container.innerHTML = visibleFields.map((field) => hrmBuildControl(field)).join('');
+}
+
+function hrmBindAmountInputFormatting(blueprint = {}) {
+    const fields = Array.isArray(blueprint?.fields) ? blueprint.fields : [];
+    if (!fields.length) return;
+    const moneyLikePattern = /amount|salary|installment/i;
+
+    fields.forEach((field) => {
+        if (!field || ['hidden', 'file', 'select', 'textarea', 'number'].includes(field.type)) return;
+        const marker = `${field.id || ''} ${field.label || ''}`;
+        if (!moneyLikePattern.test(marker)) return;
+
+        const control = document.getElementById(field.id);
+        if (!control || control.dataset.hrmAmountFormatBound === '1') return;
+        control.dataset.hrmAmountFormatBound = '1';
+
+        const formatCurrentValue = () => {
+            const normalized = hrmStripNumericFormatting(control.value || '');
+            if (!normalized || !/^-?\d*\.?\d*$/.test(normalized)) return;
+            control.value = hrmFormatNumberWithCommas(normalized);
+        };
+
+        control.addEventListener('input', formatCurrentValue);
+        control.addEventListener('blur', formatCurrentValue);
+        formatCurrentValue();
+    });
 }
 
 function hrmIsPersonnelOnlyFilter(fields = []) {
@@ -2146,6 +2179,7 @@ function hrmBuildHtgSubrecordPayload(source, route, mode) {
 function hrmBuildHtgMatterPayload(source, route, mode) {
     const payload = new FormData();
     const append = (key, ...fromKeys) => payload.append(key, hrmPickFormDataValue(source, ...fromKeys));
+    const appendNumeric = (key, ...fromKeys) => payload.append(key, hrmStripNumericFormatting(hrmPickFormDataValue(source, ...fromKeys)));
     const matter = hrmHtgPersonnelMatterByRoute[route] || '';
     const pid = hrmExtractPersonnelId(hrmPickFormDataValue(source, 'personnel', 'personnelid', 'pid'));
     const recordId = hrmPickFormDataValue(source, 'id');
@@ -2168,7 +2202,8 @@ function hrmBuildHtgMatterPayload(source, route, mode) {
             append('level', 'level');
         }
         if (route === 'pp_advance') {
-            append('amount', 'amount');
+            appendNumeric('amount', 'amount');
+            appendNumeric('monthlyinstallment', 'monthlyinstallment');
             payload.append('level', '-1');
         }
         hrmAppendPhotoPayload(payload, hrmPickFormDataValue(source, 'attachment', 'userphotoname', 'photo', 'document'));
@@ -2203,6 +2238,12 @@ function hrmBuildPayloadFromForm(form, route, mode) {
         if (levelId) payload.set('levelid', levelId);
     }
     return payload;
+}
+
+function hrmStripNumericFormatting(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return '';
+    return raw.replace(/,/g, '').replace(/\s+/g, '');
 }
 
 function hrmGetFieldControl(form, field = {}) {
