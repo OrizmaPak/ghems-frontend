@@ -753,9 +753,16 @@ function hrmPopulateEntryForm(record = {}) {
 
 window.hrmNavigateToInput = function(record = {}) {
     const inputPane = document.getElementById('hrm_input_tabpane');
+    const entryForm = document.getElementById('hrm_entry_form');
+    const formActions = document.getElementById('hrm_form_actions');
+    const tabs = document.getElementById('hrm_workspace_tabs');
+    const tabsSeparator = document.getElementById('hrm_tabs_separator');
     if (inputPane?.classList.contains('hidden')) {
-        notification('Input form is not available on this interface.', 0);
-        return;
+        inputPane.classList.remove('hidden');
+        if (entryForm) entryForm.classList.remove('hidden');
+        if (formActions) formActions.classList.remove('hidden');
+        if (tabs) tabs.classList.remove('hidden');
+        if (tabsSeparator) tabsSeparator.classList.remove('hidden');
     }
     hrmSetActiveTab('input');
     hrmPopulateEntryForm(record);
