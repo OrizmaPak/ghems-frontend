@@ -1461,6 +1461,49 @@ function hrmBuildPersonnelHistorySectionTable(title, columns, rows) {
     `;
 }
 
+function hrmResolvePersonnelPhotoFilename(personnel = {}) {
+    return hrmNormalizePersonnelValue(hrmFirstFilled(
+        personnel,
+        'photofilename',
+        'photo',
+        'userphotoname',
+        'image',
+        'imageurl',
+        'avatar',
+        'profilephoto'
+    ));
+}
+
+function hrmBuildPersonnelHistoryProfilePhotoBlock(personnel = {}, fullName = '') {
+    const photoFile = hrmResolvePersonnelPhotoFilename(personnel);
+    const safeName = hrmEscapeHtml(fullName || personnel?.staffid || 'Profile');
+    if (photoFile && photoFile !== '-') {
+        const photoSrc = `../images/personnel/${encodeURIComponent(photoFile)}`;
+        return `
+            <div class="border border-slate-200 rounded-sm p-4 bg-gradient-to-br from-slate-50 to-white">
+                <p class="text-xs uppercase tracking-wide text-slate-500 mb-3">Profile Picture</p>
+                <a href="${photoSrc}" target="_blank" rel="noopener" class="block group">
+                    <img src="${photoSrc}" alt="${safeName}" class="w-full max-w-[240px] aspect-square object-cover rounded-md border border-slate-200 shadow-sm transition-transform duration-200 group-hover:scale-[1.01]">
+                    <span class="inline-flex items-center gap-1 mt-2 text-xs text-blue-700 underline">
+                        <span class="material-symbols-outlined" style="font-size:14px;line-height:1;">open_in_new</span>
+                        Open image
+                    </span>
+                </a>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="border border-slate-200 rounded-sm p-4 bg-gradient-to-br from-slate-50 to-white">
+            <p class="text-xs uppercase tracking-wide text-slate-500 mb-3">Profile Picture</p>
+            <div class="w-full max-w-[240px] aspect-square rounded-md border border-dashed border-slate-300 bg-slate-100 flex flex-col items-center justify-center text-slate-500">
+                <span class="material-symbols-outlined text-4xl">account_circle</span>
+                <span class="text-xs mt-2">No profile image</span>
+            </div>
+        </div>
+    `;
+}
+
 function hrmBuildPersonnelHistoryProfileBlock(root) {
     const personnel = root?.personnel || {};
     const fullName = [personnel?.firstname, personnel?.lastname, personnel?.othernames].filter(Boolean).join(' ').trim();
@@ -1493,13 +1536,16 @@ function hrmBuildPersonnelHistoryProfileBlock(root) {
     return `
         <div class="border border-slate-200 rounded-sm p-4 bg-white/90">
             <h4 class="text-sm font-semibold text-slate-800 mb-3">Bio Data</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-4">
+                ${hrmBuildPersonnelHistoryProfilePhotoBlock(personnel, fullName)}
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 ${fields.map(([label, value]) => `
                     <div class="border border-slate-200 rounded-sm p-3 bg-slate-50/60">
                         <p class="text-xs uppercase tracking-wide text-slate-500">${hrmEscapeHtml(label)}</p>
                         <p class="text-sm font-medium text-slate-800 mt-1 break-words">${hrmEscapeHtml(hrmNormalizePersonnelValue(value) || '-')}</p>
                     </div>
                 `).join('')}
+                </div>
             </div>
         </div>
     `;
