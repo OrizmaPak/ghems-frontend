@@ -1,4 +1,42 @@
 let recipeid
+let recipeInventoryDatasource = []
+
+function parseRecipeAmount(value) {
+    const normalized = String(value ?? '').replace(/,/g, '').trim()
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
+function getRecipeItemUnitPrice(itemId) {
+    if (!itemId) return 0
+    const item = (recipeInventoryDatasource || []).find(data => String(data?.itemid) === String(itemId))
+    if (!item) return 0
+    return parseRecipeAmount(item.price ?? item.unitprice ?? item.unit_price ?? item.cost ?? 0)
+}
+
+function refreshRecipeTableTotal() {
+    const rows = Array.from(document.querySelectorAll('#recipetabledata tr'))
+    const total = rows.reduce((sum, row) => {
+        const amount = parseRecipeAmount(row.querySelector('.recipe-item-total')?.dataset?.raw || 0)
+        return sum + amount
+    }, 0)
+    if (did('recipetabletotal')) did('recipetabletotal').textContent = formatNumber(total)
+}
+
+function updateRecipeRowTotal(quantityInput) {
+    const row = quantityInput?.closest('tr')
+    if (!row) return
+
+    const unitPrice = parseRecipeAmount(row.querySelector('.recipe-item-unit-price')?.dataset?.raw || 0)
+    const quantity = parseRecipeAmount(quantityInput.value)
+    const rowTotal = unitPrice * quantity
+    const totalCell = row.querySelector('.recipe-item-total')
+    if (totalCell) {
+        totalCell.dataset.raw = String(rowTotal)
+        totalCell.textContent = formatNumber(rowTotal)
+    }
+    refreshRecipeTableTotal()
+}
 
 async function recipeActive() {
     recalldatalist()
@@ -24,6 +62,8 @@ async function recipeActive() {
         if (did('recipeoptioner_recipe')) runoptioner(did('recipeoptioner_recipe'))
         await fetchrecipe(recipeid)
     }
+
+    refreshRecipeTableTotal()
 }
 
 async function handlerecipedepartment(store) {
@@ -43,6 +83,7 @@ async function handlerecipedepartment(store) {
     if (request.status) {
         if (request.data.length) {
             datasource = request.data
+            recipeInventoryDatasource = request.data
             if (request.data.filter(data => data.composite == 'YES').length < 1) return did('loading').innerHTML = 'No Composite Item can be found for this department'
             if (request.data.filter(data => data.composite == 'NO').length < 1) return did('loading').innerHTML = 'No Non-Composite Item can be found for this department'
             did('itembuild').innerHTML = `<option value=''>-- Select Item To Build --</option>`
@@ -82,26 +123,35 @@ async function fetchrecipe(id) {
 function addrecipeitem() {
     if (!validateForm('recipeform', ['item', 'quantity'])) return
 
+    const selectedItemId = document.getElementById('item').value
+    const enteredQuantity = parseRecipeAmount(document.getElementById('quantity').value)
+    const unitPrice = getRecipeItemUnitPrice(selectedItemId)
+    const linePrice = unitPrice * enteredQuantity
+
     let element = document.createElement('tr')
     let x = `<td class="opacity-70 w-3 sn">  </td>
-                <td class="opacity-70" name="itemid"> ${document.getElementById('item').value} </td>
-                <td class="opacity-70"> ${getLabelByValue('item', document.getElementById('item').value)} </td>
-                <td class="opacity-70"> <input type="number" value='${document.getElementById('quantity').value}' name="qty" id="${generateUID()}" class="form-control verify" placeholder="Enter Quantity of Item"> </td>
+                <td class="opacity-70" name="itemid"> ${selectedItemId} </td>
+                <td class="opacity-70"> ${getLabelByValue('item', selectedItemId)} </td>
+                <td class="opacity-70"><input type="number" value='${enteredQuantity}' name="qty" id="${generateUID()}" class="form-control verify" placeholder="Enter Quantity of Item" oninput="updateRecipeRowTotal(this)"></td>
+                <td class="opacity-70 recipe-item-unit-price" data-raw="${unitPrice}">${formatNumber(unitPrice)}</td>
+                <td class="opacity-70 recipe-item-total" data-raw="${linePrice}">${formatNumber(linePrice)}</td>
                 <td class="flex items-center gap-3">
-                    <button title="Delete item" onclick="removebuilditem(this, ${document.getElementById('item').value})" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>
+                    <button title="Delete item" onclick="removebuilditem(this, '${selectedItemId}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>
                 </td>`
     element.innerHTML = x
-    hideOptionByValue('item', document.getElementById('item').value)
+    hideOptionByValue('item', selectedItemId)
     did('recipetabledata').appendChild(element)
     runCount('datatable', 'sn')
     did('item').value = ''
     did('quantity').value = ''
+    refreshRecipeTableTotal()
 }
 
 function removebuilditem(element, value) {
     element.parentElement.parentElement.remove()
     hideOptionByValue('item', value, false)
     runCount('datatable', 'sn')
+    refreshRecipeTableTotal()
 }
 
 async function removerecipe(id) {

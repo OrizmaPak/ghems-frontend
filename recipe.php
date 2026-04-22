@@ -72,11 +72,17 @@
                                         <th>Item id</th>
                                         <th>item name</th>
                                         <th>quantity</th>
+                                        <th>unit price</th>
+                                        <th>price</th>
                                         <th>action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recipetabledata"></tbody>
                             </table>
+                        </div>
+                        <div class="mt-3 text-right font-semibold text-sm">
+                            <span>Total: </span>
+                            <span id="recipetabletotal">0.00</span>
                         </div>
                         <div class="flex justify-end mt-5">
                             <button id="submit" onclick="addbuilditem()" type="button" class="btn">
