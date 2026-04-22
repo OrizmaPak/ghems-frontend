@@ -224,7 +224,7 @@ const hrmInterfaceRegistry = {
         ]
     },
     pp_presalaryapproval: {
-        title: 'Payroll',
+        title: 'Do Payroll',
         subtitle: 'Run payroll staging and submit entries for payroll approval.',
         flow: ['Load pending payroll batch', 'Run payroll action', 'Send payroll for final confirmation'],
         controllers: [
