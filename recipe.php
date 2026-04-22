@@ -157,11 +157,7 @@
                     <thead>
                         <tr>
                             <th>s/n</th>
-                            <th>sales point</th>
                             <th>Item Name</th>
-                            <th>cost</th>
-                            <th>price</th>
-                            <th>ITEM NAME | [QUANTITY]</th>
                             <th>units</th>
                             <th>Group name</th>
                             <th>description</th>

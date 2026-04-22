@@ -294,6 +294,8 @@ async function recipeFormSubmitHandler() {
 let viewrecipeid
 let viewrecipeDatasource = []
 let filteredViewrecipeDatasource = []
+let groupedViewrecipeDatasource = []
+let expandedViewrecipeGroups = new Set()
 
 async function viewrecipeActive() {
     const form = document.querySelector('#viewrecipeform')
@@ -373,6 +375,47 @@ function getViewrecipeSearchText(item){
     return `${base} ${members}`.toLowerCase()
 }
 
+function parseViewrecipeAmount(value) {
+    const normalized = String(value ?? '').replace(/,/g, '').trim()
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
+function getViewrecipeGroupKey(item) {
+    return String(item?.compositeitemdetail?.itemname || '').trim().toLowerCase()
+}
+
+function groupViewrecipeByItem(data = []) {
+    const groups = new Map()
+    ;(data || []).forEach(item => {
+        const key = getViewrecipeGroupKey(item)
+        if (!key) return
+        if (!groups.has(key)) {
+            groups.set(key, {
+                groupkey: key,
+                itemname: item?.compositeitemdetail?.itemname || '',
+                units: item?.compositeitemdetail?.units || '',
+                groupname: item?.compositeitemdetail?.groupname || '',
+                description: item?.compositeitemdetail?.description || '',
+                records: []
+            })
+        }
+        groups.get(key).records.push(item)
+    })
+    return Array.from(groups.values())
+}
+
+function toggleViewrecipeGroup(groupKey) {
+    if (!groupKey) return
+    if (expandedViewrecipeGroups.has(groupKey)) expandedViewrecipeGroups.delete(groupKey)
+    else expandedViewrecipeGroups.add(groupKey)
+    onviewrecipeTableDataSignal()
+}
+
+function getViewrecipeIngredientUnitPrice(ingredient) {
+    return parseViewrecipeAmount(ingredient?.price ?? ingredient?.unitprice ?? ingredient?.unit_price ?? ingredient?.cost ?? 0)
+}
+
 function applyViewrecipeFilters() {
     const search = (did('viewrecipesearch')?.value || '').toLowerCase().trim()
     const salesPoint = (did('viewrecipesalespointfilter')?.value || '').toLowerCase().trim()
@@ -383,9 +426,10 @@ function applyViewrecipeFilters() {
         return matchesSalesPoint && matchesSearch
     })
 
-    datasource = filteredViewrecipeDatasource
-    if(filteredViewrecipeDatasource.length) {
-        resolvePagination(filteredViewrecipeDatasource, onviewrecipeTableDataSignal)
+    groupedViewrecipeDatasource = groupViewrecipeByItem(filteredViewrecipeDatasource)
+    datasource = groupedViewrecipeDatasource
+    if(groupedViewrecipeDatasource.length) {
+        resolvePagination(groupedViewrecipeDatasource, onviewrecipeTableDataSignal)
         return
     }
     did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No matching recipes found</td></tr>`
@@ -418,44 +462,82 @@ async function removeviewrecipe(id) {
 
 
 async function onviewrecipeTableDataSignal() {
-    let rows = getSignaledDatasource().map((item, index) => `
-    <tr>
-        <td>${item.index + 1 }</td>
-        <td>${item.compositeitemdetail.salespoint}</td>
-        <td>${item.compositeitemdetail.itemname}</td>
-        <td>${formatNumber(item.compositeitemdetail.cost)}</td>
-        <td>${formatNumber(item.compositeitemdetail.price)}</td>
-        <td> 
-           ${item.compositememberitems.length > 0 ? `<table>
-                ${item.compositememberitems.map((dat, index)=>{
-                    return ( index<3 ?
-                        `
-                    <tr>
-                        <td>${dat.itemname}</td>
-                        <td style="width: 20px">${dat.qty}</td>
-                    </tr>
-                    `
-                    :
-                       index==3?`
-                       <tr>
-                            <td onclick="modalviewrecipe('${item.compositeitemdetail.id}')" style="color:green;cursor:pointer">click to view the remaining items ${item.compositeitemdetail.length-3} ....</td>
-                        </tr>
-                        `:``
-                    )
-                }).join('')}
-            </table>` : 'No Item found in this build' }
-        </td>
-        <td>${item.compositeitemdetail.units}</td>
-        <td>${item.compositeitemdetail.groupname}</td>
-        <td>${item.compositeitemdetail.description}</td>
-        <td class="flex items-center gap-3">
-            <button title="View Item" onclick="modalviewrecipe('${item.compositeitemdetail.id}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-            <button title="Edit row entry" onclick="if(did('recipeoptioner_recipe'))runoptioner(did('recipeoptioner_recipe'));fetchrecipe('${item.compositeitemdetail.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
-            <button title="Delete row entry"s onclick="removeviewrecipe('${item.compositeitem}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
-        </td>
-    </tr>`
-    )
-    .join('')
+    let rows = getSignaledDatasource().map((group) => {
+        const groupKey = group.groupkey
+        const encodedGroupKey = encodeURIComponent(groupKey)
+        const isExpanded = expandedViewrecipeGroups.has(groupKey)
+        const detailsRow = isExpanded ? `
+            <tr>
+                <td colspan="100%" class="bg-slate-50">
+                    <div class="p-3">
+                        <div class="table-content">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>s/n</th>
+                                        <th>sales point</th>
+                                        <th>cost</th>
+                                        <th>price</th>
+                                        <th>item name</th>
+                                        <th>quantity</th>
+                                        <th>price</th>
+                                        <th>total price</th>
+                                        <th>action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${group.records.map((record, recordIndex) => {
+                                        const ingredientRows = (record?.compositememberitems || []).map(ingredient => {
+                                            const qtyValue = parseViewrecipeAmount(ingredient?.qty || 0)
+                                            const unitPrice = getViewrecipeIngredientUnitPrice(ingredient)
+                                            const linePrice = qtyValue * unitPrice
+                                            return {
+                                                itemname: ingredient?.itemname || '',
+                                                qty: qtyValue,
+                                                linePrice
+                                            }
+                                        })
+                                        const entryTotalPrice = ingredientRows.reduce((sum, row) => sum + row.linePrice, 0)
+                                        return `
+                                            <tr>
+                                                <td>${recordIndex + 1}</td>
+                                                <td>${record?.compositeitemdetail?.salespoint || ''}</td>
+                                                <td>${formatNumber(record?.compositeitemdetail?.cost || 0)}</td>
+                                                <td>${formatNumber(record?.compositeitemdetail?.price || 0)}</td>
+                                                <td>${ingredientRows.length ? ingredientRows.map(row => `<div>${row.itemname}</div>`).join('') : 'No item'}</td>
+                                                <td>${ingredientRows.length ? ingredientRows.map(row => `<div>${formatNumber(row.qty)}</div>`).join('') : '-'}</td>
+                                                <td>${ingredientRows.length ? ingredientRows.map(row => `<div>${formatNumber(row.linePrice)}</div>`).join('') : '-'}</td>
+                                                <td>${formatNumber(entryTotalPrice)}</td>
+                                                <td class="flex items-center gap-3">
+                                                    <button title="View Item" onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                                                    <button title="Edit row entry" onclick="if(did('recipeoptioner_recipe'))runoptioner(did('recipeoptioner_recipe'));fetchrecipe('${record?.compositeitemdetail?.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
+                                                    <button title="Delete row entry" onclick="removeviewrecipe('${record?.compositeitem}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+                                                </td>
+                                            </tr>
+                                        `
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        ` : ''
+
+        return `
+            <tr>
+                <td>${group.index + 1}</td>
+                <td>${group.itemname}</td>
+                <td>${group.units}</td>
+                <td>${group.groupname}</td>
+                <td>${group.description}</td>
+                <td class="flex items-center gap-3">
+                    <button title="${isExpanded ? 'Collapse' : 'Expand'} item" onclick="toggleViewrecipeGroup(decodeURIComponent('${encodedGroupKey}'))" class="material-symbols-outlined rounded-full bg-slate-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">${isExpanded ? 'expand_less' : 'expand_more'}</button>
+                </td>
+            </tr>
+            ${detailsRow}
+        `
+    }).join('')
     injectPaginatatedTable(rows)
 }
 
