@@ -268,6 +268,26 @@ const hrmCommonFilters = [
     { id: 'enddate', label: 'End Date', type: 'date' }
 ];
 
+const hrmMonthSelectOptions = [
+    { value: '1', label: 'January' },
+    { value: '2', label: 'February' },
+    { value: '3', label: 'March' },
+    { value: '4', label: 'April' },
+    { value: '5', label: 'May' },
+    { value: '6', label: 'June' },
+    { value: '7', label: 'July' },
+    { value: '8', label: 'August' },
+    { value: '9', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+];
+
+function hrmPayrollYearOptions() {
+    const year = new Date().getFullYear();
+    return [year - 1, year, year + 1].map((value) => ({ value: String(value), label: String(value) }));
+}
+
 const hrmHiddenFrontendFields = new Set([
     'accountnumber',
     'bankaccountnumber2',
@@ -295,7 +315,7 @@ const hrmHtgControllerRouting = {
     pp_advance: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_viewstaffadvance: { load: 'viewstaffadvance.php', save: 'viewstaffadvance.php', filter: 'viewstaffadvance.php' },
     pp_personalstaffsalaryrecord: { load: 'fetchstaffpayroll.php', save: 'fetchstaffpayroll.php', filter: 'fetchstaffpayroll.php' },
-    pp_viewmonthlysalaryschedule: { load: 'viewmonthlysalaryschedule.php', save: 'viewmonthlysalaryschedule.php', filter: 'viewmonthlysalaryschedule.php' },
+    pp_viewmonthlysalaryschedule: { load: 'fetchapprovedpayroll.php', save: 'approvepayroll.php', filter: 'fetchapprovedpayroll.php' },
     pp_presalaryapproval: { load: 'presalaryapproval.php', save: 'presalaryapproval.php', filter: 'presalaryapproval.php' },
     pp_confirmsalary: { load: 'confirmsalary.php', save: 'confirmsalary.php', filter: 'confirmsalary.php' },
     pp_payrollclassa: { load: 'payrollclassa.php', save: 'payrollclassa.php', filter: 'payrollclassa.php' },
@@ -590,9 +610,13 @@ const hrmInterfaceBlueprints = {
     pp_viewmonthlysalaryschedule: {
         context: 'Approved salary schedule',
         fields: [],
-        filters: [{ id: 'month', label: 'Month', type: 'month' }, { id: 'location', label: 'Location', type: 'text' }, { id: 'status', label: 'Status', type: 'select', options: ['APPROVED', 'PAID'] }],
-        columns: ['Select', 'S/N', 'Staff ID', 'Name', 'Basic Salary', 'Allowance', 'Deduction', 'Net Pay', 'Status'],
-        summary: ['Total Basic', 'Total Allowance', 'Total Deduction', 'Total Net Pay']
+        filters: [
+            { id: 'location', label: 'Select by Branch', type: 'select', options: [], dynamic_source: 'locations' },
+            { id: 'month', label: 'Select Month', type: 'select', options: hrmMonthSelectOptions },
+            { id: 'year', label: 'Year', type: 'select', options: hrmPayrollYearOptions() }
+        ],
+        columns: ['S/N', '', 'First Name', 'Other Names', 'Last Name', 'Department', 'Level', 'Net Payable', 'Total Allowance', 'Total Deduction', 'Allowances', 'Deductions', 'Entry Date'],
+        summary: ['Total Net Payables', 'Total Allowance', 'Total Deductions', 'Total Basic Salary', 'Month', 'Year']
     },
     pp_presalaryapproval: {
         context: 'Payroll processing',
@@ -1684,6 +1708,17 @@ function hrmNormalizeGroupSelectOptions(responseData) {
     }).filter((item) => item.value && item.text);
 }
 
+function hrmNormalizeLocationSelectOptions(responseData) {
+    const rows = Array.isArray(responseData?.data?.data)
+        ? responseData.data.data
+        : (Array.isArray(responseData?.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []));
+    return rows.map((item) => {
+        const location = hrmNormalizePersonnelValue(item?.location || item?.name || item?.title);
+        if (!location) return null;
+        return { value: location, text: location.toUpperCase() };
+    }).filter(Boolean);
+}
+
 async function hrmPopulatePersonnelHistoryFilterPicker(route, blueprint, filterForm) {
     const control = document.getElementById('hrm_filter_personnel');
     if (!control) return;
@@ -1765,6 +1800,10 @@ async function hrmPopulateDynamicSelect(controlId, source) {
         const result = await hrmRequestController('fetchgroupname.php', new FormData());
         if (!result.ok || result?.data?.status === false) return;
         options = hrmNormalizeGroupSelectOptions(result.data);
+    } else if (source === 'locations') {
+        const result = await hrmRequestController('fetchlocation.php', new FormData());
+        if (!result.ok || result?.data?.status === false) return;
+        options = hrmNormalizeLocationSelectOptions(result.data);
     } else {
         return;
     }
@@ -2034,6 +2073,40 @@ function hrmComputeGenericSummary(rows = [], route = '') {
         .filter(Boolean)).size;
     const updatedCount = normalizedRows.filter((row) => hrmNormalizePersonnelValue(hrmFirstFilled(row, 'entrydate', 'updatedat', 'createdat'))).length;
 
+    if (route === 'pp_viewmonthlysalaryschedule') {
+        const monthControl = document.getElementById('hrm_filter_month');
+        const yearControl = document.getElementById('hrm_filter_year');
+        const totalNetPayable = normalizedRows.reduce((sum, row) => {
+            const amount = Number(String(hrmFirstFilled(row, 'netpayable') || '').replace(/[^0-9.-]/g, ''));
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+        const totalAllowance = normalizedRows.reduce((sum, row) => {
+            const payroll = row?.payroll || {};
+            const amount = Number(String(hrmFirstFilled(payroll, 'totalallowance') || '').replace(/[^0-9.-]/g, ''));
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+        const totalDeduction = normalizedRows.reduce((sum, row) => {
+            const payroll = row?.payroll || {};
+            const amount = Number(String(hrmFirstFilled(payroll, 'totaldeduction') || '').replace(/[^0-9.-]/g, ''));
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+        const totalBasicSalary = normalizedRows.reduce((sum, row) => {
+            const personnel = Array.isArray(row?.personnel) ? (row.personnel[0] || {}) : (row?.personnel || {});
+            const amount = Number(String(hrmFirstFilled(personnel, 'basicsalary') || '').replace(/[^0-9.-]/g, ''));
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+        const selectedMonth = monthControl ? hrmMonthNameByValue(monthControl.value || '-') : '-';
+        const selectedYear = yearControl ? hrmNormalizePersonnelValue(yearControl.value || '-') || '-' : '-';
+        return [
+            hrmFormatNumberWithCommas(totalNetPayable),
+            hrmFormatNumberWithCommas(totalAllowance),
+            hrmFormatNumberWithCommas(totalDeduction),
+            hrmFormatNumberWithCommas(totalBasicSalary),
+            selectedMonth || '-',
+            selectedYear || '-'
+        ];
+    }
+
     if (route === 'pp_advance') {
         const totalAmount = normalizedRows.reduce((sum, row) => {
             const rawAmount = hrmFirstFilled(row, 'amount');
@@ -2227,6 +2300,15 @@ function hrmBuildHtgMatterPayload(source, route, mode) {
 }
 
 function hrmBuildPayloadFromForm(form, route, mode) {
+    if (route === 'pp_viewmonthlysalaryschedule') {
+        const source = form ? new FormData(form) : new FormData();
+        const payload = new FormData();
+        payload.append('location', hrmPickFormDataValue(source, 'location'));
+        payload.append('month', hrmPickFormDataValue(source, 'month'));
+        payload.append('year', hrmPickFormDataValue(source, 'year'));
+        return payload;
+    }
+
     if (route === 'pp_personalstaffsalaryrecord') {
         const source = form ? new FormData(form) : new FormData();
         const payload = new FormData();
@@ -2688,6 +2770,23 @@ function hrmFormatNumberWithCommas(value) {
     return decimal !== undefined ? `${formattedWhole}.${decimal}` : formattedWhole;
 }
 
+function hrmMonthNameByValue(value) {
+    const month = String(value || '').trim();
+    const option = hrmMonthSelectOptions.find((item) => String(item.value) === month);
+    return option ? option.label : month;
+}
+
+function hrmBuildPayrollLineTable(lines = []) {
+    const normalized = Array.isArray(lines) ? lines : [];
+    if (!normalized.length) return '-';
+    const rows = normalized.map((line, index) => {
+        const title = hrmEscapeHtml(hrmFirstFilled(line, 'salaryinfo', 'title') || '-');
+        const amount = hrmEscapeHtml(hrmFormatNumberWithCommas(hrmFirstFilled(line, 'amount') || '0'));
+        return `<tr><td>${index + 1}</td><td>${title}</td><td>${amount}</td></tr>`;
+    }).join('');
+    return `<table class="min-w-[220px]">${rows}</table>`;
+}
+
 function hrmIsMonetaryColumn(column = '') {
     const label = String(column || '').toLowerCase();
     return /amount|salary|basic|allowance|deduction|gross|net pay|netpay|installment|monthly/i.test(label);
@@ -2830,6 +2929,28 @@ function hrmDocumentTableCell(value) {
 
 function hrmRouteRowValues(route, record = {}) {
     switch (route) {
+        case 'pp_viewmonthlysalaryschedule': {
+            const personnel = Array.isArray(record?.personnel) ? (record.personnel[0] || {}) : (record?.personnel || {});
+            const payroll = record?.payroll || {};
+            const paydetail = Array.isArray(record?.paydetail) ? record.paydetail : [];
+            const allowanceLines = paydetail.filter((line) => String(line?.salaryinfotype || '').toUpperCase() === 'ALLOWANCE');
+            const deductionLines = paydetail.filter((line) => String(line?.salaryinfotype || '').toUpperCase() === 'DEDUCTION');
+            const rowId = hrmEscapeHtml(hrmFirstFilled(payroll, 'id') || hrmFirstFilled(record, 'id'));
+            return [
+                `<input class="confirmmonthpayrollcheckbox" type="checkbox" id="${rowId}">`,
+                hrmFirstFilled(personnel, 'firstname'),
+                hrmFirstFilled(personnel, 'othernames'),
+                hrmFirstFilled(personnel, 'lastname'),
+                hrmFirstFilled(personnel, 'department', 'departmentname'),
+                hrmLevelDisplay(hrmFirstFilled(personnel, 'levelid')),
+                hrmFirstFilled(record, 'netpayable'),
+                hrmFirstFilled(payroll, 'totalallowance'),
+                hrmFirstFilled(payroll, 'totaldeduction'),
+                hrmBuildPayrollLineTable(allowanceLines),
+                hrmBuildPayrollLineTable(deductionLines),
+                hrmFirstFilled(payroll, 'entrydate')
+            ];
+        }
         case 'pp_personalstaffsalaryrecord': {
             const payrollPersonnelId = hrmFirstFilled(record, 'staffid', 'pid', 'personnelid', 'personnel');
             const fallbackPersonnel = hrmExtractPersonnelId(document.getElementById('hrm_filter_personnel')?.value || '');
@@ -2908,7 +3029,13 @@ function hrmRenderRows(columns, rows, route = '') {
     if (!Array.isArray(rows) || rows.length === 0) {
         body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No records found.</td></tr>`;
         if (status) status.textContent = 'Showing 0 to 0 of 0 records';
-        hrmSetSummaryValues(['0', '0', '0', '0']);
+        if (route === 'pp_viewmonthlysalaryschedule') {
+            const monthControl = document.getElementById('hrm_filter_month');
+            const yearControl = document.getElementById('hrm_filter_year');
+            hrmSetSummaryValues(['0', '0', '0', '0', hrmMonthNameByValue(monthControl?.value || '-'), hrmNormalizePersonnelValue(yearControl?.value || '-') || '-']);
+        } else {
+            hrmSetSummaryValues(['0', '0', '0', '0']);
+        }
         return;
     }
 
@@ -2922,7 +3049,8 @@ function hrmRenderRows(columns, rows, route = '') {
             if (cellIndex === 0) return `<td>${index + 1}</td>`;
             const rawValue = valueList[cellIndex - 1] ?? '';
             const value = hrmFormatMonetaryColumnValue(column, rawValue);
-            return `<td>${String(value).includes('<a ') ? value : hrmEscapeHtml(value)}</td>`;
+            const allowsRawHtml = route === 'pp_viewmonthlysalaryschedule' && /<input|<table|<span/i.test(String(value));
+            return `<td>${String(value).includes('<a ') || allowsRawHtml ? value : hrmEscapeHtml(value)}</td>`;
         }).join('');
         return `<tr>${cells}</tr>`;
     }).join('');
@@ -3091,13 +3219,21 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         hrmSetSummaryValues(['0', '0', '0', '0']);
         return;
     }
+    if (route === 'pp_viewmonthlysalaryschedule' && (!hrmNormalizePersonnelValue(payload.get('month')) || !hrmNormalizePersonnelValue(payload.get('year')))) {
+        const body = document.getElementById('hrm_table_body');
+        const status = document.getElementById('hrm_table_status');
+        if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select month and year, then fetch monthly salary schedule.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0', '-', '-']);
+        return;
+    }
 
     await hrmEnsureHtgDisplayLookups(route);
     const result = await hrmRequestController(loadController, payload, button);
 
     if (!result.ok || result?.data?.status === false) {
         notification(hrmResultErrorMessage(result, `Unable to load data from ${loadController}`), 0);
-        hrmRenderRows(columns, []);
+        hrmRenderRows(columns, [], route);
         return;
     }
 
@@ -3243,6 +3379,8 @@ function hrmBindWorkspaceControls(route, blueprint) {
         };
     }
     if (filterButton) {
+        const filterLabel = filterButton.querySelector('span:last-child');
+        if (filterLabel) filterLabel.textContent = route === 'pp_viewmonthlysalaryschedule' ? 'Fetch' : 'Filter';
         if (route === 'pp_personnelhistory' || personnelOnlyFilter) {
             filterButton.classList.add('hidden');
             filterButton.disabled = true;
