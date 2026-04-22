@@ -644,6 +644,10 @@ const routerTree = {
     },
 }
 
+const personnelPayrollRouteAliases = {
+    pp_viewpersonnel: 'pp_personnel',
+    pp_viewstaffadvance: 'pp_advance'
+}
 const ext = '.php'
 
 function routerEvent(route) {
@@ -675,12 +679,12 @@ function showActiveRoute() {
 
     let searchParams = new URLSearchParams(window.location.search)
     let page = searchParams.get('r')
-    let menu = document.getElementById(page)
+    let menu = resolveRouteMenuElement(page)
     document.querySelectorAll('#navigation .active').forEach( item => item.classList.remove('active'))
     document.querySelectorAll('#navigation .navitem-child-active').forEach( item => item.classList.remove('navitem-child-active'))
     if(menu?.classList.contains('navitem-child')) {
         menu.classList.add('navitem-child-active')
-        menu.parentElement.previousElementSibling.classList.add('active')
+        menu.parentElement.previousElementSibling?.classList.add('active')
     }
     else menu?.classList.add('active')
     
@@ -800,7 +804,11 @@ function openPageDescriptionModal() {
 
 function resolveRouteMenuElement(route) {
     if (!route) return null;
-    return document.getElementById(route) || document.getElementById(`${route}_main`);
+    const canonicalRoute = personnelPayrollRouteAliases[route] || route;
+    return document.getElementById(canonicalRoute)
+        || document.getElementById(`${canonicalRoute}_main`)
+        || document.getElementById(route)
+        || document.getElementById(`${route}_main`);
 }
 
 function getMenuGuideHtml(menu) {
