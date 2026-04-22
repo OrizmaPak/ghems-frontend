@@ -541,7 +541,7 @@ const hrmInterfaceBlueprints = {
         ],
         filters: hrmPersonnelFilterFields(),
         columns: ['S/N', 'Personnel', 'Referee', 'Relationship', 'Occupation', 'Phone Number', 'Address', 'Action'],
-        summary: ['Referees', 'Complete Records', 'Missing Email', 'Updated This Month']
+        summary: ['Referees', 'Complete Records', 'With Phone', 'With Document']
     },
     pp_qualification: {
         context: 'Qualification records',
@@ -1949,6 +1949,23 @@ function hrmComputeGenericSummary(rows = [], route = '') {
         ];
     }
 
+    if (route === 'pp_referees') {
+        const completeRecords = normalizedRows.filter((row) => {
+            const hasName = hrmNormalizePersonnelValue(hrmFirstFilled(row, 'fullname', 'refereename'));
+            const hasRelation = hrmNormalizePersonnelValue(hrmFirstFilled(row, 'relationship'));
+            const hasPhone = hrmNormalizePersonnelValue(hrmFirstFilled(row, 'phonenumber', 'phone'));
+            const hasAddress = hrmNormalizePersonnelValue(hrmFirstFilled(row, 'address'));
+            return Boolean(hasName && hasRelation && hasPhone && hasAddress);
+        }).length;
+        const withPhone = normalizedRows.filter((row) => hrmNormalizePersonnelValue(hrmFirstFilled(row, 'phonenumber', 'phone'))).length;
+        return [
+            `${total}`,
+            `${completeRecords}`,
+            `${withPhone}`,
+            `${withDocument}`
+        ];
+    }
+
     return [
         `${total}`,
         `${personnelCount || total}`,
@@ -2518,10 +2535,58 @@ function hrmParseHtmlRowsByRoute(html = '', route = '') {
                 reasonforleaving: values[6] || ''
             };
         }
+        if (route === 'pp_referees') {
+            return {
+                id,
+                staffid: values[1] || '',
+                fullname: values[2] || '',
+                relationship: values[3] || '',
+                occupation: values[4] || '',
+                phonenumber: values[5] || '',
+                address: values[6] || ''
+            };
+        }
         return null;
     }).filter(Boolean);
 
     return rows;
+}
+
+function hrmNormalizeSubrecordRows(route = '', rows = []) {
+    const sourceRows = Array.isArray(rows) ? rows : [];
+    const normalizeOne = (row) => {
+        const base = (row && typeof row === 'object') ? row : {};
+        const nested = hrmFirstFilled(
+            base,
+            'guarantor',
+            'employmentrecord',
+            'employerrecord',
+            'referee',
+            'referees',
+            'qualification',
+            'parents',
+            'parent',
+            'parentsguardians',
+            'record'
+        );
+        const candidate = (nested && typeof nested === 'object' && !Array.isArray(nested))
+            ? { ...nested, ...base }
+            : { ...base };
+
+        if (route === 'pp_referees') {
+            candidate.staffid = hrmFirstFilled(candidate, 'staffid', 'pid', 'personnelid', 'personnel');
+            candidate.fullname = hrmFirstFilled(candidate, 'fullname', 'refereename', 'name');
+            candidate.phonenumber = hrmFirstFilled(candidate, 'phonenumber', 'phone');
+            candidate.relationship = hrmFirstFilled(candidate, 'relationship');
+            candidate.occupation = hrmFirstFilled(candidate, 'occupation');
+            candidate.address = hrmFirstFilled(candidate, 'address');
+            candidate.id = hrmFirstFilled(candidate, 'id');
+        }
+
+        return candidate;
+    };
+
+    return sourceRows.map(normalizeOne).filter((row) => row && typeof row === 'object');
 }
 
 function hrmPersonnelDisplay(staffid) {
@@ -2845,7 +2910,10 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
         return;
     }
 
-    const rows = hrmExtractRowsFromResponse(result.data);
+    const extractedRows = hrmExtractRowsFromResponse(result.data);
+    const rows = hrmHtgSubrecordRoutes.has(route)
+        ? hrmNormalizeSubrecordRows(route, extractedRows)
+        : extractedRows;
     hrmRenderRows(columns, rows, route);
 }
 
