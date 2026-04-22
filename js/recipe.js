@@ -76,7 +76,7 @@ async function handlerecipedepartment(store) {
     function payload() {
         let param = new FormData()
         if (!store) param.append('salespoint', did('salespointname').value)
-        if (store) param.append('salespoint', default_department)
+        if (store) param.append('salespoint', store)
         return param
     }
     let request = await httpRequest2('../controllers/fetchinventorybysalespoint', payload(), null)
@@ -104,27 +104,17 @@ async function handlerecipedepartment(store) {
     }
 }
 
-async function fetchrecipe(id) {
-    if (!id) return
-    function getparamm() {
-        let paramstr = new FormData()
-        paramstr.append('id', id)
-        return paramstr
-    }
-    let request = await httpRequest2('../controllers/fetchcompositeitemscript', getparamm(), null, 'json')
-    if (!id) document.getElementById('recipetabledata').innerHTML = `No records retrieved`
-    if (request.status) {
-        let thedata = request.data.filter(dat => dat.compositeitemdetail.id == id)[0]
-        console.log('thedata', thedata)
-    }
-    else return notification('No records retrieved')
+function clearRecipeManageTable() {
+    did('recipetabledata').innerHTML = ''
+    runCount('datatable', 'sn')
+    refreshRecipeTableTotal()
 }
 
-function addrecipeitem() {
-    if (!validateForm('recipeform', ['item', 'quantity'])) return
+function appendRecipeTableRow(itemId, quantity) {
+    const selectedItemId = String(itemId || '').trim()
+    const enteredQuantity = parseRecipeAmount(quantity)
+    if (!selectedItemId || enteredQuantity <= 0) return
 
-    const selectedItemId = document.getElementById('item').value
-    const enteredQuantity = parseRecipeAmount(document.getElementById('quantity').value)
     const unitPrice = getRecipeItemUnitPrice(selectedItemId)
     const linePrice = unitPrice * enteredQuantity
 
@@ -141,6 +131,62 @@ function addrecipeitem() {
     element.innerHTML = x
     hideOptionByValue('item', selectedItemId)
     did('recipetabledata').appendChild(element)
+}
+
+function setItemToBuildValueFromCompositeData(data) {
+    const candidateValues = [
+        data?.compositeitem,
+        data?.compositeitemdetail?.compositeitem,
+        data?.compositeitemdetail?.itemid
+    ].map(value => String(value || '').trim()).filter(Boolean)
+
+    for (const value of candidateValues) {
+        if (Array.from(did('itembuild').options).some(option => String(option.value) === value)) {
+            did('itembuild').value = value
+            return
+        }
+    }
+
+    const itemName = String(data?.compositeitemdetail?.itemname || '').trim().toLowerCase()
+    if (!itemName) return
+    const optionByName = Array.from(did('itembuild').options).find(option => String(option.textContent || '').trim().toLowerCase() === itemName)
+    if (optionByName) did('itembuild').value = optionByName.value
+}
+
+async function fetchrecipe(id) {
+    if (!id) return
+    recipeid = id
+    function getparamm() {
+        let paramstr = new FormData()
+        paramstr.append('id', id)
+        return paramstr
+    }
+    let request = await httpRequest2('../controllers/fetchcompositeitemscript', getparamm(), null, 'json')
+    if (!id) document.getElementById('recipetabledata').innerHTML = `No records retrieved`
+    if (request.status) {
+        let thedata = request.data.filter(dat => String(dat?.compositeitemdetail?.id) === String(id))[0]
+        if (!thedata) return notification('No records retrieved')
+
+        const salesPoint = String(thedata?.compositeitemdetail?.salespoint || '').trim()
+        if (salesPoint) did('salespointname').value = salesPoint
+        await handlerecipedepartment(salesPoint || did('salespointname').value || default_department)
+
+        setItemToBuildValueFromCompositeData(thedata)
+        clearRecipeManageTable()
+
+        ;(thedata.compositememberitems || []).forEach(item => {
+            appendRecipeTableRow(item?.itemid, item?.qty)
+        })
+        runCount('datatable', 'sn')
+        refreshRecipeTableTotal()
+    }
+    else return notification('No records retrieved')
+}
+
+function addrecipeitem() {
+    if (!validateForm('recipeform', ['item', 'quantity'])) return
+
+    appendRecipeTableRow(document.getElementById('item').value, document.getElementById('quantity').value)
     runCount('datatable', 'sn')
     did('item').value = ''
     did('quantity').value = ''
@@ -194,6 +240,7 @@ async function recipeFormSubmitHandler() {
         let param = new FormData()
         param.append('salespoint', document.getElementById('salespointname').value)
         param.append('itemtobuildid', document.getElementById('itembuild').value)
+        if (recipeid) param.append('id', recipeid)
         const qtyElements = document.getElementsByName('qty')
         const itemIdElements = document.getElementsByName('itemid')
         const rowTotalElements = document.querySelectorAll('#recipetabledata .recipe-item-total')
