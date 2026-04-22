@@ -772,10 +772,33 @@ function hrmEnterEditMode(record = {}, saveButton = null) {
     }
     requestAnimationFrame(() => {
         hrmPopulateEntryForm(record);
+        hrmRenderExistingAttachmentPreview(record?.existingdocument || hrmFirstFilled(record, 'doc', 'document', 'filename', 'photofilename'));
         hrmFocusFirstEditableInput();
     });
     const saveLabel = saveButton?.querySelector('span:last-child');
     if (saveLabel) saveLabel.textContent = 'Update';
+}
+
+function hrmRenderExistingAttachmentPreview(documentName = '') {
+    const filename = hrmNormalizePersonnelValue(documentName);
+    const preview = document.getElementById('attachment_preview');
+    if (!preview || !filename || filename === '-') return;
+    const href = `../images/personnel/${encodeURIComponent(filename)}`;
+    const extension = hrmGetFileExtension(filename).toLowerCase();
+    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg'].includes(extension);
+    if (isImage) {
+        preview.innerHTML = `
+            <a href="${href}" target="_blank" rel="noopener" class="flex items-center gap-3" title="Open ${hrmEscapeHtml(filename)}">
+                <img src="${href}" alt="${hrmEscapeHtml(filename)}" class="w-16 h-16 object-cover rounded border border-slate-200">
+                <div class="flex flex-col">
+                    <span class="font-medium text-slate-800">${hrmEscapeHtml(filename)}</span>
+                    <span class="text-xs text-blue-700 underline">Open image</span>
+                </div>
+            </a>
+        `;
+        return;
+    }
+    preview.innerHTML = hrmDocumentTableCell(filename);
 }
 
 function buildDefaultHrmBlueprint(route, config) {
@@ -2462,10 +2485,65 @@ function hrmFormatNumberWithCommas(value) {
     return decimal !== undefined ? `${formattedWhole}.${decimal}` : formattedWhole;
 }
 
+function hrmExtractIdFromActionHtml(html = '') {
+    const raw = String(html || '');
+    const idMatch = raw.match(/\((\d+)\)/) || raw.match(/['"]id['"]\s*[:,=]\s*['"]?(\d+)['"]?/i) || raw.match(/data-[a-z0-9_-]*id=['"]?(\d+)['"]?/i);
+    return idMatch ? idMatch[1] : '';
+}
+
+function hrmParseHtmlRowsByRoute(html = '', route = '') {
+    const source = String(html || '').trim();
+    if (!source) return [];
+
+    const container = document.createElement('table');
+    container.innerHTML = `<tbody>${source}</tbody>`;
+    const tableRows = Array.from(container.querySelectorAll('tbody tr'));
+    if (!tableRows.length) return [];
+
+    const rows = tableRows.map((tr) => {
+        const cells = Array.from(tr.querySelectorAll('td'));
+        if (!cells.length) return null;
+        const values = cells.map((cell) => String(cell.textContent || '').trim());
+        const actionHtml = cells[cells.length - 1]?.innerHTML || '';
+        const id = hrmExtractIdFromActionHtml(actionHtml);
+
+        if (route === 'pp_employerrecord') {
+            return {
+                id,
+                staffid: values[1] || '',
+                employer: values[2] || '',
+                position: values[3] || '',
+                basic: values[4] ? String(values[4]).replace(/,/g, '') : '',
+                yearsemployed: values[5] || '',
+                reasonforleaving: values[6] || ''
+            };
+        }
+        return null;
+    }).filter(Boolean);
+
+    return rows;
+}
+
 function hrmPersonnelDisplay(staffid) {
     const key = hrmNormalizePersonnelValue(staffid);
     if (!key) return '-';
     return hrmPersonnelLabelByStaffId[key] || key;
+}
+
+function hrmResolvePersonnelId(value) {
+    const normalized = hrmNormalizePersonnelValue(value);
+    if (!normalized) return '';
+    if (hrmPersonnelLabelByStaffId[normalized]) return normalized;
+    const lowered = normalized.toLowerCase();
+    const normalizeNameOrder = (name) => String(name || '').toLowerCase().split(/\s+/).filter(Boolean).sort().join(' ');
+    const loweredCanonical = normalizeNameOrder(lowered);
+    const matched = Object.entries(hrmPersonnelLabelByStaffId).find(([staffid, label]) => {
+        const sid = String(staffid || '').toLowerCase();
+        const text = String(label || '').toLowerCase();
+        const textCanonical = normalizeNameOrder(text);
+        return lowered === sid || lowered === text || lowered === `${sid} || ${text}` || (loweredCanonical && loweredCanonical === textCanonical);
+    });
+    return matched ? matched[0] : normalized;
 }
 
 function hrmLevelDisplay(levelid) {
@@ -2568,7 +2646,7 @@ function hrmRenderRows(columns, rows, route = '') {
 }
 
 function hrmMapRouteRecordToForm(route, record = {}) {
-    const personnel = hrmFirstFilled(record, 'staffid', 'pid', 'personnelid');
+    const personnel = hrmResolvePersonnelId(hrmFirstFilled(record, 'staffid', 'pid', 'personnelid'));
     const baseMatter = {
         id: hrmFirstFilled(record, 'id'),
         personnel,
@@ -2580,22 +2658,22 @@ function hrmMapRouteRecordToForm(route, record = {}) {
 
     switch (route) {
         case 'pp_guarantor':
-            return { id: record.id, personnel, guarantorname: record.guarantorname, occupation: record.occupation, phonenumber: record.phonenumber, address: record.address, officeaddress: record.officeaddress, yearsknown: record.yearsknown };
+            return { id: record.id, personnel, guarantorname: record.guarantorname, occupation: record.occupation, phonenumber: record.phonenumber, address: record.address, officeaddress: record.officeaddress, yearsknown: record.yearsknown, existingdocument: hrmRecordDocumentValue(record) };
         case 'pp_employerrecord':
-            return { id: record.id, personnel, employer: record.employer, position: record.position, basic: record.basic, yearsemployed: record.yearsemployed, reasonforleaving: record.reasonforleaving };
+            return { id: record.id, personnel, employer: record.employer, position: record.position, basic: record.basic, yearsemployed: record.yearsemployed, reasonforleaving: record.reasonforleaving, existingdocument: hrmRecordDocumentValue(record) };
         case 'pp_referees':
-            return { id: record.id, personnel, fullname: record.fullname, relationship: record.relationship, occupation: record.occupation, phonenumber: record.phonenumber, address: record.address };
+            return { id: record.id, personnel, fullname: record.fullname, relationship: record.relationship, occupation: record.occupation, phonenumber: record.phonenumber, address: record.address, existingdocument: hrmRecordDocumentValue(record) };
         case 'pp_qualification':
-            return { id: record.id, personnel, institution: record.institution, qualification: record.qualification, certificationdate: record.certificationdate };
+            return { id: record.id, personnel, institution: record.institution, qualification: record.qualification, certificationdate: record.certificationdate, existingdocument: hrmRecordDocumentValue(record) };
         case 'pp_parentsguardians':
-            return { id: record.id, personnel, parentone: record.parentone, parenttwo: record.parenttwo, parentoneoccupation: record.parentoneoccupation, parenttwooccupation: record.parenttwooccupation, parentonephone: record.parentonephone, parenttwophone: record.parenttwophone, homeaddress: record.homeaddress, officeaddress: record.officeaddress };
+            return { id: record.id, personnel, parentone: record.parentone, parenttwo: record.parenttwo, parentoneoccupation: record.parentoneoccupation, parenttwooccupation: record.parenttwooccupation, parentonephone: record.parentonephone, parenttwophone: record.parenttwophone, homeaddress: record.homeaddress, officeaddress: record.officeaddress, existingdocument: hrmRecordDocumentValue(record) };
         case 'pp_promotions':
-            return { ...baseMatter, level: record.level };
+            return { ...baseMatter, level: record.level, existingdocument: hrmRecordDocumentValue(record) };
         case 'pp_advance':
         case 'pp_viewstaffadvance':
-            return { ...baseMatter, amount: record.amount, monthlyinstallment: record.monthlyinstallment };
+            return { ...baseMatter, amount: record.amount, monthlyinstallment: record.monthlyinstallment, existingdocument: hrmRecordDocumentValue(record) };
         default:
-            return baseMatter;
+            return { ...baseMatter, existingdocument: hrmRecordDocumentValue(record) };
     }
 }
 
@@ -2628,6 +2706,21 @@ function hrmRecordDetailPairs(route, record = {}) {
     return pairs;
 }
 
+function hrmRenderModalDocument(value) {
+    const documentName = hrmNormalizePersonnelValue(value);
+    if (!documentName || documentName === '-') return '-';
+    const href = `../images/personnel/${encodeURIComponent(documentName)}`;
+    const extension = hrmGetFileExtension(documentName).toLowerCase();
+    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg'].includes(extension);
+    if (!isImage) return hrmDocumentTableCell(documentName);
+    return `
+        <a href="${href}" target="_blank" rel="noopener" class="inline-flex flex-col gap-2">
+            <img src="${href}" alt="${hrmEscapeHtml(documentName)}" class="w-32 h-24 object-cover rounded border border-slate-200">
+            <span class="text-xs text-blue-700 underline">Open image</span>
+        </a>
+    `;
+}
+
 function hrmOpenRecordDetailModal(route, record = {}, blueprint = {}) {
     const previous = document.getElementById('hrm_record_detail_modal');
     if (previous) previous.remove();
@@ -2647,7 +2740,7 @@ function hrmOpenRecordDetailModal(route, record = {}, blueprint = {}) {
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 ${hrmRecordDetailPairs(route, record).map(([label, value]) => {
                     const isDocument = String(label).toLowerCase().includes('document');
-                    const rendered = isDocument ? hrmDocumentTableCell(value) : hrmEscapeHtml(value || '-');
+                    const rendered = isDocument ? hrmRenderModalDocument(value) : hrmEscapeHtml(value || '-');
                     return `
                         <div class="border border-slate-200 rounded-sm p-3 bg-slate-50/60">
                             <p class="text-xs uppercase tracking-wide text-slate-500">${hrmEscapeHtml(label)}</p>
@@ -2715,6 +2808,13 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     }
 
     if (typeof result.data === 'string' && result.data.includes('<tr')) {
+        if (hrmHtgActionRoutes.has(route)) {
+            const parsedRows = hrmParseHtmlRowsByRoute(result.data, route);
+            if (parsedRows.length) {
+                hrmRenderRows(columns, parsedRows, route);
+                return;
+            }
+        }
         const body = document.getElementById('hrm_table_body');
         if (body) body.innerHTML = result.data;
         const noRecordCell = body ? body.querySelector('td[colspan]') : null;
