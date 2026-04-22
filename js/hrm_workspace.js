@@ -285,19 +285,19 @@ const hrmHtgControllerRouting = {
     pp_approvepersonnel: { load: 'fetchpersonnels.php', save: 'personnelapprovals.php', filter: 'fetchpersonnels.php' },
     pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
     pp_personnelhistory: { load: 'fetchpersonnelhistory.php', save: 'fetchpersonnelhistory.php', filter: 'fetchpersonnelhistory.php' },
-    pp_guarantor: { load: 'guarantor.php', save: 'guarantor.php', filter: 'guarantor.php' },
-    pp_employerrecord: { load: 'employerrecord.php', save: 'employerrecord.php', filter: 'employerrecord.php' },
-    pp_referees: { load: 'referees.php', save: 'referees.php', filter: 'referees.php' },
-    pp_qualification: { load: 'qualificationn.php', save: 'qualificationn.php', filter: 'qualificationn.php' },
-    pp_parentsguardians: { load: 'parentsguardians.php', save: 'parentsguardians.php', filter: 'parentsguardians.php' },
-    pp_query: { load: 'query.php', save: 'query.php', filter: 'query.php' },
-    pp_promotions: { load: 'promotions.php', save: 'promotions.php', filter: 'promotions.php' },
+    pp_guarantor: { load: 'fetchguarantors.php', save: 'guarantorscript.php', filter: 'fetchguarantors.php', delete: 'removeguarantor.php' },
+    pp_employerrecord: { load: 'fetchemploymentrecords.php', save: 'employmentrecordscript.php', filter: 'fetchemploymentrecords.php', delete: 'removeemploymentrecord.php' },
+    pp_referees: { load: 'fetchreferees.php', save: 'refereescript.php', filter: 'fetchreferees.php', delete: 'removereferee.php' },
+    pp_qualification: { load: 'fetchqualifications.php', save: 'qualificationscript.php', filter: 'fetchqualifications.php', delete: 'removequalification.php' },
+    pp_parentsguardians: { load: 'fetchparents.php', save: 'parentscript.php', filter: 'fetchparents.php', delete: 'removeparentsguardians.php' },
+    pp_query: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
+    pp_promotions: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_termination: { load: 'termination.php', save: 'termination.php', filter: 'termination.php' },
-    pp_suspension: { load: 'suspension.php', save: 'suspension.php', filter: 'suspension.php' },
-    pp_leave: { load: 'leave.php', save: 'leave.php', filter: 'leave.php' },
-    pp_warning: { load: 'warning.php', save: 'warning.php', filter: 'warning.php' },
-    pp_monitorevaluation: { load: 'monitorevaluation.php', save: 'monitorevaluation.php', filter: 'monitorevaluation.php' },
-    pp_advance: { load: 'advance.php', save: 'advance.php', filter: 'advance.php' },
+    pp_suspension: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
+    pp_leave: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
+    pp_warning: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
+    pp_monitorevaluation: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
+    pp_advance: { load: 'fetchpersonnelmatters.php', save: 'personnelmatterscript.php', filter: 'fetchpersonnelmatters.php', delete: 'removepersonnelmatter.php' },
     pp_viewstaffadvance: { load: 'viewstaffadvance.php', save: 'viewstaffadvance.php', filter: 'viewstaffadvance.php' },
     pp_personalstaffsalaryrecord: { load: 'personalstaffsalaryrecord.php', save: 'personalstaffsalaryrecord.php', filter: 'personalstaffsalaryrecord.php' },
     pp_viewmonthlysalaryschedule: { load: 'viewmonthlysalaryschedule.php', save: 'viewmonthlysalaryschedule.php', filter: 'viewmonthlysalaryschedule.php' },
@@ -314,20 +314,19 @@ const hrmPersonnelLevelMetaById = {};
 
 const hrmMatterFields = {
     pp_query: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'querydate', label: 'Query Date', type: 'date', required: true },
-        { id: 'subject', label: 'Subject', type: 'text', required: true },
-        { id: 'severity', label: 'Severity', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH'] },
-        { id: 'description', label: 'Query Details', type: 'textarea' },
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'startdate', label: 'Start Date', type: 'date' },
+        { id: 'enddate', label: 'End Date', type: 'date' },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_promotions: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'currentlevel', label: 'Current Level', type: 'text', readonly: true },
-        { id: 'newlevel', label: 'New Level', type: 'text', list: 'hrm_level_list', required: true },
-        { id: 'effectivedate', label: 'Effective Date', type: 'date', required: true },
-        { id: 'newsalary', label: 'New Basic Salary', type: 'number' },
-        { id: 'remark', label: 'Remark', type: 'textarea' }
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'level', label: 'Level', type: 'select', options: [], tom_select: true, dynamic_source: 'levels', required: true },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_termination: [
         { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
@@ -338,46 +337,60 @@ const hrmMatterFields = {
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_suspension: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'startdate', label: 'Start Date', type: 'date', required: true },
-        { id: 'enddate', label: 'End Date', type: 'date', required: true },
-        { id: 'status', label: 'Status', type: 'select', options: ['ACTIVE', 'LIFTED'] },
-        { id: 'reason', label: 'Reason', type: 'textarea' },
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_leave: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'leave_type', label: 'Leave Type', type: 'select', options: ['ANNUAL', 'SICK', 'MATERNITY', 'COMPASSIONATE', 'UNPAID'] },
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
         { id: 'startdate', label: 'Start Date', type: 'date', required: true },
         { id: 'enddate', label: 'End Date', type: 'date', required: true },
-        { id: 'resumptiondate', label: 'Resumption Date', type: 'date' },
-        { id: 'remark', label: 'Remark', type: 'textarea' }
+        { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_warning: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'warningdate', label: 'Warning Date', type: 'date', required: true },
-        { id: 'warning_type', label: 'Warning Type', type: 'select', options: ['VERBAL', 'WRITTEN', 'FINAL'] },
-        { id: 'subject', label: 'Subject', type: 'text' },
-        { id: 'details', label: 'Details', type: 'textarea' },
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
         { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_monitorevaluation: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'evaluationdate', label: 'Evaluation Date', type: 'date', required: true },
-        { id: 'score', label: 'Score', type: 'number' },
-        { id: 'reviewer', label: 'Reviewer', type: 'text' },
-        { id: 'metric', label: 'Metric', type: 'text' },
-        { id: 'comment', label: 'Comment', type: 'textarea' }
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
     ],
     pp_advance: [
-        { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-        { id: 'level', label: 'Level', type: 'text', list: 'hrm_level_list' },
-        { id: 'amount', label: 'Advance Amount', type: 'number', required: true },
-        { id: 'repaymentmonth', label: 'Repayment Months', type: 'number' },
-        { id: 'startmonth', label: 'Start Month', type: 'month' },
-        { id: 'remark', label: 'Remark', type: 'textarea' }
+        { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+        { id: 'entrydate', label: 'Entry Date', type: 'date', required: true },
+        { id: 'title', label: 'Title', type: 'text', required: true },
+        { id: 'amount', label: 'Amount', type: 'number', required: true },
+        { id: 'attachment', label: 'Attachment', type: 'file' }
     ]
 };
+
+const hrmHtgPersonnelMatterByRoute = {
+    pp_query: 'QUERY',
+    pp_promotions: 'PROMOTION',
+    pp_suspension: 'SUSPENSION',
+    pp_leave: 'leave',
+    pp_warning: 'WARNING',
+    pp_monitorevaluation: 'EVALUATION',
+    pp_advance: 'ADVANCE'
+};
+
+const hrmHtgSubrecordRoutes = new Set([
+    'pp_guarantor',
+    'pp_employerrecord',
+    'pp_referees',
+    'pp_qualification',
+    'pp_parentsguardians'
+]);
+
+const hrmHtgMatterRoutes = new Set(Object.keys(hrmHtgPersonnelMatterByRoute));
+const hrmHtgPayloadRoutes = new Set([...hrmHtgSubrecordRoutes, ...hrmHtgMatterRoutes]);
 
 const hrmInterfaceBlueprints = {
     pp_level: {
@@ -459,12 +472,10 @@ const hrmInterfaceBlueprints = {
     pp_guarantor: {
         context: 'Guarantor records',
         fields: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'guarantorname', label: 'Guarantor Name', type: 'text', required: true },
-            { id: 'relationship', label: 'Relationship', type: 'text' },
-            { id: 'phone', label: 'Phone', type: 'tel' },
-            { id: 'email', label: 'Email', type: 'email' },
             { id: 'occupation', label: 'Occupation', type: 'text' },
+            { id: 'phonenumber', label: 'Phone Number', type: 'tel' },
             { id: 'address', label: 'Address', type: 'textarea' },
             { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
@@ -475,11 +486,11 @@ const hrmInterfaceBlueprints = {
     pp_employerrecord: {
         context: 'Previous employment records',
         fields: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'employer', label: 'Employer', type: 'text', required: true },
             { id: 'position', label: 'Position', type: 'text' },
-            { id: 'startdate', label: 'Start Date', type: 'date' },
-            { id: 'enddate', label: 'End Date', type: 'date' },
+            { id: 'basic', label: 'Basic Salary', type: 'number' },
+            { id: 'yearsemployed', label: 'Years Employed', type: 'text' },
             { id: 'reasonforleaving', label: 'Reason For Leaving', type: 'textarea' }
         ],
         filters: hrmCommonFilters,
@@ -489,11 +500,11 @@ const hrmInterfaceBlueprints = {
     pp_referees: {
         context: 'Referee records',
         fields: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-            { id: 'refereename', label: 'Referee Name', type: 'text', required: true },
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+            { id: 'fullname', label: 'Referee Name', type: 'text', required: true },
             { id: 'relationship', label: 'Relationship', type: 'text' },
-            { id: 'phone', label: 'Phone', type: 'tel' },
-            { id: 'email', label: 'Email', type: 'email' },
+            { id: 'occupation', label: 'Occupation', type: 'text' },
+            { id: 'phonenumber', label: 'Phone Number', type: 'tel' },
             { id: 'address', label: 'Address', type: 'textarea' }
         ],
         filters: hrmCommonFilters,
@@ -503,11 +514,10 @@ const hrmInterfaceBlueprints = {
     pp_qualification: {
         context: 'Qualification records',
         fields: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-            { id: 'qualification', label: 'Qualification', type: 'text', required: true },
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
             { id: 'institution', label: 'Institution', type: 'text' },
-            { id: 'course', label: 'Course', type: 'text' },
-            { id: 'yearobtained', label: 'Year Obtained', type: 'number' },
+            { id: 'qualification', label: 'Qualification', type: 'text', required: true },
+            { id: 'certificationdate', label: 'Certification Date', type: 'date' },
             { id: 'attachment', label: 'Certificate', type: 'file' }
         ],
         filters: hrmCommonFilters,
@@ -517,12 +527,16 @@ const hrmInterfaceBlueprints = {
     pp_parentsguardians: {
         context: 'Parent and guardian records',
         fields: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list', required: true },
-            { id: 'guardianname', label: 'Parent/Guardian Name', type: 'text', required: true },
-            { id: 'relationship', label: 'Relationship', type: 'text' },
-            { id: 'phone', label: 'Phone', type: 'tel' },
-            { id: 'email', label: 'Email', type: 'email' },
-            { id: 'address', label: 'Address', type: 'textarea' }
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnels', required: true },
+            { id: 'parentone', label: 'Parent/Guardian One', type: 'text', required: true },
+            { id: 'parenttwo', label: 'Parent/Guardian Two', type: 'text' },
+            { id: 'parentoneoccupation', label: 'Parent One Occupation', type: 'text' },
+            { id: 'parenttwooccupation', label: 'Parent Two Occupation', type: 'text' },
+            { id: 'parentonephone', label: 'Parent One Phone', type: 'text' },
+            { id: 'parenttwophone', label: 'Parent Two Phone', type: 'text' },
+            { id: 'homeaddress', label: 'Home Address', type: 'textarea' },
+            { id: 'officeaddress', label: 'Office Address', type: 'textarea' },
+            { id: 'attachment', label: 'Attachment', type: 'file' }
         ],
         filters: hrmCommonFilters,
         columns: ['S/N', 'Staff Name', 'Parent/Guardian', 'Relationship', 'Phone', 'Email', 'Action'],
@@ -1419,6 +1433,64 @@ async function hrmPopulatePersonnelHistoryFilterPicker() {
     }
 }
 
+async function hrmPopulateDynamicSelect(controlId, source) {
+    const control = document.getElementById(controlId);
+    if (!control || control.tagName !== 'SELECT') return;
+
+    let options = [];
+    if (source === 'personnels') {
+        const result = await hrmRequestController('fetchpersonnels.php', new FormData());
+        if (!result.ok || result?.data?.status === false) return;
+        options = hrmNormalizePersonnelSelectOptions(result.data);
+    } else if (source === 'levels') {
+        const result = await hrmRequestController('fetchlevel.php', new FormData());
+        if (!result.ok || result?.data?.status === false) return;
+        options = hrmNormalizeLevelOptions(result.data).map((item) => ({ value: item.id, text: item.label }));
+    } else {
+        return;
+    }
+
+    const selectedValue = control.value || '';
+    control.innerHTML = '<option value="">-- select --</option>' + options.map((option) =>
+        `<option value="${hrmEscapeHtml(option.value)}">${hrmEscapeHtml(option.text)}</option>`
+    ).join('');
+    if (selectedValue) control.value = selectedValue;
+
+    if (!control.dataset.hrmTomSelect) return;
+    try {
+        await hrmEnsureTomSelectAssets();
+        if (hrmTomSelectInstances[controlId]) {
+            hrmTomSelectInstances[controlId].destroy();
+            delete hrmTomSelectInstances[controlId];
+        }
+        if (window.TomSelect) {
+            hrmTomSelectInstances[controlId] = new window.TomSelect(control, {
+                create: false,
+                allowEmptyOption: true,
+                maxItems: 1,
+                dropdownParent: 'body',
+                placeholder: 'Select'
+            });
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+async function hrmPopulateRouteDynamicSelectors(blueprint) {
+    const allFields = []
+        .concat(Array.isArray(blueprint?.fields) ? blueprint.fields : [])
+        .concat(Array.isArray(blueprint?.filters) ? blueprint.filters.map((field) => ({
+            ...field,
+            id: `hrm_filter_${field.id}`
+        })) : []);
+
+    const dynamicFields = allFields.filter((field) => field?.type === 'select' && field?.dynamic_source);
+    for (const field of dynamicFields) {
+        await hrmPopulateDynamicSelect(field.id, field.dynamic_source);
+    }
+}
+
 function hrmBuildControl(field) {
     if (hrmHiddenFrontendFields.has((field?.id || '').toLowerCase())) return '';
 
@@ -1510,7 +1582,126 @@ function hrmControllerEndpoint(controllerName = '') {
     return `../controllers/${normalized.replace(/\.php$/i, '')}`;
 }
 
+function hrmExtractPersonnelId(value = '') {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.includes('||')) return raw.split('||')[0].trim();
+    return raw;
+}
+
+function hrmPickFormDataValue(data, ...keys) {
+    for (const key of keys) {
+        const value = data.get(key);
+        if (value === null || value === undefined) continue;
+        if (typeof value === 'string' && value.trim() === '') continue;
+        return value;
+    }
+    return '';
+}
+
+function hrmAppendPhotoPayload(payload, fileValue) {
+    if (fileValue && typeof fileValue === 'object' && typeof fileValue.name === 'string' && fileValue.name) {
+        payload.append('photofilename', fileValue.name);
+        payload.append('userphotoname', fileValue);
+    } else {
+        payload.append('photofilename', '-');
+        payload.append('userphotoname', '-');
+    }
+}
+
+function hrmBuildHtgSubrecordPayload(source, route, mode) {
+    const payload = new FormData();
+    const append = (key, ...fromKeys) => payload.append(key, hrmPickFormDataValue(source, ...fromKeys));
+    const staffid = hrmExtractPersonnelId(hrmPickFormDataValue(source, 'personnel', 'staffid'));
+    if (mode === 'save' || mode === 'update') {
+        if (mode === 'update') payload.append('id', hrmPickFormDataValue(source, 'id'));
+        payload.append('staffid', staffid);
+        if (route === 'pp_guarantor') {
+            payload.append('personnelmatter', 'GUARANTOR');
+            append('guarantorname', 'guarantorname');
+            append('occupation', 'occupation');
+            append('phonenumber', 'phonenumber');
+            append('address', 'address');
+        } else if (route === 'pp_employerrecord') {
+            append('employer', 'employer');
+            append('position', 'position');
+            append('basic', 'basic');
+            append('yearsemployed', 'yearsemployed');
+            append('reasonforleaving', 'reasonforleaving');
+        } else if (route === 'pp_referees') {
+            append('fullname', 'fullname', 'refereename');
+            append('occupation', 'occupation');
+            append('address', 'address');
+            append('phonenumber', 'phonenumber', 'phone');
+            append('relationship', 'relationship');
+        } else if (route === 'pp_qualification') {
+            append('institution', 'institution');
+            append('qualification', 'qualification');
+            append('certificationdate', 'certificationdate');
+        } else if (route === 'pp_parentsguardians') {
+            payload.append('personnelmatter', 'PARENTS');
+            append('parentone', 'parentone');
+            append('parenttwo', 'parenttwo');
+            append('parentoneoccupation', 'parentoneoccupation');
+            append('parenttwooccupation', 'parenttwooccupation');
+            append('parentonephone', 'parentonephone');
+            append('parenttwophone', 'parenttwophone');
+            append('homeaddress', 'homeaddress');
+            append('officeaddress', 'officeaddress');
+        }
+        hrmAppendPhotoPayload(payload, hrmPickFormDataValue(source, 'attachment', 'userphotoname', 'photo', 'document'));
+        return payload;
+    }
+
+    if (staffid) payload.append('staffid', staffid);
+    return payload;
+}
+
+function hrmBuildHtgMatterPayload(source, route, mode) {
+    const payload = new FormData();
+    const append = (key, ...fromKeys) => payload.append(key, hrmPickFormDataValue(source, ...fromKeys));
+    const matter = hrmHtgPersonnelMatterByRoute[route] || '';
+    const pid = hrmExtractPersonnelId(hrmPickFormDataValue(source, 'personnel', 'personnelid', 'pid'));
+    const recordId = hrmPickFormDataValue(source, 'id');
+
+    if (mode === 'save' || mode === 'update') {
+        if (mode === 'update') payload.append('id', recordId);
+        payload.append('personnelmatter', matter);
+        payload.append('pid', pid);
+        append('entrydate', 'entrydate');
+        append('title', 'title');
+        if (route === 'pp_query') {
+            append('startdate', 'startdate');
+            append('enddate', 'enddate');
+        }
+        if (route === 'pp_leave') {
+            append('startdate', 'startdate');
+            append('enddate', 'enddate');
+        }
+        if (route === 'pp_promotions') {
+            append('level', 'level');
+        }
+        if (route === 'pp_advance') {
+            append('amount', 'amount');
+            payload.append('level', '-1');
+        }
+        hrmAppendPhotoPayload(payload, hrmPickFormDataValue(source, 'attachment', 'userphotoname', 'photo', 'document'));
+        return payload;
+    }
+
+    payload.append('personnelmatter', matter);
+    if (pid) payload.append('personnelid', pid);
+    if (recordId) payload.append('id', recordId);
+    return payload;
+}
+
 function hrmBuildPayloadFromForm(form, route, mode) {
+    if (hrmHtgPayloadRoutes.has(route)) {
+        const source = form ? new FormData(form) : new FormData();
+        if (hrmHtgSubrecordRoutes.has(route)) return hrmBuildHtgSubrecordPayload(source, route, mode);
+        if (hrmHtgMatterRoutes.has(route)) return hrmBuildHtgMatterPayload(source, route, mode);
+    }
+
     const payload = new FormData();
     if (form) {
         const data = new FormData(form);
@@ -2200,6 +2391,9 @@ function hrmBindWorkspaceControls(route, blueprint) {
     }
     if (route === 'pp_personnelhistory') {
         hrmPopulatePersonnelHistoryFilterPicker();
+    }
+    if (route !== 'pp_personnel') {
+        hrmPopulateRouteDynamicSelectors(blueprint);
     }
 
     hrmLoadViewData(route, blueprint);
