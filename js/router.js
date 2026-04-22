@@ -58,9 +58,9 @@ const routerTree = {
         scriptName: './js/recipe.js'
     },
     viewrecipe: {
-        template: 'viewrecipe',
-        startingFunction: 'viewrecipeActive',
-        scriptName: './js/viewrecipe.js'
+        template: 'recipe',
+        startingFunction: 'recipeActive',
+        scriptName: './js/recipe.js'
     },
     managesupplier: {
         template: 'managesupplier',

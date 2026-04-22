@@ -157,7 +157,7 @@ async function onviewrecipeTableDataSignal() {
         <td>${item.compositeitemdetail.description}</td>
         <td class="flex items-center gap-3">
             <button title="View Item" onclick="modalviewrecipe('${item.compositeitemdetail.id}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-            <button title="Edit row entry" onclick="sessionStorage.setItem('recipeid','${item.compositeitemdetail.id}');did('recipe').click()" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
+            <button title="Edit row entry" onclick="sessionStorage.setItem('recipeid','${item.compositeitemdetail.id}');openRecipeWorkspaceTab('recipe');fetchrecipe('${item.compositeitemdetail.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
             <button title="Delete row entry"s onclick="removeviewrecipe('${item.compositeitem}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </td>
     </tr>`
