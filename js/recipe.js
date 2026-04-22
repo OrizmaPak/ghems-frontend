@@ -466,7 +466,6 @@ async function onviewrecipeTableDataSignal() {
         const groupKey = group.groupkey
         const encodedGroupKey = encodeURIComponent(groupKey)
         const isExpanded = expandedViewrecipeGroups.has(groupKey)
-        const ingredientPreviewLimit = 9
         const detailsRow = isExpanded ? `
             <tr>
                 <td colspan="100%" class="bg-slate-50">
@@ -479,82 +478,53 @@ async function onviewrecipeTableDataSignal() {
                                         <th>sales point</th>
                                         <th>cost</th>
                                         <th>price</th>
-                                        <th>item name</th>
-                                        <th>quantity</th>
-                                        <th>price</th>
+                                        <th>ITEM NAME | [QUANTITY]</th>
+                                        <th>units</th>
+                                        <th>Group name</th>
+                                        <th>description</th>
                                         <th>action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${group.records.map((record, recordIndex) => {
-                                        const ingredientRows = (record?.compositememberitems || []).map(ingredient => {
-                                            const qtyValue = parseViewrecipeAmount(ingredient?.qty || 0)
-                                            const unitPrice = getViewrecipeIngredientUnitPrice(ingredient)
-                                            const linePrice = qtyValue * unitPrice
-                                            return {
-                                                itemname: ingredient?.itemname || '',
-                                                qty: qtyValue,
-                                                linePrice
-                                            }
-                                        })
-                                        const previewRows = ingredientRows.slice(0, ingredientPreviewLimit)
-                                        const entryTotalPrice = ingredientRows.reduce((sum, row) => sum + row.linePrice, 0)
-                                        const rowSpanCount = Math.max(previewRows.length, 1)
-                                        const actionCell = `
-                                            <td class="align-top" rowspan="${rowSpanCount}">
-                                                <div class="flex items-center gap-3">
+                                        const members = record?.compositememberitems || []
+                                        return `
+                                            <tr>
+                                                <td>${recordIndex + 1}</td>
+                                                <td>${record?.compositeitemdetail?.salespoint || ''}</td>
+                                                <td>${formatNumber(record?.compositeitemdetail?.cost || 0)}</td>
+                                                <td>${formatNumber(record?.compositeitemdetail?.price || 0)}</td>
+                                                <td>
+                                                    ${members.length > 0 ? `<table>
+                                                        ${members.map((dat, index)=> {
+                                                            return (
+                                                                index < 3
+                                                                    ? `
+                                                                    <tr>
+                                                                        <td>${dat.itemname}</td>
+                                                                        <td style="width: 20px">${dat.qty}</td>
+                                                                    </tr>
+                                                                    `
+                                                                    : index == 3
+                                                                        ? `
+                                                                        <tr>
+                                                                            <td onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" style="color:green;cursor:pointer">click to view the remaining items ${members.length-3} ....</td>
+                                                                        </tr>
+                                                                        `
+                                                                        : ``
+                                                            )
+                                                        }).join('')}
+                                                    </table>` : 'No Item found in this build'}
+                                                </td>
+                                                <td>${record?.compositeitemdetail?.units || ''}</td>
+                                                <td>${record?.compositeitemdetail?.groupname || ''}</td>
+                                                <td>${record?.compositeitemdetail?.description || ''}</td>
+                                                <td class="flex items-center gap-3">
                                                     <button title="View Item" onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
                                                     <button title="Edit row entry" onclick="if(did('recipeoptioner_recipe'))runoptioner(did('recipeoptioner_recipe'));fetchrecipe('${record?.compositeitemdetail?.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                                                     <button title="Delete row entry" onclick="removeviewrecipe('${record?.compositeitem}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
-                                                </div>
-                                            </td>
-                                        `
-
-                                        const ingredientMarkup = previewRows.length ? previewRows.map((row, ingredientIndex) => `
-                                            <tr>
-                                                <td>${recordIndex + 1}.${ingredientIndex + 1}</td>
-                                                <td>${record?.compositeitemdetail?.salespoint || ''}</td>
-                                                <td>${formatNumber(record?.compositeitemdetail?.cost || 0)}</td>
-                                                <td>${formatNumber(record?.compositeitemdetail?.price || 0)}</td>
-                                                <td>${row.itemname || '-'}</td>
-                                                <td>${formatNumber(row.qty)}</td>
-                                                <td>${formatNumber(row.linePrice)}</td>
-                                                ${ingredientIndex === 0 ? actionCell : ''}
-                                            </tr>
-                                        `).join('') : `
-                                            <tr>
-                                                <td>${recordIndex + 1}.1</td>
-                                                <td>${record?.compositeitemdetail?.salespoint || ''}</td>
-                                                <td>${formatNumber(record?.compositeitemdetail?.cost || 0)}</td>
-                                                <td>${formatNumber(record?.compositeitemdetail?.price || 0)}</td>
-                                                <td>No item</td>
-                                                <td>-</td>
-                                                <td>-</td>
-                                                ${actionCell}
-                                            </tr>
-                                        `
-
-                                        const truncatedNotice = ingredientRows.length > ingredientPreviewLimit ? `
-                                            <tr>
-                                                <td colspan="8" class="text-center text-xs text-slate-500">
-                                                    Showing first ${ingredientPreviewLimit} of ${ingredientRows.length} ingredients.
-                                                    <button type="button" onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" class="ml-2 text-primary-g underline">View all</button>
                                                 </td>
                                             </tr>
-                                        ` : ''
-
-                                        const totalRow = `
-                                            <tr>
-                                                <td colspan="6" class="text-right font-semibold">Total Price</td>
-                                                <td class="font-semibold">${formatNumber(entryTotalPrice)}</td>
-                                                <td></td>
-                                            </tr>
-                                        `
-
-                                        return `
-                                            ${ingredientMarkup}
-                                            ${truncatedNotice}
-                                            ${totalRow}
                                         `
                                     }).join('')}
                                 </tbody>
