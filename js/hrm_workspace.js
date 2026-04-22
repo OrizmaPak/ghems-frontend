@@ -2205,6 +2205,55 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     return payload;
 }
 
+function hrmGetFieldControl(form, field = {}) {
+    if (!form || !field) return null;
+    const fieldId = String(field.id || '').trim();
+    const fieldName = String(field.name || fieldId).trim();
+    if (fieldId) {
+        const byId = form.querySelector(`#${fieldId}`);
+        if (byId) return byId;
+    }
+    if (fieldName) {
+        const byName = form.querySelector(`[name="${fieldName}"]`);
+        if (byName) return byName;
+    }
+    return null;
+}
+
+function hrmControlHasValue(control) {
+    if (!control) return false;
+    if (control.type === 'file') return Boolean(control.files && control.files.length > 0) || String(control.value || '').trim() !== '';
+    if (control.type === 'checkbox' || control.type === 'radio') return Boolean(control.checked);
+    if (control.tomselect && typeof control.tomselect.getValue === 'function') {
+        const selected = control.tomselect.getValue();
+        if (Array.isArray(selected)) return selected.some((item) => String(item || '').trim() !== '');
+        return String(selected || '').trim() !== '';
+    }
+    return String(control.value || '').trim() !== '';
+}
+
+function hrmValidateEntryForm(form, blueprint = {}) {
+    if (!form) return { valid: true, missing: [] };
+    const requiredFields = Array.isArray(blueprint?.fields)
+        ? blueprint.fields.filter((field) => field?.required)
+        : [];
+    if (!requiredFields.length) return { valid: true, missing: [] };
+
+    const missing = [];
+    let firstMissingControl = null;
+    requiredFields.forEach((field) => {
+        const control = hrmGetFieldControl(form, field);
+        if (hrmControlHasValue(control)) return;
+        missing.push(String(field.label || field.id || field.name || 'Field'));
+        if (!firstMissingControl) firstMissingControl = control;
+    });
+
+    if (firstMissingControl && typeof firstMissingControl.focus === 'function') {
+        firstMissingControl.focus();
+    }
+    return { valid: missing.length === 0, missing };
+}
+
 function hrmEnsureDatalist(id) {
     if (!id) return null;
     let list = document.getElementById(id);
@@ -2483,6 +2532,14 @@ async function hrmRequestController(controllerName, payload = null, button = nul
     } finally {
         hrmSetButtonLoading(button, false);
     }
+}
+
+function hrmHasControllerResponse(result) {
+    if (!result) return false;
+    if (typeof result?.data === 'string' && result.data.trim()) return true;
+    if (result?.data && typeof result.data === 'object' && Object.keys(result.data).length > 0) return true;
+    if (typeof result?.raw === 'string' && result.raw.trim()) return true;
+    return false;
 }
 
 function hrmResultErrorMessage(result, fallback = 'Request failed') {
@@ -3018,54 +3075,71 @@ function hrmBindWorkspaceControls(route, blueprint) {
 
     if (saveButton) {
         saveButton.onclick = async () => {
-            const saveController = hrmResolveControllerName(route, 'save');
             let payloadMode = 'save';
-            if (hrmHtgPayloadRoutes.has(route) && form?.querySelector('[name="id"]')?.value) {
-                payloadMode = 'update';
-            }
-            let payload = hrmBuildPayloadFromForm(form, route, payloadMode);
-            if (route === 'pp_level') {
-                payload.delete('module');
-                payload.delete('mode');
-                if (hrmLevelEditingId) payload.append('id', hrmLevelEditingId);
-                hrmCollectLevelLines(payload);
-            }
-            if (route === 'pp_personnel') {
-                const mode = form?.querySelector('[name="id"]')?.value ? 'update' : 'save';
-                payload = hrmBuildPersonnelPayload(form, mode);
-            }
-            const result = await hrmRequestController(saveController, payload, saveButton);
-            if (!hrmIsControllerSuccess(result)) {
-                notification(hrmResultErrorMessage(result, `Save failed on ${saveController}`), 0);
-                return;
-            }
-            notification(hrmResultSuccessMessage(result, 'Code 200: Record submitted successfully'), 1);
-            if (Array.isArray(blueprint?.fields) && blueprint.fields.length > 0) {
-                hrmResetFormState(form, saveButton);
-            }
-            if (route === 'pp_level') {
-                hrmLevelEditingId = '';
-                hrmRenderLevelLineEditors([], []);
-            }
-            if (route === 'pp_personnel') {
-                const levelControl = document.getElementById('levelid');
-                const departmentControl = document.getElementById('departmentid');
-                if (hrmTomSelectInstances.levelid) {
-                    hrmTomSelectInstances.levelid.clear(true);
-                } else if (levelControl) {
-                    levelControl.value = '';
+            try {
+                const saveController = hrmResolveControllerName(route, 'save');
+                const validation = hrmValidateEntryForm(form, blueprint);
+                if (!validation.valid) {
+                    notification(`Please complete required field(s): ${validation.missing.join(', ')}`, 0);
+                    return;
                 }
-                if (hrmTomSelectInstances.departmentid) {
-                    hrmTomSelectInstances.departmentid.clear(true);
-                } else if (departmentControl) {
-                    departmentControl.value = '';
+                if (hrmHtgPayloadRoutes.has(route) && form?.querySelector('[name="id"]')?.value) {
+                    payloadMode = 'update';
                 }
-                const basicSalaryControl = document.getElementById('basicsalary');
-                const idControl = document.getElementById('id');
-                if (basicSalaryControl) basicSalaryControl.value = '';
-                if (idControl) idControl.value = '';
+                let payload = hrmBuildPayloadFromForm(form, route, payloadMode);
+                if (route === 'pp_level') {
+                    payload.delete('module');
+                    payload.delete('mode');
+                    if (hrmLevelEditingId) payload.append('id', hrmLevelEditingId);
+                    hrmCollectLevelLines(payload);
+                }
+                if (route === 'pp_personnel') {
+                    const mode = form?.querySelector('[name="id"]')?.value ? 'update' : 'save';
+                    payloadMode = mode;
+                    payload = hrmBuildPersonnelPayload(form, mode);
+                }
+                const result = await hrmRequestController(saveController, payload, saveButton);
+                if (!hrmHasControllerResponse(result)) {
+                    notification(`No response was returned from ${saveController}`, 0);
+                    return;
+                }
+                if (!hrmIsControllerSuccess(result)) {
+                    const failedLabel = payloadMode === 'update' ? 'Update' : 'Submit';
+                    notification(hrmResultErrorMessage(result, `${failedLabel} failed on ${saveController}`), 0);
+                    return;
+                }
+                const successLabel = payloadMode === 'update' ? 'updated' : 'submitted';
+                notification(hrmResultSuccessMessage(result, `Code 200: Record ${successLabel} successfully`), 1);
+                if (Array.isArray(blueprint?.fields) && blueprint.fields.length > 0) {
+                    hrmResetFormState(form, saveButton);
+                }
+                if (route === 'pp_level') {
+                    hrmLevelEditingId = '';
+                    hrmRenderLevelLineEditors([], []);
+                }
+                if (route === 'pp_personnel') {
+                    const levelControl = document.getElementById('levelid');
+                    const departmentControl = document.getElementById('departmentid');
+                    if (hrmTomSelectInstances.levelid) {
+                        hrmTomSelectInstances.levelid.clear(true);
+                    } else if (levelControl) {
+                        levelControl.value = '';
+                    }
+                    if (hrmTomSelectInstances.departmentid) {
+                        hrmTomSelectInstances.departmentid.clear(true);
+                    } else if (departmentControl) {
+                        departmentControl.value = '';
+                    }
+                    const basicSalaryControl = document.getElementById('basicsalary');
+                    const idControl = document.getElementById('id');
+                    if (basicSalaryControl) basicSalaryControl.value = '';
+                    if (idControl) idControl.value = '';
+                }
+                await hrmLoadViewData(route, blueprint);
+            } catch (error) {
+                const failedLabel = payloadMode === 'update' ? 'update' : 'submit';
+                notification(`Unable to ${failedLabel} record: ${error?.message || 'Unknown error'}`, 0);
             }
-            await hrmLoadViewData(route, blueprint);
         };
     }
     if (resetButton) {
