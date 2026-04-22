@@ -3546,6 +3546,182 @@ async function hrmDeleteRouteRecord(route, record = {}, blueprint = {}, button =
     await hrmLoadViewData(route === 'pp_viewstaffadvance' ? 'pp_advance' : route, blueprint);
 }
 
+function hrmGetExportableTableData() {
+    const table = document.getElementById('hrm_records_table');
+    if (!table) return { headers: [], rows: [] };
+
+    const headerCells = Array.from(table.querySelectorAll('thead th'));
+    const rawHeaders = headerCells.map((cell) => hrmNormalizePersonnelValue(cell.textContent || ''));
+    const actionColumnIndexes = rawHeaders
+        .map((header, index) => ({ header: String(header || '').trim().toLowerCase(), index }))
+        .filter((entry) => entry.header === 'action')
+        .map((entry) => entry.index);
+
+    const includedIndexes = rawHeaders
+        .map((_, index) => index)
+        .filter((index) => !actionColumnIndexes.includes(index));
+
+    const headers = includedIndexes.map((index) => rawHeaders[index] || '');
+    const rows = Array.from(table.querySelectorAll('tbody tr'))
+        .map((row) => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (!cells.length) return null;
+            const values = includedIndexes.map((index) => {
+                const cell = cells[index];
+                if (!cell) return '';
+                const clone = cell.cloneNode(true);
+                clone.querySelectorAll('button, input[type="checkbox"], input[type="radio"], .material-symbols-outlined').forEach((node) => node.remove());
+                const text = String(clone.textContent || '').replace(/\s+/g, ' ').trim();
+                return text;
+            });
+            if (values.every((value) => !hrmNormalizePersonnelValue(value))) return null;
+            return values;
+        })
+        .filter(Boolean);
+
+    return { headers, rows };
+}
+
+function hrmBuildExportTableHtml(headers = [], rows = []) {
+    const thead = `<thead><tr>${headers.map((header) => `<th>${hrmEscapeHtml(header || '')}</th>`).join('')}</tr></thead>`;
+    const tbody = rows.length
+        ? `<tbody>${rows.map((row) => `<tr>${row.map((value) => `<td>${hrmEscapeHtml(value || '')}</td>`).join('')}</tr>`).join('')}</tbody>`
+        : '<tbody><tr><td colspan="1">No records found</td></tr></tbody>';
+    return `<table>${thead}${tbody}</table>`;
+}
+
+function hrmExportFilename(route = '', extension = 'txt') {
+    const title = (hrmInterfaceRegistry?.[route]?.title || 'personnel_payroll')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    const stamp = new Date().toISOString().slice(0, 10);
+    return `${title || 'personnel_payroll'}_${stamp}.${extension}`;
+}
+
+async function hrmEnsureXlsxLoaded() {
+    if (window.XLSX) return true;
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
+}
+
+async function hrmEnsureHtml2PdfLoaded() {
+    if (window.html2pdf) return true;
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
+}
+
+function hrmPrintExportTable(route, headers, rows) {
+    const printWindow = window.open('', '', 'width=1100,height=900');
+    if (!printWindow) {
+        notification('Unable to open print window. Please allow popups and try again.', 0);
+        return;
+    }
+    const title = hrmInterfaceRegistry?.[route]?.title || 'Personnel & Payroll';
+    const tableHtml = hrmBuildExportTableHtml(headers, rows);
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>${hrmEscapeHtml(title)} Print</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #111827; }
+                    h2 { margin: 0 0 12px 0; font-size: 18px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                    th, td { border: 1px solid #d1d5db; padding: 6px 8px; vertical-align: top; text-align: left; }
+                    th { background: #f3f4f6; font-weight: 700; }
+                </style>
+            </head>
+            <body>
+                <h2>${hrmEscapeHtml(title)} Records</h2>
+                ${tableHtml}
+                <script>
+                    window.onload = function(){ window.print(); window.close(); };
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+async function hrmExportTableToExcel(route, headers, rows) {
+    const ok = await hrmEnsureXlsxLoaded();
+    if (!ok || !window.XLSX) {
+        notification('Could not load Excel helper. Check your connection and try again.', 0);
+        return;
+    }
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
+    XLSX.writeFile(workbook, hrmExportFilename(route, 'xlsx'));
+}
+
+async function hrmExportTableToPdf(route, headers, rows) {
+    const ok = await hrmEnsureHtml2PdfLoaded();
+    if (!ok || !window.html2pdf) {
+        notification('Could not load PDF helper. Check your connection and try again.', 0);
+        return;
+    }
+    const title = hrmInterfaceRegistry?.[route]?.title || 'Personnel & Payroll';
+    const holder = document.createElement('div');
+    holder.style.padding = '18px';
+    holder.style.background = '#ffffff';
+    holder.innerHTML = `
+        <h2 style="margin:0 0 12px 0;font-size:18px;color:#111827;">${hrmEscapeHtml(title)} Records</h2>
+        <style>
+            table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            th, td { border: 1px solid #d1d5db; padding: 5px 7px; vertical-align: top; text-align: left; }
+            th { background: #f3f4f6; }
+        </style>
+        ${hrmBuildExportTableHtml(headers, rows)}
+    `;
+    document.body.appendChild(holder);
+    try {
+        await window.html2pdf().set({
+            margin: [8, 8, 8, 8],
+            filename: hrmExportFilename(route, 'pdf'),
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).from(holder).save();
+    } finally {
+        holder.remove();
+    }
+}
+
+async function hrmHandleExportAction(exportType, route) {
+    const { headers, rows } = hrmGetExportableTableData();
+    if (!headers.length) {
+        notification('No table columns available to export.', 0);
+        return;
+    }
+    if (!rows.length) {
+        notification('No table records available to export.', 0);
+        return;
+    }
+    if (exportType === 'print') {
+        hrmPrintExportTable(route, headers, rows);
+        return;
+    }
+    if (exportType === 'excel') {
+        await hrmExportTableToExcel(route, headers, rows);
+        return;
+    }
+    if (exportType === 'pdf') {
+        await hrmExportTableToPdf(route, headers, rows);
+        return;
+    }
+    notification(`Unsupported export type: ${exportType}`, 0);
+}
+
 async function hrmLoadViewData(route, blueprint, button = null, filterForm = null) {
     const columns = blueprint.columns || ['S/N', 'Name', 'Status', 'Action'];
     const loadController = hrmResolveControllerName(route, filterForm ? 'filter' : 'load');
@@ -3979,10 +4155,9 @@ function hrmBindWorkspaceControls(route, blueprint) {
 
     document.querySelectorAll('.hrm-export-btn').forEach((button) => {
         button.title = button.title || `${button.textContent.trim()} records`;
-        button.onclick = () => {
+        button.onclick = async () => {
             const exportType = button.dataset.export || 'export';
-            if (exportType === 'print') window.print();
-            if (exportType !== 'print') notification(`${exportType.toUpperCase()} export button is ready. Data export will run after controller wiring.`, 1);
+            await hrmHandleExportAction(exportType, route);
         };
     });
 
