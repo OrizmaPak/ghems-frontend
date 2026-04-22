@@ -46,8 +46,7 @@ const hrmInterfaceRegistry = {
         flow: ['Filter by personnel and dimensions', 'Load historical events', 'Review timeline entries'],
         controllers: [
             { name: 'fetchpersonnelhistory.php', purpose: 'Retrieve personnel history records' },
-            { name: 'fetchpersonnels.php', purpose: 'Load personnel filter list' },
-            { name: 'fetchlevel.php', purpose: 'Load level filter list' }
+            { name: 'fetchpersonnels.php', purpose: 'Load personnel filter list' }
         ]
     },
     pp_guarantor: {
@@ -285,7 +284,7 @@ const hrmHtgControllerRouting = {
     pp_personnel: { load: 'fetchpersonnels.php', save: 'personnelscript.php', filter: 'fetchpersonnels.php' },
     pp_approvepersonnel: { load: 'fetchpersonnels.php', save: 'personnelapprovals.php', filter: 'fetchpersonnels.php' },
     pp_viewpersonnel: { load: 'viewpersonnel.php', save: 'personnel.php', filter: 'viewpersonnel.php' },
-    pp_personnelhistory: { load: 'personnelhistory.php', save: 'personnelhistory.php', filter: 'personnelhistory.php' },
+    pp_personnelhistory: { load: 'fetchpersonnelhistory.php', save: 'fetchpersonnelhistory.php', filter: 'fetchpersonnelhistory.php' },
     pp_guarantor: { load: 'guarantor.php', save: 'guarantor.php', filter: 'guarantor.php' },
     pp_employerrecord: { load: 'employerrecord.php', save: 'employerrecord.php', filter: 'employerrecord.php' },
     pp_referees: { load: 'referees.php', save: 'referees.php', filter: 'referees.php' },
@@ -452,13 +451,10 @@ const hrmInterfaceBlueprints = {
         context: 'Personnel audit trail',
         fields: [],
         filters: [
-            { id: 'personnel', label: 'Personnel', type: 'text', list: 'hrm_personnel_list' },
-            { id: 'eventtype', label: 'Event Type', type: 'select', options: ['All Events', 'LEVEL CHANGE', 'PROMOTION', 'QUERY', 'LEAVE', 'PAYROLL'] },
-            { id: 'startdate', label: 'Start Date', type: 'date' },
-            { id: 'enddate', label: 'End Date', type: 'date' }
+            { id: 'personnel', label: 'Personnel', type: 'select', options: [], tom_select: true, dynamic_source: 'personnel_history_personnels' }
         ],
-        columns: ['S/N', 'Staff ID', 'Name', 'Event Type', 'Previous Value', 'New Value', 'Entry Date', 'Action'],
-        summary: ['Events', 'Promotions', 'Disciplinary', 'Payroll Changes']
+        columns: ['S/N', 'Section', 'Title', 'Details', 'Entry Date', 'Document'],
+        summary: ['Sections', 'History Records', 'With Documents', 'Salary Lines']
     },
     pp_guarantor: {
         context: 'Guarantor records',
@@ -1282,6 +1278,147 @@ function hrmRenderApprovePersonnelBatchActions(container, blueprint) {
     if (declineButton) declineButton.onclick = () => hrmSubmitApprovePersonnelAction('DECLINE', declineButton, blueprint);
 }
 
+function hrmNormalizePersonnelHistoryRoot(responseData) {
+    const rows = hrmExtractRowsFromResponse(responseData);
+    if (Array.isArray(rows) && rows.length > 0 && rows[0] && typeof rows[0] === 'object') return rows[0];
+    return null;
+}
+
+function hrmNormalizePersonnelHistoryDate(value) {
+    const normalized = hrmNormalizePersonnelValue(value);
+    if (!normalized) return '-';
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return normalized;
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function hrmBuildPersonnelHistoryLoadPayload(filterForm = null) {
+    const payload = new FormData();
+    if (!filterForm) return payload;
+    const rawPersonnel = String(new FormData(filterForm).get('personnel') || '').trim();
+    if (!rawPersonnel) return payload;
+    const staffId = rawPersonnel.includes('||') ? rawPersonnel.split('||')[0].trim() : rawPersonnel;
+    if (staffId) payload.append('staffid', staffId);
+    return payload;
+}
+
+function hrmBuildPersonnelHistoryRows(root) {
+    const sections = [
+        ['advance', 'Advance', (item) => ({ title: item?.title, details: `Amount: ${item?.amount || '-'}`, entrydate: item?.entrydate, document: item?.document })],
+        ['leave', 'Leave', (item) => ({ title: item?.title, details: `Start: ${item?.startdate || '-'} | End: ${item?.enddate || '-'}`, entrydate: item?.entrydate, document: item?.document })],
+        ['employeerecords', 'Employee Records', (item) => ({ title: item?.employer, details: `Position: ${item?.position || '-'} | Years: ${item?.yearsemployed || '-'} | Reason: ${item?.reasonforleaving || '-'}`, entrydate: item?.entrydate, document: item?.doc })],
+        ['guarantors', 'Guarantors', (item) => ({ title: item?.guarantorname, details: `Occupation: ${item?.occupation || '-'} | Phone: ${item?.phonenumber || '-'}`, entrydate: item?.entrydate, document: item?.doc })],
+        ['promotion', 'Promotion', (item) => ({ title: item?.title, details: `Level: ${item?.level || '-'}`, entrydate: item?.entrydate, document: item?.document })],
+        ['qualifications', 'Qualifications', (item) => ({ title: item?.qualification, details: `Institution: ${item?.institution || '-'}`, entrydate: item?.certificationdate, document: item?.doc })],
+        ['query', 'Query', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
+        ['referees', 'Referees', (item) => ({ title: item?.fullname, details: `Relationship: ${item?.relationship || '-'} | Phone: ${item?.phonenumber || '-'}`, entrydate: item?.entrydate, document: item?.doc })],
+        ['suspension', 'Suspension', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
+        ['termination', 'Termination', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
+        ['warning', 'Warning', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
+        ['evaluation', 'Monitoring/Evaluation', (item) => ({ title: item?.title, details: '-', entrydate: item?.entrydate, document: item?.document })],
+        ['parents', 'Parents/Guardians', (item) => ({ title: `${item?.parentone || '-'} / ${item?.parenttwo || '-'}`, details: `Home: ${item?.homeaddress || '-'} | Office: ${item?.officeaddress || '-'}`, entrydate: item?.entrydate, document: item?.doc })]
+    ];
+
+    const rows = [];
+    sections.forEach(([key, label, mapper]) => {
+        const list = Array.isArray(root?.[key]) ? root[key] : [];
+        list.forEach((item) => {
+            const mapped = mapper(item) || {};
+            rows.push({
+                section: label,
+                title: mapped.title || '-',
+                details: mapped.details || '-',
+                entrydate: hrmNormalizePersonnelHistoryDate(mapped.entrydate),
+                document: mapped.document || '-'
+            });
+        });
+    });
+    return rows;
+}
+
+function hrmRenderPersonnelHistoryRows(root, columns) {
+    const body = document.getElementById('hrm_table_body');
+    const status = document.getElementById('hrm_table_status');
+    if (!body) return;
+
+    const rows = hrmBuildPersonnelHistoryRows(root);
+    if (rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">No personnel history records found for the selected personnel.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
+        return;
+    }
+
+    body.innerHTML = rows.map((row, index) => {
+        const hasDocument = row.document && row.document !== '-';
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${hrmEscapeHtml(row.section)}</td>
+                <td>${hrmEscapeHtml(row.title)}</td>
+                <td class="whitespace-normal max-w-[420px]">${hrmEscapeHtml(row.details)}</td>
+                <td>${hrmEscapeHtml(row.entrydate)}</td>
+                <td>${hasDocument ? '<span class="text-emerald-700 font-medium">Available</span>' : '-'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const sectionsCount = new Set(rows.map((item) => item.section)).size;
+    const documentsCount = rows.filter((item) => item.document && item.document !== '-').length;
+    const salaryLines = (Array.isArray(root?.salarystructure) ? root.salarystructure.length : 0);
+    hrmSetSummaryValues([`${sectionsCount}`, `${rows.length}`, `${documentsCount}`, `${salaryLines}`]);
+    if (status) status.textContent = `Showing 1 to ${rows.length} of ${rows.length} records`;
+}
+
+function hrmNormalizePersonnelSelectOptions(responseData) {
+    const rows = hrmNormalizePersonnelRows(responseData);
+    const options = [];
+    rows.forEach((entry) => {
+        const personnel = entry?.personnel || entry || {};
+        const staffid = hrmNormalizePersonnelValue(personnel?.staffid);
+        if (!staffid) return;
+        const fullname = [personnel?.firstname, personnel?.lastname].filter(Boolean).join(' ').trim();
+        options.push({ value: staffid, text: `${staffid} || ${fullname || 'Unnamed Personnel'}` });
+    });
+    return options;
+}
+
+async function hrmPopulatePersonnelHistoryFilterPicker() {
+    const control = document.getElementById('hrm_filter_personnel');
+    if (!control) return;
+    const result = await hrmRequestController('fetchpersonnels.php');
+    if (!result.ok || result?.data?.status === false) {
+        notification(hrmResultErrorMessage(result, 'Unable to load personnel selector'), 0);
+        return;
+    }
+    const options = hrmNormalizePersonnelSelectOptions(result.data);
+    const selectedValue = control.value || '';
+    control.innerHTML = '<option value="">-- select personnel --</option>' + options.map((option) => `<option value="${hrmEscapeHtml(option.value)}">${hrmEscapeHtml(option.text)}</option>`).join('');
+    if (selectedValue) control.value = selectedValue;
+
+    if (!control.dataset.hrmTomSelect) return;
+    try {
+        await hrmEnsureTomSelectAssets();
+        if (hrmTomSelectInstances.hrm_filter_personnel) {
+            hrmTomSelectInstances.hrm_filter_personnel.destroy();
+            delete hrmTomSelectInstances.hrm_filter_personnel;
+        }
+        if (window.TomSelect) {
+            hrmTomSelectInstances.hrm_filter_personnel = new window.TomSelect(control, {
+                create: false,
+                allowEmptyOption: true,
+                maxItems: 1,
+                dropdownParent: 'body',
+                placeholder: 'Select Personnel'
+            });
+        }
+    } catch (error) {
+        notification('Unable to initialize personnel selector search', 0);
+    }
+}
+
 function hrmBuildControl(field) {
     if (hrmHiddenFrontendFields.has((field?.id || '').toLowerCase())) return '';
 
@@ -1720,7 +1857,19 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     const loadController = hrmResolveControllerName(route, filterForm ? 'filter' : 'load');
     const payload = route === 'pp_approvepersonnel'
         ? hrmBuildApprovePersonnelLoadPayload()
+        : route === 'pp_personnelhistory'
+            ? hrmBuildPersonnelHistoryLoadPayload(filterForm)
         : hrmBuildPayloadFromForm(filterForm, route, filterForm ? 'filter' : 'load');
+
+    if (route === 'pp_personnelhistory' && !payload.get('staffid')) {
+        const body = document.getElementById('hrm_table_body');
+        const status = document.getElementById('hrm_table_status');
+        if (body) body.innerHTML = `<tr><td colspan="${columns.length}" class="text-center opacity-70">Select a personnel to load history.</td></tr>`;
+        if (status) status.textContent = 'Showing 0 to 0 of 0 records';
+        hrmSetSummaryValues(['0', '0', '0', '0']);
+        return;
+    }
+
     const result = await hrmRequestController(loadController, payload, button);
 
     if (!result.ok || result?.data?.status === false) {
@@ -1748,6 +1897,11 @@ async function hrmLoadViewData(route, blueprint, button = null, filterForm = nul
     if (route === 'pp_approvepersonnel') {
         const rows = hrmFilterApprovePersonnelRows(hrmNormalizePersonnelRows(result.data), filterForm);
         hrmRenderApprovePersonnelRows(rows, columns);
+        return;
+    }
+    if (route === 'pp_personnelhistory') {
+        const root = hrmNormalizePersonnelHistoryRoot(result.data);
+        hrmRenderPersonnelHistoryRows(root, columns);
         return;
     }
 
@@ -2043,6 +2197,9 @@ function hrmBindWorkspaceControls(route, blueprint) {
             } catch (error) {}
             sessionStorage.removeItem('hrm_personnel_edit_record');
         }
+    }
+    if (route === 'pp_personnelhistory') {
+        hrmPopulatePersonnelHistoryFilterPicker();
     }
 
     hrmLoadViewData(route, blueprint);
