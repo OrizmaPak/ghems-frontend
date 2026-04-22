@@ -11,7 +11,7 @@ const hrmInterfaceRegistry = {
         ]
     },
     pp_personnel: {
-        title: 'Add Personnel',
+        title: 'Personnel',
         subtitle: 'Capture personnel bio-data and compensation context for onboarding.',
         flow: ['Select level', 'Capture personnel profile details', 'Submit for approval queue'],
         controllers: [
@@ -655,7 +655,11 @@ const hrmInterfaceBlueprints = {
 function hrmWorkspaceActive() {
     hrmHideDeprecatedHrmNavigation();
     const requestedRoute = new URLSearchParams(window.location.search).get('r') || '';
-    const route = requestedRoute === 'pp_viewstaffadvance' ? 'pp_advance' : requestedRoute;
+    const routeAliases = {
+        pp_viewstaffadvance: 'pp_advance',
+        pp_viewpersonnel: 'pp_personnel'
+    };
+    const route = routeAliases[requestedRoute] || requestedRoute;
     const config = hrmInterfaceRegistry[route];
     if (!config) return;
 
@@ -696,7 +700,7 @@ function hrmWorkspaceActive() {
 }
 
 function hrmHideDeprecatedHrmNavigation() {
-    ['pp_viewstaffadvance', 'pp_viewstaffadvance_main'].forEach((id) => {
+    ['pp_viewstaffadvance', 'pp_viewstaffadvance_main', 'pp_viewpersonnel', 'pp_viewpersonnel_main'].forEach((id) => {
         const element = document.getElementById(id);
         if (element) element.classList.add('hidden');
     });
@@ -3046,7 +3050,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                         sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
                         routerEvent('pp_personnel');
                     } else {
-                        notification('Unable to open Add Personnel for edit', 0);
+                        notification('Unable to open Personnel for edit', 0);
                     }
                     return;
                 }
@@ -3092,7 +3096,7 @@ function hrmBindWorkspaceControls(route, blueprint) {
                         sessionStorage.setItem('hrm_personnel_edit_record', JSON.stringify(entry));
                         routerEvent('pp_personnel');
                     } else {
-                        notification('Unable to open Add Personnel for edit', 0);
+                        notification('Unable to open Personnel for edit', 0);
                     }
                     return;
                 }
