@@ -611,7 +611,6 @@ const hrmInterfaceBlueprints = {
         context: 'Approved salary schedule',
         fields: [],
         filters: [
-            { id: 'location', label: 'Select by Branch', type: 'select', options: [], dynamic_source: 'locations' },
             { id: 'month', label: 'Select Month', type: 'select', options: hrmMonthSelectOptions },
             { id: 'year', label: 'Year', type: 'select', options: hrmPayrollYearOptions() }
         ],
@@ -2303,7 +2302,6 @@ function hrmBuildPayloadFromForm(form, route, mode) {
     if (route === 'pp_viewmonthlysalaryschedule') {
         const source = form ? new FormData(form) : new FormData();
         const payload = new FormData();
-        payload.append('location', hrmPickFormDataValue(source, 'location'));
         payload.append('month', hrmPickFormDataValue(source, 'month'));
         payload.append('year', hrmPickFormDataValue(source, 'year'));
         return payload;
