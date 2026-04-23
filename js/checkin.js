@@ -673,7 +673,7 @@ const renderRoomTable = (data) => {
                   <p class="text-gray-600 dark:text-gray-400 text-sm">
                     <span class="font-medium">Status:</span>
                     <span class="inline-block px-3 py-1 rounded-lg text-white ${getStatusClass(room.roomstatus)}">
-                      ${room.roomstatusdescription}
+                      ${room.roomstatus}/${room.roomstatusdescription || '-'}
                     </span>
                   </p>
                 </div>
