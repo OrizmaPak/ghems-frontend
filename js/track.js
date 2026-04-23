@@ -51,8 +51,9 @@ for (let i = 0; i < request.data.length; i++) {
             let planDiscountAmount = Number(roomdata.plandiscountamount);
             let roomRate = Number(roomdata.roomrate);
             let discountAmount = Number(roomdata.discountamount);
+            let rowTotal = roomRate + planAmount;
 
-            tt += (roomRate - discountAmount);
+            tt += rowTotal;
 
             did('tabledata').innerHTML += `
                 <tr>
@@ -64,7 +65,7 @@ for (let i = 0; i < request.data.length; i++) {
                     <td>${formatNumber(discountAmount)}</td>
                     <td>${formatNumber(planAmount)}</td>
                     <td>${formatNumber(planDiscountAmount)}</td>
-                    <td>${formatNumber((roomRate - discountAmount))}</td>
+                    <td>${formatNumber(rowTotal)}</td>
                 </tr>
             `;
         }
