@@ -1413,7 +1413,10 @@ function reverseareservation(id, state='reserved') {
 async function reverseapproved(id, state) {
     let param = new FormData()
     param.append('id', id)
-    let request = await httpRequest2(`../controllers/${state == 'reserve' ? 'reversereservation' : 'reversecheckin'}`, param, null, 'json')
+    const controller = (state === 'reserve' || state === 'reserved')
+        ? 'reversereservation'
+        : 'reversecheckin'
+    let request = await httpRequest2(`../controllers/${controller}`, param, null, 'json')
     if(request.status) {
         Swal.fire({
           title: `${state} Reversed!`,
