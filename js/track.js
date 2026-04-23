@@ -51,7 +51,7 @@ for (let i = 0; i < request.data.length; i++) {
             let planDiscountAmount = Number(roomdata.plandiscountamount);
             let roomRate = Number(roomdata.roomrate);
             let discountAmount = Number(roomdata.discountamount);
-            let rowTotal = roomRate + planAmount;
+            let rowTotal = (roomRate + planAmount) - (discountAmount + planDiscountAmount);
 
             tt += rowTotal;
 
