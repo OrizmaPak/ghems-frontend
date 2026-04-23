@@ -17,6 +17,11 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
     <meta name="theme-color" content="#051937">
     <meta name="description" content="Guest Harmony Engine Management System - Hotel management system for guest operations, inventory, and financial management">
     <title>User | Hems</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./hems%20icon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./hems%20icon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./hems%20icon/favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="./hems%20icon/favicon.ico">
+    <link rel="manifest" href="./hems%20icon/site.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="./css/style.js"></script>
     <link rel="stylesheet" href="./css/index.css">

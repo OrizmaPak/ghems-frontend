@@ -5,6 +5,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Forgot Password | Hems</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./hems%20icon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./hems%20icon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./hems%20icon/favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="./hems%20icon/favicon.ico">
+    <link rel="manifest" href="./hems%20icon/site.webmanifest">
 
     <link rel="stylesheet" href="./css/index.css">
 
