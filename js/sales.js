@@ -147,11 +147,15 @@ function normalizeSalesBillRows(data = []) {
 
 async function fetchsalesbills(reference = '', triggerButton = null) {
     const cleanedReference = String(reference || '').trim()
-    const payload = cleanedReference ? (() => {
-        const data = new FormData()
-        data.append('reference', cleanedReference)
-        return data
-    })() : null
+    const startdate = String(did('billfilterdatefrom')?.value || '').trim()
+    const enddate = String(did('billfilterdateto')?.value || '').trim()
+    let payload = null
+    if(cleanedReference || startdate || enddate){
+        payload = new FormData()
+        if(cleanedReference) payload.append('reference', cleanedReference)
+        if(startdate) payload.append('startdate', startdate)
+        if(enddate) payload.append('enddate', enddate)
+    }
 
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json')
     if(!request.status){
