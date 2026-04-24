@@ -193,7 +193,7 @@
                                     <div class="flex justify-end w-full my-4">
                                                  <button type="button" id="bill" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-400 via-emerald-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
-                                                    <span>Bill</span> 
+                                                    <span>Post-Bill</span> 
                                                 </button> 
                                                  <button type="button" id="submit" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
@@ -331,7 +331,7 @@
                                 </div>
                             </div>
                              
-                              <div id="receiptsalesmodal" onclick="if(event.target.id === 'receiptsalesmodal'){closeSalesReceiptModal()}" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
+                              <div id="receiptsalesmodal" onclick="if(event.target === this){closeSalesReceiptModal()}" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
                                 <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-transparent p-2 rounded-md shadow-lg flex flex-col items-center">
                             
                                     <div class="w-full py-2 flex justify-between mx-8 bg-white p-5 rounded mb-2">
