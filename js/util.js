@@ -40,8 +40,6 @@ const permissionAliasesByRouteId = {
     pp_viewmonthlysalaryschedule: 'VIEW MONTHLY SALARY SCHEDULE',
     pp_presalaryapproval: 'DO PAYROLL',
     pp_confirmsalary: 'APPROVE PAYROLL',
-    pp_payrollclassa: 'PAYROLL CLASS A',
-    pp_payrollclassb: 'PAYROLL CLASS B',
     pp_level_main: 'LEVEL',
     pp_personnel_main: 'PERSONNEL',
     pp_approvepersonnel_main: 'APPROVE PERSONNEL',
@@ -64,9 +62,7 @@ const permissionAliasesByRouteId = {
     pp_personalstaffsalaryrecord_main: 'STAFF SALARY RECORD',
     pp_viewmonthlysalaryschedule_main: 'VIEW MONTHLY SALARY SCHEDULE',
     pp_presalaryapproval_main: 'DO PAYROLL',
-    pp_confirmsalary_main: 'APPROVE PAYROLL',
-    pp_payrollclassa_main: 'PAYROLL CLASS A',
-    pp_payrollclassb_main: 'PAYROLL CLASS B'
+    pp_confirmsalary_main: 'APPROVE PAYROLL'
 }
 
 const permissionAliasesByValue = {
@@ -126,9 +122,7 @@ const personnelPayrollPermissionKeys = [
     'STAFF SALARY RECORD',
     'VIEW MONTHLY SALARY SCHEDULE',
     'DO PAYROLL',
-    'APPROVE PAYROLL',
-    'PAYROLL CLASS A',
-    'PAYROLL CLASS B'
+    'APPROVE PAYROLL'
 ]
 
 function normalizeRoleName(role=''){
