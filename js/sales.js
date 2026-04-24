@@ -188,7 +188,6 @@ function renderSalesBillsTable(rows = []) {
             <td>${index + 1}</td>
             <td>
                 <div class="flex items-center gap-2">
-                    <button title="View" type="button" onclick="openSalesBillDetails('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-600 h-8 w-8 text-white drop-shadow-md text-xs">visibility</button>
                     <button title="Retrieve" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
                     <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
                     ${deleteActionButton(item)}
