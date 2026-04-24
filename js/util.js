@@ -15,56 +15,58 @@ const permissionAliasesByRouteId = {
     receipts: 'RECEIPTS',
     diningtable: 'DINING TABLE',
     reservetable: 'RESERVE TABLE',
-    pp_level: 'PERSONNEL & PAYROLL',
-    pp_personnel: 'PERSONNEL & PAYROLL',
-    pp_approvepersonnel: 'PERSONNEL & PAYROLL',
-    pp_viewpersonnel: 'PERSONNEL & PAYROLL',
-    pp_personnelhistory: 'PERSONNEL & PAYROLL',
-    pp_guarantor: 'PERSONNEL & PAYROLL',
-    pp_employerrecord: 'PERSONNEL & PAYROLL',
-    pp_referees: 'PERSONNEL & PAYROLL',
-    pp_qualification: 'PERSONNEL & PAYROLL',
-    pp_parentsguardians: 'PERSONNEL & PAYROLL',
-    pp_query: 'PERSONNEL & PAYROLL',
-    pp_promotions: 'PERSONNEL & PAYROLL',
-    pp_termination: 'PERSONNEL & PAYROLL',
-    pp_suspension: 'PERSONNEL & PAYROLL',
-    pp_leave: 'PERSONNEL & PAYROLL',
-    pp_warning: 'PERSONNEL & PAYROLL',
-    pp_monitorevaluation: 'PERSONNEL & PAYROLL',
-    pp_advance: 'PERSONNEL & PAYROLL',
-    pp_viewstaffadvance: 'PERSONNEL & PAYROLL',
-    pp_personalstaffsalaryrecord: 'PERSONNEL & PAYROLL',
-    pp_viewmonthlysalaryschedule: 'PERSONNEL & PAYROLL',
-    pp_presalaryapproval: 'PERSONNEL & PAYROLL',
-    pp_confirmsalary: 'PERSONNEL & PAYROLL',
-    pp_payrollclassa: 'PERSONNEL & PAYROLL',
-    pp_payrollclassb: 'PERSONNEL & PAYROLL',
-    pp_level_main: 'PERSONNEL & PAYROLL',
-    pp_personnel_main: 'PERSONNEL & PAYROLL',
-    pp_approvepersonnel_main: 'PERSONNEL & PAYROLL',
-    pp_viewpersonnel_main: 'PERSONNEL & PAYROLL',
-    pp_personnelhistory_main: 'PERSONNEL & PAYROLL',
-    pp_guarantor_main: 'PERSONNEL & PAYROLL',
-    pp_employerrecord_main: 'PERSONNEL & PAYROLL',
-    pp_referees_main: 'PERSONNEL & PAYROLL',
-    pp_qualification_main: 'PERSONNEL & PAYROLL',
-    pp_parentsguardians_main: 'PERSONNEL & PAYROLL',
-    pp_query_main: 'PERSONNEL & PAYROLL',
-    pp_promotions_main: 'PERSONNEL & PAYROLL',
-    pp_termination_main: 'PERSONNEL & PAYROLL',
-    pp_suspension_main: 'PERSONNEL & PAYROLL',
-    pp_leave_main: 'PERSONNEL & PAYROLL',
-    pp_warning_main: 'PERSONNEL & PAYROLL',
-    pp_monitorevaluation_main: 'PERSONNEL & PAYROLL',
-    pp_advance_main: 'PERSONNEL & PAYROLL',
-    pp_viewstaffadvance_main: 'PERSONNEL & PAYROLL',
-    pp_personalstaffsalaryrecord_main: 'PERSONNEL & PAYROLL',
-    pp_viewmonthlysalaryschedule_main: 'PERSONNEL & PAYROLL',
-    pp_presalaryapproval_main: 'PERSONNEL & PAYROLL',
-    pp_confirmsalary_main: 'PERSONNEL & PAYROLL',
-    pp_payrollclassa_main: 'PERSONNEL & PAYROLL',
-    pp_payrollclassb_main: 'PERSONNEL & PAYROLL'
+    viewrecipe: 'RECIPE',
+    viewbuild: 'BUILD',
+    pp_level: 'LEVEL',
+    pp_personnel: 'PERSONNEL',
+    pp_approvepersonnel: 'APPROVE PERSONNEL',
+    pp_viewpersonnel: 'VIEW PERSONNEL',
+    pp_personnelhistory: 'PERSONNEL HISTORY',
+    pp_guarantor: 'GUARANTOR',
+    pp_employerrecord: 'EMPLOYMENT RECORD',
+    pp_referees: 'REFEREES',
+    pp_qualification: 'QUALIFICATION',
+    pp_parentsguardians: 'PARENTS/GUARDIANS',
+    pp_query: 'QUERY',
+    pp_promotions: 'PROMOTIONS',
+    pp_termination: 'TERMINATION',
+    pp_suspension: 'SUSPENSION',
+    pp_leave: 'LEAVE',
+    pp_warning: 'WARNING',
+    pp_monitorevaluation: 'MONITORING/EVALUATION',
+    pp_advance: 'ADVANCE',
+    pp_viewstaffadvance: 'VIEW STAFF ADVANCE',
+    pp_personalstaffsalaryrecord: 'STAFF SALARY RECORD',
+    pp_viewmonthlysalaryschedule: 'VIEW MONTHLY SALARY SCHEDULE',
+    pp_presalaryapproval: 'DO PAYROLL',
+    pp_confirmsalary: 'APPROVE PAYROLL',
+    pp_payrollclassa: 'PAYROLL CLASS A',
+    pp_payrollclassb: 'PAYROLL CLASS B',
+    pp_level_main: 'LEVEL',
+    pp_personnel_main: 'PERSONNEL',
+    pp_approvepersonnel_main: 'APPROVE PERSONNEL',
+    pp_viewpersonnel_main: 'VIEW PERSONNEL',
+    pp_personnelhistory_main: 'PERSONNEL HISTORY',
+    pp_guarantor_main: 'GUARANTOR',
+    pp_employerrecord_main: 'EMPLOYMENT RECORD',
+    pp_referees_main: 'REFEREES',
+    pp_qualification_main: 'QUALIFICATION',
+    pp_parentsguardians_main: 'PARENTS/GUARDIANS',
+    pp_query_main: 'QUERY',
+    pp_promotions_main: 'PROMOTIONS',
+    pp_termination_main: 'TERMINATION',
+    pp_suspension_main: 'SUSPENSION',
+    pp_leave_main: 'LEAVE',
+    pp_warning_main: 'WARNING',
+    pp_monitorevaluation_main: 'MONITORING/EVALUATION',
+    pp_advance_main: 'ADVANCE',
+    pp_viewstaffadvance_main: 'VIEW STAFF ADVANCE',
+    pp_personalstaffsalaryrecord_main: 'STAFF SALARY RECORD',
+    pp_viewmonthlysalaryschedule_main: 'VIEW MONTHLY SALARY SCHEDULE',
+    pp_presalaryapproval_main: 'DO PAYROLL',
+    pp_confirmsalary_main: 'APPROVE PAYROLL',
+    pp_payrollclassa_main: 'PAYROLL CLASS A',
+    pp_payrollclassb_main: 'PAYROLL CLASS B'
 }
 
 const permissionAliasesByValue = {
@@ -79,9 +81,55 @@ const permissionAliasesByValue = {
     'RECEIVE DEPOSITS': 'RECEIPTS',
     'DINING TABLES': 'DINING TABLE',
     'RESERVE TABLES': 'RESERVE TABLE',
+    'ADD LEVEL': 'LEVEL',
+    'ADD PERSONNEL': 'PERSONNEL',
+    'REGISTER PERSONNEL': 'PERSONNEL',
+    'ADD GUARANTOR': 'GUARANTOR',
+    'ADD EMPLOYMENT RECORD': 'EMPLOYMENT RECORD',
+    'ADD REFEREE': 'REFEREES',
+    'ADD QUALIFICATION': 'QUALIFICATION',
+    'ADD PARENTS/GUARDIANS': 'PARENTS/GUARDIANS',
+    'TERMINATION/RESIGNATION': 'TERMINATION',
+    'MONITORING EVALUATION': 'MONITORING/EVALUATION',
+    'VIEW STAFF RECORDS': 'VIEW PERSONNEL',
+    'VIEW STAFF SALARY RECORD': 'STAFF SALARY RECORD',
+    'STAFF SALARY RECORD': 'STAFF SALARY RECORD',
+    'PAYROLL': 'DO PAYROLL',
+    'P&P PAYROLL': 'DO PAYROLL',
+    'P&P APPROVE PAYROLL': 'APPROVE PAYROLL',
+    'P&P MONTHLY SALARY SCHEDULE': 'VIEW MONTHLY SALARY SCHEDULE',
+    'P&P STAFF SALARY RECORD': 'STAFF SALARY RECORD',
     'PERSONNEL AND PAYROLL': 'PERSONNEL & PAYROLL',
     'PERSONNEL & PAYROLL': 'PERSONNEL & PAYROLL'
 }
+
+const personnelPayrollPermissionKeys = [
+    'LEVEL',
+    'PERSONNEL',
+    'APPROVE PERSONNEL',
+    'VIEW PERSONNEL',
+    'PERSONNEL HISTORY',
+    'GUARANTOR',
+    'EMPLOYMENT RECORD',
+    'REFEREES',
+    'QUALIFICATION',
+    'PARENTS/GUARDIANS',
+    'QUERY',
+    'PROMOTIONS',
+    'TERMINATION',
+    'SUSPENSION',
+    'LEAVE',
+    'WARNING',
+    'MONITORING/EVALUATION',
+    'ADVANCE',
+    'VIEW STAFF ADVANCE',
+    'STAFF SALARY RECORD',
+    'VIEW MONTHLY SALARY SCHEDULE',
+    'DO PAYROLL',
+    'APPROVE PAYROLL',
+    'PAYROLL CLASS A',
+    'PAYROLL CLASS B'
+]
 
 function normalizeRoleName(role=''){
     return String(role || '').replace(/[\s_-]+/g, '').trim().toUpperCase()
@@ -118,10 +166,8 @@ function buildGrantedPermissionSet(rawPermissions=''){
         granted.add('PERSONNEL & PAYROLL')
     }
 
-    // Backward compatibility: inherit personnel/payroll visibility from common existing admin grants.
-    const personnelPayrollFallbacks = ['SETTINGS', 'DEPARTMENT', 'ACCESS CONTROL', 'USERS', 'PROFILE']
-    if(personnelPayrollFallbacks.some(permission => granted.has(permission))){
-        granted.add('PERSONNEL & PAYROLL')
+    if(granted.has('PERSONNEL & PAYROLL')){
+        personnelPayrollPermissionKeys.forEach(permission => granted.add(permission))
     }
 
     return granted
@@ -198,14 +244,14 @@ async function runpermissioncheck(state=''){
     const route = getCurrentRouteName()
     if(!route || route === 'dashboard' || currentUserIsSuperAdmin()) return true
 
-    const currentNavItem = document.getElementById(route)
-    if(!currentNavItem) return true
-
     const profile = await fetchCurrentUserProfileCached()
     if(!profile?.status || normalizeRoleName(profile.role) === 'SUPERADMIN') return true
     if(profile.grantedPermissions?.has('*')) return true
 
-    const permissionKey = getNavPermissionKeyFromNode(currentNavItem)
+    const currentNavItem = document.getElementById(route) || document.getElementById(`${route}_main`)
+    const permissionKey = currentNavItem
+        ? getNavPermissionKeyFromNode(currentNavItem)
+        : normalizePermissionName(permissionAliasesByRouteId[route] || route)
     if(!permissionKey || profile.grantedPermissions?.has(permissionKey)) return true
 
     if(permissionRedirectTriggered) return false

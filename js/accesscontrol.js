@@ -12,7 +12,6 @@ const accessctrl_administration = [
     'DISCOUNT COUPON',
     'COST CENTER',
     'SETTINGS',
-    'PERSONNEL & PAYROLL',
     'UPDATE OTHER USERS PROFILE',
     'REVERSE PAYMENT',
     'REVERSE SALES',
@@ -46,14 +45,39 @@ const accessctrl_inventory = [
 
 const accessctrl_recipe = [
     `RECIPE`,
-    `VIEW RECIPE`,
     `BUILD`,
-    `VIEW BUILD`,
     `DINING TABLE`,
     `RESERVE TABLE`,
     'REVERSE TABLE RESERVATION'
 ]
 
+const accessctrl_personnelpayroll = [
+    'LEVEL',
+    'PERSONNEL',
+    'APPROVE PERSONNEL',
+    'VIEW PERSONNEL',
+    'PERSONNEL HISTORY',
+    'GUARANTOR',
+    'EMPLOYMENT RECORD',
+    'REFEREES',
+    'QUALIFICATION',
+    'PARENTS/GUARDIANS',
+    'QUERY',
+    'PROMOTIONS',
+    'TERMINATION',
+    'SUSPENSION',
+    'LEAVE',
+    'WARNING',
+    'MONITORING/EVALUATION',
+    'ADVANCE',
+    'VIEW STAFF ADVANCE',
+    'STAFF SALARY RECORD',
+    'VIEW MONTHLY SALARY SCHEDULE',
+    'DO PAYROLL',
+    'APPROVE PAYROLL',
+    'PAYROLL CLASS A',
+    'PAYROLL CLASS B'
+]
 
 const accessctrl_accounts = ['ADD GL ACCOUNT', 'VIEW GL ACCOUNTS', 'ADD GL TRANSACTION', 'GL TRANSACTION HISTORY', 'TRIAL BALANCE', 'INCOME STATEMENT', 'BALANCE SHEET', 'GENERAL SALES REPORT']
 
@@ -120,6 +144,7 @@ const access_array = [
                         ['accessctrl_sales', 'POINT OF SALES', accessctrl_sales],
                         ['accessctrl_recipe', 'FOOD & BEVERAGE', accessctrl_recipe],
                         ['accessctrl_purchases', 'PURCHASES', accessctrl_purchases],
+                        ['accessctrl_personnelpayroll', 'PERSONNEL & PAYROLL', accessctrl_personnelpayroll],
                         ['accessctrl_housekeeping', 'HOUSE KEEPING', accessctrl_housekeeping],
                         ['accessctrl_maintenace', 'MAINTENACE', accessctrl_maintenace],
                         ['accessctrl_accounts', 'ACCOUNTS', accessctrl_accounts],
