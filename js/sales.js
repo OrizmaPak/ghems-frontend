@@ -80,43 +80,34 @@ function syncSalesViewFilterSalespointOptions() {
 
 function normalizeSalesRowsForTable(data = []) {
     if(!Array.isArray(data) || !data.length) return []
-    if(!data[0]?.saleentry) return data
+    if(data[0]?.saleentry) return data
 
-    const rows = []
-    data.forEach((entry) => {
-        const sale = entry.saleentry || {}
-        const details = Array.isArray(entry.saledetail) ? entry.saledetail : []
-        const base = {
-            batchid: sale.batchid || sale.id || sale.reference,
-            reference: sale.reference || '',
-            transactiondate: sale.transactiondate || '',
-            user: sale.user || sale.staff || '',
-            amountpaid: Number(entry.amountreceived || sale.amountpaid || sale.servicecharge || sale.totalamount || 0),
-            paymentmethod: sale.paymentmethod || '',
-            description: sale.description || ''
-        }
-
-        if(details.length){
-            details.forEach((detail) => {
-                rows.push({
-                    ...base,
-                    itemid: detail.itemid || '',
-                    itemname: detail.itemname || detail.description || base.description || '',
-                    qty: Number(detail.qty || 1),
-                    cost: Number(detail.cost || detail.amount || 0)
-                })
-            })
-        } else {
-            rows.push({
-                ...base,
-                itemid: '',
-                itemname: base.description || 'BILL',
-                qty: 1,
-                cost: Number(sale.servicecharge || sale.totalamount || 0)
+    const grouped = new Map()
+    data.forEach((row) => {
+        const reference = String(row.reference || '').trim()
+        if(!reference) return
+        if(!grouped.has(reference)){
+            grouped.set(reference, {
+                saleentry: {
+                    reference,
+                    transactiondate: row.transactiondate || '',
+                    description: row.description || '',
+                    servicecharge: Number(row.totalamount || row.servicecharge || 0),
+                    paymentmethod: row.paymentmethod || '',
+                    ownerid: row.ownerid ?? row.owner ?? -1
+                },
+                amountreceived: Number(row.amountpaid || row.amountreceived || 0),
+                saledetail: []
             })
         }
+        grouped.get(reference).saledetail.push({
+            itemid: row.itemid || '',
+            itemname: row.itemname || row.description || '',
+            qty: Number(row.qty || 0),
+            cost: Number(row.cost || 0)
+        })
     })
-    return rows
+    return Array.from(grouped.values())
 }
 
 function setSalesActionButtonsState(disabled = false) {
@@ -660,7 +651,7 @@ async function fetchsales(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = doBatch(normalizeSalesRowsForTable(request.data))
+                datasource = normalizeSalesRowsForTable(request.data)
                 resolvePagination(datasource, onsalesTableDataSignal)
             }
         }else{
@@ -696,74 +687,72 @@ async function removesales(id) {
 
 
 async function onsalesTableDataSignal() {
-    let rows = getSignaledDatasource().map((dat, index) => {
-        let sttring = JSON.stringify(dat)
-        return `
-    <tr data-open="false" class="source-row-item">
-                                <td> ${index+1} </td>
-                                 <td>
-                                    <div class="flex gap-6" style="align-items:center" class="flex justify-around">
-                                        <span onclick="viewsaleinvoice(${dat.batchid}, 'view')" class="material-symbols-outlined text-[green]">visibility</span>
-                                        <div onclick="viewsaleinvoice('${dat.batchid}');printContent('HEMS INVOICE', null, 'whsalesviewmodal', true)" class="relative mr-4 inline-block">
-                        					<div class="text-gray-500 cursor-pointer w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-300 inline-flex items-center justify-center" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false" @click="printInvoice()">
-                        						<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-printer" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        							<rect x="0" y="0" width="24" height="24" stroke="none"></rect>
-                        							<path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2"></path>
-                        							<path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4"></path>
-                        							<rect x="7" y="13" width="10" height="8" rx="2"></rect>
-                        						</svg>				  
-                        					</div>
-                        				</div>
-                                        <span title="Delete" onclick="removeSalesEntryPending('${String(dat.data[0].reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined text-[red] cp">delete</span>
-                                    </div>
-                                </td>
-                                <td> ${dat.data[0].reference} </td>
-                                <td> ${formatDate(dat.data[0].transactiondate.split(' ')[0])}</td>
-                                <td> 
-                                        ${dat.data.length > 0 ? `<div class="table-content"><table class="jmargin-top" id="table${dat.data[0].reference}">
-                                            <thead>
-                                                <tr style="background: #64748b;color: white">
-                                                    <td style="font-weight: bold"> item&nbsp;id </td>
-                                                    <td style="font-weight: bold"> item&nbsp;name  </td>
-                                                    <td style="font-weight: bold"> quantity  </td>
-                                                    <td style="font-weight: bold"> unit&nbsp;Price </td>
-                                                    <td style="font-weight: bold">  Amount </td>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="tablebody${dat.data.reference}">
-                                                ${dat.data.map((data, index)=>{
-                                                    if(index < 2){
-                                                        return `
-                                                            <tr>
-                                                                <td>${data.itemid}</td>
-                                                                <td>${data.itemname}</td>
-                                                                <td>${formatCurrency(data.qty)}</td>
-                                                                <td>${formatCurrency(data.cost)}</td>
-                                                                <td>${formatCurrency(Number(data.qty)*Number(data.cost))}</td>
-                                                            </tr>
-                                                        `
-                                                    }else{
-                                                        return
-                                                    } 
-                                                }).join('')}
-                                                ${dat.data.length > 2 ? `<tr><td colspan="4"><p style="color: green" onclick="viewsaleinvoice(${dat.batchid}, 'view')">click to view the remaining ${dat.data.length-2}</p></td></tr>` : ''}
-                                            </tbody>
-                                        </table></div>` : `No registered Item`}
-                                </td>
-                                <td> ${dat.data[0].user} </td>
-                                <td> ${formatNumber(dat.data.length)} </td>
-                                <td> ${formatNumber(dat.data.reduce((accumulator, currentValue) => accumulator + Number(currentValue.qty), 0))} </td>
-                                <td>${formatCurrency(dat.data.reduce((accumulator, currentValue) => accumulator + (Number(currentValue.cost)*Number(currentValue.qty)), 0))} </td>
-                                <td>${formatCurrency(dat.data[0].amountpaid)} </td>
-                                <td>${dat.data[0].paymentmethod} </td>
-                                <td><span class="material-symbols-outlined text-red-700">settings_backup_restore</span> </td>
-                        				
-                               
-    </tr>`
-    }
-    )
-    .join('')
+    let rows = getSignaledDatasource().map((item, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
+            <td>${item.saleentry.reference}</td>
+            <td>${item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description}</td>
+            <td>${formatNumber(item.saleentry.servicecharge)}</td>
+            <td>${formatNumber(item.amountreceived)}</td>
+            <td>${item.saleentry.paymentmethod}</td>
+            <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
+            <td class="flex items-center gap-3">
+                <button title="View Item" onclick="openSalesReportModal('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                <button title="Print sales" onclick="printsalesreceiptsales('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbyreference', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+            </td>
+        </tr>
+    `).join('')
     injectPaginatatedTable(rows)
+}
+
+async function openSalesReportModal(ref, room=''){
+    if(!ref)return
+    function getparamm() {
+        let paramstr = new FormData();
+        if(!room)paramstr.append('reference', ref);
+        if(room)paramstr.append('roomnumber', room);
+        return paramstr;
+    }
+    let request = await httpRequest2(`../controllers/${!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
+    let data1 = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || {saleentry:{}, amountreceived:0}
+    if(!request.status) return notification('No records retrieved')
+
+    did('tableheader').innerHTML = `
+        <th>s/n </th>
+        <th> Item ID </th>
+        <th> Item Name </th>
+        <th> qty </th>
+        <th> PRICE </th>
+        <th> TOTAL </th>
+    `;
+    did('modaldetails').innerHTML = `
+        <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
+        <div class="col-span-2">
+            <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${data1.saleentry.description || ''}</span></p>
+            ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Room / CC: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.ownerid || ''}</span></p>`}
+            <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.saleentry.servicecharge || 0)}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.amountreceived || 0)}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.reference || ref}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.paymentmethod || ''}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(data1.saleentry.transactiondate || '')}</span></p>
+        </div>
+    `;
+
+    did('tabledata2').innerHTML = 'No Items set for this sales report';
+    if(Array.isArray(request.data) && request.data.length > 0){
+        did('tabledata2').innerHTML = request.data.map((dat, i)=>`
+            <tr>
+                <td>${i+1}</td>
+                <td>${dat.itemid || ''}</td>
+                <td>${dat.itemname || ''}</td>
+                <td>${formatNumber(dat.qty || 0)}</td>
+                <td>${formatNumber(dat.cost || 0)}</td>
+                <td>${formatNumber(Number(dat.qty || 0) * Number(dat.cost || 0))}</td>
+            </tr>
+        `).join('');
+    }
+    did('salesreportmodal').classList.remove('hidden')
 }
   
 function removewhsalesviewmodal(e){
@@ -1120,7 +1109,7 @@ async function fetchsalesviewreport() {
     document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(request.data.length) {
-            datasource = doBatch(normalizeSalesRowsForTable(request.data))
+            datasource = normalizeSalesRowsForTable(request.data)
             resolvePagination(datasource, onsalesTableDataSignal)
             return notification(request.message || 'Records retrieved', 1)
         }

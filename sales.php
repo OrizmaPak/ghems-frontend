@@ -240,40 +240,19 @@
                                     </div>
                                 </div>
                             </form>
-                            <div class="flex justify-end w-full my-4">
-                                                <!-- <button onclick="printContent('HEMS sales VIEW', null, 'salesview', true)" type="button" class="w-full h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div>-->
-                                                <!--    <span>print</span> -->
-                                                <!--</button>-->
-                                                <!-- <button onclick="exportToPDF('tableer')" type="button" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div> -->
-                                                <!--    <span>Export PDF</span> -->
-                                                <!--</button>-->
-                                                 <button onclick="did('modalreceipt').classList.remove('hidden')" type="button" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                                    <div class="btnloader" style="display: none;"></div> 
-                                                    <span>Receipt</span> 
-                                                </button>
-                                                 <button onclick="exportToExcel('salesview', 'HEMS sales VIEW')" type="button" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                                    <div class="btnloader" style="display: none;"></div>
-                                                    <span>Export to Excel</span> 
-                                                </button> 
-                                            </div>
                                 <div class="table-content">
                                     <table id="tableer">
                                         <thead>
                                             <tr>
-                                                <th> s/n </th>
-                                                <th style="width: 150px"> Action </th>
-                                                <th> ref </th>
-                                                <th> transaction&nbsp;date </th>
-                                                <th> details </th> 
-                                                <th> sales&nbsp;person  </th>
-                                                <th> total&nbsp;item </th>
-                                                <th> total&nbsp;qty </th>
-                                                <th> total&nbsp;cost  </th>
-                                                <th> amount&nbsp;paid </th>
-                                                <th> payment&nbsp;method</th>
-                                                <th> reversal</th>
+                                                <th>s/n</th>
+                                                <th>t.date</th>
+                                                <th>ref</th>
+                                                <th>description</th>
+                                                <th>Total&nbsp;Amount</th>
+                                                <th>Amount&nbsp;paid</th>
+                                                <th>payment&nbsp;method</th>
+                                                <th>room/cc</th>
+                                                <th>action</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tabledata">
@@ -285,6 +264,41 @@
                                 </div>
                                 <div class="table-status"></div>
                             </div> 
+
+                            <div id="salesreportmodal" onclick="if(event.target.id === 'salesreportmodal')this.classList.add('hidden')" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
+                                <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-white p-2 rounded-md shadow-lg flex flex-col items-center">
+                                    <div class="w-full py-2 flex justify-between mx-8">
+                                        <p id="modaltitle" class="text-md font-bold">SALES REPORT</p>
+                                        <div onclick="printDomContent('SALES REPORT', 'printer')" class="w-[100px] hover:scale-[1.1] transition-all flex justify-center mx-8 bg-white p-2 rounded bg-blue-500">
+                                            <span class="cp material-symbols-outlined scale-[1.2] text-white" style="font-size: 20px;">print</span>
+                                        </div>
+                                        <span onclick="document.getElementById('salesreportmodal').classList.add('hidden')" class="cp material-symbols-outlined text-red-600" style="font-size: 20px;">close</span>
+                                    </div>
+                                    <hr class="mb-4"/>
+                                    <div id="printer">
+                                        <div id="modaldetails" class="grid grid-cols-1 lg:grid-cols-3 gap-3 w-full border shadow max-w-[600px] p-6"></div>
+                                        <div class="table-content my-4">
+                                            <table>
+                                                <thead>
+                                                    <tr id="tableheader">
+                                                        <th>s/n </th>
+                                                        <th> Item ID </th>
+                                                        <th> Item Name </th>
+                                                        <th> qty </th>
+                                                        <th> PRICE </th>
+                                                        <th> TOTAL </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tabledata2">
+                                                    <tr>
+                                                        <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div id="salesbillsview" class="hidden">
                                 <div class="bg-white/90 p-4 rounded-sm mb-4">
