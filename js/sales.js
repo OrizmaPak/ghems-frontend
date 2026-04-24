@@ -127,7 +127,7 @@ async function fetchsalesbills(reference = '', triggerButton = null) {
         return data
     })() : null
 
-    const request = await httpRequest2('../controllers/fetchsalesbillsonly', payload, triggerButton, 'json')
+    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json')
     if(!request.status){
         if(cleanedReference) notification(request.message || 'No bill found for supplied reference', 0)
         salesBillDatasource = cleanedReference ? [] : salesBillDatasource
@@ -160,8 +160,8 @@ function renderSalesBillsTable(rows = []) {
             <td>
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px]">Retrieve</button>
-                    <button type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-emerald-600">Print</button>
-                    <button type="button" onclick="removeBillEntryPending('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-red-600">Delete</button>
+                    <button type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php')" class="btn !py-1 !px-2 !text-[11px] !bg-emerald-600">Print</button>
+                    <button type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-red-600">Delete</button>
                 </div>
             </td>
             <td>${item.reference || ''}</td>
@@ -1057,8 +1057,22 @@ function removeSalesEntryPending(reference = '') {
     return notification(`Delete controller pending for sales reference ${reference || ''}`, 0)
 }
 
-function removeBillEntryPending(reference = '') {
-    return notification(`Delete controller pending for bill reference ${reference || ''}`, 0)
+async function removeBillEntry(id = '') {
+    const cleanedId = String(id || '').trim()
+    if(!cleanedId) return notification('Unable to delete: bill id is missing', 0)
+    const confirmed = window.confirm('Are you sure you want to delete this bill?')
+    if(!confirmed) return
+
+    const payload = new FormData()
+    payload.append('id', cleanedId)
+    const request = await httpRequest2('../controllers/removesalesbill.php', payload, null, 'json')
+    if(request.status){
+        notification(request.message || 'Bill deleted successfully', 1)
+        fetchsalesbills()
+        fetchsales()
+        return
+    }
+    return notification(request.message || 'Unable to delete bill', 0)
 }
 
 function resetSalesAfterReceipt() {
@@ -1073,7 +1087,7 @@ function resetSalesAfterReceipt() {
 }
 
 
-async function printsalesreceiptsales(ref, room=''){
+async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference'){
     let rm = false
     if(room)rm = true
     if(!ref)return
@@ -1084,7 +1098,7 @@ async function printsalesreceiptsales(ref, room=''){
             if(!room)paramstr.append('reference', ref);
             return paramstr;
         }
-        let request = await httpRequest2(`../controllers/${!room ? 'fetchsalesbyreference' : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
+        let request = await httpRequest2(`../controllers/${!room ? salesFetchController : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
         if(request.status){
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
