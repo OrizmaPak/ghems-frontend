@@ -4,6 +4,7 @@ let salesBillDatasource = []
 let salesBillFilteredDatasource = []
 let salesBillRefDebounceTimer = null
 let isPopulatingSalesBill = false
+let salesSubmissionInFlight = false
 
 async function salesActive() {
     recalldatalist()
@@ -49,6 +50,17 @@ function syncSalesViewFilterSalespointOptions() {
     const target = did('salespointname2')
     if(!source || !target) return
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+}
+
+function setSalesActionButtonsState(disabled = false) {
+    const submitBtn = did('submit')
+    const billBtn = did('bill')
+    ;[submitBtn, billBtn].forEach((btn) => {
+        if(!btn) return
+        btn.disabled = disabled
+        if(disabled) btn.classList.add('opacity-70', 'cursor-not-allowed')
+        else btn.classList.remove('opacity-70', 'cursor-not-allowed')
+    })
 }
 
 function handleSalesBillReferenceInput() {
@@ -149,6 +161,7 @@ function renderSalesBillsTable(rows = []) {
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px]">Retrieve</button>
                     <button type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-emerald-600">Print</button>
+                    <button type="button" onclick="removeBillEntryPending('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-red-600">Delete</button>
                 </div>
             </td>
             <td>${item.reference || ''}</td>
@@ -627,6 +640,7 @@ async function onsalesTableDataSignal() {
                         						</svg>				  
                         					</div>
                         				</div>
+                                        <span title="Delete" onclick="removeSalesEntryPending('${String(dat.data[0].reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined text-[red] cp">delete</span>
                                     </div>
                                 </td>
                                 <td> ${dat.data[0].reference} </td>
@@ -949,36 +963,36 @@ function preparesalesvalues(){
 }
 
 async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
-    const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
-    if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
-    // if(did('salespointname').value == 'Restaurant' && !did('tablenumber').value)return notification('Please enter an available table number', 0)
-    // if(Number(did('salespointname').value)){
-    // }
-    let t = true
-    for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
-        if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
+    if(salesSubmissionInFlight) return notification('Processing previous request, please wait...', 0)
+    salesSubmissionInFlight = true
+    setSalesActionButtonsState(true)
+    try {
+        const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
+        if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
+        let t = true
+        for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
+            if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
+        }
+        if(!t)return notification('Please one or more quantity values are invalid', 0)
+        
+        preparesalesvalues()
+        
+        let payload
+        payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
+        if(ttype)payload.set('ttype', ttype)
+        let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
+        if(request.status) {
+            notification(`${ttype == 'BILL' ? 'Bill' : 'Record'} saved successfully!`, 1);
+            printsalesreceiptsales(request.reference)
+            fetchsalesbills()
+            return
+        }
+        fetchsales();
+        return notification(request.message, 0);
+    } finally {
+        salesSubmissionInFlight = false
+        setSalesActionButtonsState(false)
     }
-    if(!t)return notification('Please one or more quantity values are invalid', 0)
-    
-    preparesalesvalues()
-    
-    let payload
-
-    payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
-    if(ttype)payload.set('ttype', ttype)
-    let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
-    if(request.status) {
-        notification(`${ttype == 'BILL' ? 'Bill' : 'Record'} saved successfully!`, 1);
-        printsalesreceiptsales(request.reference)
-        fetchsalesbills()
-        // document.querySelector('#sales').click();
-        // runoptioner(document.getElementsByClassName('viewer')[0])
-        // fetchsales();
-        return
-    }
-    // document.querySelector('#salesform').reset();
-    fetchsales();
-    return notification(request.message, 0);
 }
 
 function emptysales(){
@@ -1037,6 +1051,25 @@ async function fetchsalesviewreport() {
         }
     }
     return notification('No records retrieved')
+}
+
+function removeSalesEntryPending(reference = '') {
+    return notification(`Delete controller pending for sales reference ${reference || ''}`, 0)
+}
+
+function removeBillEntryPending(reference = '') {
+    return notification(`Delete controller pending for bill reference ${reference || ''}`, 0)
+}
+
+function resetSalesAfterReceipt() {
+    salesid = null
+    const form = did('salesform')
+    if(form) form.reset()
+    emptysales()
+    if(did('salespointname') && typeof default_department !== 'undefined' && default_department) did('salespointname').value = default_department
+    handlesalesdepartment(default_department || did('salespointname')?.value || '')
+    fetchsales()
+    fetchsalesbills()
 }
 
 
