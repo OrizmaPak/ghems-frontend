@@ -277,6 +277,11 @@ const routerTree = {
         startingFunction: 'salesActive',
         scriptName: './js/sales.js'
     },
+    order: {
+        template: 'order',
+        startingFunction: 'orderActive',
+        scriptName: './js/order.js'
+    },
     receipts: {
         template: 'receipts',
         startingFunction: 'receiptsActive',

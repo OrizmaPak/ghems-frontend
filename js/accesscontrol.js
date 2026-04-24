@@ -120,7 +120,7 @@ const accessctrl_frontdesk = [
 ];
 
 
-const accessctrl_sales = ['SALES', 'VIEW ALL USER SALES', 'SALES REPORT', 'RECEIPT']
+const accessctrl_sales = ['SALES', 'ORDER', 'DELETE ORDER', 'VIEW ALL USER SALES', 'SALES REPORT', 'RECEIPT']
 
 const accessctrl_purchases = ['MANAGE SUPPLIER', 'PURCHASE ORDER', 'VIEW PURCHASE ORDER', 'RECEIVE PURCHASES', 'VIEW PURCHASES', 'PAYABLES', 'ALL PAYABLES', 'EXPENSES', 'PAYMENT', 'REVERSALS', 'VIEW REVERSALS']
 
