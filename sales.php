@@ -331,14 +331,14 @@
                                 </div>
                             </div>
                              
-                              <div id="receiptsalesmodal" onclick="if(event.target.id === 'receiptsalesmodal'){this.classList.add('hidden');resetSalesAfterReceipt()}" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
+                              <div id="receiptsalesmodal" onclick="if(event.target.id === 'receiptsalesmodal'){closeSalesReceiptModal()}" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
                                 <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-transparent p-2 rounded-md shadow-lg flex flex-col items-center">
                             
                                     <div class="w-full py-2 flex justify-between mx-8 bg-white p-5 rounded mb-2">
                                         <p id="modaltitle" class="text-md font-bold">PRINT SALES REPORT</p>
-                                        <span  onclick="printDomContent('SALES REPORT', 'displaydetails');document.getElementById('receiptsalesmodal').classList.add('hidden');resetSalesAfterReceipt()" class="cp material-symbols-outlined inline-flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 h-10 w-10 text-white"
+                                        <span  onclick="printDomContent('SALES REPORT', 'displaydetails');closeSalesReceiptModal()" class="cp material-symbols-outlined inline-flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 h-10 w-10 text-white"
                                            style="font-size: 20px;">print</span>
-                                        <span onclick="document.getElementById('receiptsalesmodal').classList.add('hidden');resetSalesAfterReceipt()" class="cp material-symbols-outlined text-red-600 group-hover:text-primary-g"
+                                        <span onclick="closeSalesReceiptModal()" class="cp material-symbols-outlined text-red-600 group-hover:text-primary-g"
                                            style="font-size: 20px;">close</span>
                                     </div>
                                     
@@ -401,7 +401,7 @@
                         </div>
                             
                                     <div class="w-full py-2 flex justify-center mx-8 bg-white p-5 rounded mt-2 bg-blue-400">
-                                        <span onclick="printDomContent('SALES REPORT','displaydetails');document.getElementById('receiptsalesmodal').classList.add('hidden');resetSalesAfterReceipt()" class="cp material-symbols-outlined inline-flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 h-10 w-10 text-white"
+                                        <span onclick="printDomContent('SALES REPORT','displaydetails');closeSalesReceiptModal()" class="cp material-symbols-outlined inline-flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 h-10 w-10 text-white"
                                            style="font-size: 20px;">print</span>
                                     </div>
                         

@@ -5,6 +5,7 @@ let salesBillFilteredDatasource = []
 let salesBillRefDebounceTimer = null
 let isPopulatingSalesBill = false
 let salesSubmissionInFlight = false
+let salesReceiptResetOnClose = true
 
 async function salesActive() {
     recalldatalist()
@@ -159,8 +160,9 @@ function renderSalesBillsTable(rows = []) {
             <td>${index + 1}</td>
             <td>
                 <div class="flex items-center gap-2">
+                    <button title="View" type="button" onclick="openSalesBillDetails('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-600 h-8 w-8 text-white drop-shadow-md text-xs">visibility</button>
                     <button title="Retrieve" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
-                    <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php')" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
+                    <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
                     <button title="Delete" type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs">delete</button>
                 </div>
             </td>
@@ -1058,6 +1060,12 @@ function removeSalesEntryPending(reference = '') {
     return notification(`Delete controller pending for sales reference ${reference || ''}`, 0)
 }
 
+function openSalesBillDetails(reference = '') {
+    const cleanedReference = String(reference || '').trim()
+    if(!cleanedReference) return notification('Bill reference is required', 0)
+    return printsalesreceiptsales(cleanedReference, '', 'fetchsalesbillsonly.php', false)
+}
+
 async function removeBillEntry(id = '') {
     const cleanedId = String(id || '').trim()
     if(!cleanedId) return notification('Unable to delete: bill id is missing', 0)
@@ -1126,11 +1134,18 @@ function resetSalesAfterReceipt() {
     fetchsalesbills()
 }
 
+function closeSalesReceiptModal() {
+    if(did('receiptsalesmodal')) did('receiptsalesmodal').classList.add('hidden')
+    if(salesReceiptResetOnClose) resetSalesAfterReceipt()
+    salesReceiptResetOnClose = true
+}
 
-async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference'){
+
+async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference', resetOnClose=true){
     let rm = false
     if(room)rm = true
     if(!ref)return
+    salesReceiptResetOnClose = !!resetOnClose
     let tt = 0;
     let html = '';
         function getparamm() {
