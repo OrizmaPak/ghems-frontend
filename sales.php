@@ -208,6 +208,38 @@
                                 </form>
                             <hr class="my-3">
                         <div id="salesview" class="hidden">
+                            <form id="salesviewfilterform" class="bg-white/90 p-5 xl:p-6 rounded-sm mb-4">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 p-3 bg-[#3b82f6] text-white rounded shadow-sm">
+                                    <div class="form-group">
+                                        <label for="salespointname2" class="control-label">Department / Salespoint</label>
+                                        <select name="salespoint" id="salespointname2" class="form-control !text-black !bg-white">
+                                            <option value="">-- ALL --</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="user" class="control-label">Staff</label>
+                                        <select name="user" id="user" class="form-control !text-black !bg-white">
+                                            <option value="">-- ALL --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+                                    <div class="form-group">
+                                        <label for="startdate" class="control-label">Start Date</label>
+                                        <input autocomplete="off" type="date" name="startdate" id="startdate" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="enddate" class="control-label">End Date</label>
+                                        <input autocomplete="off" type="date" name="enddate" id="enddate" class="form-control">
+                                    </div>
+                                    <div class="form-group flex items-end justify-end">
+                                        <button id="salesviewsubmit" type="button" class="btn !py-2 !px-4 !text-xs">
+                                            <div class="btnloader" style="display: none;"></div>
+                                            <span>Submit</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                             <div class="flex justify-end w-full my-4">
                                                 <!-- <button onclick="printContent('HEMS sales VIEW', null, 'salesview', true)" type="button" class="w-full h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
                                                 <!--    <div class="btnloader" style="display: none;"></div>-->

@@ -12,6 +12,9 @@ async function salesActive() {
     if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler('BILL', form.querySelector('#bill')))
     datasource = []
     await fetchsales()
+    await getAllUsers()
+    syncSalesViewFilterSalespointOptions()
+    if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
@@ -39,6 +42,13 @@ async function salesActive() {
     await fetchtablenumber()
     await fetchsalesbills()
     // await salesitempop()
+}
+
+function syncSalesViewFilterSalespointOptions() {
+    const source = did('salespointname')
+    const target = did('salespointname2')
+    if(!source || !target) return
+    target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
 }
 
 function handleSalesBillReferenceInput() {
@@ -368,10 +378,12 @@ async function handlesalesdepartment(store) {
                 document.getElementById('hems_itemslist').innerHTML = request.data.map((data, index) =>`<option>${data.itemname.trim()}</option>`).join('')
                 hidesalesterminal(false)
                 did('loading').classList.add('hidden')
+                syncSalesViewFilterSalespointOptions()
                 // resolvePagination(datasource, onupdateinventoryTableDataSignal)
                 return notification(request.message, 1);
             }
     }else{
+        syncSalesViewFilterSalespointOptions()
         did('loading').innerHTML = request.message
         return notification('No records retrieved')}
 }
@@ -1008,6 +1020,23 @@ function emptysales(){
     did('amountpaid').value = '';
     did('totalamountt').innerHTML = 0;
     if(did('billreferencecode')) did('billreferencecode').value = ''
+}
+
+async function fetchsalesviewreport() {
+    const filterForm = did('salesviewfilterform')
+    const submitButton = did('salesviewsubmit')
+    const payload = filterForm ? new FormData(filterForm) : null
+
+    let request = await httpRequest2('../controllers/fetchsales', payload, submitButton, 'json')
+    document.getElementById('tabledata').innerHTML = `No records retrieved`
+    if(request.status) {
+        if(request.data.length) {
+            datasource = doBatch(request.data)
+            resolvePagination(datasource, onsalesTableDataSignal)
+            return notification(request.message || 'Records retrieved', 1)
+        }
+    }
+    return notification('No records retrieved')
 }
 
 
