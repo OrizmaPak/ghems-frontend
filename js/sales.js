@@ -1070,10 +1070,32 @@ async function removeBillEntry(id = '') {
             showCancelButton: true,
             confirmButtonText: 'Yes, Delete',
             cancelButtonText: 'Cancel',
-            confirmButtonColor: '#dc2626',
-            cancelButtonColor: '#64748b',
+            buttonsStyling: false,
+            customClass: {
+                confirmButton: 'swal-bill-delete-confirm',
+                cancelButton: 'swal-bill-delete-cancel'
+            },
             reverseButtons: true,
-            focusCancel: true
+            focusCancel: true,
+            didOpen: () => {
+                const confirmBtn = document.querySelector('.swal-bill-delete-confirm')
+                const cancelBtn = document.querySelector('.swal-bill-delete-cancel')
+                if(confirmBtn){
+                    confirmBtn.style.setProperty('background-color', '#dc2626', 'important')
+                    confirmBtn.style.setProperty('color', '#ffffff', 'important')
+                    confirmBtn.style.setProperty('border', 'none', 'important')
+                    confirmBtn.style.setProperty('padding', '10px 16px', 'important')
+                    confirmBtn.style.setProperty('border-radius', '8px', 'important')
+                }
+                if(cancelBtn){
+                    cancelBtn.style.setProperty('background-color', '#64748b', 'important')
+                    cancelBtn.style.setProperty('color', '#ffffff', 'important')
+                    cancelBtn.style.setProperty('border', 'none', 'important')
+                    cancelBtn.style.setProperty('padding', '10px 16px', 'important')
+                    cancelBtn.style.setProperty('border-radius', '8px', 'important')
+                    cancelBtn.style.setProperty('margin-right', '8px', 'important')
+                }
+            }
         })
         confirmed = !!response.isConfirmed
     } else {
