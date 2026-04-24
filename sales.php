@@ -8,8 +8,8 @@
                                 <li id="iddsalesform" class="me-2 cp updater optioner !text-blue-600 active" name="salesform" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Sales</p>
                                 </li>
-                                <li id="" class="me-2 cp viewer optioner hidden" name="salesview" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Sales</p>
+                                <li id="" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Sales Report</p>
                                 </li>
                                 <li id="" class="me-2 cp viewer optioner" name="salesbillsview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Bills</p>
