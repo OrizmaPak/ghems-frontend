@@ -184,6 +184,10 @@
                                                 </div>
                                             </div>
                                     <div class="flex justify-end w-full my-4">
+                                                 <button type="button" id="bill" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-400 via-emerald-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                    <div class="btnloader" style="display: none;"></div>
+                                                    <span>Bill</span> 
+                                                </button> 
                                                  <button type="button" id="submit" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Post Sales</span> 
