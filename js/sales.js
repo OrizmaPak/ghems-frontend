@@ -78,6 +78,47 @@ function syncSalesViewFilterSalespointOptions() {
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
 }
 
+function normalizeSalesRowsForTable(data = []) {
+    if(!Array.isArray(data) || !data.length) return []
+    if(!data[0]?.saleentry) return data
+
+    const rows = []
+    data.forEach((entry) => {
+        const sale = entry.saleentry || {}
+        const details = Array.isArray(entry.saledetail) ? entry.saledetail : []
+        const base = {
+            batchid: sale.batchid || sale.id || sale.reference,
+            reference: sale.reference || '',
+            transactiondate: sale.transactiondate || '',
+            user: sale.user || sale.staff || '',
+            amountpaid: Number(entry.amountreceived || sale.amountpaid || sale.servicecharge || sale.totalamount || 0),
+            paymentmethod: sale.paymentmethod || '',
+            description: sale.description || ''
+        }
+
+        if(details.length){
+            details.forEach((detail) => {
+                rows.push({
+                    ...base,
+                    itemid: detail.itemid || '',
+                    itemname: detail.itemname || detail.description || base.description || '',
+                    qty: Number(detail.qty || 1),
+                    cost: Number(detail.cost || detail.amount || 0)
+                })
+            })
+        } else {
+            rows.push({
+                ...base,
+                itemid: '',
+                itemname: base.description || 'BILL',
+                qty: 1,
+                cost: Number(sale.servicecharge || sale.totalamount || 0)
+            })
+        }
+    })
+    return rows
+}
+
 function setSalesActionButtonsState(disabled = false) {
     const submitBtn = did('submit')
     const billBtn = did('bill')
@@ -619,7 +660,7 @@ async function fetchsales(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = doBatch(request.data)
+                datasource = doBatch(normalizeSalesRowsForTable(request.data))
                 resolvePagination(datasource, onsalesTableDataSignal)
             }
         }else{
@@ -1079,7 +1120,7 @@ async function fetchsalesviewreport() {
     document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(request.data.length) {
-            datasource = doBatch(request.data)
+            datasource = doBatch(normalizeSalesRowsForTable(request.data))
             resolvePagination(datasource, onsalesTableDataSignal)
             return notification(request.message || 'Records retrieved', 1)
         }
