@@ -159,9 +159,9 @@ function renderSalesBillsTable(rows = []) {
             <td>${index + 1}</td>
             <td>
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px]">Retrieve</button>
-                    <button type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php')" class="btn !py-1 !px-2 !text-[11px] !bg-emerald-600">Print</button>
-                    <button type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-red-600">Delete</button>
+                    <button title="Retrieve" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
+                    <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php')" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
+                    <button title="Delete" type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs">delete</button>
                 </div>
             </td>
             <td>${item.reference || ''}</td>
