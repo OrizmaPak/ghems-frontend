@@ -1060,7 +1060,24 @@ function removeSalesEntryPending(reference = '') {
 async function removeBillEntry(id = '') {
     const cleanedId = String(id || '').trim()
     if(!cleanedId) return notification('Unable to delete: bill id is missing', 0)
-    const confirmed = window.confirm('Are you sure you want to delete this bill?')
+    let confirmed = false
+    if(typeof Swal !== 'undefined'){
+        const response = await Swal.fire({
+            title: 'Delete Bill?',
+            html: `<p style="font-size:13px;color:#475569;">This action will permanently remove the selected bill record.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            reverseButtons: true,
+            focusCancel: true
+        })
+        confirmed = !!response.isConfirmed
+    } else {
+        confirmed = window.confirm('Are you sure you want to delete this bill?')
+    }
     if(!confirmed) return
 
     const payload = new FormData()
