@@ -11,6 +11,9 @@
                                 <li id="" class="me-2 cp viewer optioner hidden" name="salesview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Sales</p>
                                 </li>
+                                <li id="" class="me-2 cp viewer optioner" name="salesbillsview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Bills</p>
+                                </li>
                             </ul>
                             
                             <form id="salesform" class="">
@@ -176,8 +179,12 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                              <div class="w-full flex justify-end items-center">
-                                                 
+                                              <div class="w-full flex justify-between items-center flex-wrap gap-3">
+                                                <div class="flex items-center gap-3 m-5 flex-wrap">
+                                                    <label for="billreferencecode" class="control-label text-sm">Bill&nbsp;Reference:</label>
+                                                    <input autocomplete="off" type="text" name="billreferencecode" id="billreferencecode" class="form-control !w-[220px]" placeholder="Enter bill reference">
+                                                    <button type="button" id="retrievebillfromform" class="btn !py-2 !px-4 !text-xs">Retrieve</button>
+                                                </div>
                                                 <div class="flex items-center gap-5 m-5">
                                                     <label for="logoname" class="control-label text-xl">Amount&nbsp;Paid:</label>
                                                     <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control" onchange="" placeholder="">
@@ -246,7 +253,52 @@
                                 </div>
                                 <div class="table-status"></div>
                             </div> 
-                            
+
+                            <div id="salesbillsview" class="hidden">
+                                <div class="bg-white/90 p-4 rounded-sm mb-4">
+                                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                                        <div class="form-group">
+                                            <label class="control-label">Reference</label>
+                                            <input autocomplete="off" type="text" id="billfilterreference" class="form-control" placeholder="Search reference">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label">Date From</label>
+                                            <input autocomplete="off" type="date" id="billfilterdatefrom" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label">Date To</label>
+                                            <input autocomplete="off" type="date" id="billfilterdateto" class="form-control">
+                                        </div>
+                                        <div class="form-group flex items-end gap-2">
+                                            <button type="button" id="retrievebilllist" class="btn !py-2 !px-4 !text-xs">Retrieve</button>
+                                            <button type="button" id="clearbillfilters" class="btn !py-2 !px-4 !text-xs !bg-slate-500">Clear</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-content">
+                                    <table id="tableer">
+                                        <thead>
+                                            <tr>
+                                                <th>s/n</th>
+                                                <th>Action</th>
+                                                <th>Reference</th>
+                                                <th>Transaction Date</th>
+                                                <th>Sales Point</th>
+                                                <th>Description</th>
+                                                <th>Total Amount</th>
+                                                <th>Amount Paid</th>
+                                                <th>Payment Method</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="billtabledata">
+                                            <tr>
+                                                <td colspan="100%" class="text-center opacity-70">No bills retrieved</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                             
                               <div id="receiptsalesmodal" onclick="if(event.target.id === 'receiptsalesmodal'){this.classList.add('hidden');emptysales()}" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
                                 <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-transparent p-2 rounded-md shadow-lg flex flex-col items-center">
                             

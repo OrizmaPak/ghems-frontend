@@ -29,7 +29,7 @@
             <span class="metric-value val" id="dashoccupiedrooms">Loading...</span>
           </div>
         </div>
-        <div class="metric-card cp" data-route-target="salesreport">
+        <div class="metric-card cp" data-route-target="sales">
           <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-green-600 bg-green-100 rounded-full mr-6">
            <span class="material-symbols-outlined group-hover:text-primary-g" style="font-size: 40px;">attach_money</span>
           </div>

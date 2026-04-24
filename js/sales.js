@@ -1,5 +1,10 @@
 let salesid
 let saletotalamount
+let salesBillDatasource = []
+let salesBillFilteredDatasource = []
+let salesBillRefDebounceTimer = null
+let isPopulatingSalesBill = false
+
 async function salesActive() {
     recalldatalist()
     const form = document.querySelector('#salesform')
@@ -11,10 +16,272 @@ async function salesActive() {
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
+    if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
+    if(did('billreferencecode')) did('billreferencecode').addEventListener('keydown', (event) => {
+        if(event.key === 'Enter'){
+            event.preventDefault()
+            const reference = did('billreferencecode').value.trim()
+            if(reference) fetchsalesbills(reference)
+        }
+    })
+    if(did('retrievebillfromform')) did('retrievebillfromform').addEventListener('click', () => {
+        const reference = (did('billreferencecode')?.value || '').trim()
+        if(!reference) return notification('Enter bill reference to retrieve', 0)
+        fetchsalesbills(reference)
+    })
+    if(did('retrievebilllist')) did('retrievebilllist').addEventListener('click', () => fetchsalesbills())
+    if(did('clearbillfilters')) did('clearbillfilters').addEventListener('click', () => clearSalesBillFilters())
+    if(did('billfilterreference')) did('billfilterreference').addEventListener('input', () => applySalesBillFilters())
+    if(did('billfilterdatefrom')) did('billfilterdatefrom').addEventListener('change', () => applySalesBillFilters())
+    if(did('billfilterdateto')) did('billfilterdateto').addEventListener('change', () => applySalesBillFilters())
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     handlesalesdepartment(default_department)
     await fetchtablenumber()
+    await fetchsalesbills()
     // await salesitempop()
+}
+
+function handleSalesBillReferenceInput() {
+    if(isPopulatingSalesBill) return
+    if(salesBillRefDebounceTimer) clearTimeout(salesBillRefDebounceTimer)
+    salesBillRefDebounceTimer = setTimeout(() => {
+        const reference = (did('billreferencecode')?.value || '').trim()
+        if(reference) fetchsalesbills(reference)
+    }, 600)
+}
+
+function normalizeSalesBillRows(data = []) {
+    if(!Array.isArray(data) || !data.length) return []
+
+    if(data[0]?.saleentry){
+        return data.map((entry) => {
+            const saleEntry = entry.saleentry || {}
+            const details = Array.isArray(entry.saledetail) ? entry.saledetail : []
+            const detailTotal = details.reduce((total, current) => total + (Number(current.qty || 0) * Number(current.cost || 0)), 0)
+            return {
+                id: saleEntry.id || '',
+                batchid: saleEntry.batchid || '',
+                reference: String(saleEntry.reference || '').trim(),
+                transactiondate: saleEntry.transactiondate || '',
+                salespoint: saleEntry.salespoint || '',
+                description: saleEntry.description || (details[0]?.description || ''),
+                paymentmethod: saleEntry.paymentmethod || '',
+                totalamount: Number(saleEntry.totalamount || saleEntry.servicecharge || detailTotal || 0),
+                amountpaid: Number(entry.amountreceived || saleEntry.amountpaid || 0),
+                owner: saleEntry.ownerid ?? saleEntry.owner ?? '',
+                ttype: saleEntry.ttype || '',
+                items: details.map((item) => ({...item}))
+            }
+        }).filter((entry) => entry.reference)
+    }
+
+    const grouped = doBatch(data)
+    return grouped.map((batch) => {
+        const rows = Array.isArray(batch.data) ? batch.data : []
+        const first = rows[0] || {}
+        const lineTotal = rows.reduce((total, row) => total + (Number(row.qty || 0) * Number(row.cost || 0)), 0)
+        return {
+            id: first.id || '',
+            batchid: batch.batchid || first.batchid || '',
+            reference: String(first.reference || '').trim(),
+            transactiondate: first.transactiondate || '',
+            salespoint: first.salespoint || '',
+            description: first.description || '',
+            paymentmethod: first.paymentmethod || '',
+            totalamount: Number(first.totalamount || first.servicecharge || lineTotal || 0),
+            amountpaid: Number(first.amountpaid || first.amountreceived || 0),
+            owner: first.owner ?? first.ownerid ?? '',
+            ttype: first.ttype || '',
+            items: rows.map((row) => ({...row}))
+        }
+    }).filter((entry) => entry.reference)
+}
+
+async function fetchsalesbills(reference = '', triggerButton = null) {
+    const cleanedReference = String(reference || '').trim()
+    const payload = cleanedReference ? (() => {
+        const data = new FormData()
+        data.append('reference', cleanedReference)
+        return data
+    })() : null
+
+    const request = await httpRequest2('../controllers/fetchsalesbillsonly', payload, triggerButton, 'json')
+    if(!request.status){
+        if(cleanedReference) notification(request.message || 'No bill found for supplied reference', 0)
+        salesBillDatasource = cleanedReference ? [] : salesBillDatasource
+        if(cleanedReference) renderSalesBillsTable([])
+        return
+    }
+
+    salesBillDatasource = normalizeSalesBillRows(request.data)
+    if(cleanedReference){
+        const matched = salesBillDatasource.find((bill) => String(bill.reference).toLowerCase() === cleanedReference.toLowerCase())
+            || salesBillDatasource[0]
+        if(!matched) return notification('No bill found for supplied reference', 0)
+        await loadSalesBillIntoForm(matched)
+        notification('Bill loaded successfully', 1)
+    }
+
+    applySalesBillFilters()
+}
+
+function renderSalesBillsTable(rows = []) {
+    const holder = did('billtabledata')
+    if(!holder) return
+    if(!rows.length){
+        holder.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No bills retrieved</td></tr>`
+        return
+    }
+    holder.innerHTML = rows.map((item, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px]">Retrieve</button>
+                    <button type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}')" class="btn !py-1 !px-2 !text-[11px] !bg-emerald-600">Print</button>
+                </div>
+            </td>
+            <td>${item.reference || ''}</td>
+            <td>${item.transactiondate ? specialformatDateTime(item.transactiondate) : ''}</td>
+            <td>${item.salespoint || ''}</td>
+            <td>${item.description || ''}</td>
+            <td>${formatCurrency(item.totalamount || 0)}</td>
+            <td>${formatCurrency(item.amountpaid || 0)}</td>
+            <td>${item.paymentmethod || ''}</td>
+        </tr>
+    `).join('')
+}
+
+function applySalesBillFilters() {
+    const ref = String(did('billfilterreference')?.value || '').trim().toLowerCase()
+    const from = did('billfilterdatefrom')?.value || ''
+    const to = did('billfilterdateto')?.value || ''
+
+    salesBillFilteredDatasource = salesBillDatasource.filter((bill) => {
+        const billRef = String(bill.reference || '').toLowerCase()
+        const billDate = String(bill.transactiondate || '').slice(0, 10)
+        const refPass = !ref || billRef.includes(ref)
+        const fromPass = !from || (billDate && billDate >= from)
+        const toPass = !to || (billDate && billDate <= to)
+        return refPass && fromPass && toPass
+    })
+
+    renderSalesBillsTable(salesBillFilteredDatasource)
+}
+
+function clearSalesBillFilters() {
+    if(did('billfilterreference')) did('billfilterreference').value = ''
+    if(did('billfilterdatefrom')) did('billfilterdatefrom').value = ''
+    if(did('billfilterdateto')) did('billfilterdateto').value = ''
+    applySalesBillFilters()
+}
+
+function openSalesFormTab() {
+    const salesTabTrigger = document.querySelector("li[name='salesform']")
+    if(salesTabTrigger) runoptioner(salesTabTrigger)
+}
+
+async function retrieveSalesBillToForm(reference) {
+    const cleanedReference = String(reference || '').trim()
+    if(!cleanedReference) return notification('Bill reference is required', 0)
+
+    let bill = salesBillDatasource.find((item) => String(item.reference).toLowerCase() === cleanedReference.toLowerCase())
+    if(!bill){
+        await fetchsalesbills(cleanedReference)
+        bill = salesBillDatasource.find((item) => String(item.reference).toLowerCase() === cleanedReference.toLowerCase())
+    }
+    if(!bill) return notification('Bill not found', 0)
+
+    await loadSalesBillIntoForm(bill)
+    openSalesFormTab()
+    notification('Bill loaded to sales form', 1)
+}
+
+async function loadSalesBillIntoForm(bill) {
+    if(!bill) return
+    isPopulatingSalesBill = true
+    try {
+        salesid = bill.id || ''
+        if(did('billreferencecode')) did('billreferencecode').value = bill.reference || ''
+        if(did('salespointname') && bill.salespoint){
+            did('salespointname').value = bill.salespoint
+            await handlesalesdepartment()
+        }
+
+        if(did('transactiondate')) did('transactiondate').value = String(bill.transactiondate || '').slice(0, 10)
+        if(did('description')) did('description').value = bill.description || ''
+        if(did('paymentmethod')) did('paymentmethod').value = bill.paymentmethod || ''
+        if(did('amountpaid')) did('amountpaid').value = Number(bill.amountpaid || 0)
+
+        if(did('applyto')){
+            if(String(bill.ttype || '').toUpperCase() === 'ROOMS') did('applyto').value = 'ROOMS'
+            else if(String(bill.ttype || '').toUpperCase().includes('COST')) did('applyto').value = 'COST CENTER'
+            else did('applyto').value = 'OTHERS'
+            handlesalesapplyto()
+        }
+
+        const ownerValue = bill.owner !== null && bill.owner !== undefined ? String(bill.owner) : ''
+        if(did('owner1')) did('owner1').value = ownerValue
+        if(did('owner')) did('owner').value = ownerValue
+
+        const items = Array.isArray(bill.items) ? bill.items : []
+        did('thetabledata').innerHTML = ''
+        if(!items.length){
+            emptysales()
+            return
+        }
+
+        const firstRowId = '1'
+        did('thetabledata').innerHTML = `
+            <tr id="row-${firstRowId}">
+                <td class="s/n">1</td>
+                <td>
+                    <label for="logoname" class="control-label hidden">Item</label>
+                    <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${firstRowId}')" onblur="salesitempop(this,'${firstRowId}')" list="hems_itemslist" name="item" id="item-${firstRowId}" class="form-control iitem comp">
+                    <input autocomplete="off" class="itemmerid hidden" id="itemer-${firstRowId}">
+                </td>
+                <td>
+                    <div>
+                        <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-${firstRowId}"></span></p>
+                        <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-${firstRowId}"></span></p>
+                        <p class="font-bold">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${firstRowId}"></span></p>
+                    </div>
+                </td>
+                <td>
+                    <label for="logoname" class="control-label hidden">Price</label>
+                    <input autocomplete="off" type="number" id="price-${firstRowId}" class="form-control comp pprice" placeholder="">
+                </td>
+                <td>
+                    <label for="logoname" class="control-label hidden">Quantity</label>
+                    <input autocomplete="off" type="number" id="qty-${firstRowId}" class="form-control comp qqty" onchange="calsaleqty('${firstRowId}')" placeholder="">
+                </td>
+                <td>
+                    <label for="logoname" class="control-label hidden">Amount</label>
+                    <input autocomplete="off" type="number" disabled id="amount-${firstRowId}" class="form-control ammount" placeholder="">
+                </td>
+                <td>
+                    <button onclick="event.preventDefault();removesalesrow('${firstRowId}')" class="material-symbols-outlined rounded-full bg-red-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>
+                </td>
+            </tr>
+        `
+
+        items.forEach((item, index) => {
+            const rowId = index === 0 ? firstRowId : `b${index + 1}`
+            if(index > 0) addsalesrow(rowId)
+            if(did(`item-${rowId}`)) did(`item-${rowId}`).value = item.itemname || ''
+            if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = item.itemid || ''
+            if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = item.itemtype || item.type || ''
+            if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = item.units || item.unit || ''
+            if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = Math.max(Number(item.balance || 0), Number(item.qty || 0), 0)
+            if(did(`price-${rowId}`)) did(`price-${rowId}`).value = Number(item.cost || 0)
+            if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = Number(item.qty || 0)
+            if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = Number(item.cost || 0) * Number(item.qty || 0)
+            calsaleqty(rowId)
+        })
+        runCount()
+    } finally {
+        isPopulatingSalesBill = false
+    }
 }
 
 function checkifitisrestaurant(){
@@ -691,6 +958,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
     if(request.status) {
         notification(`${ttype == 'BILL' ? 'Bill' : 'Record'} saved successfully!`, 1);
         printsalesreceiptsales(request.reference)
+        fetchsalesbills()
         // document.querySelector('#sales').click();
         // runoptioner(document.getElementsByClassName('viewer')[0])
         // fetchsales();
@@ -739,6 +1007,7 @@ function emptysales(){
     did('description').value = '';
     did('amountpaid').value = '';
     did('totalamountt').innerHTML = 0;
+    if(did('billreferencecode')) did('billreferencecode').value = ''
 }
 
 
