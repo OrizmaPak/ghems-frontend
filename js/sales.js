@@ -6,9 +6,11 @@ let salesBillRefDebounceTimer = null
 let isPopulatingSalesBill = false
 let salesSubmissionInFlight = false
 let salesReceiptResetOnClose = true
+let canDeleteBillsInView = false
 
 async function salesActive() {
     recalldatalist()
+    await resolveBillDeletePermission()
     const form = document.querySelector('#salesform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
     if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler('BILL', form.querySelector('#bill')))
@@ -44,6 +46,29 @@ async function salesActive() {
     await fetchtablenumber()
     await fetchsalesbills()
     // await salesitempop()
+}
+
+async function resolveBillDeletePermission() {
+    if(currentUserIsSuperAdmin()){
+        canDeleteBillsInView = true
+        return true
+    }
+    try{
+        const profile = await fetchCurrentUserProfileCached()
+        if(!profile?.status){
+            canDeleteBillsInView = false
+            return false
+        }
+        const granted = profile.grantedPermissions instanceof Set
+            ? profile.grantedPermissions
+            : buildGrantedPermissionSet(profile.permissions || '')
+        canDeleteBillsInView = granted.has('*') || granted.has(normalizePermissionName('DELETE BILL'))
+        return canDeleteBillsInView
+    } catch (error) {
+        console.log(error)
+        canDeleteBillsInView = false
+        return false
+    }
 }
 
 function syncSalesViewFilterSalespointOptions() {
@@ -155,6 +180,9 @@ function renderSalesBillsTable(rows = []) {
         holder.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No bills retrieved</td></tr>`
         return
     }
+    const deleteActionButton = (item) => canDeleteBillsInView
+        ? `<button title="Delete" type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs">delete</button>`
+        : ''
     holder.innerHTML = rows.map((item, index) => `
         <tr>
             <td>${index + 1}</td>
@@ -163,7 +191,7 @@ function renderSalesBillsTable(rows = []) {
                     <button title="View" type="button" onclick="openSalesBillDetails('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-600 h-8 w-8 text-white drop-shadow-md text-xs">visibility</button>
                     <button title="Retrieve" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
                     <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
-                    <button title="Delete" type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs">delete</button>
+                    ${deleteActionButton(item)}
                 </div>
             </td>
             <td>${item.reference || ''}</td>
