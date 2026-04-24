@@ -983,7 +983,8 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
         if(request.status) {
             notification(`${ttype == 'BILL' ? 'Bill' : 'Record'} saved successfully!`, 1);
-            printsalesreceiptsales(request.reference)
+            if(ttype === 'BILL') printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php')
+            else printsalesreceiptsales(request.reference)
             fetchsalesbills()
             return
         }
