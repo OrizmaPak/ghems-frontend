@@ -61,6 +61,7 @@
                                             </div>
                                         </div>
                                         <div class="grid load hidden grid-cols-1 !mb-1 gap-10">
+                                            <?php if(!$isOrderRoute): ?>
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">Apply To</label>
                                                 <select name="applyto" id="applyto" class="form-control comp" >
@@ -70,8 +71,9 @@
                                                     <option>COST CENTER</option>
                                                 </select>
                                             </div>
+                                            <?php endif; ?>
                                             <div class="form-group" id="ownercontainer">
-                                                <label for="logoname" class="control-label">Invoice / reciept to</label>
+                                                <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Order Number' : 'Invoice / reciept to'; ?></label>
                                                 <input autocomplete="off" type="text" name="" id="owner1" class="form-control comp" onchange="checkdatalist(this, 'owner');" placeholder="">
                                                 <input type="text" name="owner" id="owner" class="form-control hidden" onchange="checkdatalist(this);" placeholder="">
                                             </div>
@@ -111,10 +113,11 @@
                                                 <input autocomplete="off" type="date"  name="transactiondate" id="transactiondate" class="form-control comp" placeholder="">
                                             </div>
                                             <div class="form-group">
-                                                <label for="logoname" class="control-label">Description</label>
+                                                <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Comments' : 'Description'; ?></label>
                                                 <textarea name="description" id="description" class="form-control" placeholder=""></textarea>
                                             </div>
                                         </div>
+                                        <?php if(!$isOrderRoute): ?>
                                         <div class="grid load hidden grid-cols-1  lg:grid-cols-1 gap-10"> 
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">payment method</label>
@@ -127,6 +130,7 @@
                                             </div>
                                             
                                         </div>
+                                        <?php endif; ?>
                                         <div id="bankdetails"></div>
                                         
                                         <div class="table-content load hidden">
@@ -253,8 +257,8 @@
                                             <tr>
                                                 <th>s/n</th>
                                                 <th>t.date</th>
-                                                <th>ref</th>
-                                                <th>description</th>
+                                                <th><?php echo $isOrderRoute ? 'order number' : 'ref'; ?></th>
+                                                <th><?php echo $isOrderRoute ? 'comments' : 'description'; ?></th>
                                                 <th>Total&nbsp;Amount</th>
                                                 <th>Amount&nbsp;paid</th>
                                                 <th>payment&nbsp;method</th>
