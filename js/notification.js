@@ -100,7 +100,7 @@ async function fetchOrderNotification() {
     const holder = did('notification_content_holder')
     if (!holder) return
 
-    const request = await httpRequest2('../controllers/fetchorder.php', null, null, 'json')
+    const request = await httpRequest2('../controllers/fetchorders.php', null, null, 'json')
     if (!request?.status) return
 
     const allRows = normalizeOrderNotificationRows(request.data)

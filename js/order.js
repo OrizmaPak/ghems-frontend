@@ -70,7 +70,7 @@ async function fetchorders(id = '') {
     }
 
     const request = await httpRequest2(
-        '../controllers/fetchorder.php',
+        '../controllers/fetchorders.php',
         payload,
         did('submitvieworder'),
         'json'
@@ -141,7 +141,7 @@ async function orderFormSubmitHandler() {
     if (orderid) additional.unshift(['id', orderid])
 
     const payload = getFormData2(document.querySelector('#orderform'), additional)
-    const request = await httpRequest2('../controllers/postorder.php', payload, did('submit'), 'json')
+    const request = await httpRequest2('../controllers/postorders.php', payload, did('submit'), 'json')
 
     if (request?.status) {
         notification('Order saved successfully!', 1)
