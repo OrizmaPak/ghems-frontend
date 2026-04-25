@@ -147,6 +147,36 @@ function normalizeSalesRowsForTable(data = []) {
     return Array.from(grouped.values())
 }
 
+function normalizeOrdersForSalesTable(data = []) {
+    if(!Array.isArray(data) || !data.length) return []
+    if(data[0]?.saleentry) return normalizeSalesRowsForTable(data)
+
+    return data.map((row) => {
+        const owner = row.ownerid ?? row.owner ?? row.roomnumber ?? -1
+        const normalizedOwner = (owner === '' || owner === null || owner === undefined) ? -1 : owner
+        return {
+            saleentry: {
+                reference: String(row.reference || row.ref || row.orderref || row.id || '').trim(),
+                transactiondate: row.transactiondate || row.created_at || row.entrydate || row.datecreated || '',
+                description: row.description || '',
+                servicecharge: Number(row.totalamount || row.amount || 0),
+                paymentmethod: row.paymentmethod || 'ORDER',
+                ownerid: normalizedOwner,
+                ttype: 'ORDER'
+            },
+            amountreceived: Number(row.amountpaid || row.amountreceived || 0),
+            saledetail: Array.isArray(row.saledetail) && row.saledetail.length
+                ? row.saledetail
+                : [{
+                    description: row.description || '',
+                    itemname: row.description || 'ORDER',
+                    qty: Number(row.qty || 1),
+                    cost: Number(row.cost || row.amount || 0)
+                }]
+        }
+    }).filter((row) => row.saleentry.reference || row.saleentry.description)
+}
+
 function setSalesActionButtonsState(disabled = false) {
     const submitBtn = did('submit')
     const billBtn = did('bill')
@@ -683,12 +713,14 @@ async function fetchsales(id) {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchsales', id ? getparamm() : null, null, 'json')
+    let request = await httpRequest2(isOrderWorkspaceMode() ? '../controllers/fetchorders.php' : '../controllers/fetchsales', id ? getparamm() : null, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = normalizeSalesRowsForTable(request.data)
+                datasource = isOrderWorkspaceMode()
+                    ? normalizeOrdersForSalesTable(request.data)
+                    : normalizeSalesRowsForTable(request.data)
                 resolvePagination(datasource, onsalesTableDataSignal)
             }
         }else{
@@ -1147,11 +1179,13 @@ async function fetchsalesviewreport() {
     const payload = filterForm ? new FormData(filterForm) : null
     if(payload && isOrderWorkspaceMode()) payload.append('ttype', 'ORDER')
 
-    let request = await httpRequest2('../controllers/fetchsales', payload, submitButton, 'json')
+    let request = await httpRequest2(isOrderWorkspaceMode() ? '../controllers/fetchorders.php' : '../controllers/fetchsales', payload, submitButton, 'json')
     document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(request.data.length) {
-            datasource = normalizeSalesRowsForTable(request.data)
+            datasource = isOrderWorkspaceMode()
+                ? normalizeOrdersForSalesTable(request.data)
+                : normalizeSalesRowsForTable(request.data)
             resolvePagination(datasource, onsalesTableDataSignal)
             return notification(request.message || 'Records retrieved', 1)
         }
