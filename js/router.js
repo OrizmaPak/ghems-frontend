@@ -668,14 +668,15 @@ function routerEvent(route) {
 function resolveUrlPage() {
     let searchParams = new URLSearchParams(window.location.search)
     if(searchParams.has('r')) {
-        let page = routerTree[searchParams.get('r').trim()].template
-        openRoute(page+ext)
+        let route = searchParams.get('r').trim()
+        let page = routerTree[route].template
+        openRoute(`${page+ext}?r=${encodeURIComponent(route)}`)
     }
     else {
         // open home default page
         let queryParams = `?r=profile`
         window.history.pushState(queryParams, undefined, `${window.origin.concat(window.location.pathname, queryParams)}`)
-        openRoute('profile'+ext)
+        openRoute(`profile${ext}?r=profile`)
     }
     showActiveRoute()
 }

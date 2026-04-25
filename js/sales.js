@@ -42,6 +42,26 @@ function configureOrderWorkspaceUi() {
     if(billRefInput?.closest('.flex.items-center.gap-3.m-5.flex-wrap')){
         billRefInput.closest('.flex.items-center.gap-3.m-5.flex-wrap').classList.add('hidden')
     }
+
+    const applyTo = did('applyto')
+    if(applyTo?.closest('.form-group')) applyTo.closest('.form-group').classList.add('hidden')
+
+    const paymentMethod = did('paymentmethod')
+    if(paymentMethod?.closest('.form-group')) paymentMethod.closest('.form-group').classList.add('hidden')
+    if(paymentMethod) paymentMethod.value = ''
+    if(did('bankdetails')) did('bankdetails').innerHTML = ''
+
+    const ownerLabel = did('ownercontainer')?.querySelector('label')
+    if(ownerLabel) ownerLabel.textContent = 'Order Number'
+
+    const commentsLabel = did('description')?.closest('.form-group')?.querySelector('label')
+    if(commentsLabel) commentsLabel.textContent = 'Comments'
+
+    const salesViewHeaders = document.querySelectorAll('#salesview thead th')
+    if(salesViewHeaders.length >= 4){
+        salesViewHeaders[2].textContent = 'order number'
+        salesViewHeaders[3].textContent = 'comments'
+    }
 }
 
 async function salesActive() {
