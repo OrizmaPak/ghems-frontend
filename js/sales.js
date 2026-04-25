@@ -1084,6 +1084,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         if(request.status) {
             notification(`${ttype == 'BILL' ? 'Bill' : ttype == 'ORDER' ? 'Order' : 'Record'} saved successfully!`, 1);
             if(ttype === 'BILL') printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php', true, true)
+            else if(ttype === 'ORDER'){
+                printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', false, false)
+                resetSalesAfterReceipt()
+            }
             else printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
             if(!isOrderWorkspaceMode()) fetchsalesbills()
             return
