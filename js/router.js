@@ -278,9 +278,9 @@ const routerTree = {
         scriptName: './js/sales.js'
     },
     order: {
-        template: 'order',
-        startingFunction: 'orderActive',
-        scriptName: './js/order.js'
+        template: 'sales',
+        startingFunction: 'salesActive',
+        scriptName: './js/sales.js'
     },
     receipts: {
         template: 'receipts',

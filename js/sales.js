@@ -8,12 +8,49 @@ let salesSubmissionInFlight = false
 let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
 
+function isOrderWorkspaceMode() {
+    return getCurrentRouteName() === 'order'
+}
+
+function configureOrderWorkspaceUi() {
+    if(!isOrderWorkspaceMode()) return
+
+    const title = document.querySelector('.page-title span')
+    if(title) title.textContent = 'ORDER'
+
+    const salesTab = document.querySelector("li[name='salesform'] p")
+    if(salesTab) salesTab.textContent = 'Post-Order'
+
+    const viewTab = document.querySelector("li[name='salesview'] p")
+    if(viewTab) viewTab.textContent = 'View Order'
+
+    const billsTab = document.querySelector("li[name='salesbillsview']")
+    if(billsTab) billsTab.classList.add('hidden')
+
+    const submitBtn = did('submit')
+    if(submitBtn) submitBtn.classList.add('hidden')
+
+    const billBtn = did('bill')
+    if(billBtn){
+        const textNode = billBtn.querySelector('span:last-child')
+        if(textNode) textNode.textContent = 'Post-Order'
+        billBtn.classList.remove('from-emerald-400', 'via-emerald-500')
+        billBtn.classList.add('from-blue-400', 'via-blue-500')
+    }
+
+    const billRefInput = did('billreferencecode')
+    if(billRefInput?.closest('.flex.items-center.gap-3.m-5.flex-wrap')){
+        billRefInput.closest('.flex.items-center.gap-3.m-5.flex-wrap').classList.add('hidden')
+    }
+}
+
 async function salesActive() {
+    configureOrderWorkspaceUi()
     recalldatalist()
     await resolveBillDeletePermission()
     const form = document.querySelector('#salesform')
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
-    if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler('BILL', form.querySelector('#bill')))
+    if(form.querySelector('#submit') && !isOrderWorkspaceMode()) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
+    if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')))
     datasource = []
     await fetchsales()
     await getAllUsers()
@@ -44,7 +81,7 @@ async function salesActive() {
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     handlesalesdepartment(default_department)
     await fetchtablenumber()
-    await fetchsalesbills()
+    if(!isOrderWorkspaceMode()) await fetchsalesbills()
     // await salesitempop()
 }
 
@@ -1045,10 +1082,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         if(ttype)payload.set('ttype', ttype)
         let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
         if(request.status) {
-            notification(`${ttype == 'BILL' ? 'Bill' : 'Record'} saved successfully!`, 1);
+            notification(`${ttype == 'BILL' ? 'Bill' : ttype == 'ORDER' ? 'Order' : 'Record'} saved successfully!`, 1);
             if(ttype === 'BILL') printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php', true, true)
             else printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
-            fetchsalesbills()
+            if(!isOrderWorkspaceMode()) fetchsalesbills()
             return
         }
         fetchsales();
@@ -1104,6 +1141,7 @@ async function fetchsalesviewreport() {
     const filterForm = did('salesviewfilterform')
     const submitButton = did('salesviewsubmit')
     const payload = filterForm ? new FormData(filterForm) : null
+    if(payload && isOrderWorkspaceMode()) payload.append('ttype', 'ORDER')
 
     let request = await httpRequest2('../controllers/fetchsales', payload, submitButton, 'json')
     document.getElementById('tabledata').innerHTML = `No records retrieved`
