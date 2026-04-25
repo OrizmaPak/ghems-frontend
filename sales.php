@@ -1,19 +1,22 @@
+       <?php $isOrderRoute = (isset($_GET['r']) && $_GET['r'] === 'order'); ?>
        <section class="animate__animated animate__fadeIn">
                             <p class="page-title">
-                                <span>SALES</span>
+                                <span><?php echo $isOrderRoute ? 'ORDER' : 'SALES'; ?></span>
                             </p>
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('guestsreservationsform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
                                 <li id="iddsalesform" class="me-2 cp updater optioner !text-blue-600 active" name="salesform" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Sales</p>
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50"><?php echo $isOrderRoute ? 'Post-Order' : 'Sales'; ?></p>
                                 </li>
                                 <li id="" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Sales Report</p>
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 "><?php echo $isOrderRoute ? 'View Order' : 'View Sales Report'; ?></p>
                                 </li>
+                                <?php if(!$isOrderRoute): ?>
                                 <li id="" class="me-2 cp viewer optioner" name="salesbillsview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Bills</p>
                                 </li>
+                                <?php endif; ?>
                             </ul>
                             
                             <form id="salesform" class="">
@@ -180,11 +183,13 @@
                                         </tbody>
                                     </table>
                                               <div class="w-full flex justify-between items-center flex-wrap gap-3">
+                                                <?php if(!$isOrderRoute): ?>
                                                 <div class="flex items-center gap-3 m-5 flex-wrap">
                                                     <label for="billreferencecode" class="control-label text-sm">Bill&nbsp;Reference:</label>
                                                     <input autocomplete="off" type="text" name="billreferencecode" id="billreferencecode" class="form-control !w-[220px]" placeholder="Enter bill reference">
                                                     <button type="button" id="retrievebillfromform" class="btn !py-2 !px-4 !text-xs">Retrieve</button>
                                                 </div>
+                                                <?php endif; ?>
                                                 <div class="flex items-center gap-5 m-5">
                                                     <label for="logoname" class="control-label text-xl">Amount&nbsp;Paid:</label>
                                                     <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control" onchange="" placeholder="">
@@ -193,12 +198,14 @@
                                     <div class="flex justify-end w-full my-4">
                                                  <button type="button" id="bill" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-400 via-emerald-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
-                                                    <span>Post-Bill</span> 
+                                                    <span><?php echo $isOrderRoute ? 'Post-Order' : 'Post-Bill'; ?></span> 
                                                 </button> 
+                                                <?php if(!$isOrderRoute): ?>
                                                  <button type="button" id="submit" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Post Sales</span> 
                                                 </button> 
+                                                <?php endif; ?>
                                             </div>
                                 </div>
                                         
@@ -300,6 +307,7 @@
                                 </div>
                             </div>
 
+                            <?php if(!$isOrderRoute): ?>
                             <div id="salesbillsview" class="hidden">
                                 <div class="bg-white/90 p-4 rounded-sm mb-4">
                                     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -344,6 +352,7 @@
                                     </table>
                                 </div>
                             </div>
+                            <?php endif; ?>
                              
                               <div id="receiptsalesmodal" onclick="if(event.target === this){closeSalesReceiptModal()}" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
                                 <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-transparent p-2 rounded-md shadow-lg flex flex-col items-center">
