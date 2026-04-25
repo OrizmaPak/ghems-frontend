@@ -1,4 +1,26 @@
 let notificationid
+
+function normalizeOrderNotificationRows(data) {
+    if (Array.isArray(data)) return data
+    if (data && typeof data === 'object') return [data]
+    return []
+}
+
+function isUnrelatedOrder(row = {}) {
+    const roomNumber = String(row.roomnumber || '').trim()
+    return !roomNumber || roomNumber === '-' || roomNumber === '0'
+}
+
+function refreshNotificationBadgeCount() {
+    const holder = did('notification_content_holder')
+    const badge = did('notification_badge_count')
+    if (!holder || !badge) return
+
+    const count = holder.querySelectorAll('[name$="_notification"]').length
+    badge.textContent = String(count)
+    if (count > 0) badge.classList.remove('hidden')
+    else badge.classList.add('hidden')
+}
 async function notificationActive() {
     const form = document.querySelector('#notificationform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', notificationFormSubmitHandler)
@@ -42,8 +64,6 @@ async function fetchnotification(id,outside=false) {
             if(request.data.length){
             if(document.getElementsByName('notification_notification').length > 0){
                 document.getElementsByName('notification_notification')[0].remove()
-                did('notification_badge_count').innerHTML = Number(did('notification_badge_count').textContent) - 1 
-                if(Number(document.getElementById('notification_badge_count').textContent) == 0)document.getElementById('notification_badge_count').classList.add('hidden')
             }
             let element = document.createElement('div');
             element.setAttribute('name', 'notification_notification');
@@ -62,17 +82,56 @@ async function fetchnotification(id,outside=false) {
             document.getElementsByName('notification_notification')[0].addEventListener('click', e => {
                 document.getElementById('notification').click();
             });
-            
-            did('notification_badge_count').innerHTML = Number(did('notification_badge_count').textContent) + 1;
-            did('notification_badge_count').classList.remove('hidden');
+            refreshNotificationBadgeCount()
 
+            }
+            if(!request.data.length){
+                if(document.getElementsByName('notification_notification').length > 0){
+                    document.getElementsByName('notification_notification')[0].remove()
+                }
+                refreshNotificationBadgeCount()
             }
         }
     }
     else return notification('No records retrieved')
 }
+
+async function fetchOrderNotification() {
+    const holder = did('notification_content_holder')
+    if (!holder) return
+
+    const request = await httpRequest2('../controllers/fetchorder.php', null, null, 'json')
+    if (!request?.status) return
+
+    const allRows = normalizeOrderNotificationRows(request.data)
+    const unrelatedCount = allRows.filter(isUnrelatedOrder).length
+    const currentOrderNotice = document.getElementsByName('order_notification')[0]
+
+    if (unrelatedCount < 1) {
+        if (currentOrderNotice) currentOrderNotice.remove()
+        refreshNotificationBadgeCount()
+        return
+    }
+
+    if (currentOrderNotice) currentOrderNotice.remove()
+    let element = document.createElement('div')
+    element.setAttribute('name', 'order_notification')
+    element.setAttribute('class', 'qq flex cp justify-between border rounded-md p-2 mb-1')
+    element.innerHTML = `<div class="qq flex flex-col gap-2">
+            <p class="qq font-semibold text-sm text-left">Order</p>
+            <p class="qq font-normal text-xs text-left">You have unrelated order(s) that need attention.</p>
+        </div>
+        <p class="qq my-auto bg-blue-500 px-1 text-xs rounded-full text-white">${unrelatedCount}</p>`
+
+    holder.appendChild(element)
+    element.addEventListener('click', () => {
+        if (document.getElementById('order')) document.getElementById('order').click()
+    })
+    refreshNotificationBadgeCount()
+}
 fetchnotification('', true)
-setInterval(()=>{fetchnotification('', true)},30000)
+fetchOrderNotification()
+setInterval(()=>{fetchnotification('', true); fetchOrderNotification()},30000)
 async function removenotification(id) {
     // Ask for confirmation
     const confirmed = window.confirm("Are you sure you want to remove this notification?");
