@@ -174,14 +174,36 @@ async function submitaccesssettings(){
         let param = new FormData()
         param.append('email', document.getElementById('email').value.split('||')[1].trim())
         param.append('role', document.getElementById('role').value)
-        let accessstring = ''
+        const selectedPermissions = new Set()
         for(let i=0;i<document.getElementsByClassName('accesscontroller').length;i++){
-            if(document.getElementsByClassName('accesscontroller')[i].checked)accessstring += `${document.getElementsByClassName('accesscontroller')[i].name}||` 
+            if(document.getElementsByClassName('accesscontroller')[i].checked){
+                selectedPermissions.add(document.getElementsByClassName('accesscontroller')[i].name)
+            }
+        }
+
+        // Compact FRONT DESK permissions to prevent oversized permission payloads.
+        const frontDeskPermissions = new Set(accessctrl_frontdesk)
+        const hasAllFrontDeskPermissions = Array.from(frontDeskPermissions).every(permission => selectedPermissions.has(permission))
+        if(hasAllFrontDeskPermissions){
+            frontDeskPermissions.forEach(permission => selectedPermissions.delete(permission))
+            selectedPermissions.add('FRONT DESK')
+        }
+
+        const permissionArray = Array.from(selectedPermissions)
+        const accessstring = permissionArray.length ? `${permissionArray.join('||')}||` : ''
+        if(accessstring.length > 2500){
+            notification('Permission payload is too large. Deselect some permissions and try again.', 0)
+            throw new Error('Permission payload too large')
         }
         param.append('permissions', accessstring)
         return param
     }
-    let request = await httpRequest2('../controllers/updatepermissions', payload(), document.querySelector('#accesscontrolsform #accesssave'))
+    let request
+    try{
+        request = await httpRequest2('../controllers/updatepermissions', payload(), document.querySelector('#accesscontrolsform #accesssave'))
+    }catch(_){
+        return
+    }
     if(request.status) {
         notification('Record saved successfully!', 1);
          did('email').value = ''
@@ -192,7 +214,7 @@ async function submitaccesssettings(){
         fetchaccesscontrols();
         return
     }
-    document.querySelector('#accesscontrolform').reset();
+    document.querySelector('#accesscontrolsform').reset();
     fetchaccesscontrols();
     return notification(request.message, 0);
 }
@@ -206,6 +228,12 @@ function accessboard(element){
 }
 
 function accessappendboard(res){
+    const normalizedPermissionList = String(res.permissions || '')
+        .split(/\|\||\||,|;|\n|\r/g)
+        .map(item => item.trim())
+        .filter(Boolean)
+    const hasFrontDeskGroupPermission = normalizedPermissionList.includes('FRONT DESK')
+
     for(let i=0;i<access_array.length;i++){
         let element = document.createElement('div')
         element.setAttribute('id', access_array[i][0])
@@ -215,7 +243,7 @@ function accessappendboard(res){
                                 <span>${access_array[i][1]}</span>
                             </p>`;
         document.getElementById(`${access_array[i][0]}`).innerHTML += access_array[i][2].map(data=>`<label class="bg-[#1d68e305] p-2 pl-1 mb-[1px] relative inline-flex items-center cursor-pointer">
-                                          <input type="checkbox" name="${data}" ${res.permissions.split('||').includes(data) ? 'checked' : ''} class="sr-only peer accesscontroller">
+                                          <input type="checkbox" name="${data}" ${(normalizedPermissionList.includes(data) || (access_array[i][1] === 'FRONT DESK' && hasFrontDeskGroupPermission)) ? 'checked' : ''} class="sr-only peer accesscontroller">
                                           <div class="scale-[0.8] w-11 h-6 bg-gray-400 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                           <span class="ms-2 text-xs font-medium text-blue-900">${data}</span>
                                         </label>`).join('')

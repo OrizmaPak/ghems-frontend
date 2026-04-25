@@ -95,6 +95,7 @@ const permissionAliasesByValue = {
     'P&P APPROVE PAYROLL': 'APPROVE PAYROLL',
     'P&P MONTHLY SALARY SCHEDULE': 'VIEW MONTHLY SALARY SCHEDULE',
     'P&P STAFF SALARY RECORD': 'STAFF SALARY RECORD',
+    'FRONT OFFICE': 'FRONT DESK',
     'PERSONNEL AND PAYROLL': 'PERSONNEL & PAYROLL',
     'PERSONNEL & PAYROLL': 'PERSONNEL & PAYROLL'
 }
@@ -123,6 +124,38 @@ const personnelPayrollPermissionKeys = [
     'VIEW MONTHLY SALARY SCHEDULE',
     'DO PAYROLL',
     'APPROVE PAYROLL'
+]
+
+const frontDeskPermissionKeys = [
+    'SEARCH ARRIVALS',
+    'GUESTS MANAGEMENT',
+    'GROUPS',
+    'GUESTS & RESERVATIONS',
+    'RESERVATION CHECK IN',
+    'DIRECT CHECK IN',
+    'GROUP RESERVATIONS',
+    'GROUP CHECK IN',
+    'PRINT REGISTRATION CARD',
+    'EXPECTED ARRIVALS',
+    'EXPECTED CHECK OUT',
+    'EXTEND STAY',
+    'CHECK OUT',
+    'LATE CHECKOUT',
+    'CANCEL RESERVATION',
+    'RE-ASSIGN ROOMS',
+    'ROOM STATUS',
+    'MESSAGES',
+    'NOTIFICATIONS',
+    'RECEIVABLES',
+    'PAY PENDING CHECKOUT BILLS',
+    'TRANSACTION HISTORY',
+    'REVIEWS',
+    'OCCUPANCY LIST',
+    'NO SHOW',
+    'GENERAL REPORT',
+    'REVERSE RESERVATION',
+    'NO POSTING',
+    'DELETE GUEST'
 ]
 
 function normalizeRoleName(role=''){
@@ -162,6 +195,10 @@ function buildGrantedPermissionSet(rawPermissions=''){
 
     if(granted.has('PERSONNEL & PAYROLL')){
         personnelPayrollPermissionKeys.forEach(permission => granted.add(permission))
+    }
+
+    if(granted.has('FRONT DESK')){
+        frontDeskPermissionKeys.forEach(permission => granted.add(permission))
     }
 
     return granted
