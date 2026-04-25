@@ -7,7 +7,7 @@ async function passwordRecoverSubmitHander() {
     if(!validatePasswordForm()) return
 
     let paramstr = new FormData(document.getElementById('passwordform'))
-    let result = await httpRequest('../controllers/pwchange', paramstr, document.querySelector('button#submit'))
+    let result = await httpRequest('../controllers/pfscript', paramstr, document.querySelector('button#submit'))
     if(result.status) {
         notification('Successful! Please check your email for new password', 1)
         setTimeout(() => window.location = './login.php', 3000)
