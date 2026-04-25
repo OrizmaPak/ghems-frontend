@@ -1,15 +1,41 @@
 let dailyassignmentsheetid
 let dailyassignmentsheetitem
+let dailyAssignmentStaffOptions = `<option value=''>-- Select Staff --</option>`
+
 async function dailyassignmentsheetActive() {
     dailyassignmentsheetid = ''
     const form = document.querySelector('#dailyassignmentsheetform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', dailyassignmentsheetFormSubmitHandler)
     datasource = []
+    await fetchDailyAssignmentStaff()
     await fetchRoomsList()
     if(sessionStorage.getItem('viewdailyassignmensheetdata')){
         dailyassignmentsheetid = sessionStorage.getItem('viewdailyassignmensheetdata')
         await fetchdailyassignmentsheet(dailyassignmentsheetid)
     }
+}
+
+function escHtml(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+}
+
+async function fetchDailyAssignmentStaff() {
+    const request = await httpRequest2('../controllers/fetchusers', null, null, 'json')
+    if(!request.status || !request.data?.length) {
+        dailyAssignmentStaffOptions = `<option value=''>-- Select Staff --</option>`
+        return
+    }
+
+    dailyAssignmentStaffOptions = `<option value=''>-- Select Staff --</option>` + request.data.map(item => {
+        const email = escHtml(item.email || '')
+        const fullname = escHtml(`${item.firstname || ''} ${item.lastname || ''}`.trim())
+        return `<option value="${email}">${fullname}</option>`
+    }).join('')
 }
 
 async function dailyassignmentsheetFormSubmitHandler() {
@@ -38,6 +64,7 @@ async function dailyassignmentsheetFormSubmitHandler() {
         const timeout = row.querySelector('[name="timeout"]')?.value || ''
         const statusbeforeservice = row.querySelector('[name="statusbeforeservice"]')?.value || ''
         const statusafterservice = row.querySelector('[name="statusafterservice"]')?.value || ''
+        const staff = row.querySelector('[name="staff"]')?.value || ''
 
         if(!roomnumber || !shift || !timein || !timeout || !statusbeforeservice || !statusafterservice){
             failCount++
@@ -54,6 +81,7 @@ async function dailyassignmentsheetFormSubmitHandler() {
         payload.set('timeout', `${timeout.split('T').join(' ')}:00`)
         payload.set('statusbeforeservice', statusbeforeservice)
         payload.set('statusafterservice', statusafterservice)
+        payload.set('staff', staff)
         payload.set('rowsize', 0)
         payload.set('guestname', '')
         payload.set('noofpersons', 0)
@@ -140,6 +168,12 @@ async function fetchRoomsList(id) {
                             <option>CLEAN-AVAILABLE</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="logoname" class="control-label">Staff</label>
+                        <select name="staff" id="staff-${item.roomnumber}" class="form-control comp">
+                            ${dailyAssignmentStaffOptions}
+                        </select>
+                    </div>
                 </div>
             `).join('')
             try {
@@ -168,6 +202,7 @@ async function fetchdailyassignmentsheet(id) {
     if(targetRow.querySelector('[name="shift"]'))targetRow.querySelector('[name="shift"]').value = assignment.shift || ''
     if(targetRow.querySelector('[name="statusbeforeservice"]'))targetRow.querySelector('[name="statusbeforeservice"]').value = assignment.statusbeforeservice || ''
     if(targetRow.querySelector('[name="statusafterservice"]'))targetRow.querySelector('[name="statusafterservice"]').value = assignment.statusafterservice || ''
+    if(targetRow.querySelector('[name="staff"]'))targetRow.querySelector('[name="staff"]').value = assignment.staff || ''
     if(targetRow.querySelector('[name="timein"]') && assignment.timein)targetRow.querySelector('[name="timein"]').value = String(assignment.timein).replace(' ', 'T').slice(0,16)
     if(targetRow.querySelector('[name="timeout"]') && assignment.timeout)targetRow.querySelector('[name="timeout"]').value = String(assignment.timeout).replace(' ', 'T').slice(0,16)
 }
