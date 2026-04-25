@@ -62,6 +62,16 @@ function configureOrderWorkspaceUi() {
         salesViewHeaders[2].textContent = 'order number'
         salesViewHeaders[3].textContent = 'comments'
     }
+    relaxOrderItemInputs()
+}
+
+function relaxOrderItemInputs() {
+    if(!isOrderWorkspaceMode()) return
+    document.querySelectorAll('.iitem').forEach((input) => {
+        input.removeAttribute('list')
+        input.removeAttribute('onchange')
+        input.removeAttribute('onblur')
+    })
 }
 
 async function salesActive() {
@@ -497,11 +507,14 @@ async function handlesalesdepartment(store) {
     checkifitisrestaurant();
     did('totalamountt').innerHTML = 0
     did('totalamount').value = 0
+    const itemInputMarkup = isOrderWorkspaceMode()
+        ? `<input autocomplete="off" name="item" id="item-1" class="form-control iitem comp">`
+        : `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `<tr id="row-919">
                                                 <td class="s/n">1</td>
                                                 <td class="">  
                                                     <label for="logoname" class="control-label hidden">Item</label>
-                                                    <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">
+                                                    ${itemInputMarkup}
                                                     <input autocomplete="off" class="itemmerid hidden" id="itemer-1">
                                                 </td>
                                                 <td style="">
@@ -527,6 +540,7 @@ async function handlesalesdepartment(store) {
                                                     <button onclick="event.preventDefault();removesalesrow('919')" class="material-symbols-outlined rounded-full bg-red-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>
                                                 </td>
                                             </tr>`
+    if(isOrderWorkspaceMode()) relaxOrderItemInputs()
     hidesalesterminal()
     if(!did('salespointname').value && !store)return notification('Please enter a Department / Sales Point')
     
@@ -594,7 +608,7 @@ function clearrow(i){
 
 function calsaleqty(i){
     if(Number(did(`qty-${i}`).value)<0)did(`qty-${i}`).value = 0
-    if(Number(did(`balance-${i}`).textContent)<Number(did(`qty-${i}`).value)){
+    if(!isOrderWorkspaceMode() && Number(did(`balance-${i}`).textContent)<Number(did(`qty-${i}`).value)){
         let iniborder = did(`qty-${i}`).style.borderColor
         did(`qty-${i}`).value = Number(did(`balance-${i}`).textContent)
         did(`qty-${i}`).style.borderColor = 'red'
@@ -645,6 +659,7 @@ function addfromsearch(){
 }
 
 async function salesitempop(val,i,qty=0) {
+    if(isOrderWorkspaceMode()) return true
     if(!val.value)return clearrow(i)
     let x = 0
     for(let i=0;i<document.getElementsByClassName('iitem').length;i++){
@@ -680,13 +695,16 @@ function addsalesrow(ii=''){
     let id 
     if(ii)id = ii
     if(!ii)id = genID()
+    const itemInputMarkup = isOrderWorkspaceMode()
+        ? `<input autocomplete="off" name="item" id="item-${id}" class="form-control iitem comp">`
+        : `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${id}')" onblur="salesitempop(this,'${id}')" list="hems_itemslist" name="item" id="item-${id}" class="form-control iitem comp">`
     let element = document.createElement('tr')
     element.setAttribute('id', `'row-${id}'`)
     element.innerHTML = `
         <td class="s/n"></td>
         <td class="">  
             <label for="logoname" class="control-label hidden">Item</label>
-            <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${id}')" onblur="salesitempop(this,'${id}')" list="hems_itemslist" name="item" id="item-${id}" class="form-control iitem comp">
+            ${itemInputMarkup}
              <input autocomplete="off" class="itemmerid hidden" id="itemer-${id}">
         </td>
         <td style="">
@@ -713,6 +731,7 @@ function addsalesrow(ii=''){
         </td>
     `
         did('thetabledata').appendChild(element)
+        if(isOrderWorkspaceMode()) relaxOrderItemInputs()
         runCount()
 }
 
@@ -1119,13 +1138,15 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
     salesSubmissionInFlight = true
     setSalesActionButtonsState(true)
     try {
-        const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
-        if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
-        let t = true
-        for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
-            if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
+        if(!isOrderWorkspaceMode()){
+            const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
+            if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
+            let t = true
+            for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
+                if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
+            }
+            if(!t)return notification('Please one or more quantity values are invalid', 0)
         }
-        if(!t)return notification('Please one or more quantity values are invalid', 0)
         
         preparesalesvalues()
         
@@ -1153,12 +1174,15 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
 }
 
 function emptysales(){
+    const itemInputMarkup = isOrderWorkspaceMode()
+        ? `<input autocomplete="off" name="item" id="item-1" class="form-control iitem comp">`
+        : `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `
                                             <tr id="row-919">
                                                 <td class="s/n">1</td>
                                                 <td class="">  
                                                     <label for="logoname" class="control-label hidden">Item</label>
-                                                    <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">
+                                                    ${itemInputMarkup}
                                                     <input autocomplete="off" class="itemmerid hidden" id="itemer-1">
                                                 </td>
                                                 <td style="">
@@ -1185,6 +1209,7 @@ function emptysales(){
                                                 </td>
                                             </tr>
                                         `
+    if(isOrderWorkspaceMode()) relaxOrderItemInputs()
     did('owner1').value = '';
     did('owner').value = '';
     did('description').value = '';
