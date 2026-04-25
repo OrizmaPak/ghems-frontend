@@ -26,6 +26,11 @@
                                             <label for="logoname" class="control-label">Room Number</label>
                                             <input type="text" name="roomnumber" id="roomnumber" list="hems_roomnumber_id" onchange="checkdatalist(this)" class="form-control comp" placeholder="Enter Room Number">
                                         </div>
+                                        <div class="form-group">
+                                            <label for="logoname" class="control-label">worker assigned</label>
+                                            <input type="text" name="workerassigned" id="workerassigned" class="form-control" placeholder="Enter Worker Assigned">
+                                        </div>
+                                    </div>
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-2 gap-6">
                                         <div class="form-group">
                                             <label for="logoname" class="control-label">entry date</label>
@@ -123,6 +128,7 @@
                                     <tr>
                                         <th style="width: 20px">s/n</th>
                                         <th>Supervisor</th>
+                                        <th>worker assigned</th>
                                         <th>room number</th>
                                         <th>items</th>
                                         <th>entry date</th>
@@ -150,8 +156,10 @@
                                     </div>
                                     
                                     <hr class="mb-4"/>
-                                    
+                                    <div id="roomcleaningchecklistprint">
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">supervisor: </span><span id="rccsupervisor" class="uppercase !text-sm font-semibold" style=""></span></p>
+                                    <hr class="opacity-[0.3]"/>
+                                    <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">worker assigned: </span><span id="rccworkerassigned" class="!text-sm font-semibold" style=""></span></p>
                                     <hr class="opacity-[0.3]"/>
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">room number: </span><span class="!text-sm font-semibold" id="rccroomnumber" style="">  </span></p>
                                     <hr class="opacity-[0.3]"/>
@@ -164,6 +172,7 @@
                                     
                                        <form id="modalcleanform" class="table-content my-4">
                                            <input type="text" class="hidden" name="supervisor" id="rcccsupervisor" />
+                                           <input type="text" class="hidden" name="workerassigned" id="rcccworkerassigned" />
                                            <input type="text" class="hidden" name="roomnumber" id="rcccroomnumber" />
                                            <input type="text" class="hidden" name="entrydate" id="rcccentrydate" />
                                            <input type="text" class="hidden" name="shift" id="rcccshift" />
@@ -181,13 +190,18 @@
                                                     </tr>
                                                 </tbody>
                                             </table>
-                                                <div class="flex justify-end mt-5">
+                                                <div class="flex justify-end mt-5 gap-2">
+                                            <button id="rccprintbtn" type="button" onclick="printRoomCleaningChecklistView()" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                <span class="material-symbols-outlined text-[18px]">print</span>
+                                                <span>Print</span>
+                                            </button>
                                              <button id="normalsavebtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Save</span>
                                             </button>
                                         </div>
                                         </form>
+                                    </div>
                                 </div>
                                 
                             </div>

@@ -188,6 +188,7 @@ async function onroomcleaningchecklistTableDataSignal() {
     <tr>
         <td>${item.index + 1 }</td>
         <td>${item.supervisorname}</td>
+        <td>${item.workerassigned || ''}</td>
         <td>${item.roomnumber}</td>
         <td>
             <table>
@@ -248,14 +249,20 @@ function fetchroomcleaningchecklistview(id){
                                         </td></tr>`
     }).join('')}`
     did('rccsupervisor').innerHTML = y.supervisorname
+    did('rccworkerassigned').innerHTML = y.workerassigned || ''
     did('rccroomnumber').innerHTML = y.roomnumber
     did('rccentrydate').innerHTML = specialformatDateTime(y.entrydate)
     did('rccshift').innerHTML = y.shift
     did('rcccsupervisor').value = y.supervisor
+    did('rcccworkerassigned').value = y.workerassigned || ''
     did('rcccroomnumber').value = y.roomnumber
     did('rcccentrydate').value = y.entrydate
     did('rcccshift').value = y.shift
     roomcleaningchecklistid = y.id
+}
+
+function printRoomCleaningChecklistView() {
+    return printDomContent('ROOM CLEANING CHECKLIST', 'roomcleaningchecklistprint')
 }
 
 async function roomcleaningsavechecklistformsubmithandler() {
