@@ -127,7 +127,7 @@
                                             <div class="form-group">
                                                 <label for="moredetails" class="control-label">Status</label>
                                                 <select name="moredetails" id="moredetails" class="form-control">
-                                                    <option value="FIELD">FIELD</option>
+                                                    <option value="FILLED">FILLED</option>
                                                     <option value="OPEN" selected>OPEN</option>
                                                     <option value="CANCELED">CANCELED</option>
                                                 </select>
