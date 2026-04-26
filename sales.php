@@ -1,25 +1,28 @@
-       <?php $isOrderRoute = (isset($_GET['r']) && $_GET['r'] === 'order'); ?>
+       <?php
+       $isOrderRoute = (isset($_GET['r']) && $_GET['r'] === 'order');
+       $isBillsRoute = (isset($_GET['r']) && $_GET['r'] === 'bills');
+       ?>
        <section class="animate__animated animate__fadeIn">
                             <p class="page-title">
-                                <span><?php echo $isOrderRoute ? 'ORDER' : 'SALES'; ?></span>
+                                <span><?php echo $isOrderRoute ? 'ORDER' : ($isBillsRoute ? 'BILLS' : 'SALES'); ?></span>
                             </p>
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('guestsreservationsform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
-                                <li id="iddsalesform" class="me-2 cp updater optioner !text-blue-600 active" name="salesform" onclick="runoptioner(this)">
+                                <li id="iddsalesform" class="me-2 cp updater optioner <?php echo $isBillsRoute ? '' : '!text-blue-600 active'; ?>" name="salesform" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50"><?php echo $isOrderRoute ? 'Post-Order' : 'Sales'; ?></p>
                                 </li>
                                 <li id="" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 "><?php echo $isOrderRoute ? 'View Order' : 'View Sales Report'; ?></p>
                                 </li>
-                                <?php if(!$isOrderRoute): ?>
-                                <li id="" class="me-2 cp viewer optioner" name="salesbillsview" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Bills</p>
+                                <?php if(!$isOrderRoute && $isBillsRoute): ?>
+                                <li id="" class="me-2 cp viewer optioner !text-blue-600 active" name="salesbillsview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">Bills</p>
                                 </li>
                                 <?php endif; ?>
                             </ul>
                             
-                            <form id="salesform" class="">
+                            <form id="salesform" class="<?php echo $isBillsRoute ? 'hidden' : ''; ?>">
                                      <ol class="flex items-center !text-xs w-full  p-3 space-x-2 text-sm font-medium text-center text-gray-500 bg-white mt-4 shadow-sm sm:text-base  sm:p-4 sm:space-x-4 rtl:space-x-reverse">
                                    
                                 <div class="flex justify-end w-full">
@@ -194,7 +197,7 @@
                                                     <button type="button" id="retrievebillfromform" class="btn !py-2 !px-4 !text-xs">Retrieve</button>
                                                 </div>
                                                 <?php endif; ?>
-                                                <div class="flex items-center gap-5 m-5">
+                                                <div id="amountpaidcontainer" class="flex items-center gap-5 m-5 <?php echo $isOrderRoute ? 'hidden' : ''; ?>">
                                                     <label for="logoname" class="control-label text-xl">Amount&nbsp;Paid:</label>
                                                     <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control" onchange="" placeholder="">
                                                 </div>
@@ -312,7 +315,7 @@
                             </div>
 
                             <?php if(!$isOrderRoute): ?>
-                            <div id="salesbillsview" class="hidden">
+                            <div id="salesbillsview" class="<?php echo $isBillsRoute ? '' : 'hidden'; ?>">
                                 <div class="bg-white/90 p-4 rounded-sm mb-4">
                                     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
                                         <div class="form-group">

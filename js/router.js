@@ -277,6 +277,11 @@ const routerTree = {
         startingFunction: 'salesActive',
         scriptName: './js/sales.js'
     },
+    bills: {
+        template: 'sales',
+        startingFunction: 'salesActive',
+        scriptName: './js/sales.js'
+    },
     order: {
         template: 'sales',
         startingFunction: 'salesActive',

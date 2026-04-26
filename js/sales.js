@@ -12,6 +12,10 @@ function isOrderWorkspaceMode() {
     return getCurrentRouteName() === 'order'
 }
 
+function isBillsWorkspaceMode() {
+    return getCurrentRouteName() === 'bills'
+}
+
 function configureOrderWorkspaceUi() {
     if(!isOrderWorkspaceMode()) return
 
@@ -50,6 +54,11 @@ function configureOrderWorkspaceUi() {
     if(paymentMethod?.closest('.form-group')) paymentMethod.closest('.form-group').classList.add('hidden')
     if(paymentMethod) paymentMethod.value = ''
     if(did('bankdetails')) did('bankdetails').innerHTML = ''
+    if(did('amountpaidcontainer')) did('amountpaidcontainer').classList.add('hidden')
+    if(did('amountpaid')){
+        did('amountpaid').value = ''
+        did('amountpaid').setAttribute('disabled', 'disabled')
+    }
 
     const ownerLabel = did('ownercontainer')?.querySelector('label')
     if(ownerLabel) ownerLabel.textContent = 'Order Number'
@@ -65,6 +74,31 @@ function configureOrderWorkspaceUi() {
     relaxOrderItemInputs()
 }
 
+function configureBillsWorkspaceUi() {
+    if(!isBillsWorkspaceMode()) return
+
+    const title = document.querySelector('.page-title span')
+    if(title) title.textContent = 'BILLS'
+
+    const salesTab = document.querySelector("li[name='salesform']")
+    if(salesTab) salesTab.classList.add('hidden')
+
+    const viewTab = document.querySelector("li[name='salesview']")
+    if(viewTab) viewTab.classList.add('hidden')
+
+    const billsTab = document.querySelector("li[name='salesbillsview']")
+    if(billsTab){
+        billsTab.classList.remove('hidden')
+        billsTab.classList.add('!text-blue-600', 'active')
+        const tabText = billsTab.querySelector('p')
+        if(tabText) tabText.textContent = 'Bills'
+    }
+
+    if(did('salesform')) did('salesform').classList.add('hidden')
+    if(did('salesview')) did('salesview').classList.add('hidden')
+    if(did('salesbillsview')) did('salesbillsview').classList.remove('hidden')
+}
+
 function relaxOrderItemInputs() {
     if(!isOrderWorkspaceMode()) return
     document.querySelectorAll('.iitem').forEach((input) => {
@@ -76,20 +110,23 @@ function relaxOrderItemInputs() {
 
 async function salesActive() {
     configureOrderWorkspaceUi()
+    configureBillsWorkspaceUi()
     recalldatalist()
     await resolveBillDeletePermission()
     const form = document.querySelector('#salesform')
-    if(form.querySelector('#submit') && !isOrderWorkspaceMode()) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
-    if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')))
+    if(form.querySelector('#submit') && !isOrderWorkspaceMode() && !isBillsWorkspaceMode()) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
+    if(form.querySelector('#bill') && !isBillsWorkspaceMode()) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')))
     datasource = []
-    await fetchsales()
-    await getAllUsers()
-    syncSalesViewFilterSalespointOptions()
-    if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
-    if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
-    if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
-    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
-    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
+    if(!isBillsWorkspaceMode()){
+        await fetchsales()
+        await getAllUsers()
+        syncSalesViewFilterSalespointOptions()
+        if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
+        if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
+        if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
+        if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+        if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
+    }
     if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
     if(did('billreferencecode')) did('billreferencecode').addEventListener('keydown', (event) => {
         if(event.key === 'Enter'){
@@ -109,8 +146,10 @@ async function salesActive() {
     if(did('billfilterdatefrom')) did('billfilterdatefrom').addEventListener('change', () => applySalesBillFilters())
     if(did('billfilterdateto')) did('billfilterdateto').addEventListener('change', () => applySalesBillFilters())
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
-    handlesalesdepartment(default_department)
-    await fetchtablenumber()
+    if(!isBillsWorkspaceMode()){
+        handlesalesdepartment(default_department)
+        await fetchtablenumber()
+    }
     if(!isOrderWorkspaceMode()) await fetchsalesbills()
     // await salesitempop()
 }
@@ -1153,6 +1192,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
         if(ttype)payload.set('ttype', ttype)
+        if(isOrderWorkspaceMode() || ttype === 'ORDER'){
+            payload.delete('amountpaid')
+            payload.delete('paymentmethod')
+        }
         let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
         if(request.status) {
             notification(`${ttype == 'BILL' ? 'Bill' : ttype == 'ORDER' ? 'Order' : 'Record'} saved successfully!`, 1);

@@ -17,6 +17,7 @@ const permissionAliasesByRouteId = {
     reservetable: 'RESERVE TABLE',
     viewrecipe: 'RECIPE',
     viewbuild: 'BUILD',
+    bills: 'SALES',
     pp_level: 'LEVEL',
     pp_personnel: 'PERSONNEL',
     pp_approvepersonnel: 'APPROVE PERSONNEL',
