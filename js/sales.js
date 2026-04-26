@@ -81,7 +81,12 @@ function configureBillsWorkspaceUi() {
     if(title) title.textContent = 'BILLS'
 
     const salesTab = document.querySelector("li[name='salesform']")
-    if(salesTab) salesTab.classList.add('hidden')
+    if(salesTab){
+        salesTab.classList.remove('hidden')
+        salesTab.classList.add('!text-blue-600', 'active')
+        const tabText = salesTab.querySelector('p')
+        if(tabText) tabText.textContent = 'Post-Bill'
+    }
 
     const viewTab = document.querySelector("li[name='salesview']")
     if(viewTab) viewTab.classList.add('hidden')
@@ -89,14 +94,24 @@ function configureBillsWorkspaceUi() {
     const billsTab = document.querySelector("li[name='salesbillsview']")
     if(billsTab){
         billsTab.classList.remove('hidden')
-        billsTab.classList.add('!text-blue-600', 'active')
+        billsTab.classList.remove('!text-blue-600', 'active')
         const tabText = billsTab.querySelector('p')
-        if(tabText) tabText.textContent = 'Bills'
+        if(tabText) tabText.textContent = 'View Bills'
     }
 
-    if(did('salesform')) did('salesform').classList.add('hidden')
+    if(did('salesform')) did('salesform').classList.remove('hidden')
     if(did('salesview')) did('salesview').classList.add('hidden')
-    if(did('salesbillsview')) did('salesbillsview').classList.remove('hidden')
+    if(did('salesbillsview')) did('salesbillsview').classList.add('hidden')
+
+    const submitBtn = did('submit')
+    if(submitBtn) submitBtn.classList.add('hidden')
+
+    const billBtn = did('bill')
+    if(billBtn){
+        billBtn.classList.remove('hidden')
+        const textNode = billBtn.querySelector('span:last-child')
+        if(textNode) textNode.textContent = 'Post-Bill'
+    }
 }
 
 function relaxOrderItemInputs() {
@@ -115,18 +130,16 @@ async function salesActive() {
     await resolveBillDeletePermission()
     const form = document.querySelector('#salesform')
     if(form.querySelector('#submit') && !isOrderWorkspaceMode() && !isBillsWorkspaceMode()) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
-    if(form.querySelector('#bill') && !isBillsWorkspaceMode()) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')))
+    if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')))
     datasource = []
-    if(!isBillsWorkspaceMode()){
-        await fetchsales()
-        await getAllUsers()
-        syncSalesViewFilterSalespointOptions()
-        if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
-        if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
-        if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
-        if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
-        if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
-    }
+    await fetchsales()
+    await getAllUsers()
+    syncSalesViewFilterSalespointOptions()
+    if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
+    if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
+    if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
     if(did('billreferencecode')) did('billreferencecode').addEventListener('keydown', (event) => {
         if(event.key === 'Enter'){
@@ -146,10 +159,8 @@ async function salesActive() {
     if(did('billfilterdatefrom')) did('billfilterdatefrom').addEventListener('change', () => applySalesBillFilters())
     if(did('billfilterdateto')) did('billfilterdateto').addEventListener('change', () => applySalesBillFilters())
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
-    if(!isBillsWorkspaceMode()){
-        handlesalesdepartment(default_department)
-        await fetchtablenumber()
-    }
+    handlesalesdepartment(default_department)
+    await fetchtablenumber()
     if(!isOrderWorkspaceMode()) await fetchsalesbills()
     // await salesitempop()
 }

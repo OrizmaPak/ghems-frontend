@@ -9,20 +9,22 @@
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('guestsreservationsform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
-                                <li id="iddsalesform" class="me-2 cp updater optioner <?php echo $isBillsRoute ? '' : '!text-blue-600 active'; ?>" name="salesform" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50"><?php echo $isOrderRoute ? 'Post-Order' : 'Sales'; ?></p>
+                                <li id="iddsalesform" class="me-2 cp updater optioner !text-blue-600 active" name="salesform" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50"><?php echo $isOrderRoute ? 'Post-Order' : ($isBillsRoute ? 'Post-Bill' : 'Sales'); ?></p>
                                 </li>
+                                <?php if(!$isBillsRoute): ?>
                                 <li id="" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 "><?php echo $isOrderRoute ? 'View Order' : 'View Sales Report'; ?></p>
                                 </li>
+                                <?php endif; ?>
                                 <?php if(!$isOrderRoute && $isBillsRoute): ?>
-                                <li id="" class="me-2 cp viewer optioner !text-blue-600 active" name="salesbillsview" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">Bills</p>
+                                <li id="" class="me-2 cp viewer optioner" name="salesbillsview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Bills</p>
                                 </li>
                                 <?php endif; ?>
                             </ul>
                             
-                            <form id="salesform" class="<?php echo $isBillsRoute ? 'hidden' : ''; ?>">
+                            <form id="salesform" class="">
                                      <ol class="flex items-center !text-xs w-full  p-3 space-x-2 text-sm font-medium text-center text-gray-500 bg-white mt-4 shadow-sm sm:text-base  sm:p-4 sm:space-x-4 rtl:space-x-reverse">
                                    
                                 <div class="flex justify-end w-full">
@@ -203,11 +205,13 @@
                                                 </div>
                                             </div>
                                     <div class="flex justify-end w-full my-4">
+                                                 <?php if($isOrderRoute || $isBillsRoute): ?>
                                                  <button type="button" id="bill" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-400 via-emerald-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span><?php echo $isOrderRoute ? 'Post-Order' : 'Post-Bill'; ?></span> 
                                                 </button> 
-                                                <?php if(!$isOrderRoute): ?>
+                                                <?php endif; ?>
+                                                <?php if(!$isOrderRoute && !$isBillsRoute): ?>
                                                  <button type="button" id="submit" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Post Sales</span> 
