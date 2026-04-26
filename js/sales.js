@@ -126,12 +126,7 @@ function configureBillsWorkspaceUi() {
 }
 
 function relaxOrderItemInputs() {
-    if(!isOrderWorkspaceMode()) return
-    document.querySelectorAll('.iitem').forEach((input) => {
-        input.removeAttribute('list')
-        input.removeAttribute('onchange')
-        input.removeAttribute('onblur')
-    })
+    return
 }
 
 async function salesActive() {
@@ -500,7 +495,7 @@ async function loadSalesBillIntoForm(bill) {
                     <div>
                         <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-${firstRowId}"></span></p>
                         <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-${firstRowId}"></span></p>
-                        <p class="font-bold">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${firstRowId}"></span></p>
+                        <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${firstRowId}"></span></p>
                     </div>
                 </td>
                 <td>
@@ -578,9 +573,7 @@ async function handlesalesdepartment(store) {
     checkifitisrestaurant();
     did('totalamountt').innerHTML = 0
     did('totalamount').value = 0
-    const itemInputMarkup = isOrderWorkspaceMode()
-        ? `<input autocomplete="off" name="item" id="item-1" class="form-control iitem comp">`
-        : `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
+    const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `<tr id="row-919">
                                                 <td class="s/n">1</td>
                                                 <td class="">  
@@ -592,7 +585,7 @@ async function handlesalesdepartment(store) {
                                                     <div class="">
                                                         <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-1"></span></p>
                                                         <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-1"></span></p>
-                                                        <p class="font-bold">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-1"></span></p>
+                                                        <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-1"></span></p>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -730,7 +723,6 @@ function addfromsearch(){
 }
 
 async function salesitempop(val,i,qty=0) {
-    if(isOrderWorkspaceMode()) return true
     if(!val.value)return clearrow(i)
     let x = 0
     for(let i=0;i<document.getElementsByClassName('iitem').length;i++){
@@ -766,9 +758,7 @@ function addsalesrow(ii=''){
     let id 
     if(ii)id = ii
     if(!ii)id = genID()
-    const itemInputMarkup = isOrderWorkspaceMode()
-        ? `<input autocomplete="off" name="item" id="item-${id}" class="form-control iitem comp">`
-        : `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${id}')" onblur="salesitempop(this,'${id}')" list="hems_itemslist" name="item" id="item-${id}" class="form-control iitem comp">`
+    const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${id}')" onblur="salesitempop(this,'${id}')" list="hems_itemslist" name="item" id="item-${id}" class="form-control iitem comp">`
     let element = document.createElement('tr')
     element.setAttribute('id', `'row-${id}'`)
     element.innerHTML = `
@@ -782,7 +772,7 @@ function addsalesrow(ii=''){
             <div class="">
                 <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-${id}"></span></p>
                 <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-${id}"></span></p>
-                <p class="font-bold">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${id}"></span></p>
+                <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${id}"></span></p>
             </div>
         </td>
         <td>
@@ -1209,15 +1199,13 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
     salesSubmissionInFlight = true
     setSalesActionButtonsState(true)
     try {
-        if(!isOrderWorkspaceMode()){
-            const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
-            if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
-            let t = true
-            for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
-                if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
-            }
-            if(!t)return notification('Please one or more quantity values are invalid', 0)
+        const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
+        if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
+        let t = true
+        for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
+            if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
         }
+        if(!t)return notification('Please one or more quantity values are invalid', 0)
         
         preparesalesvalues()
         
@@ -1249,9 +1237,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
 }
 
 function emptysales(){
-    const itemInputMarkup = isOrderWorkspaceMode()
-        ? `<input autocomplete="off" name="item" id="item-1" class="form-control iitem comp">`
-        : `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
+    const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `
                                             <tr id="row-919">
                                                 <td class="s/n">1</td>
@@ -1264,7 +1250,7 @@ function emptysales(){
                                                     <div class="">
                                                         <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-1"></span></p>
                                                         <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-1"></span></p>
-                                                        <p class="font-bold">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-1"></span></p>
+                                                        <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-1"></span></p>
                                                     </div>
                                                 </td>
                                                 <td>

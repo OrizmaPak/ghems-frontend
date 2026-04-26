@@ -170,7 +170,7 @@
                                                     <div class="">
                                                         <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-1"></span></p>
                                                         <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-1"></span></p>
-                                                        <p class="font-bold">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-1"></span></p>
+                                                        <p class="font-bold <?php echo $isOrderRoute ? 'hidden' : ''; ?>">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-1"></span></p>
                                                     </div>
                                                 </td>
                                                 <td>
