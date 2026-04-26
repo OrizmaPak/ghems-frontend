@@ -1212,6 +1212,9 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
         if(ttype)payload.set('ttype', ttype)
+        if(isOrderWorkspaceMode() || ttype === 'ORDER'){
+            payload.set('applyto', 'OTHERS')
+        }
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
             payload.delete('amountpaid')
             payload.delete('paymentmethod')
