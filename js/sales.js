@@ -891,8 +891,8 @@ async function onsalesTableDataSignal() {
                     <td>${item.saleentry.moredetails || ''}</td>
                     <td>${item.saleentry.roomnumber || '-'}</td>
                     <td class="flex items-center gap-3">
-                        <button title="View Item" onclick="openSalesReportModal('${safeRef}', '')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-                        <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+                        <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                        <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
                     </td>
                 </tr>
             `
@@ -908,8 +908,8 @@ async function onsalesTableDataSignal() {
                 <td>${item.saleentry.paymentmethod}</td>
                 <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
                 <td class="flex items-center gap-3">
-                    <button title="View Item" onclick="openSalesReportModal('${safeRef}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-                    <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchsalesbyreference', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+                    <button title="View Item" onclick="openSalesReportModal('${safeRef}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                    <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchsalesbyreference', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
                 </td>
             </tr>
         `
@@ -917,9 +917,46 @@ async function onsalesTableDataSignal() {
     injectPaginatatedTable(rows)
 }
 
-async function openSalesReportModal(ref, room=''){
+async function openSalesReportModal(ref, room='', preferLocal=false){
     if(!ref)return
     const orderMode = isOrderWorkspaceMode()
+    const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || null
+    if(preferLocal && !room && localData){
+        did('tableheader').innerHTML = `
+            <th>s/n </th>
+            <th> Item ID </th>
+            <th> Item Name </th>
+            <th> qty </th>
+            <th> PRICE </th>
+            <th> TOTAL </th>
+        `;
+        did('modaldetails').innerHTML = `
+            <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
+            <div class="col-span-2">
+                <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${localData.saleentry.description || ''}</span></p>
+                ${localData.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.ownerid || ''}</span></p>`}
+                <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.saleentry.servicecharge || 0)}</span></p>
+                <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.reference || ref}</span></p>
+                <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (localData.saleentry.moredetails || '') : (localData.saleentry.paymentmethod || '')}</span></p>
+                ${orderMode ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.amountreceived || 0)}</span></p>`}
+                <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(localData.saleentry.transactiondate || '')}</span></p>
+            </div>
+        `;
+        did('tabledata2').innerHTML = (localData.saledetail || []).length
+            ? (localData.saledetail || []).map((dat, i)=>`
+                <tr>
+                    <td>${i+1}</td>
+                    <td>${dat.itemid || ''}</td>
+                    <td>${dat.itemname || ''}</td>
+                    <td>${formatNumber(dat.qty || 0)}</td>
+                    <td>${formatNumber(dat.cost || 0)}</td>
+                    <td>${formatNumber(Number(dat.qty || 0) * Number(dat.cost || 0))}</td>
+                </tr>
+            `).join('')
+            : `<tr><td colspan="100%" class="text-center opacity-70"> No Items set for this sales report</td></tr>`
+        did('salesreportmodal').classList.remove('hidden')
+        return
+    }
     function getparamm() {
         let paramstr = new FormData();
         if(!room)paramstr.append('reference', ref);
@@ -928,7 +965,7 @@ async function openSalesReportModal(ref, room=''){
     }
     const controller = orderMode ? 'fetchorders.php' : (!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory')
     let request = await httpRequest2(`../controllers/${controller}`, getparamm(), null, 'json');
-    let data1 = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || {saleentry:{}, amountreceived:0}
+    let data1 = localData || {saleentry:{}, amountreceived:0}
     if(!request.status) return notification('No records retrieved')
 
     did('tableheader').innerHTML = `
@@ -1431,21 +1468,64 @@ function closeSalesReceiptModal() {
 }
 
 
-async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference', resetOnClose=true, showSignatures=false){
+async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference', resetOnClose=true, showSignatures=false, preferLocal=false){
     let rm = false
     if(room)rm = true
     if(!ref)return
     salesReceiptResetOnClose = !!resetOnClose
     let tt = 0;
-    let html = '';
+    let rows = null
+    if(preferLocal && !room){
+        const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref))
+        if(localData){
+            rows = (localData.saledetail || []).map((detail) => ({
+                reference: localData.saleentry.reference || ref,
+                owner: localData.saleentry.ownerid,
+                ownerid: localData.saleentry.ownerid,
+                totalamount: localData.saleentry.servicecharge || 0,
+                amountpaid: localData.amountreceived || 0,
+                amountreceived: localData.amountreceived || 0,
+                paymentmethod: localData.saleentry.paymentmethod || '',
+                transactiondate: localData.saleentry.transactiondate || '',
+                moredata: localData.saleentry.moredetails || '',
+                moredetails: localData.saleentry.moredetails || '',
+                status: localData.saleentry.moredetails || '',
+                ttype: localData.saleentry.ttype || '',
+                itemid: detail.itemid || '',
+                itemname: detail.itemname || '',
+                qty: Number(detail.qty || 0),
+                cost: Number(detail.cost || 0)
+            }))
+            if(!rows.length){
+                rows = [{
+                    reference: localData.saleentry.reference || ref,
+                    owner: localData.saleentry.ownerid,
+                    ownerid: localData.saleentry.ownerid,
+                    totalamount: localData.saleentry.servicecharge || 0,
+                    amountpaid: localData.amountreceived || 0,
+                    amountreceived: localData.amountreceived || 0,
+                    paymentmethod: localData.saleentry.paymentmethod || '',
+                    transactiondate: localData.saleentry.transactiondate || '',
+                    moredata: localData.saleentry.moredetails || '',
+                    moredetails: localData.saleentry.moredetails || '',
+                    status: localData.saleentry.moredetails || '',
+                    ttype: localData.saleentry.ttype || ''
+                }]
+            }
+        }
+    }
         function getparamm() {
             let paramstr = new FormData();
             if(!room)paramstr.append('reference', ref);
             return paramstr;
         }
-        let request = await httpRequest2(`../controllers/${!room ? salesFetchController : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
-        if(request.status){
-            const firstRow = request.data?.[0] || {}
+        if(!rows){
+            let request = await httpRequest2(`../controllers/${!room ? salesFetchController : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
+            if(!request.status) return
+            rows = request.data || []
+        }
+        if(rows && rows.length){
+            const firstRow = rows[0] || {}
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
@@ -1456,27 +1536,27 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                     <div class="flex flex-col gap-3 border-b py-6 text-xs">
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">${orderPrintMode ? 'Order Ref.:' : 'Receipt No.:'}</span>
-                                        <span>${request.data[0].reference}</span>
+                                        <span>${rows[0].reference}</span>
                                       </p>
-                                      ${(request.data[0].owner && request.data[0].owner !== '-1' && request.data[0].owner !== '-1' && Number(request.data[0].owner) >= 0) || (request.data[0].ownerid && request.data[0].ownerid !== '-1' && Number(request.data[0].ownerid) >= 0) ? `<p class="flex justify-between">
+                                      ${(rows[0].owner && rows[0].owner !== '-1' && rows[0].owner !== '-1' && Number(rows[0].owner) >= 0) || (rows[0].ownerid && rows[0].ownerid !== '-1' && Number(rows[0].ownerid) >= 0) ? `<p class="flex justify-between">
                                         <span class="text-gray-400">${orderPrintMode ? 'Order No.:' : 'Room / CC:'}</span>
-                                        <span>${request.data[0].owner || request.data[0].ownerid || ''}</span>
+                                        <span>${rows[0].owner || rows[0].ownerid || ''}</span>
                                       </p>` : ''}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Total Amount:</span>
-                                        <span class="">${formatNumber(request.data[0].totalamount || 0)}</span>
+                                        <span class="">${formatNumber(rows[0].totalamount || 0)}</span>
                                       </p>
                                       ${orderPrintMode ? '' : `<p class="flex justify-between">
                                         <span class="text-gray-400">Amount Paid:</span>
-                                        <span>${formatNumber(request.data[0].amountpaid || request.data[0].amountreceived || 0)}</span>
+                                        <span>${formatNumber(rows[0].amountpaid || rows[0].amountreceived || 0)}</span>
                                       </p>`}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">${orderPrintMode ? 'Status:' : 'Payment Method:'}</span>
-                                        <span>${orderPrintMode ? (request.data[0].moredata || request.data[0].moredetails || request.data[0].status || '') : (request.data[0].paymentmethod || '')}</span>
+                                        <span>${orderPrintMode ? (rows[0].moredata || rows[0].moredetails || rows[0].status || '') : (rows[0].paymentmethod || '')}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Transaction Date:</span>
-                                        <span>${specialformatDateTime(request.data[0].transactiondate)}</span>
+                                        <span>${specialformatDateTime(rows[0].transactiondate)}</span>
                                       </p>
                                     </div>
                                     <div class="flex flex-col gap-3 pb-6 pt-2 text-[10px] w-full overflow-x-auto">
@@ -1496,8 +1576,8 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                           </tr>`}
                                         </thead>
                                         <tbody>
-                                            ${!rm && request.data.length > 0 && request.data[0].ttype != 'ROOMS' 
-                                              ? request.data.map((dat, i) => {tt=tt+(Number(dat.qty) * Number(dat.cost)); return`
+                                            ${!rm && rows.length > 0 && rows[0].ttype != 'ROOMS' 
+                                              ? rows.map((dat, i) => {tt=tt+(Number(dat.qty) * Number(dat.cost)); return`
                                                   <tr class="border-b">
                                                       <td class="py-1 px-1" style="font-size: 10px;">${i+1}</td>
                                                       <td class="py-1 px-1" style="font-size: 10px; word-break: break-word; max-width: 120px;">${dat.itemname || ''}</td> 
@@ -1508,7 +1588,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                                 `}).join('') 
                                               : ''}
                                             
-                                            ${!rm && request.data.length > 0 && request.data[0].ttype != 'ROOMS'
+                                            ${!rm && rows.length > 0 && rows[0].ttype != 'ROOMS'
                                               ? `
                                                   <tr class="border-t-2 border-gray-800 font-bold">
                                                       <td class="py-1 px-1" style="font-size: 10px;">TOTAL</td>
