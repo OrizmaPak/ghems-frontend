@@ -131,6 +131,7 @@
                                                     <option>TRANSFER</option>
                                                     <option>CASH</option>
                                                     <option>POS</option>
+                                                    <option>UNPAID</option>
                                                 </select>
                                             </div>
                                             
