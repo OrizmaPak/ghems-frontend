@@ -103,6 +103,17 @@ function configureBillsWorkspaceUi() {
     if(did('salesview')) did('salesview').classList.add('hidden')
     if(did('salesbillsview')) did('salesbillsview').classList.add('hidden')
 
+    const paymentMethod = did('paymentmethod')
+    if(paymentMethod?.closest('.form-group')) paymentMethod.closest('.form-group').classList.add('hidden')
+    if(paymentMethod) paymentMethod.value = ''
+    if(did('bankdetails')) did('bankdetails').innerHTML = ''
+
+    if(did('amountpaidcontainer')) did('amountpaidcontainer').classList.add('hidden')
+    if(did('amountpaid')){
+        did('amountpaid').value = ''
+        did('amountpaid').setAttribute('disabled', 'disabled')
+    }
+
     const submitBtn = did('submit')
     if(submitBtn) submitBtn.classList.add('hidden')
 
@@ -1203,7 +1214,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
         if(ttype)payload.set('ttype', ttype)
-        if(isOrderWorkspaceMode() || ttype === 'ORDER'){
+        if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
             payload.delete('amountpaid')
             payload.delete('paymentmethod')
         }

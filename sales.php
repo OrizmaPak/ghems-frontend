@@ -122,7 +122,7 @@
                                                 <textarea name="description" id="description" class="form-control" placeholder=""></textarea>
                                             </div>
                                         </div>
-                                        <?php if(!$isOrderRoute): ?>
+                                        <?php if(!$isOrderRoute && !$isBillsRoute): ?>
                                         <div class="grid load hidden grid-cols-1  lg:grid-cols-1 gap-10"> 
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">payment method</label>
@@ -199,7 +199,7 @@
                                                     <button type="button" id="retrievebillfromform" class="btn !py-2 !px-4 !text-xs">Retrieve</button>
                                                 </div>
                                                 <?php endif; ?>
-                                                <div id="amountpaidcontainer" class="flex items-center gap-5 m-5 <?php echo $isOrderRoute ? 'hidden' : ''; ?>">
+                                                <div id="amountpaidcontainer" class="flex items-center gap-5 m-5 <?php echo ($isOrderRoute || $isBillsRoute) ? 'hidden' : ''; ?>">
                                                     <label for="logoname" class="control-label text-xl">Amount&nbsp;Paid:</label>
                                                     <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control" onchange="" placeholder="">
                                                 </div>
