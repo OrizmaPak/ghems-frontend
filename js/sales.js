@@ -253,6 +253,7 @@ function normalizeOrdersForSalesTable(data = []) {
                 description: row.description || '',
                 servicecharge: Number(row.totalamount || row.amount || 0),
                 paymentmethod: row.paymentmethod || 'ORDER',
+                moredetails: row.moredetails || row.status || '',
                 ownerid: normalizedOwner,
                 ttype: 'ORDER'
             },
@@ -864,7 +865,7 @@ async function onsalesTableDataSignal() {
             <td>${item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description}</td>
             <td>${formatNumber(item.saleentry.servicecharge)}</td>
             <td>${formatNumber(item.amountreceived)}</td>
-            <td>${item.saleentry.paymentmethod}</td>
+            <td>${isOrderWorkspaceMode() ? (item.saleentry.moredetails || '') : item.saleentry.paymentmethod}</td>
             <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
             <td class="flex items-center gap-3">
                 <button title="View Item" onclick="openSalesReportModal('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>

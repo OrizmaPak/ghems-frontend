@@ -122,6 +122,18 @@
                                                 <textarea name="description" id="description" class="form-control" placeholder=""></textarea>
                                             </div>
                                         </div>
+                                        <?php if($isOrderRoute): ?>
+                                        <div class="grid load hidden grid-cols-1 !mb-1 lg:grid-cols-2 gap-10">
+                                            <div class="form-group">
+                                                <label for="moredetails" class="control-label">Status</label>
+                                                <select name="moredetails" id="moredetails" class="form-control">
+                                                    <option value="FIELD">FIELD</option>
+                                                    <option value="OPEN" selected>OPEN</option>
+                                                    <option value="CANCELED">CANCELED</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <?php endif; ?>
                                         <?php if(!$isOrderRoute && !$isBillsRoute): ?>
                                         <div class="grid load hidden grid-cols-1  lg:grid-cols-1 gap-10"> 
                                             <div class="form-group">
@@ -269,7 +281,7 @@
                                                 <th><?php echo $isOrderRoute ? 'comments' : 'description'; ?></th>
                                                 <th>Total&nbsp;Amount</th>
                                                 <th>Amount&nbsp;paid</th>
-                                                <th>payment&nbsp;method</th>
+                                                <th><?php echo $isOrderRoute ? 'status' : 'payment&nbsp;method'; ?></th>
                                                 <th>room/cc</th>
                                                 <th>action</th>
                                             </tr>
