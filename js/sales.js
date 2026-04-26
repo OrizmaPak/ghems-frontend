@@ -254,6 +254,7 @@ function normalizeOrdersForSalesTable(data = []) {
                 servicecharge: Number(row.totalamount || row.amount || 0),
                 paymentmethod: row.paymentmethod || 'ORDER',
                 moredetails: row.moredetails || row.status || '',
+                roomnumber: row.roomnumber || '',
                 ownerid: normalizedOwner,
                 ttype: 'ORDER'
             },
@@ -857,18 +858,19 @@ async function removesales(id) {
 
 
 async function onsalesTableDataSignal() {
+    const orderMode = isOrderWorkspaceMode()
     let rows = getSignaledDatasource().map((item, index) => `
         <tr>
             <td>${index + 1}</td>
             <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
-            <td>${item.saleentry.reference}</td>
-            <td>${item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description}</td>
+            <td>${orderMode ? ((item.saleentry.ownerid !== undefined && item.saleentry.ownerid !== null && String(item.saleentry.ownerid).trim() !== '' && String(item.saleentry.ownerid) !== '-1') ? item.saleentry.ownerid : item.saleentry.reference) : item.saleentry.reference}</td>
+            <td>${orderMode ? (item.saleentry.description || item.saledetail?.[0]?.description || '') : (item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description)}</td>
             <td>${formatNumber(item.saleentry.servicecharge)}</td>
             <td>${formatNumber(item.amountreceived)}</td>
             <td>${isOrderWorkspaceMode() ? (item.saleentry.moredetails || '') : item.saleentry.paymentmethod}</td>
-            <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
+            <td>${orderMode ? (item.saleentry.roomnumber || '-') : (item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid)}</td>
             <td class="flex items-center gap-3">
-                <button title="View Item" onclick="openSalesReportModal('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                <button title="View Item" onclick="openSalesReportModal('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '${orderMode ? '' : (item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'"))}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
                 <button title="Print sales" onclick="printsalesreceiptsales('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbyreference', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
             </td>
         </tr>
