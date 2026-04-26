@@ -279,8 +279,13 @@
                                                 <th>t.date</th>
                                                 <th><?php echo $isOrderRoute ? 'order number' : 'ref'; ?></th>
                                                 <th><?php echo $isOrderRoute ? 'comments' : 'description'; ?></th>
+                                                <?php if($isOrderRoute): ?>
+                                                <th>items</th>
+                                                <?php endif; ?>
                                                 <th>Total&nbsp;Amount</th>
+                                                <?php if(!$isOrderRoute): ?>
                                                 <th>Amount&nbsp;paid</th>
+                                                <?php endif; ?>
                                                 <th><?php echo $isOrderRoute ? 'status' : 'payment&nbsp;method'; ?></th>
                                                 <th>room/cc</th>
                                                 <th>action</th>

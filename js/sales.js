@@ -243,32 +243,46 @@ function normalizeOrdersForSalesTable(data = []) {
     if(!Array.isArray(data) || !data.length) return []
     if(data[0]?.saleentry) return normalizeSalesRowsForTable(data)
 
-    return data.map((row) => {
-        const owner = row.ownerid ?? row.owner ?? row.roomnumber ?? -1
-        const normalizedOwner = (owner === '' || owner === null || owner === undefined) ? -1 : owner
-        return {
-            saleentry: {
-                reference: String(row.reference || row.ref || row.orderref || row.id || '').trim(),
-                transactiondate: row.transactiondate || row.created_at || row.entrydate || row.datecreated || '',
-                description: row.description || '',
-                servicecharge: Number(row.totalamount || row.amount || 0),
-                paymentmethod: row.paymentmethod || 'ORDER',
-                moredetails: row.moredetails || row.status || '',
-                roomnumber: row.roomnumber || '',
-                ownerid: normalizedOwner,
-                ttype: 'ORDER'
-            },
-            amountreceived: Number(row.amountpaid || row.amountreceived || 0),
-            saledetail: Array.isArray(row.saledetail) && row.saledetail.length
-                ? row.saledetail
-                : [{
+    const grouped = new Map()
+    data.forEach((row) => {
+        const tag = String(row.moredata || row.moredetails || row.status || '').toUpperCase()
+        if(tag && !tag.includes('ORDER')) return
+
+        const batchid = String(row.batchid || row.reference || row.id || '').trim()
+        if(!batchid) return
+        if(!grouped.has(batchid)){
+            const owner = row.ownerid ?? row.owner ?? row.ordernumber ?? -1
+            const normalizedOwner = (owner === '' || owner === null || owner === undefined) ? -1 : owner
+            grouped.set(batchid, {
+                saleentry: {
+                    id: row.id || '',
+                    batchid,
+                    reference: String(row.reference || row.ref || row.orderref || row.id || '').trim(),
+                    transactiondate: row.transactiondate || row.created_at || row.entrydate || row.datecreated || '',
                     description: row.description || '',
-                    itemname: row.description || 'ORDER',
-                    qty: Number(row.qty || 1),
-                    cost: Number(row.cost || row.amount || 0)
-                }]
+                    servicecharge: Number(row.totalamount || row.amount || 0),
+                    paymentmethod: row.paymentmethod || 'ORDER',
+                    moredetails: row.moredata || row.moredetails || row.status || '',
+                    roomnumber: row.roomnumber || row.room || '',
+                    ownerid: normalizedOwner,
+                    ttype: 'ORDER'
+                },
+                amountreceived: Number(row.amountpaid || row.amountreceived || 0),
+                saledetail: []
+            })
         }
-    }).filter((row) => row.saleentry.reference || row.saleentry.description)
+
+        const group = grouped.get(batchid)
+        group.saledetail.push({
+            itemid: row.itemid || '',
+            itemname: row.itemname || '',
+            qty: Number(row.qty || 0),
+            cost: Number(row.cost || 0),
+            description: row.description || ''
+        })
+    })
+
+    return Array.from(grouped.values()).filter((row) => row.saleentry.reference || row.saleentry.description)
 }
 
 function setSalesActionButtonsState(disabled = false) {
@@ -859,34 +873,61 @@ async function removesales(id) {
 
 async function onsalesTableDataSignal() {
     const orderMode = isOrderWorkspaceMode()
-    let rows = getSignaledDatasource().map((item, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
-            <td>${orderMode ? ((item.saleentry.ownerid !== undefined && item.saleentry.ownerid !== null && String(item.saleentry.ownerid).trim() !== '' && String(item.saleentry.ownerid) !== '-1') ? item.saleentry.ownerid : item.saleentry.reference) : item.saleentry.reference}</td>
-            <td>${orderMode ? (item.saleentry.description || item.saledetail?.[0]?.description || '') : (item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description)}</td>
-            <td>${formatNumber(item.saleentry.servicecharge)}</td>
-            <td>${formatNumber(item.amountreceived)}</td>
-            <td>${isOrderWorkspaceMode() ? (item.saleentry.moredetails || '') : item.saleentry.paymentmethod}</td>
-            <td>${orderMode ? (item.saleentry.roomnumber || '-') : (item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid)}</td>
-            <td class="flex items-center gap-3">
-                <button title="View Item" onclick="openSalesReportModal('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '${orderMode ? '' : (item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'"))}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-                <button title="Print sales" onclick="printsalesreceiptsales('${String(item.saleentry.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbyreference', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
-            </td>
-        </tr>
-    `).join('')
+    let rows = getSignaledDatasource().map((item, index) => {
+        const safeRef = String(item.saleentry.reference).replace(/'/g, "\\'")
+        const ownerValue = (item.saleentry.ownerid !== undefined && item.saleentry.ownerid !== null && String(item.saleentry.ownerid).trim() !== '' && String(item.saleentry.ownerid) !== '-1')
+            ? item.saleentry.ownerid
+            : item.saleentry.reference
+        const itemSummary = (item.saledetail || []).map((detail) => `${detail.itemname || '-'} (${formatNumber(detail.qty || 0)})`).join(', ') || '-'
+        if(orderMode){
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
+                    <td>${ownerValue}</td>
+                    <td>${item.saleentry.description || item.saledetail?.[0]?.description || ''}</td>
+                    <td>${itemSummary}</td>
+                    <td>${formatNumber(item.saleentry.servicecharge)}</td>
+                    <td>${item.saleentry.moredetails || ''}</td>
+                    <td>${item.saleentry.roomnumber || '-'}</td>
+                    <td class="flex items-center gap-3">
+                        <button title="View Item" onclick="openSalesReportModal('${safeRef}', '')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                        <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+                    </td>
+                </tr>
+            `
+        }
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
+                <td>${item.saleentry.reference}</td>
+                <td>${item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description}</td>
+                <td>${formatNumber(item.saleentry.servicecharge)}</td>
+                <td>${formatNumber(item.amountreceived)}</td>
+                <td>${item.saleentry.paymentmethod}</td>
+                <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
+                <td class="flex items-center gap-3">
+                    <button title="View Item" onclick="openSalesReportModal('${safeRef}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                    <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchsalesbyreference', false)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+                </td>
+            </tr>
+        `
+    }).join('')
     injectPaginatatedTable(rows)
 }
 
 async function openSalesReportModal(ref, room=''){
     if(!ref)return
+    const orderMode = isOrderWorkspaceMode()
     function getparamm() {
         let paramstr = new FormData();
         if(!room)paramstr.append('reference', ref);
         if(room)paramstr.append('roomnumber', room);
         return paramstr;
     }
-    let request = await httpRequest2(`../controllers/${!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
+    const controller = orderMode ? 'fetchorders.php' : (!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory')
+    let request = await httpRequest2(`../controllers/${controller}`, getparamm(), null, 'json');
     let data1 = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || {saleentry:{}, amountreceived:0}
     if(!request.status) return notification('No records retrieved')
 
@@ -902,11 +943,11 @@ async function openSalesReportModal(ref, room=''){
         <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
         <div class="col-span-2">
             <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${data1.saleentry.description || ''}</span></p>
-            ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Room / CC: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.ownerid || ''}</span></p>`}
+            ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.ownerid || ''}</span></p>`}
             <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.saleentry.servicecharge || 0)}</span></p>
-            <p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.amountreceived || 0)}</span></p>
             <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.reference || ref}</span></p>
-            <p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.paymentmethod || ''}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (data1.saleentry.moredetails || '') : (data1.saleentry.paymentmethod || '')}</span></p>
+            ${orderMode ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.amountreceived || 0)}</span></p>`}
             <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(data1.saleentry.transactiondate || '')}</span></p>
         </div>
     `;
@@ -1404,6 +1445,9 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
         }
         let request = await httpRequest2(`../controllers/${!room ? salesFetchController : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
         if(request.status){
+            const firstRow = request.data?.[0] || {}
+            const orderPrintMode = salesFetchController === 'fetchorders.php'
+                || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
                                         <h4 class="font-semibold">${did('your_companyname').value}</h4>
@@ -1411,24 +1455,24 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                     </div>
                                     <div class="flex flex-col gap-3 border-b py-6 text-xs">
                                       <p class="flex justify-between">
-                                        <span class="text-gray-400">Receipt No.:</span>
+                                        <span class="text-gray-400">${orderPrintMode ? 'Order Ref.:' : 'Receipt No.:'}</span>
                                         <span>${request.data[0].reference}</span>
                                       </p>
                                       ${(request.data[0].owner && request.data[0].owner !== '-1' && request.data[0].owner !== '-1' && Number(request.data[0].owner) >= 0) || (request.data[0].ownerid && request.data[0].ownerid !== '-1' && Number(request.data[0].ownerid) >= 0) ? `<p class="flex justify-between">
-                                        <span class="text-gray-400">Room / CC:</span>
+                                        <span class="text-gray-400">${orderPrintMode ? 'Order No.:' : 'Room / CC:'}</span>
                                         <span>${request.data[0].owner || request.data[0].ownerid || ''}</span>
                                       </p>` : ''}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Total Amount:</span>
                                         <span class="">${formatNumber(request.data[0].totalamount || 0)}</span>
                                       </p>
-                                      <p class="flex justify-between">
+                                      ${orderPrintMode ? '' : `<p class="flex justify-between">
                                         <span class="text-gray-400">Amount Paid:</span>
                                         <span>${formatNumber(request.data[0].amountpaid || request.data[0].amountreceived || 0)}</span>
-                                      </p>
+                                      </p>`}
                                       <p class="flex justify-between">
-                                        <span class="text-gray-400">Payment Method:</span>
-                                        <span>${request.data[0].paymentmethod || ''}</span>
+                                        <span class="text-gray-400">${orderPrintMode ? 'Status:' : 'Payment Method:'}</span>
+                                        <span>${orderPrintMode ? (request.data[0].moredata || request.data[0].moredetails || request.data[0].status || '') : (request.data[0].paymentmethod || '')}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Transaction Date:</span>
