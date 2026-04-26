@@ -173,6 +173,12 @@ async function salesActive() {
     handlesalesdepartment(default_department)
     await fetchtablenumber()
     if(!isOrderWorkspaceMode()) await fetchsalesbills()
+    const pendingSalesBillReference = sessionStorage.getItem('pendingSalesBillReference')
+    if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && pendingSalesBillReference){
+        sessionStorage.removeItem('pendingSalesBillReference')
+        await fetchsalesbills(pendingSalesBillReference)
+        openSalesFormTab()
+    }
     // await salesitempop()
 }
 
@@ -382,6 +388,7 @@ function renderSalesBillsTable(rows = []) {
             <td>${index + 1}</td>
             <td>
                 <div class="flex items-center gap-2">
+                    <button title="Edit" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}', true)" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs">edit</button>
                     <button title="Retrieve" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
                     <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false, true)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
                     ${deleteActionButton(item)}
@@ -425,9 +432,14 @@ function openSalesFormTab() {
     if(salesTabTrigger) runoptioner(salesTabTrigger)
 }
 
-async function retrieveSalesBillToForm(reference) {
+async function retrieveSalesBillToForm(reference, fromEdit = false) {
     const cleanedReference = String(reference || '').trim()
     if(!cleanedReference) return notification('Bill reference is required', 0)
+    if(isBillsWorkspaceMode()){
+        sessionStorage.setItem('pendingSalesBillReference', cleanedReference)
+        window.location.href = 'index.php?r=sales'
+        return
+    }
 
     let bill = salesBillDatasource.find((item) => String(item.reference).toLowerCase() === cleanedReference.toLowerCase())
     if(!bill){
@@ -438,7 +450,7 @@ async function retrieveSalesBillToForm(reference) {
 
     await loadSalesBillIntoForm(bill)
     openSalesFormTab()
-    notification('Bill loaded to sales form', 1)
+    notification(fromEdit ? 'Bill loaded to sales for editing' : 'Bill loaded to sales form', 1)
 }
 
 async function loadSalesBillIntoForm(bill) {
