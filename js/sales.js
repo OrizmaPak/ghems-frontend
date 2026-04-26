@@ -392,8 +392,6 @@ function renderSalesBillsTable(rows = []) {
             <td>${item.salespoint || ''}</td>
             <td>${item.description || ''}</td>
             <td>${formatCurrency(item.totalamount || 0)}</td>
-            <td>${formatCurrency(item.amountpaid || 0)}</td>
-            <td>${item.paymentmethod || ''}</td>
         </tr>
     `).join('')
 }

@@ -351,8 +351,6 @@
                                                 <th>Sales Point</th>
                                                 <th>Description</th>
                                                 <th>Total Amount</th>
-                                                <th>Amount Paid</th>
-                                                <th>Payment Method</th>
                                             </tr>
                                         </thead>
                                         <tbody id="billtabledata">
