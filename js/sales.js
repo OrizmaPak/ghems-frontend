@@ -262,7 +262,7 @@ function normalizeOrdersForSalesTable(data = []) {
                     description: row.description || '',
                     servicecharge: Number(row.totalamount || row.amount || 0),
                     paymentmethod: row.paymentmethod || 'ORDER',
-                    moredetails: row.moredata || row.moredetails || row.status || '',
+                    moredata: row.moredata || row.moredetails || row.status || '',
                     roomnumber: row.roomnumber || row.room || '',
                     ownerid: normalizedOwner,
                     ttype: 'ORDER'
@@ -888,7 +888,7 @@ async function onsalesTableDataSignal() {
                     <td>${item.saleentry.description || item.saledetail?.[0]?.description || ''}</td>
                     <td>${itemSummary}</td>
                     <td>${formatNumber(item.saleentry.servicecharge)}</td>
-                    <td>${item.saleentry.moredetails || ''}</td>
+                    <td>${item.saleentry.moredata || ''}</td>
                     <td>${item.saleentry.roomnumber || '-'}</td>
                     <td class="flex items-center gap-3">
                         <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
@@ -937,7 +937,7 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
                 ${localData.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.ownerid || ''}</span></p>`}
                 <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.saleentry.servicecharge || 0)}</span></p>
                 <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.reference || ref}</span></p>
-                <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (localData.saleentry.moredetails || '') : (localData.saleentry.paymentmethod || '')}</span></p>
+                <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (localData.saleentry.moredata || '') : (localData.saleentry.paymentmethod || '')}</span></p>
                 ${orderMode ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.amountreceived || 0)}</span></p>`}
                 <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(localData.saleentry.transactiondate || '')}</span></p>
             </div>
@@ -983,7 +983,7 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
             ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.ownerid || ''}</span></p>`}
             <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.saleentry.servicecharge || 0)}</span></p>
             <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.reference || ref}</span></p>
-            <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (data1.saleentry.moredetails || '') : (data1.saleentry.paymentmethod || '')}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (data1.saleentry.moredata || '') : (data1.saleentry.paymentmethod || '')}</span></p>
             ${orderMode ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.amountreceived || 0)}</span></p>`}
             <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(data1.saleentry.transactiondate || '')}</span></p>
         </div>
@@ -1487,9 +1487,9 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                 amountreceived: localData.amountreceived || 0,
                 paymentmethod: localData.saleentry.paymentmethod || '',
                 transactiondate: localData.saleentry.transactiondate || '',
-                moredata: localData.saleentry.moredetails || '',
-                moredetails: localData.saleentry.moredetails || '',
-                status: localData.saleentry.moredetails || '',
+                moredata: localData.saleentry.moredata || '',
+                moredetails: localData.saleentry.moredata || '',
+                status: localData.saleentry.moredata || '',
                 ttype: localData.saleentry.ttype || '',
                 itemid: detail.itemid || '',
                 itemname: detail.itemname || '',
@@ -1506,9 +1506,9 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                     amountreceived: localData.amountreceived || 0,
                     paymentmethod: localData.saleentry.paymentmethod || '',
                     transactiondate: localData.saleentry.transactiondate || '',
-                    moredata: localData.saleentry.moredetails || '',
-                    moredetails: localData.saleentry.moredetails || '',
-                    status: localData.saleentry.moredetails || '',
+                    moredata: localData.saleentry.moredata || '',
+                    moredetails: localData.saleentry.moredata || '',
+                    status: localData.saleentry.moredata || '',
                     ttype: localData.saleentry.ttype || ''
                 }]
             }

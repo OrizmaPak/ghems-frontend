@@ -125,8 +125,8 @@
                                         <?php if($isOrderRoute): ?>
                                         <div class="grid load hidden grid-cols-1 !mb-1 lg:grid-cols-2 gap-10">
                                             <div class="form-group">
-                                                <label for="moredetails" class="control-label">Status</label>
-                                                <select name="moredetails" id="moredetails" class="form-control">
+                                                <label for="moredata" class="control-label">Status</label>
+                                                <select name="moredata" id="moredata" class="form-control">
                                                     <option value="FILLED">FILLED</option>
                                                     <option value="OPEN" selected>OPEN</option>
                                                     <option value="CANCELED">CANCELED</option>
