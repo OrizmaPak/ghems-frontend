@@ -76,7 +76,6 @@
                                             </div>
                                         </div>
                                         <div class="grid load hidden grid-cols-1 !mb-1 gap-10">
-                                            <?php if(!$isOrderRoute): ?>
                                             <div class="form-group">
                                                 <label for="logoname" class="control-label">Apply To</label>
                                                 <select name="applyto" id="applyto" class="form-control comp" >
@@ -86,7 +85,6 @@
                                                     <option>COST CENTER</option>
                                                 </select>
                                             </div>
-                                            <?php endif; ?>
                                             <div class="form-group" id="ownercontainer">
                                                 <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Order Number' : 'Invoice / reciept to'; ?></label>
                                                 <input autocomplete="off" type="text" name="" id="owner1" class="form-control comp" onchange="checkdatalist(this, 'owner');" placeholder="">

@@ -116,7 +116,7 @@ function configureOrderWorkspaceUi() {
     }
 
     const applyTo = did('applyto')
-    if(applyTo?.closest('.form-group')) applyTo.closest('.form-group').classList.add('hidden')
+    if(applyTo?.closest('.form-group')) applyTo.closest('.form-group').classList.remove('hidden')
 
     const paymentMethod = did('paymentmethod')
     if(paymentMethod?.closest('.form-group')) paymentMethod.closest('.form-group').classList.add('hidden')
@@ -1461,9 +1461,6 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
         if(ttype)payload.set('ttype', ttype)
-        if(isOrderWorkspaceMode() || ttype === 'ORDER'){
-            payload.set('applyto', 'OTHERS')
-        }
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
             payload.delete('amountpaid')
             payload.delete('paymentmethod')
