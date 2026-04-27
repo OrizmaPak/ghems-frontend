@@ -218,10 +218,8 @@ function setOrderViewStatusFilter(status = 'ORDER') {
     Object.keys(idMap).forEach((key) => {
         const button = did(idMap[key])
         if(!button) return
-        button.classList.remove('!bg-blue-600', '!bg-slate-600', '!bg-emerald-600')
-        if(key === orderViewStatusFilter) button.classList.add('!bg-blue-600')
-        else if(key === 'CANCELED') button.classList.add('!bg-slate-600')
-        else if(key === 'FILLED') button.classList.add('!bg-emerald-600')
+        button.classList.remove('!bg-slate-600', '!bg-slate-700')
+        if(key === orderViewStatusFilter) button.classList.add('!bg-slate-700')
         else button.classList.add('!bg-slate-600')
     })
     renderCurrentSalesDatasource()

@@ -274,9 +274,9 @@
                             <?php if($isOrderRoute): ?>
                             <div class="bg-white/90 p-4 rounded-sm mb-4">
                                 <div class="flex flex-wrap gap-2">
-                                    <button type="button" id="ordervieworder" class="btn !py-2 !px-4 !text-xs !bg-blue-600">View Order</button>
+                                    <button type="button" id="ordervieworder" class="btn !py-2 !px-4 !text-xs !bg-slate-600">View Order</button>
                                     <button type="button" id="orderviewcanceled" class="btn !py-2 !px-4 !text-xs !bg-slate-600">View Canceled Order</button>
-                                    <button type="button" id="orderviewfilled" class="btn !py-2 !px-4 !text-xs !bg-emerald-600">View Filled Order</button>
+                                    <button type="button" id="orderviewfilled" class="btn !py-2 !px-4 !text-xs !bg-slate-600">View Filled Order</button>
                                 </div>
                             </div>
                             <?php endif; ?>
