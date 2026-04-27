@@ -1643,6 +1643,47 @@ function composeOrderToBillByReference(reference = '') {
     window.location.href = 'index.php?r=bills'
 }
 
+function buildReceiptRowsFromForm(reference = '', ttype = '') {
+    const rows = []
+    const tableRows = did('thetabledata')?.querySelectorAll('tr') || []
+    const ownerValue = String(did('owner1')?.value || did('owner')?.value || '').trim()
+    const totalAmountValue = Number(did('totalamount')?.value || did('totalamountt')?.textContent || 0)
+    const amountPaidValue = Number(did('amountpaid')?.value || 0)
+    const paymentMethodValue = String(did('paymentmethod')?.value || '').trim()
+    const transactionDateValue = String(did('transactiondate')?.value || new Date().toISOString().slice(0, 10))
+    const moreDataValue = String(did('moredata')?.value || did('status')?.value || ttype || '').trim()
+
+    tableRows.forEach((row) => {
+        const itemInput = row.querySelector('.iitem')
+        const itemIdInput = row.querySelector('.itemmerid')
+        const qtyInput = row.querySelector('.qqty')
+        const costInput = row.querySelector('.pprice')
+        const itemName = String(itemInput?.value || '').trim()
+        const qty = Number(qtyInput?.value || 0)
+        const cost = Number(costInput?.value || 0)
+        if(!itemName || qty <= 0) return
+        rows.push({
+            reference: String(reference || '').trim(),
+            owner: ownerValue || '-1',
+            ownerid: ownerValue || '-1',
+            totalamount: Number.isFinite(totalAmountValue) ? totalAmountValue : 0,
+            amountpaid: Number.isFinite(amountPaidValue) ? amountPaidValue : 0,
+            amountreceived: Number.isFinite(amountPaidValue) ? amountPaidValue : 0,
+            paymentmethod: paymentMethodValue,
+            transactiondate: transactionDateValue,
+            moredata: moreDataValue,
+            moredetails: moreDataValue,
+            status: moreDataValue,
+            ttype: ttype || '',
+            itemid: String(itemIdInput?.value || '').trim(),
+            itemname: itemName,
+            qty,
+            cost
+        })
+    })
+    return rows
+}
+
 async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
     if(salesSubmissionInFlight) return notification('Processing previous request, please wait...', 0)
     salesSubmissionInFlight = true
@@ -1671,7 +1712,8 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
             notification(`${ttype == 'BILL' ? 'Bill' : ttype == 'ORDER' ? 'Order' : 'Record'} saved successfully!`, 1);
             if(ttype === 'BILL') printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php', true, true)
             else if(ttype === 'ORDER'){
-                printsalesreceiptsales(request.reference, '', 'fetchorders.php', true, true)
+                const orderReceiptRows = buildReceiptRowsFromForm(request.reference, 'ORDER')
+                printsalesreceiptsales(request.reference, '', 'fetchorders.php', true, true, false, orderReceiptRows)
             }
             else printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
             if(!isOrderWorkspaceMode()) fetchsalesbills()
@@ -1858,7 +1900,7 @@ function resetSalesAfterReceipt() {
     if(did('salespointname') && typeof default_department !== 'undefined' && default_department) did('salespointname').value = default_department
     handlesalesdepartment(default_department || did('salespointname')?.value || '')
     fetchsales()
-    fetchsalesbills()
+    if(!isOrderWorkspaceMode()) fetchsalesbills()
 }
 
 function closeSalesReceiptModal() {
@@ -1868,13 +1910,13 @@ function closeSalesReceiptModal() {
 }
 
 
-async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference', resetOnClose=true, showSignatures=false, preferLocal=false){
+async function printsalesreceiptsales(ref, room='', salesFetchController='fetchsalesbyreference', resetOnClose=true, showSignatures=false, preferLocal=false, rowsOverride=null){
     let rm = false
     if(room)rm = true
     if(!ref)return
     salesReceiptResetOnClose = !!resetOnClose
     let tt = 0;
-    let rows = null
+    let rows = Array.isArray(rowsOverride) && rowsOverride.length ? rowsOverride : null
     if(preferLocal && !room){
         const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref))
         if(localData){
