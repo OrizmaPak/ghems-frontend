@@ -17,7 +17,8 @@ const permissionAliasesByRouteId = {
     reservetable: 'RESERVE TABLE',
     viewrecipe: 'RECIPE',
     viewbuild: 'BUILD',
-    bills: 'SALES',
+    bills: 'BILLS',
+    viewdailyassignmentsheet: 'VIEW DAILY ASSIGNMENT SHEET',
     pp_level: 'LEVEL',
     pp_personnel: 'PERSONNEL',
     pp_approvepersonnel: 'APPROVE PERSONNEL',
@@ -75,6 +76,8 @@ const permissionAliasesByValue = {
     'NO SHOW': 'NO SHOW',
     'GENERAL REPORT': 'GENERAL REPORT',
     'DISCOUNT': 'DISCOUNT COUPON',
+    'BILL': 'BILLS',
+    'VIEW DAILY HOUSEKEEPING TOOL': 'VIEW DAILY ASSIGNMENT SHEET',
     'RECEIVE DEPOSITS': 'RECEIPTS',
     'DINING TABLES': 'DINING TABLE',
     'RESERVE TABLES': 'RESERVE TABLE',
@@ -200,6 +203,11 @@ function buildGrantedPermissionSet(rawPermissions=''){
 
     if(granted.has('FRONT DESK')){
         frontDeskPermissionKeys.forEach(permission => granted.add(permission))
+    }
+
+    // Backward compatibility: "Bills" used to be covered by SALES.
+    if(granted.has('SALES') && !granted.has('BILLS')){
+        granted.add('BILLS')
     }
 
     return granted

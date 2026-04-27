@@ -83,7 +83,7 @@ const accessctrl_accounts = ['ADD GL ACCOUNT', 'VIEW GL ACCOUNTS', 'ADD GL TRANS
 const accessctrl_maintenace = ['MAINTENANCE REQUEST', 'VIEW MAINTENANCE REQUEST', 'WORK ORDER']
 
 
-const accessctrl_housekeeping = ['ROOM CATEGORIES', 'ROOMS', 'UPDATE ROOM STATUS', 'DAILY ASSIGNMENT SHEET', 'VIEW DAILY ASSIGNMENT SHEET', 'CREATE CHECKLIST FOR CLEANING', 'ROOM CLEANING CHECKLIST', 'LOST & FOUND REGISTER']
+const accessctrl_housekeeping = ['ROOM CATEGORIES', 'ROOMS', 'UPDATE ROOM STATUS', 'DAILY ASSIGNMENT SHEET', 'VIEW DAILY ASSIGNMENT SHEET', 'VIEW DAILY HOUSEKEEPING TOOL', 'CREATE CHECKLIST FOR CLEANING', 'ROOM CLEANING CHECKLIST', 'LOST & FOUND REGISTER']
 
 
 
@@ -120,7 +120,7 @@ const accessctrl_frontdesk = [
 ];
 
 
-const accessctrl_sales = ['SALES', 'ORDER', 'DELETE ORDER', 'VIEW ALL USER SALES', 'SALES REPORT', 'RECEIPT']
+const accessctrl_sales = ['SALES', 'BILLS', 'ORDER', 'DELETE ORDER', 'VIEW ALL USER SALES', 'SALES REPORT', 'RECEIPT']
 
 const accessctrl_purchases = ['MANAGE SUPPLIER', 'PURCHASE ORDER', 'VIEW PURCHASE ORDER', 'RECEIVE PURCHASES', 'VIEW PURCHASES', 'PAYABLES', 'ALL PAYABLES', 'EXPENSES', 'PAYMENT', 'REVERSALS', 'VIEW REVERSALS']
 
@@ -228,11 +228,13 @@ function accessboard(element){
 }
 
 function accessappendboard(res){
-    const normalizedPermissionList = String(res.permissions || '')
+    const normalizedPermissionSet = new Set(
+        String(res.permissions || '')
         .split(/\|\||\||,|;|\n|\r/g)
-        .map(item => item.trim())
+        .map(item => normalizePermissionName(item))
         .filter(Boolean)
-    const hasFrontDeskGroupPermission = normalizedPermissionList.includes('FRONT DESK')
+    )
+    const hasFrontDeskGroupPermission = normalizedPermissionSet.has('FRONT DESK')
 
     for(let i=0;i<access_array.length;i++){
         let element = document.createElement('div')
@@ -243,7 +245,7 @@ function accessappendboard(res){
                                 <span>${access_array[i][1]}</span>
                             </p>`;
         document.getElementById(`${access_array[i][0]}`).innerHTML += access_array[i][2].map(data=>`<label class="bg-[#1d68e305] p-2 pl-1 mb-[1px] relative inline-flex items-center cursor-pointer">
-                                          <input type="checkbox" name="${data}" ${(normalizedPermissionList.includes(data) || (access_array[i][1] === 'FRONT DESK' && hasFrontDeskGroupPermission)) ? 'checked' : ''} class="sr-only peer accesscontroller">
+                                          <input type="checkbox" name="${data}" ${(normalizedPermissionSet.has(normalizePermissionName(data)) || (access_array[i][1] === 'FRONT DESK' && hasFrontDeskGroupPermission)) ? 'checked' : ''} class="sr-only peer accesscontroller">
                                           <div class="scale-[0.8] w-11 h-6 bg-gray-400 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                           <span class="ms-2 text-xs font-medium text-blue-900">${data}</span>
                                         </label>`).join('')
