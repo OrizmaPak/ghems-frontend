@@ -288,7 +288,7 @@
                                                 <?php if(!$isOrderRoute): ?>
                                                 <th>s/n</th>
                                                 <?php endif; ?>
-                                                <th>t.date</th>
+                                                <th>data</th>
                                                 <?php if($isOrderRoute): ?>
                                                 <th>items</th>
                                                 <th>comments</th>

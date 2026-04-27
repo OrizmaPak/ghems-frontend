@@ -95,7 +95,7 @@ function configureOrderWorkspaceUi() {
     const salesViewHeaders = document.querySelectorAll('#salesview thead th')
     if(salesViewHeaders.length >= 5){
         // Keep order view headers aligned with rendered row columns.
-        salesViewHeaders[1].textContent = 't.date'
+        salesViewHeaders[1].textContent = 'data'
         salesViewHeaders[2].textContent = 'items'
         salesViewHeaders[3].textContent = 'comments'
         salesViewHeaders[4].textContent = 'status'
