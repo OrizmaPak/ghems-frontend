@@ -263,19 +263,22 @@ async function salesActive() {
     if(did('billfilterdatefrom')) did('billfilterdatefrom').addEventListener('change', () => applySalesBillFilters())
     if(did('billfilterdateto')) did('billfilterdateto').addEventListener('change', () => applySalesBillFilters())
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
-    handlesalesdepartment(default_department)
-    await fetchtablenumber()
-    if(!isOrderWorkspaceMode()) await fetchsalesbills()
     const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
+    if(!(isBillsWorkspaceMode() && pendingOrderToBillData)) await handlesalesdepartment(default_department)
+    await fetchtablenumber()
+    if(!isOrderWorkspaceMode() && !(isBillsWorkspaceMode() && pendingOrderToBillData)) await fetchsalesbills()
     if(isBillsWorkspaceMode() && pendingOrderToBillData){
         sessionStorage.removeItem('pendingOrderToBillData')
         try{
             const parsed = JSON.parse(pendingOrderToBillData)
             if(parsed && typeof parsed === 'object'){
-                await composeOrderToBill(parsed)
-                notification('Order loaded to bill with stock checks', 1)
+                const loaded = await composeOrderToBill(parsed)
+                if(loaded) notification('Order loaded to bill with stock checks', 1)
             }
-        }catch(_){}
+        }catch(error){
+            console.error('Order to bill handoff failed:', error)
+            notification('Unable to load order into bill. Please try again.', 0)
+        }
     }
     const pendingSalesBillData = sessionStorage.getItem('pendingSalesBillData')
     const pendingSalesBillReference = sessionStorage.getItem('pendingSalesBillReference')
@@ -1485,10 +1488,16 @@ function preparesalesvalues(){
 }
 
 async function composeOrderToBill(orderEntry = null) {
-    if(!orderEntry?.saleentry || !Array.isArray(orderEntry?.saledetail)) return notification('Invalid order data', 0)
+    if(!orderEntry?.saleentry || !Array.isArray(orderEntry?.saledetail)) {
+        notification('Invalid order data', 0)
+        return false
+    }
 
     const salespoint = String(orderEntry.saleentry.salespoint || '').trim()
-    if(!salespoint) return notification('Order salespoint is missing', 0)
+    if(!salespoint) {
+        notification('Order salespoint is missing', 0)
+        return false
+    }
 
     openSalesFormTab()
     clearMissingOrderItemsNotice()
@@ -1496,8 +1505,14 @@ async function composeOrderToBill(orderEntry = null) {
 
     if(did('salespointname')) {
         did('salespointname').value = salespoint
-        await handlesalesdepartment()
+        try{
+            await handlesalesdepartment()
+        }catch(error){
+            console.error('Unable to load salespoint inventory before composing bill:', error)
+        }
     }
+    hidesalesterminal(false)
+    if(!did('item-1')) emptysales()
 
     if(did('applyto')) {
         const applyto = String(orderEntry.saleentry.applyto || 'OTHERS').toUpperCase()
@@ -1598,11 +1613,13 @@ async function composeOrderToBill(orderEntry = null) {
     if(loadedRows < 1){
         emptysales()
         showMissingOrderItemsNotice(missingItems)
-        return notification('No billable item from this order based on current stock', 0)
+        notification('No billable item from this order based on current stock', 0)
+        return false
     }
 
     runCount()
     showMissingOrderItemsNotice(missingItems)
+    return true
 }
 
 function composeOrderToBillByReference(reference = '') {
