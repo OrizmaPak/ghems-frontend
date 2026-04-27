@@ -685,9 +685,15 @@ async function loadSalesBillIntoForm(bill) {
     }
 }
 
+function isTableServiceDepartment(value = '') {
+    const normalized = String(value || '').toUpperCase().replace(/[^A-Z]/g, '')
+    return ['RESTAURANT', 'COCKTAIL', 'POOLBAR', 'POOLPOOLBAR'].includes(normalized)
+}
+
 function checkifitisrestaurant(){
-        did('tablenumber').value = ''
-    if(did('salespointname').value == 'Restaurant'){
+    const salespoint = String(did('salespointname')?.value || '')
+    if(did('tablenumber')) did('tablenumber').value = ''
+    if(isTableServiceDepartment(salespoint)){
         did('tablecheck').classList.remove('hidden')
     }else{
         did('tablecheck').classList.add('hidden')
