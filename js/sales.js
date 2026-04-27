@@ -687,7 +687,7 @@ async function loadSalesBillIntoForm(bill) {
 
 function isTableServiceDepartment(value = '') {
     const normalized = String(value || '').toUpperCase().replace(/[^A-Z]/g, '')
-    return ['RESTAURANT', 'COCKTAIL', 'POOLBAR', 'POOLPOOLBAR'].includes(normalized)
+    return ['RESTAURANT', 'COCKTAIL', 'COCKTAILBAR', 'POOLBAR', 'POOLPOOLBAR'].includes(normalized)
 }
 
 function checkifitisrestaurant(){
