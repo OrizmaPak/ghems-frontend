@@ -93,14 +93,16 @@ async function fetchorders(id = '') {
     return notification(request?.message || 'No records retrieved', 0)
 }
 
-async function removeorder(id) {
+async function removeorder(batchid) {
     if (!orderCanDelete) return notification('You do not have permission to delete order', 0)
-    if (!id) return
+    const cleanedBatchId = String(batchid || '').trim()
+    if (!cleanedBatchId) return
     const confirmed = window.confirm('Are you sure you want to remove this order?')
     if (!confirmed) return
 
     const payload = new FormData()
-    payload.append('id', id)
+    payload.append('batchid', cleanedBatchId)
+    payload.append('status', 'DELETED')
     const request = await httpRequest2('../controllers/removeorder.php', payload, null, 'json')
     notification(request?.message || 'Request processed', request?.status ? 1 : 0)
     await fetchorders()
@@ -110,7 +112,7 @@ async function onorderTableDataSignal() {
     const rows = getSignaledDatasource()
         .map((item, index) => {
             const reference = String(getOrderReference(item))
-            const identifier = String(item.id || reference || '')
+            const identifier = String(item.batchid || item.id || reference || '')
             const safeIdentifier = identifier.replace(/'/g, "\\'")
             const dated = getOrderDate(item)
             const rowDate = dated ? specialformatDateTime(dated) : '-'

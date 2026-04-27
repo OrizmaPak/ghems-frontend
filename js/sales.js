@@ -505,7 +505,7 @@ function renderSalesBillsTable(rows = []) {
         return
     }
     const deleteActionButton = (item) => canDeleteBillsInView
-        ? `<button title="Delete" type="button" onclick="removeBillEntry('${String(item.id || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs">delete</button>`
+        ? `<button title="Delete" type="button" onclick="removeBillEntry('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs">delete</button>`
         : ''
     holder.innerHTML = rows.map((item, index) => `
         <tr>
@@ -1588,9 +1588,9 @@ function openSalesBillDetails(reference = '') {
     return printsalesreceiptsales(cleanedReference, '', 'fetchsalesbillsonly.php', false, true)
 }
 
-async function removeBillEntry(id = '') {
-    const cleanedId = String(id || '').trim()
-    if(!cleanedId) return notification('Unable to delete: bill id is missing', 0)
+async function removeBillEntry(batchid = '') {
+    const cleanedBatchId = String(batchid || '').trim()
+    if(!cleanedBatchId) return notification('Unable to delete: bill batch id is missing', 0)
     let confirmed = false
     if(typeof Swal !== 'undefined'){
         const response = await Swal.fire({
@@ -1634,7 +1634,8 @@ async function removeBillEntry(id = '') {
     if(!confirmed) return
 
     const payload = new FormData()
-    payload.append('id', cleanedId)
+    payload.append('batchid', cleanedBatchId)
+    payload.append('status', 'DELETED')
     const request = await httpRequest2('../controllers/removesalesbill.php', payload, null, 'json')
     if(request.status){
         notification(request.message || 'Bill deleted successfully', 1)
