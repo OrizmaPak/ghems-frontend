@@ -7,6 +7,7 @@ let isPopulatingSalesBill = false
 let salesSubmissionInFlight = false
 let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
+let orderViewStatusFilter = 'ORDER'
 
 function isOrderWorkspaceMode() {
     return getCurrentRouteName() === 'order'
@@ -14,6 +15,31 @@ function isOrderWorkspaceMode() {
 
 function isBillsWorkspaceMode() {
     return getCurrentRouteName() === 'bills'
+}
+
+function normalizeOrderStatusValue(value = '', mapOpenToOrder = false) {
+    const cleaned = String(value || '').trim().toUpperCase()
+    if(!cleaned) return ''
+    if(cleaned === 'CANCELLED') return 'CANCELED'
+    if(cleaned === 'FIELD') return 'FILLED'
+    if(mapOpenToOrder && cleaned === 'OPEN') return 'ORDER'
+    return cleaned
+}
+
+function getOrderStatusOptions(currentStatus = '') {
+    const current = normalizeOrderStatusValue(currentStatus, true) || 'ORDER'
+    if(current === 'CANCELED') return ['FILLED', 'ORDER']
+    if(current === 'FILLED') return ['CANCELED', 'ORDER']
+    return ['FILLED', 'CANCELED']
+}
+
+function getFilteredDatasourceForCurrentView() {
+    if(!isOrderWorkspaceMode()) return datasource
+    return datasource.filter((row) => normalizeOrderStatusValue(row?.saleentry?.moredata, true) === orderViewStatusFilter)
+}
+
+function renderCurrentSalesDatasource() {
+    resolvePagination(getFilteredDatasourceForCurrentView(), onsalesTableDataSignal)
 }
 
 function configureOrderWorkspaceUi() {
@@ -142,6 +168,9 @@ async function salesActive() {
     await getAllUsers()
     syncSalesViewFilterSalespointOptions()
     if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
+    if(did('ordervieworder')) did('ordervieworder').addEventListener('click', () => setOrderViewStatusFilter('ORDER'))
+    if(did('orderviewcanceled')) did('orderviewcanceled').addEventListener('click', () => setOrderViewStatusFilter('CANCELED'))
+    if(did('orderviewfilled')) did('orderviewfilled').addEventListener('click', () => setOrderViewStatusFilter('FILLED'))
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
@@ -174,7 +203,28 @@ async function salesActive() {
         await fetchsalesbills(pendingSalesBillReference)
         openSalesFormTab()
     }
+    if(isOrderWorkspaceMode()) setOrderViewStatusFilter(orderViewStatusFilter)
     // await salesitempop()
+}
+
+function setOrderViewStatusFilter(status = 'ORDER') {
+    if(!isOrderWorkspaceMode()) return
+    orderViewStatusFilter = normalizeOrderStatusValue(status, true) || 'ORDER'
+    const idMap = {
+        ORDER: 'ordervieworder',
+        CANCELED: 'orderviewcanceled',
+        FILLED: 'orderviewfilled'
+    }
+    Object.keys(idMap).forEach((key) => {
+        const button = did(idMap[key])
+        if(!button) return
+        button.classList.remove('!bg-blue-600', '!bg-slate-600', '!bg-emerald-600')
+        if(key === orderViewStatusFilter) button.classList.add('!bg-blue-600')
+        else if(key === 'CANCELED') button.classList.add('!bg-slate-600')
+        else if(key === 'FILLED') button.classList.add('!bg-emerald-600')
+        else button.classList.add('!bg-slate-600')
+    })
+    renderCurrentSalesDatasource()
 }
 
 async function resolveBillDeletePermission() {
@@ -245,8 +295,10 @@ function normalizeOrdersForSalesTable(data = []) {
 
     const grouped = new Map()
     data.forEach((row) => {
-        const tag = String(row.moredata || row.moredetails || row.status || '').toUpperCase()
-        if(tag && !tag.includes('ORDER')) return
+        const normalizedMoredata = normalizeOrderStatusValue(row.moredata, true)
+        const normalizedStatus = normalizeOrderStatusValue(row.status, false)
+        const effectiveStatus = normalizedMoredata || (['ORDER', 'FILLED', 'CANCELED'].includes(normalizedStatus) ? normalizedStatus : '')
+        if(!effectiveStatus) return
 
         const batchid = String(row.batchid || row.reference || row.id || '').trim()
         if(!batchid) return
@@ -262,7 +314,7 @@ function normalizeOrdersForSalesTable(data = []) {
                     description: row.description || '',
                     servicecharge: Number(row.totalamount || row.amount || 0),
                     paymentmethod: row.paymentmethod || 'ORDER',
-                    moredata: row.moredata || row.moredetails || row.status || '',
+                    moredata: effectiveStatus,
                     roomnumber: row.roomnumber || row.room || '',
                     ownerid: normalizedOwner,
                     ttype: 'ORDER'
@@ -837,7 +889,7 @@ async function fetchsales(id) {
                 datasource = isOrderWorkspaceMode()
                     ? normalizeOrdersForSalesTable(request.data)
                     : normalizeSalesRowsForTable(request.data)
-                resolvePagination(datasource, onsalesTableDataSignal)
+                renderCurrentSalesDatasource()
             }
         }else{
              salesid = request.data[0].id
@@ -880,6 +932,8 @@ async function onsalesTableDataSignal() {
             : item.saleentry.reference
         const itemSummary = (item.saledetail || []).map((detail) => `${detail.itemname || '-'} (${formatNumber(detail.qty || 0)})`).join(', ') || '-'
         if(orderMode){
+            const currentStatus = normalizeOrderStatusValue(item.saleentry.moredata, true) || 'ORDER'
+            const statusOptions = getOrderStatusOptions(currentStatus)
             return `
                 <tr>
                     <td>${index + 1}</td>
@@ -888,7 +942,12 @@ async function onsalesTableDataSignal() {
                     <td>${item.saleentry.description || item.saledetail?.[0]?.description || ''}</td>
                     <td>${itemSummary}</td>
                     <td>${formatNumber(item.saleentry.servicecharge)}</td>
-                    <td>${item.saleentry.moredata || ''}</td>
+                    <td>
+                        <select class="form-control !min-w-[150px]" onchange="if(this.value)updateOrderStatus('${String(item.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this)">
+                            <option value="">${currentStatus}</option>
+                            ${statusOptions.map((opt) => `<option value="${opt}">${opt}</option>`).join('')}
+                        </select>
+                    </td>
                     <td>${item.saleentry.roomnumber || '-'}</td>
                     <td class="flex items-center gap-3">
                         <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
@@ -937,7 +996,7 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
                 ${localData.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.ownerid || ''}</span></p>`}
                 <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.saleentry.servicecharge || 0)}</span></p>
                 <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.reference || ref}</span></p>
-                <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (localData.saleentry.moredata || '') : (localData.saleentry.paymentmethod || '')}</span></p>
+                ${orderMode ? `<div class="!text-sm font-semibold flex w-full justify-between items-center gap-3"><span>Status:</span><span class="w-[220px]"><select class="form-control" onchange="if(this.value)updateOrderStatus('${String(localData.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this, '${String(localData.saleentry.reference || '').replace(/'/g, "\\'")}')"><option value="">${normalizeOrderStatusValue(localData.saleentry.moredata, true) || 'ORDER'}</option>${getOrderStatusOptions(localData.saleentry.moredata).map((opt) => `<option value="${opt}">${opt}</option>`).join('')}</select></span></div>` : `<p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.paymentmethod || ''}</span></p>`}
                 ${orderMode ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.amountreceived || 0)}</span></p>`}
                 <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(localData.saleentry.transactiondate || '')}</span></p>
             </div>
@@ -983,7 +1042,7 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
             ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.ownerid || ''}</span></p>`}
             <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.saleentry.servicecharge || 0)}</span></p>
             <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.reference || ref}</span></p>
-            <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Status' : 'Payment Method'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (data1.saleentry.moredata || '') : (data1.saleentry.paymentmethod || '')}</span></p>
+            ${orderMode ? `<div class="!text-sm font-semibold flex w-full justify-between items-center gap-3"><span>Status:</span><span class="w-[220px]"><select class="form-control" onchange="if(this.value)updateOrderStatus('${String(data1.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this, '${String(data1.saleentry.reference || '').replace(/'/g, "\\'")}')"><option value="">${normalizeOrderStatusValue(data1.saleentry.moredata, true) || 'ORDER'}</option>${getOrderStatusOptions(data1.saleentry.moredata).map((opt) => `<option value="${opt}">${opt}</option>`).join('')}</select></span></div>` : `<p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.paymentmethod || ''}</span></p>`}
             ${orderMode ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.amountreceived || 0)}</span></p>`}
             <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left">${specialformatDateTime(data1.saleentry.transactiondate || '')}</span></p>
         </div>
@@ -1376,11 +1435,44 @@ async function fetchsalesviewreport() {
             datasource = isOrderWorkspaceMode()
                 ? normalizeOrdersForSalesTable(request.data)
                 : normalizeSalesRowsForTable(request.data)
-            resolvePagination(datasource, onsalesTableDataSignal)
+            renderCurrentSalesDatasource()
             return notification(request.message || 'Records retrieved', 1)
         }
     }
     return notification('No records retrieved')
+}
+
+async function updateOrderStatus(batchid = '', newStatus = '', control = null, reopenReference = '') {
+    const cleanedBatchId = String(batchid || '').trim()
+    const statusValue = normalizeOrderStatusValue(newStatus, true)
+    if(!cleanedBatchId || !statusValue) return
+
+    const payload = new FormData()
+    payload.append('batchid', cleanedBatchId)
+    payload.append('status', statusValue)
+    const request = await httpRequest2('../controllers/salescript', payload, control)
+    if(!request.status){
+        notification(request.message || 'Unable to update status', 0)
+        if(control) control.value = ''
+        return
+    }
+
+    datasource = datasource.map((entry) => {
+        if(String(entry?.saleentry?.batchid || '') !== cleanedBatchId) return entry
+        return {
+            ...entry,
+            saleentry: {
+                ...entry.saleentry,
+                moredata: statusValue
+            }
+        }
+    })
+
+    renderCurrentSalesDatasource()
+    if(reopenReference){
+        openSalesReportModal(reopenReference, '', true)
+    }
+    notification('Order status updated successfully', 1)
 }
 
 function removeSalesEntryPending(reference = '') {
