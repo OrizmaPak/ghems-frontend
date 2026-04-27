@@ -285,19 +285,25 @@
                                     <table id="tableer">
                                         <thead>
                                             <tr>
+                                                <?php if(!$isOrderRoute): ?>
                                                 <th>s/n</th>
+                                                <?php endif; ?>
                                                 <th>t.date</th>
-                                                <th><?php echo $isOrderRoute ? 'order number' : 'ref'; ?></th>
-                                                <th><?php echo $isOrderRoute ? 'comments' : 'description'; ?></th>
                                                 <?php if($isOrderRoute): ?>
                                                 <th>items</th>
+                                                <th>comments</th>
+                                                <?php else: ?>
+                                                <th>ref</th>
+                                                <th>description</th>
                                                 <?php endif; ?>
-                                                <th>Total&nbsp;Amount</th>
                                                 <?php if(!$isOrderRoute): ?>
+                                                <th>Total&nbsp;Amount</th>
                                                 <th>Amount&nbsp;paid</th>
-                                                <?php endif; ?>
-                                                <th><?php echo $isOrderRoute ? 'status' : 'payment&nbsp;method'; ?></th>
+                                                <th>payment&nbsp;method</th>
                                                 <th>room/cc</th>
+                                                <?php else: ?>
+                                                <th>status</th>
+                                                <?php endif; ?>
                                                 <th>action</th>
                                             </tr>
                                         </thead>

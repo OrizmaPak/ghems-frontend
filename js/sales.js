@@ -936,21 +936,42 @@ async function onsalesTableDataSignal() {
         if(orderMode){
             const currentStatus = normalizeOrderStatusValue(item.saleentry.moredata, true) || 'ORDER'
             const statusOptions = getOrderStatusOptions(currentStatus)
+            const safeComment = item.saleentry.description || item.saledetail?.[0]?.description || ''
+            const itemRows = (item.saledetail || [])
+            const renderItemLabel = (label) => {
+                const raw = String(label || '-')
+                if(raw.length > 30){
+                    return `<span class="text-blue-600 text-xs cp" onclick="openSalesReportModal('${safeRef}', '', true)">Click to view more</span>`
+                }
+                return raw
+            }
+            const nestedItemsTable = `
+                <table class="w-full text-xs">
+                    <tbody>
+                        ${(itemRows || []).map((detail, detailIndex) => {
+                            if(detailIndex >= 3) return ''
+                            return `
+                                <tr>
+                                    <td class="pr-2">${detailIndex + 1}.</td>
+                                    <td>${renderItemLabel(detail.itemname)} (${formatNumber(detail.qty || 0)})</td>
+                                </tr>
+                            `
+                        }).join('')}
+                        ${itemRows.length > 3 ? `<tr><td colspan="2"><span class="text-blue-600 text-xs cp" onclick="openSalesReportModal('${safeRef}', '', true)">Click to view more</span></td></tr>` : ''}
+                    </tbody>
+                </table>
+            `
             return `
                 <tr>
-                    <td>${index + 1}</td>
                     <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
-                    <td>${ownerValue}</td>
-                    <td>${item.saleentry.description || item.saledetail?.[0]?.description || ''}</td>
-                    <td>${itemSummary}</td>
-                    <td>${formatNumber(item.saleentry.servicecharge)}</td>
+                    <td>${nestedItemsTable}</td>
+                    <td>${safeComment}</td>
                     <td>
                         <select class="form-control !min-w-[150px]" onchange="if(this.value)updateOrderStatus('${String(item.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this)">
                             <option value="">${currentStatus}</option>
                             ${statusOptions.map((opt) => `<option value="${opt}">${opt}</option>`).join('')}
                         </select>
                     </td>
-                    <td>${item.saleentry.roomnumber || '-'}</td>
                     <td class="flex items-center gap-3">
                         <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
                         <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
