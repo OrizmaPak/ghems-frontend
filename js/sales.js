@@ -8,6 +8,7 @@ let salesSubmissionInFlight = false
 let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
 let orderViewStatusFilter = 'ORDER'
+let orderRowsIndex = new Map()
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -1048,8 +1049,12 @@ async function removesales(id) {
 
 async function onsalesTableDataSignal() {
     const orderMode = isOrderWorkspaceMode()
+    if(orderMode) orderRowsIndex = new Map()
     let rows = getSignaledDatasource().map((item, index) => {
         const safeRef = String(item.saleentry.reference).replace(/'/g, "\\'")
+        if(orderMode){
+            orderRowsIndex.set(String(item.saleentry.reference || '').trim(), item)
+        }
         const ownerValue = (item.saleentry.ownerid !== undefined && item.saleentry.ownerid !== null && String(item.saleentry.ownerid).trim() !== '' && String(item.saleentry.ownerid) !== '-1')
             ? item.saleentry.ownerid
             : item.saleentry.reference
@@ -1603,7 +1608,8 @@ async function composeOrderToBill(orderEntry = null) {
 function composeOrderToBillByReference(reference = '') {
     const cleaned = String(reference || '').trim()
     if(!cleaned) return notification('Order reference is required', 0)
-    const orderEntry = datasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
+    const orderEntry = orderRowsIndex.get(cleaned)
+        || datasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
     if(!orderEntry) return notification('Order not found in current list', 0)
     sessionStorage.setItem('pendingOrderToBillData', JSON.stringify(orderEntry))
     const billsNav = did('bills')
