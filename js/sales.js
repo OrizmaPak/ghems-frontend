@@ -369,9 +369,11 @@ function normalizeSalesRowsForTable(data = []) {
                 saleentry: {
                     reference,
                     transactiondate: row.transactiondate || '',
+                    salespoint: row.salespoint || '',
                     description: row.description || '',
                     servicecharge: Number(row.totalamount || row.servicecharge || 0),
                     paymentmethod: row.paymentmethod || '',
+                    applyto: row.applyto || '',
                     ownerid: row.ownerid ?? row.owner ?? -1
                 },
                 amountreceived: Number(row.amountpaid || row.amountreceived || 0),
@@ -382,7 +384,8 @@ function normalizeSalesRowsForTable(data = []) {
             itemid: row.itemid || '',
             itemname: row.itemname || row.description || '',
             qty: Number(row.qty || 0),
-            cost: Number(row.cost || 0)
+            cost: Number(row.cost || 0),
+            salespoint: row.salespoint || ''
         })
     })
     return Array.from(grouped.values())
@@ -410,9 +413,11 @@ function normalizeOrdersForSalesTable(data = []) {
                     batchid,
                     reference: String(row.reference || row.ref || row.orderref || row.id || '').trim(),
                     transactiondate: row.transactiondate || row.created_at || row.entrydate || row.datecreated || '',
+                    salespoint: row.salespoint || '',
                     description: row.description || '',
                     servicecharge: Number(row.totalamount || row.amount || 0),
                     paymentmethod: row.paymentmethod || 'ORDER',
+                    applyto: row.applyto || 'OTHERS',
                     moredata: effectiveStatus,
                     roomnumber: row.roomnumber || row.room || '',
                     ownerid: normalizedOwner,
@@ -429,7 +434,8 @@ function normalizeOrdersForSalesTable(data = []) {
             itemname: row.itemname || '',
             qty: Number(row.qty || 0),
             cost: Number(row.cost || 0),
-            description: row.description || ''
+            description: row.description || '',
+            salespoint: row.salespoint || ''
         })
     })
 
@@ -1493,7 +1499,7 @@ async function composeOrderToBill(orderEntry = null) {
         return false
     }
 
-    const salespoint = String(orderEntry.saleentry.salespoint || '').trim()
+    const salespoint = String(orderEntry.saleentry.salespoint || orderEntry.saledetail?.find((item) => item?.salespoint)?.salespoint || '').trim()
     if(!salespoint) {
         notification('Order salespoint is missing', 0)
         return false
