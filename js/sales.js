@@ -9,6 +9,48 @@ let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
 let orderViewStatusFilter = 'ORDER'
 
+function truncateBillItemText(value = '', max = 30) {
+    const text = String(value || '').trim()
+    if(!text) return '-'
+    if(text.length <= max) return text
+    return `${text.slice(0, max).trimEnd()}...`
+}
+
+function renderBillItemsMiniTable(items = []) {
+    if(!Array.isArray(items) || !items.length) return '-'
+    const previewRows = items.slice(0, 4)
+    const tableRows = previewRows.map((item, idx) => `
+        <tr>
+            <td class="pr-2 align-top">${idx + 1}.</td>
+            <td class="pr-2 align-top">${truncateBillItemText(item?.itemname || item?.item || '-')}</td>
+            <td class="pr-2 text-right align-top">${formatNumber(item?.qty || 0)}</td>
+            <td class="text-right align-top">${formatNumber(item?.cost || 0)}</td>
+        </tr>
+    `).join('')
+    const remaining = items.length - previewRows.length
+    const moreRow = remaining > 0
+        ? `<tr><td></td><td colspan="3" class="text-slate-500">+${remaining} more</td></tr>`
+        : ''
+    return `
+        <table class="w-full text-[11px] leading-4">
+            <tbody>
+                ${tableRows}
+                ${moreRow}
+            </tbody>
+        </table>
+    `
+}
+
+function findSalesBillEntryByBatchOrReference(key = '') {
+    const cleaned = String(key || '').trim().toLowerCase()
+    if(!cleaned) return null
+    return salesBillDatasource.find((item) => {
+        const batch = String(item?.batchid || '').trim().toLowerCase()
+        const reference = String(item?.reference || '').trim().toLowerCase()
+        return batch === cleaned || reference === cleaned
+    }) || null
+}
+
 function isOrderWorkspaceMode() {
     return getCurrentRouteName() === 'order'
 }
@@ -200,10 +242,24 @@ async function salesActive() {
     handlesalesdepartment(default_department)
     await fetchtablenumber()
     if(!isOrderWorkspaceMode()) await fetchsalesbills()
+    const pendingSalesBillData = sessionStorage.getItem('pendingSalesBillData')
     const pendingSalesBillReference = sessionStorage.getItem('pendingSalesBillReference')
-    if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && pendingSalesBillReference){
+    if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && (pendingSalesBillData || pendingSalesBillReference)){
+        sessionStorage.removeItem('pendingSalesBillData')
         sessionStorage.removeItem('pendingSalesBillReference')
-        await fetchsalesbills(pendingSalesBillReference)
+        let loaded = false
+        if(pendingSalesBillData){
+            try{
+                const parsed = JSON.parse(pendingSalesBillData)
+                if(parsed && typeof parsed === 'object'){
+                    await loadSalesBillIntoForm(parsed)
+                    loaded = true
+                }
+            }catch(_){}
+        }
+        if(!loaded && pendingSalesBillReference){
+            await fetchsalesbills(pendingSalesBillReference)
+        }
         openSalesFormTab()
     }
     if(isOrderWorkspaceMode()) setOrderViewStatusFilter(orderViewStatusFilter)
@@ -456,8 +512,8 @@ function renderSalesBillsTable(rows = []) {
             <td>${index + 1}</td>
             <td>
                 <div class="flex items-center gap-2">
-                    <button title="Edit" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}', true)" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs">edit</button>
-                    <button title="Retrieve" type="button" onclick="retrieveSalesBillToForm('${String(item.reference).replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
+                    <button title="Edit" type="button" onclick="editBillEntryByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs">edit</button>
+                    <button title="Retrieve" type="button" onclick="retrieveBillToSalesByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
                     <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false, true)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
                     ${deleteActionButton(item)}
                 </div>
@@ -465,10 +521,31 @@ function renderSalesBillsTable(rows = []) {
             <td>${item.reference || ''}</td>
             <td>${item.transactiondate ? specialformatDateTime(item.transactiondate) : ''}</td>
             <td>${item.salespoint || ''}</td>
-            <td>${item.description || ''}</td>
+            <td>${renderBillItemsMiniTable(item.items || [])}</td>
             <td>${formatCurrency(item.totalamount || 0)}</td>
         </tr>
     `).join('')
+}
+
+async function editBillEntryByBatch(batchKey = '') {
+    const bill = findSalesBillEntryByBatchOrReference(batchKey)
+    if(!bill) return notification('Bill not found', 0)
+    openSalesFormTab()
+    await loadSalesBillIntoForm(bill)
+    notification('Bill loaded in bill form for editing', 1)
+}
+
+function retrieveBillToSalesByBatch(batchKey = '') {
+    const bill = findSalesBillEntryByBatchOrReference(batchKey)
+    if(!bill) return notification('Bill not found', 0)
+    sessionStorage.setItem('pendingSalesBillData', JSON.stringify(bill))
+    sessionStorage.setItem('pendingSalesBillReference', String(bill.reference || ''))
+    const salesNav = did('sales')
+    if(salesNav){
+        salesNav.click()
+        return
+    }
+    window.location.href = 'index.php?r=sales'
 }
 
 function applySalesBillFilters() {

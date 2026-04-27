@@ -383,7 +383,7 @@
                                                 <th>Reference</th>
                                                 <th>Transaction Date</th>
                                                 <th>Sales Point</th>
-                                                <th>Description</th>
+                                                <th>Items</th>
                                                 <th>Total Amount</th>
                                             </tr>
                                         </thead>
