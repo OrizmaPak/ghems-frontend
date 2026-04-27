@@ -95,7 +95,7 @@
                                            <div class="grid grid-cols-1  lg:grid-cols-2 gap-10 bg-[white] rounded shadow-sm mb-3">
                                                 <div class="form-group">
                                                     <label for="logoname" class="control-label">Table Number</label>
-                                                    <input type="text" name="tablenumber" list="tablenumberlist" id="tablenumber" onchange="checkdatalist(this)?checktablestatus(true):''" class="form-control comp !text-black !bg-white" placeholder="Enter Table Number">
+                                                    <input type="text" name="tablenumber" list="tablenumberlist" id="tablenumber" onchange="checkdatalist(this)?checktablestatus(true):''" class="form-control !text-black !bg-white" placeholder="Enter Table Number">
                                                     <datalist id="tablenumberlist"></datalist>
                                                 </div>
                                                 <div class="form-group">
