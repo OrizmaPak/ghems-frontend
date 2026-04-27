@@ -212,7 +212,8 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                              <div class="w-full flex justify-between items-center flex-wrap gap-3">
+                                    <div class="w-full flex justify-between items-center flex-wrap gap-3">
+                                                <div id="missingorderitemsnotice" class="hidden w-full mx-5 mb-2 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"></div>
                                                 <?php if(!$isOrderRoute): ?>
                                                 <div class="flex items-center gap-3 m-5 flex-wrap">
                                                     <label for="billreferencecode" class="control-label text-sm">Bill&nbsp;Reference:</label>

@@ -9,6 +9,29 @@ let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
 let orderViewStatusFilter = 'ORDER'
 
+function clearMissingOrderItemsNotice() {
+    const holder = did('missingorderitemsnotice')
+    if(!holder) return
+    holder.classList.add('hidden')
+    holder.innerHTML = ''
+}
+
+function showMissingOrderItemsNotice(missingItems = []) {
+    const holder = did('missingorderitemsnotice')
+    if(!holder) return
+    if(!Array.isArray(missingItems) || !missingItems.length) {
+        clearMissingOrderItemsNotice()
+        return
+    }
+    holder.classList.remove('hidden')
+    holder.innerHTML = `
+        <p class="font-semibold mb-1">Some ordered quantities are not fully available in stock:</p>
+        <ul class="list-disc ml-5">
+            ${missingItems.map((item) => `<li>${item.itemname}: requested ${formatNumber(item.requested)}, available ${formatNumber(item.available)}, missing ${formatNumber(item.missing)}</li>`).join('')}
+        </ul>
+    `
+}
+
 function truncateBillItemText(value = '', max = 30) {
     const text = String(value || '').trim()
     if(!text) return '-'
@@ -242,6 +265,17 @@ async function salesActive() {
     handlesalesdepartment(default_department)
     await fetchtablenumber()
     if(!isOrderWorkspaceMode()) await fetchsalesbills()
+    const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
+    if(isBillsWorkspaceMode() && pendingOrderToBillData){
+        sessionStorage.removeItem('pendingOrderToBillData')
+        try{
+            const parsed = JSON.parse(pendingOrderToBillData)
+            if(parsed && typeof parsed === 'object'){
+                await composeOrderToBill(parsed)
+                notification('Order loaded to bill with stock checks', 1)
+            }
+        }catch(_){}
+    }
     const pendingSalesBillData = sessionStorage.getItem('pendingSalesBillData')
     const pendingSalesBillReference = sessionStorage.getItem('pendingSalesBillReference')
     if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && (pendingSalesBillData || pendingSalesBillReference)){
@@ -727,6 +761,7 @@ async function handlesalesdepartment(store) {
     did('loading').innerHTML = 'Loading...'
     // did('salesform').reset()
     checkifitisrestaurant();
+    clearMissingOrderItemsNotice()
     did('totalamountt').innerHTML = 0
     did('totalamount').value = 0
     const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
@@ -1060,6 +1095,7 @@ async function onsalesTableDataSignal() {
                     </td>
                     <td class="flex items-center gap-3">
                         <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                        <button title="Generate Bill" onclick="composeOrderToBillByReference('${safeRef}')" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">receipt_long</button>
                         <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
                     </td>
                 </tr>
@@ -1443,6 +1479,148 @@ function preparesalesvalues(){
     givenamebyclass('pprice', 'cost')
 }
 
+async function fetchItemStockDetail(itemid = '', salespoint = '') {
+    const id = String(itemid || '').trim()
+    const point = String(salespoint || '').trim()
+    if(!id || !point) return null
+    const payload = new FormData()
+    payload.append('itemid', id)
+    payload.append('salespoint', point)
+    const request = await httpRequest2('../controllers/fetchitemdetail', payload, null, 'json')
+    if(!request?.status || !Array.isArray(request.itemdata) || !request.itemdata.length) return null
+    return {
+        item: request.itemdata[0],
+        balance: Number(request.balance || 0)
+    }
+}
+
+async function composeOrderToBill(orderEntry = null) {
+    if(!orderEntry?.saleentry || !Array.isArray(orderEntry?.saledetail)) return notification('Invalid order data', 0)
+
+    const salespoint = String(orderEntry.saleentry.salespoint || '').trim()
+    if(!salespoint) return notification('Order salespoint is missing', 0)
+
+    openSalesFormTab()
+    clearMissingOrderItemsNotice()
+    salesid = ''
+
+    if(did('salespointname')) {
+        did('salespointname').value = salespoint
+        await handlesalesdepartment()
+    }
+
+    if(did('applyto')) {
+        const applyto = String(orderEntry.saleentry.applyto || 'OTHERS').toUpperCase()
+        if(applyto.includes('ROOM')) did('applyto').value = 'ROOMS'
+        else if(applyto.includes('COST')) did('applyto').value = 'COST CENTER'
+        else did('applyto').value = 'OTHERS'
+        handlesalesapplyto()
+    }
+
+    const ownerValue = (orderEntry.saleentry.ownerid !== undefined && orderEntry.saleentry.ownerid !== null && String(orderEntry.saleentry.ownerid) !== '-1')
+        ? String(orderEntry.saleentry.ownerid)
+        : ''
+    if(did('owner1')) did('owner1').value = ownerValue
+    if(did('owner')) did('owner').value = ownerValue
+    if(did('description')) did('description').value = String(orderEntry.saleentry.description || '')
+    if(did('transactiondate')) did('transactiondate').value = new Date().toISOString().split('T')[0]
+    if(did('billreferencecode')) did('billreferencecode').value = ''
+
+    did('thetabledata').innerHTML = ''
+    const missingItems = []
+    let loadedRows = 0
+
+    for (let idx = 0; idx < orderEntry.saledetail.length; idx++) {
+        const source = orderEntry.saledetail[idx] || {}
+        const requestedQty = Number(source.qty || 0)
+        if(requestedQty <= 0) continue
+
+        const stock = await fetchItemStockDetail(source.itemid || source.itemid, salespoint)
+        if(!stock) {
+            missingItems.push({
+                itemname: source.itemname || 'Unknown Item',
+                requested: requestedQty,
+                available: 0,
+                missing: requestedQty
+            })
+            continue
+        }
+
+        const availableQty = Math.max(Number(stock.balance || 0), 0)
+        const billableQty = Math.min(requestedQty, availableQty)
+        if(requestedQty > availableQty) {
+            missingItems.push({
+                itemname: source.itemname || stock.item.itemname || 'Unknown Item',
+                requested: requestedQty,
+                available: availableQty,
+                missing: requestedQty - availableQty
+            })
+        }
+        if(billableQty <= 0) continue
+
+        const rowId = loadedRows === 0 ? '1' : `ord${loadedRows + 1}`
+        if(loadedRows === 0) {
+            did('thetabledata').innerHTML = `
+                <tr id="row-${rowId}">
+                    <td class="s/n">1</td>
+                    <td>
+                        <label for="logoname" class="control-label hidden">Item</label>
+                        <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${rowId}')" onblur="salesitempop(this,'${rowId}')" list="hems_itemslist" name="item" id="item-${rowId}" class="form-control iitem comp">
+                        <input autocomplete="off" class="itemmerid hidden" id="itemer-${rowId}">
+                    </td>
+                    <td>
+                        <div>
+                            <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-${rowId}"></span></p>
+                            <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-${rowId}"></span></p>
+                            <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${rowId}"></span></p>
+                        </div>
+                    </td>
+                    <td><input autocomplete="off" type="number" id="price-${rowId}" class="form-control comp pprice"></td>
+                    <td><input autocomplete="off" type="number" id="qty-${rowId}" class="form-control comp qqty" onchange="calsaleqty('${rowId}')"></td>
+                    <td><input autocomplete="off" type="number" disabled id="amount-${rowId}" class="form-control ammount"></td>
+                    <td><button onclick="event.preventDefault();removesalesrow('${rowId}')" class="material-symbols-outlined rounded-full bg-red-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button></td>
+                </tr>
+            `
+        } else {
+            addsalesrow(rowId)
+        }
+
+        if(did(`item-${rowId}`)) did(`item-${rowId}`).value = stock.item.itemname || source.itemname || ''
+        if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = stock.item.itemid || source.itemid || ''
+        if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = stock.item.itemtype || ''
+        if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = stock.item.units || ''
+        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = availableQty
+        if(did(`price-${rowId}`)) did(`price-${rowId}`).value = Number(stock.item.price || source.cost || 0)
+        if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = billableQty
+        if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = Number(did(`price-${rowId}`)?.value || 0) * billableQty
+        calsaleqty(rowId)
+        loadedRows++
+    }
+
+    if(loadedRows < 1){
+        emptysales()
+        showMissingOrderItemsNotice(missingItems)
+        return notification('No billable item from this order based on current stock', 0)
+    }
+
+    runCount()
+    showMissingOrderItemsNotice(missingItems)
+}
+
+function composeOrderToBillByReference(reference = '') {
+    const cleaned = String(reference || '').trim()
+    if(!cleaned) return notification('Order reference is required', 0)
+    const orderEntry = datasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
+    if(!orderEntry) return notification('Order not found in current list', 0)
+    sessionStorage.setItem('pendingOrderToBillData', JSON.stringify(orderEntry))
+    const billsNav = did('bills')
+    if(billsNav){
+        billsNav.click()
+        return
+    }
+    window.location.href = 'index.php?r=bills'
+}
+
 async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
     if(salesSubmissionInFlight) return notification('Processing previous request, please wait...', 0)
     salesSubmissionInFlight = true
@@ -1467,6 +1645,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         }
         let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
         if(request.status) {
+            clearMissingOrderItemsNotice()
             notification(`${ttype == 'BILL' ? 'Bill' : ttype == 'ORDER' ? 'Order' : 'Record'} saved successfully!`, 1);
             if(ttype === 'BILL') printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php', true, true)
             else if(ttype === 'ORDER'){
@@ -1525,6 +1704,7 @@ function emptysales(){
     did('description').value = '';
     did('amountpaid').value = '';
     did('totalamountt').innerHTML = 0;
+    clearMissingOrderItemsNotice()
     if(did('billreferencecode')) did('billreferencecode').value = ''
 }
 
