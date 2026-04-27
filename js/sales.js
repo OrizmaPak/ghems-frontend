@@ -1479,21 +1479,6 @@ function preparesalesvalues(){
     givenamebyclass('pprice', 'cost')
 }
 
-async function fetchItemStockDetail(itemid = '', salespoint = '') {
-    const id = String(itemid || '').trim()
-    const point = String(salespoint || '').trim()
-    if(!id || !point) return null
-    const payload = new FormData()
-    payload.append('itemid', id)
-    payload.append('salespoint', point)
-    const request = await httpRequest2('../controllers/fetchitemdetail', payload, null, 'json')
-    if(!request?.status || !Array.isArray(request.itemdata) || !request.itemdata.length) return null
-    return {
-        item: request.itemdata[0],
-        balance: Number(request.balance || 0)
-    }
-}
-
 async function composeOrderToBill(orderEntry = null) {
     if(!orderEntry?.saleentry || !Array.isArray(orderEntry?.saledetail)) return notification('Invalid order data', 0)
 
@@ -1526,7 +1511,7 @@ async function composeOrderToBill(orderEntry = null) {
     if(did('transactiondate')) did('transactiondate').value = new Date().toISOString().split('T')[0]
     if(did('billreferencecode')) did('billreferencecode').value = ''
 
-    did('thetabledata').innerHTML = ''
+    emptysales()
     const missingItems = []
     let loadedRows = 0
 
@@ -1535,8 +1520,11 @@ async function composeOrderToBill(orderEntry = null) {
         const requestedQty = Number(source.qty || 0)
         if(requestedQty <= 0) continue
 
-        const stock = await fetchItemStockDetail(source.itemid || source.itemid, salespoint)
-        if(!stock) {
+        const rowId = loadedRows === 0 ? '1' : `ord${loadedRows + 1}`
+        if(loadedRows > 0) addsalesrow(rowId)
+
+        const rowItemInput = did(`item-${rowId}`)
+        if(!rowItemInput){
             missingItems.push({
                 itemname: source.itemname || 'Unknown Item',
                 requested: requestedQty,
@@ -1546,54 +1534,32 @@ async function composeOrderToBill(orderEntry = null) {
             continue
         }
 
-        const availableQty = Math.max(Number(stock.balance || 0), 0)
-        const billableQty = Math.min(requestedQty, availableQty)
-        if(requestedQty > availableQty) {
+        rowItemInput.value = source.itemname || ''
+        await salesitempop(rowItemInput, rowId, requestedQty)
+        const resolvedName = String(did(`item-${rowId}`)?.value || source.itemname || 'Unknown Item').trim() || 'Unknown Item'
+        const finalQty = Number(did(`qty-${rowId}`)?.value || 0)
+
+        if(finalQty <= 0){
             missingItems.push({
-                itemname: source.itemname || stock.item.itemname || 'Unknown Item',
+                itemname: resolvedName,
                 requested: requestedQty,
-                available: availableQty,
-                missing: requestedQty - availableQty
+                available: 0,
+                missing: requestedQty
+            })
+            if(loadedRows > 0) removesalesrow(rowId)
+            else clearrow(rowId)
+            continue
+        }
+
+        if(finalQty < requestedQty){
+            missingItems.push({
+                itemname: resolvedName,
+                requested: requestedQty,
+                available: finalQty,
+                missing: requestedQty - finalQty
             })
         }
-        if(billableQty <= 0) continue
 
-        const rowId = loadedRows === 0 ? '1' : `ord${loadedRows + 1}`
-        if(loadedRows === 0) {
-            did('thetabledata').innerHTML = `
-                <tr id="row-${rowId}">
-                    <td class="s/n">1</td>
-                    <td>
-                        <label for="logoname" class="control-label hidden">Item</label>
-                        <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${rowId}')" onblur="salesitempop(this,'${rowId}')" list="hems_itemslist" name="item" id="item-${rowId}" class="form-control iitem comp">
-                        <input autocomplete="off" class="itemmerid hidden" id="itemer-${rowId}">
-                    </td>
-                    <td>
-                        <div>
-                            <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-${rowId}"></span></p>
-                            <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-${rowId}"></span></p>
-                            <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${rowId}"></span></p>
-                        </div>
-                    </td>
-                    <td><input autocomplete="off" type="number" id="price-${rowId}" class="form-control comp pprice"></td>
-                    <td><input autocomplete="off" type="number" id="qty-${rowId}" class="form-control comp qqty" onchange="calsaleqty('${rowId}')"></td>
-                    <td><input autocomplete="off" type="number" disabled id="amount-${rowId}" class="form-control ammount"></td>
-                    <td><button onclick="event.preventDefault();removesalesrow('${rowId}')" class="material-symbols-outlined rounded-full bg-red-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button></td>
-                </tr>
-            `
-        } else {
-            addsalesrow(rowId)
-        }
-
-        if(did(`item-${rowId}`)) did(`item-${rowId}`).value = stock.item.itemname || source.itemname || ''
-        if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = stock.item.itemid || source.itemid || ''
-        if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = stock.item.itemtype || ''
-        if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = stock.item.units || ''
-        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = availableQty
-        if(did(`price-${rowId}`)) did(`price-${rowId}`).value = Number(stock.item.price || source.cost || 0)
-        if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = billableQty
-        if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = Number(did(`price-${rowId}`)?.value || 0) * billableQty
-        calsaleqty(rowId)
         loadedRows++
     }
 
