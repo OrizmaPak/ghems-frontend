@@ -113,8 +113,38 @@
                             </form>
                             
                              <hr class="my-3">
-                            <div class="" id="roomcleaningchecklistview">
+                    <div class="" id="roomcleaningchecklistview">
                         <div class="table-content">
+                            <form id="rccfilterform" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
+                                <div class="form-group">
+                                    <label class="control-label">Supervisor ID</label>
+                                    <input type="number" min="1" id="rccfilter_supervisor" class="form-control" placeholder="Staff ID">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">Entry Date</label>
+                                    <input type="date" id="rccfilter_entrydate" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">Status</label>
+                                    <input type="text" id="rccfilter_status" class="form-control" placeholder="Enter status">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">Shift</label>
+                                    <select id="rccfilter_shift" class="form-control">
+                                        <option value="">-- Any --</option>
+                                        <option value="DAY SHIFT">DAY SHIFT</option>
+                                        <option value="NIGHT SHIFT">NIGHT SHIFT</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">Row ID</label>
+                                    <input type="number" min="1" id="rccfilter_id" class="form-control" placeholder="Checklist row ID">
+                                </div>
+                                <div class="form-group flex items-end gap-2">
+                                    <button type="button" id="rccfilter_apply" class="btn">Filter</button>
+                                    <button type="button" id="rccfilter_reset" class="btn !bg-gray-500">Clear</button>
+                                </div>
+                            </form>
                             <div class="flex items-center my-3 hidden">
                                   <span class="ms-3 text-sm font-medium text-red-900 mr-2">No</span>
                                 <label class="relative inline-flex items-center cursor-pointer">

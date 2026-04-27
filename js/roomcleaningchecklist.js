@@ -25,10 +25,36 @@ async function roomcleaningchecklistActive() {
     const form = document.querySelector('#roomcleaningchecklistform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', roomcleaningchecklistFormSubmitHandler)
     document.getElementById('normalsavebtn').addEventListener('click', roomcleaningsavechecklistformsubmithandler)
+    if(did('rccfilter_apply')) did('rccfilter_apply').addEventListener('click', () => fetchroomcleaningchecklist('', getRoomCleaningChecklistFilters()))
+    if(did('rccfilter_reset')) did('rccfilter_reset').addEventListener('click', clearRoomCleaningChecklistFilters)
     datasource = []
     await fetchroomcleaningchecklist()
     await populatechecklister()
     // await runpopulateitemroomcleaning()
+}
+
+function getRoomCleaningChecklistFilters() {
+    const filters = {}
+    const supervisor = String(did('rccfilter_supervisor')?.value || '').trim()
+    const entrydate = String(did('rccfilter_entrydate')?.value || '').trim()
+    const status = String(did('rccfilter_status')?.value || '').trim()
+    const shift = String(did('rccfilter_shift')?.value || '').trim()
+    const id = String(did('rccfilter_id')?.value || '').trim()
+    if(supervisor) filters.supervisor = supervisor
+    if(entrydate) filters.entrydate = entrydate
+    if(status) filters.status = status
+    if(shift) filters.shift = shift
+    if(id) filters.id = id
+    return filters
+}
+
+function clearRoomCleaningChecklistFilters() {
+    if(did('rccfilter_supervisor')) did('rccfilter_supervisor').value = ''
+    if(did('rccfilter_entrydate')) did('rccfilter_entrydate').value = ''
+    if(did('rccfilter_status')) did('rccfilter_status').value = ''
+    if(did('rccfilter_shift')) did('rccfilter_shift').value = ''
+    if(did('rccfilter_id')) did('rccfilter_id').value = ''
+    fetchroomcleaningchecklist()
 }
 
 async function populatechecklister(id=''){
@@ -119,7 +145,7 @@ function addroomcleaningrow(){
 
 
 
-async function fetchroomcleaningchecklist(id='') {
+async function fetchroomcleaningchecklist(id='', filters=null) {
     if(id){
         const item = datasource.filter(item => item.id == id)[0];
         let x = normalizeChecklistItems(item.items);
@@ -137,12 +163,19 @@ async function fetchroomcleaningchecklist(id='') {
     }
     
     // scrollToTop('scrolldiv')
-    function getparamm(){
-        let paramstr = new FormData()
-        paramstr.append('id', id)
-        return paramstr
+    let payload = null
+    if(id){
+        payload = new FormData()
+        payload.append('id', id)
+    }else{
+        const activeFilters = filters || getRoomCleaningChecklistFilters()
+        const entries = Object.entries(activeFilters).filter(([, value]) => String(value).trim() !== '')
+        if(entries.length){
+            payload = new FormData()
+            entries.forEach(([key, value]) => payload.append(key, value))
+        }
     }
-    let request = await httpRequest2('../controllers/fetchroomcleaningchecklist', id ? getparamm() : null, null, 'json')
+    let request = await httpRequest2('../controllers/fetchroomcleaningchecklist', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
