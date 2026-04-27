@@ -218,9 +218,13 @@ function setOrderViewStatusFilter(status = 'ORDER') {
     Object.keys(idMap).forEach((key) => {
         const button = did(idMap[key])
         if(!button) return
-        button.classList.remove('!bg-slate-600', '!bg-slate-700')
-        if(key === orderViewStatusFilter) button.classList.add('!bg-slate-700')
-        else button.classList.add('!bg-slate-600')
+        const label = button.querySelector('p')
+        button.classList.remove('!text-blue-600', 'active')
+        if(label) label.classList.remove('!text-blue-600', 'active')
+        if(key === orderViewStatusFilter){
+            button.classList.add('!text-blue-600', 'active')
+            if(label) label.classList.add('!text-blue-600', 'active')
+        }
     })
     renderCurrentSalesDatasource()
 }

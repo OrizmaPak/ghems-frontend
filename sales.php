@@ -12,7 +12,17 @@
                                 <li id="iddsalesform" class="me-2 cp updater optioner !text-blue-600 active" name="salesform" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50"><?php echo $isOrderRoute ? 'Post-Order' : ($isBillsRoute ? 'Post-Bill' : 'Sales'); ?></p>
                                 </li>
-                                <?php if(!$isBillsRoute): ?>
+                                <?php if($isOrderRoute): ?>
+                                <li id="ordervieworder" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this);setOrderViewStatusFilter('ORDER')">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Orders</p>
+                                </li>
+                                <li id="orderviewcanceled" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this);setOrderViewStatusFilter('CANCELED')">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Canceled Orders</p>
+                                </li>
+                                <li id="orderviewfilled" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this);setOrderViewStatusFilter('FILLED')">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Filled Orders</p>
+                                </li>
+                                <?php elseif(!$isBillsRoute): ?>
                                 <li id="" class="me-2 cp viewer optioner" name="salesview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 "><?php echo $isOrderRoute ? 'View Order' : 'View Sales Report'; ?></p>
                                 </li>
@@ -271,15 +281,6 @@
                                     </div>
                                 </div>
                             </form>
-                            <?php if($isOrderRoute): ?>
-                            <div class="bg-white/90 p-4 rounded-sm mb-4">
-                                <div class="flex flex-wrap gap-2">
-                                    <button type="button" id="ordervieworder" class="btn !py-2 !px-4 !text-xs !bg-slate-600">View Order</button>
-                                    <button type="button" id="orderviewcanceled" class="btn !py-2 !px-4 !text-xs !bg-slate-600">View Canceled Order</button>
-                                    <button type="button" id="orderviewfilled" class="btn !py-2 !px-4 !text-xs !bg-slate-600">View Filled Order</button>
-                                </div>
-                            </div>
-                            <?php endif; ?>
                                 <div class="table-content">
                                     <table id="tableer">
                                         <thead>
