@@ -47,18 +47,21 @@
                         <span class="h-14 w-14 flex">
                             <span class="material-symbols-outlined m-auto text-gray-300">email</span>
                         </span>
-                        <span class="flex flex-col space-y-1">
+                        <span class="flex-1 flex flex-col space-y-1 pr-3">
                             <label for="email" class="text-gray-500 font-normal capitalize text-2xs font-heebo"> email address</label>
-                            <input autofocus="on" name="email" id="email" type="email" placeholder="doe@example.com" class="placeholder:text-xs placeholder:text-gray-500 font-semibold text-sm focus:outline-none focus:ring-0 focus:border-transparent bg-transparent">
+                            <input autofocus="on" name="email" id="email" type="email" placeholder="doe@example.com" class="w-full placeholder:text-xs placeholder:text-gray-500 font-semibold text-sm focus:outline-none focus:ring-0 focus:border-transparent bg-transparent">
                         </span>
                     </div>
                     <div class="border-t rounded-b flex items-center  bg-[#fafafa]">
                         <span class="h-14 w-14 flex">
                             <span class="material-symbols-outlined m-auto text-gray-300">lock</span>
                         </span> 
-                        <span class="flex flex-col space-y-1">
+                        <span class="flex-1 flex flex-col space-y-1">
                             <label for="password" class="text-gray-500 font-normal capitalize text-xs font-heebo">Password</label>
-                            <input name="" id="password" type="password" placeholder="******" class="placeholder:text-xs placeholder:text-gray-500 font-semibold text-sm focus:outline-none focus:ring-0 focus:border-transparent bg-transparent">
+                            <input name="" id="password" type="password" placeholder="******" class="w-full placeholder:text-xs placeholder:text-gray-500 font-semibold text-sm focus:outline-none focus:ring-0 focus:border-transparent bg-transparent">
+                        </span>
+                        <span class="h-14 w-12 flex pr-2">
+                            <button type="button" id="togglepassword" class="m-auto material-symbols-outlined text-gray-400 hover:text-gray-600">visibility_off</button>
                         </span>
                     </div>
                      <div class=" rounded-t border-b-0 flex items-center  bg-[#fafafa]">

@@ -4,9 +4,19 @@ window.onload = function() {
     if(form) {
          if(form.querySelector('button#submit')) form.querySelector('button#submit').addEventListener('click', submitHander, false)
          if(form.querySelector('#password')) form.querySelector('#password').addEventListener('keypress', e => enterEvent(e))
+         if(form.querySelector('#togglepassword')) form.querySelector('#togglepassword').addEventListener('click', togglePasswordVisibility, false)
     }
     verifyorganisationlicencea()
- }
+}
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password')
+    const toggleIcon = document.getElementById('togglepassword')
+    if(!passwordInput || !toggleIcon) return
+    const shouldShow = passwordInput.type === 'password'
+    passwordInput.type = shouldShow ? 'text' : 'password'
+    toggleIcon.textContent = shouldShow ? 'visibility' : 'visibility_off'
+}
  
  function enterEvent(event) {
     if(event.key.includes('Enter'))submitHander()
