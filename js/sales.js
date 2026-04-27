@@ -1510,8 +1510,6 @@ async function composeOrderToBill(orderEntry = null) {
     if(did('description')) did('description').value = String(orderEntry.saleentry.description || '')
     if(did('transactiondate')) did('transactiondate').value = new Date().toISOString().split('T')[0]
     if(did('billreferencecode')) did('billreferencecode').value = ''
-
-    emptysales()
     const missingItems = []
     let loadedRows = 0
 
@@ -1534,10 +1532,39 @@ async function composeOrderToBill(orderEntry = null) {
             continue
         }
 
-        rowItemInput.value = source.itemname || ''
-        await salesitempop(rowItemInput, rowId, requestedQty)
-        const resolvedName = String(did(`item-${rowId}`)?.value || source.itemname || 'Unknown Item').trim() || 'Unknown Item'
-        const finalQty = Number(did(`qty-${rowId}`)?.value || 0)
+        const inventoryPool = Array.isArray(datasource) ? datasource : []
+        const inventoryItem = inventoryPool.find((inv) => {
+            if(String(inv?.itemid || '') && String(source?.itemid || '')){
+                return String(inv.itemid) === String(source.itemid)
+            }
+            return String(inv?.itemname || '').trim().toLowerCase() === String(source?.itemname || '').trim().toLowerCase()
+        }) || null
+
+        const resolvedName = String(inventoryItem?.itemname || source.itemname || 'Unknown Item').trim() || 'Unknown Item'
+        const resolvedItemId = String(inventoryItem?.itemid || source.itemid || '').trim()
+        const resolvedType = String(inventoryItem?.itemtype || source.itemtype || source.type || '').trim()
+        const resolvedUnit = String(inventoryItem?.units || source.units || source.unit || '').trim()
+        const resolvedPrice = Number(inventoryItem?.price || source.cost || 0)
+        const availableQtyRaw = Number(
+            inventoryItem?.balance ??
+            inventoryItem?.quantity ??
+            inventoryItem?.qty ??
+            inventoryItem?.stockbalance ??
+            inventoryItem?.instock ??
+            requestedQty
+        )
+        const availableQty = Math.max(availableQtyRaw, 0)
+        const finalQty = Math.min(requestedQty, availableQty)
+
+        if(did(`item-${rowId}`)) did(`item-${rowId}`).value = resolvedName
+        if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = resolvedItemId
+        if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = resolvedType
+        if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = resolvedUnit
+        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = availableQty
+        if(did(`price-${rowId}`)) did(`price-${rowId}`).value = resolvedPrice
+        if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = finalQty
+        if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = Number(resolvedPrice || 0) * Number(finalQty || 0)
+        calsaleqty(rowId)
 
         if(finalQty <= 0){
             missingItems.push({
