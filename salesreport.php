@@ -154,9 +154,9 @@
                                     <table id="salesreporttable">
                                         <thead>
                                             <tr>
-                                                <th>s/n</th>
                                                 <th>t.date</th>
                                                 <th>ref</th>
+                                                <th>items</th>
                                                 <th>description</th>
                                                 <th>Total&nbsp;Amount</th>
                                                 <th>Amount&nbsp;paid</th>

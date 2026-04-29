@@ -1,4 +1,30 @@
 let salesreportid
+function getSalesReportRowByReference(ref){
+    return datasource.find(dat => dat?.saleentry?.reference == ref)
+}
+
+function renderSalesItemsPreview(data, maxItems = 3){
+    if(!data?.saledetail?.length) return 'No items'
+    let rows = data.saledetail.slice(0, maxItems).map((dat) => `
+        <tr>
+            <td>${dat.itemname || '-'}</td>
+            <td style="width: 20px">${formatNumber(dat.qty || 0)}</td>
+        </tr>
+    `).join('')
+    if(data.saledetail.length > maxItems){
+        rows += `
+            <tr>
+                <td colspan="2">
+                    <span onclick="modalsalesreport('${data.saleentry.reference}')" style="color:green;cursor:pointer">
+                        click to view all products (${data.saledetail.length})
+                    </span>
+                </td>
+            </tr>
+        `
+    }
+    return `<table>${rows}</table>`
+}
+
 async function salesreportActive() {
     recalldatalist()
     const form = document.querySelector('#salesreportform')
@@ -94,17 +120,17 @@ async function removesalesreport(id) {
 async function onsalesreportTableDataSignal() {
     let rows = getSignaledDatasource().map((item, index) => `
     <tr>
-        <td>${index + 1 }</td>
         <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
         <td>${item.saleentry.reference}</td>
+        <td>${renderSalesItemsPreview(item, 3)}</td>
         <td>${item.saleentry.ownerid < 0 ? item.saledetail[0].description : item.saleentry.description}</td>
         <td>${formatNumber(item.saleentry.servicecharge)}</td>
         <td>${formatNumber(item.amountreceived)}</td>
         <td>${item.saleentry.paymentmethod}</td>
         <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
         <td class="flex items-center gap-3">
-            <button title="View Item" onclick="modalsalesreport('${item.saleentry.reference}', '${item.saleentry.ownerid < 0 ? '' : item.saleentry.ownerid}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
-            <button title="Print sales" onclick="printsalesreceipt('${item.saleentry.reference}', '${item.saleentry.ownerid < 0 ? '' : item.saleentry.ownerid}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+            <button title="View Item" onclick="modalsalesreport('${item.saleentry.reference}')" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+            <button title="Print sales" onclick="printsalesreceipt('${item.saleentry.reference}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
             <button title="Delete row entry"s onclick="removesalesreport('${item.compositeitem}')" class="hidden material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </td>
     </tr>`
@@ -113,178 +139,66 @@ async function onsalesreportTableDataSignal() {
     injectPaginatatedTable(rows)
 }
 
-async function modalsalesreport(ref, room=''){
-    let rm = false
-    if(room)rm = true
+async function modalsalesreport(ref){
     if(!ref)return
-    function getparamm() {
-        let paramstr = new FormData();
-        if(!room)paramstr.append('reference', ref);
-        if(room)paramstr.append('roomnumber', room);
-        return paramstr;
+    let data1 = getSalesReportRowByReference(ref)
+    if(!data1){
+        return notification('Unable to open sales details', 0)
     }
-    let request = await httpRequest2(`../controllers/${!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
-    let data1 = datasource.filter(dat=>dat.saleentry.reference == ref)[0]
-    if(request.status){
-    let data = request.data
-    if(!rm){
-            did('tableheader').innerHTML = `
-               <th>s/n </th>
-                <th> Item ID </th>
-                <th> Item Name </th>
-                <th> qty </th>
-                <th> PRICE </th>
-                <th> TOTAL </th>
-            `;
-            did('modaldetails').innerHTML = `
-                <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
-                <div class="col-span-2">
-                    <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${data1.saleentry.description}</span></p>
-                    ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Room / CC: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.ownerid}</span></p>`}
-                    <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left" style="">${formatNumber(data1.saleentry.servicecharge)}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left" style="">${formatNumber(data1.amountreceived)}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.reference}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.paymentmethod}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left" style="">${specialformatDateTime(data1.saleentry.transactiondate)}</span></p>
-                    <div class="w-[150px] py-2 flex justify-center mx-8 bg-white p-5 rounded mt-2 bg-blue-400 hidden">
-                        <span onclick="printDomContent('SALES REPORT', 'displaydetails')" class="cp material-symbols-outlined group-hover:text-primary-g scale-[1.5] text-white" style="font-size: 20px;">print</span>
-                    </div>
-                </div>
-            `;
-                
-             did('tabledata2').innerHTML = 'No Items set for this composite item';
-             if(data.length > 0 && data1.saleentry.ttype != 'ROOMS')did('tabledata2').innerHTML = data.map((dat, i)=>`
-                    <tr>
-                        <td>${i+1}</td>
-                        <td>${dat.itemid}</td>
-                        <td>${dat.itemname}</td>
-                        <td style="width: 20px">${formatNumber(dat.qty)}</td>
-                        <td style="width: 20px">${formatNumber(dat.cost)}</td>
-                        <td style="width: 20px">${formatNumber(Number(dat.qty)*Number(dat.cost))}</td>
-                    </tr>
-             `).join('');
-             if(data.length > 0 && data1.saleentry.ttype != 'ROOMS')did('tabledata2').innerHTML += `
-                    <tr>
-                        <td>TOTAL</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td style="width: 20px">${formatNumber(data1.saleentry.credit)}</td>
-                    </tr>
-             `
-    }
-    
-    if(rm){
-        did('tableheader').innerHTML = `
-            <th style="width: 20px">s/n</th> 
-            <th>date</th>
-            <th>Ref</th>
-            <th>item</th>
-            <th>debit</th>
-            <th>credit</th>
-            <th>balance</th>
-        `;
-        did('modaldetails').innerHTML = `
-                <div>
-                <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
-                </div>
-                <div class="col-span-2">
-                    <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${data1.saleentry.description}</span></p>
-                    ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Room / CC: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.ownerid}</span></p>`}
-                    <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left" style="">${formatNumber(data1.saleentry.servicecharge)}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left" style="">${formatNumber(data1.amountreceived)}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.reference}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.paymentmethod}</span></p>
-                    <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left" style="">${specialformatDateTime(data1.saleentry.transactiondate)}</span></p>
-                </div>
-            `;
-            let tt = 0
-        did('tabledata2').innerHTML = request.data.transactions.map((item, index)=>{
-            tt=tt+(Number(item.debit)-Number(item.credit))
-            // S/N	ITEM	DEBIT	CREDIT	BALANCE
-            if(index == 0 )return`
-                <tr>
-                    <td colspan="6"><p class="text-bold text-md">Balance Brought Forward:</p></td>
-                    <td><p class="text-bold text-xl">${formatNumber(request.data.balance)}</p></td>
-                </tr>
-            `
-            return `
-                <tr>
-                    <td>${index + 1 }</td>
-                    <td>${specialformatDateTime(item.transactiondate)}</td>
-                    <td>${item.marketer}</td>
-                    <td>${item.description}</td>
-                    <td>${formatNumber(item.debit, 0)}</td>
-                    <td>${formatNumber(item.credit, 0)}</td>
-                    <td>${formatNumber(tt, 0)}</td>
-                </tr>
-            `
-        }).join('')
+    let data = data1.saledetail || []
+    did('tableheader').innerHTML = `
+       <th>s/n </th>
+        <th> Item ID </th>
+        <th> Item Name </th>
+        <th> qty </th>
+        <th> PRICE </th>
+        <th> TOTAL </th>
+    `;
+    did('modaldetails').innerHTML = `
+        <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
+        <div class="col-span-2">
+            <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${data1.saleentry.description}</span></p>
+            ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">Room / CC: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.ownerid}</span></p>`}
+            <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left" style="">${formatNumber(data1.saleentry.servicecharge)}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Amount Paid: <span class="uppercase !text-sm font-normal text-left" style="">${formatNumber(data1.amountreceived)}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.reference}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left" style="">${data1.saleentry.paymentmethod}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">Transaction Date: <span class="uppercase !text-sm font-normal text-left" style="">${specialformatDateTime(data1.saleentry.transactiondate)}</span></p>
+        </div>
+    `;
+    did('tabledata2').innerHTML = 'No items found';
+    if(data.length > 0){
+        did('tabledata2').innerHTML = data.map((dat, i)=>`
+            <tr>
+                <td>${i+1}</td>
+                <td>${dat.itemid}</td>
+                <td>${dat.itemname}</td>
+                <td style="width: 20px">${formatNumber(dat.qty)}</td>
+                <td style="width: 20px">${formatNumber(dat.cost)}</td>
+                <td style="width: 20px">${formatNumber(Number(dat.qty)*Number(dat.cost))}</td>
+            </tr>
+        `).join('')
         did('tabledata2').innerHTML += `
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td class="text-bold">Total:</td>
-                    <td>${formatNumber(tt)}</td>
-                </tr>
-            `
+            <tr>
+                <td>TOTAL</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td style="width: 20px">${formatNumber(data1.saleentry.servicecharge)}</td>
+            </tr>
+        `
     }
-    
-     did('receiptsalesmodal').classList.add('hidden')
-     did('salesreportmodal').classList.remove('hidden')
-    }else{
-        return notification(request.message, 0)
-    }
+    did('receiptsalesmodal').classList.add('hidden')
+    did('salesreportmodal').classList.remove('hidden')
 }
 
-async function printsalesreceipt(ref, room=''){
-    let rm = false
-    if(room)rm = true
+async function printsalesreceipt(ref){
     if(!ref)return
-    let tt = 0;
-    let html = '';
-    if(rm){
-        function getparamm() {
-            let paramstr = new FormData();
-            if(!room)paramstr.append('reference', ref);
-            if(room)paramstr.append('roomnumber', room);
-            return paramstr;
+        let data = getSalesReportRowByReference(ref)
+        if(!data){
+            return notification('Unable to print sales details', 0)
         }
-        let request = await httpRequest2(`../controllers/${!room ? 'fetchsalesdetailbyref' : 'fetchroomtransactionhistory'}`, getparamm(), null, 'json');
-        if(request.status){
-           html =  request.data.transactions.map((item, index)=>{
-                                                            tt=tt+(Number(item.debit)-Number(item.credit))
-                                                            // S/N	ITEM	DEBIT	CREDIT	BALANCE
-                                                            if(index == 0 )return`
-                                                                <tr>
-                                                                    <td colspan="3"><p class="text-bold text-md">Balance Brought Forward:</p></td>
-                                                                    <td><p class="text-bold text-xl">${formatNumber(request.data.balance)}</p></td>
-                                                                </tr>
-                                                            `
-                                                            return `
-                                                                <tr>
-                                                                    <td class="!text-xs">${item.description}</td>
-                                                                    <td class="!text-xs">${formatNumber(item.debit, 0)}</td>
-                                                                    <td class="!text-xs">${formatNumber(item.credit, 0)}</td>
-                                                                    <td class="!text-xs">${formatNumber(tt, 0)}</td>
-                                                                </tr>
-                                                            `
-                                                        }).join('')
-          html += `
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td class="text-bold">Total:</td>
-                        <td>${formatNumber(tt)}</td>
-                    </tr>
-                `
-        }
-    }
-        let data = datasource.filter(dat=>dat.saleentry.reference == ref)[0]
         did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
                                         <h4 class="font-semibold">${did('your_companyname').value}</h4>
@@ -319,21 +233,16 @@ async function printsalesreceipt(ref, room=''){
                                     <div class="flex flex-col gap-3 pb-6 pt-2 text-xs w-full">
                                       <table class="w-full text-left">
                                         <thead>
-                                          ${!rm ? `<tr>
+                                          <tr>
                                             <th class="min-w-[14px] py-2">s/n</th>
                                             <th class="min-w-[64px] py-2">Product</th>
                                             <th class="min-w-[14px] py-2">QTY</th>
                                             <th class="min-w-[44px] py-2">Price</th>
                                             <th class="min-w-[44px] py-2">Total</th>
-                                          </tr>` : `<tr>
-                                                <th>item</th>
-                                                <th>debit</th>
-                                                <th>credit</th>
-                                                <th>balance</th>
-                                          </tr>`}
+                                          </tr>
                                         </thead>
                                         <tbody>
-                                            ${!rm && data.saledetail.length > 0 && data.saleentry.ttype != 'ROOMS' 
+                                            ${data.saledetail.length > 0
                                               ? data.saledetail.map((dat, i) => `
                                                   <tr>
                                                       <td class="min-w-[44px] py-2">${i+1}</td>
@@ -345,7 +254,7 @@ async function printsalesreceipt(ref, room=''){
                                                 `).join('') 
                                               : ''}
                                             
-                                            ${!rm && data.saledetail.length > 0 && data.saleentry.ttype != 'ROOMS'
+                                            ${data.saledetail.length > 0
                                               ? `
                                                   <tr>
                                                       <td></td>
@@ -356,12 +265,6 @@ async function printsalesreceipt(ref, room=''){
                                                   </tr>
                                                 `
                                               : ''}
-                                              
-                                              ${
-                                                  rm ? `${
-                                                    html
-                                                  }` : ''
-                                              }
 
                                         </tbody>
                                       </table>
