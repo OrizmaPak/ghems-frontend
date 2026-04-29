@@ -1,5 +1,6 @@
 let roomcleaningchecklistid
 let roomcleaningchecklistitem
+const ROOM_CLEANING_DEFAULT_ITEM = 'Make Available'
 // Safely parse checklist items regardless of whether they arrive as a JSON string or array
 const normalizeChecklistItems = (items) => {
     if (!items) return [];
@@ -20,6 +21,54 @@ const getChecklistItemLabel = (item) => {
     return `${item}`;
 }
 
+const isDefaultChecklistItemLabel = (label = '') => String(label || '').trim().toLowerCase() === ROOM_CLEANING_DEFAULT_ITEM.toLowerCase()
+
+function appendChecklistRow({ id = '', item = '', answer = 'NO', lockRow = false } = {}){
+    const tableBody = did('tabledat')
+    if(!tableBody) return
+    const normalizedItem = String(item || '').trim()
+    if(!normalizedItem) return
+
+    const existingItems = Array.from(tableBody.querySelectorAll('.itemer')).map((input) => String(input.value || '').trim().toLowerCase())
+    if(existingItems.includes(normalizedItem.toLowerCase())) return
+
+    const rowKey = `${id || 'manual'}_${genID()}`
+    const toggleId = `item_${rowKey}`
+    const row = document.createElement('tr')
+    row.innerHTML = `
+        <td id="row_${rowKey}" class="s/n"></td>
+        <input type="text" value="${normalizedItem}" class="itemer hidden" />
+        <td>${normalizedItem}</td>
+        <td>
+            <div class="flex items-center my-3">
+                <span class="ms-3 text-sm font-medium text-red-900 mr-2">No</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="${toggleId}" name="${rowKey}_name" ${String(answer).toUpperCase() === 'YES' ? 'checked' : ''} value="" class="sr-only peer answerer">
+                  <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span class="ms-3 text-sm font-medium text-green-900">Yes</span>
+                </label>
+            </div>
+        </td>
+        <td class="flex gap-4">
+            ${lockRow
+                ? `<div title="Default item" class="material-symbols-outlined rounded-full flex justify-center items-center bg-gray-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">lock</div>`
+                : `<div title="Remove Item" onclick="document.getElementById('row_${rowKey}').parentElement.remove();${id ? `did('cont_${id}').classList.remove('!hidden');did('bordered-checkbox-${id}').checked = false;` : ''}runCount()" class="material-symbols-outlined removethechecklist rounded-full flex justify-center items-center bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</div>`
+            }
+        </td>
+    `
+    tableBody.appendChild(row)
+    runCount()
+}
+
+function ensureDefaultChecklistRow() {
+    if(roomcleaningchecklistid) return
+    appendChecklistRow({
+        item: ROOM_CLEANING_DEFAULT_ITEM,
+        answer: 'NO',
+        lockRow: true
+    })
+}
+
 async function roomcleaningchecklistActive() {
     runCount('s/n')
     const form = document.querySelector('#roomcleaningchecklistform')
@@ -30,6 +79,7 @@ async function roomcleaningchecklistActive() {
     datasource = []
     await fetchroomcleaningchecklist()
     await populatechecklister()
+    ensureDefaultChecklistRow()
     // await runpopulateitemroomcleaning()
 }
 
@@ -87,25 +137,12 @@ async function populatechecklister(id=''){
 function checklistaction(id, item, action='NO'){
     if(did(`bordered-checkbox-${id}`).checked){
         did(`cont_${id}`).classList.add('!hidden')
-        let element = document.createElement('tr')
-        element.innerHTML = ` <td id="row_${id}" class="s/n"></td>
-                                        <input type="text" value="${item}" class="itemer hidden" />
-                                        <td>${item}</td>
-                                        <td >
-                                            <div class="flex items-center my-3">
-                                                 <span class="ms-3 text-sm font-medium text-red-900 mr-2">No</span>
-                                                <label class="relative inline-flex items-center cursor-pointer">
-                                                  <input type="checkbox" id="item_${item}" name="${item}_name" ${action == 'YES' ? 'checked' : ''} value=""  class="sr-only peer answerer">
-                                                  <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                                  <span class="ms-3 text-sm font-medium text-green-900">Yes</span>
-                                                </label>
-                                            </div>
-                                        </td>
-                                        <td class="flex gap-4">
-                                            <div title="Remove Item" onclick="document.getElementById('row_${id}').parentElement.remove();did('cont_${id}').classList.remove('!hidden');did('bordered-checkbox-${id}').checked = false;runCount()" class="material-symbols-outlined removethechecklist rounded-full flex justify-center items-center bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</div>
-                                       </td>`
-        document.getElementById('tabledat').appendChild(element)
-        runCount()
+        appendChecklistRow({
+            id,
+            item,
+            answer: action,
+            lockRow: isDefaultChecklistItemLabel(item)
+        })
     }else{
         
     }
@@ -155,11 +192,21 @@ async function fetchroomcleaningchecklist(id='', filters=null) {
         await populatechecklister()
         x.forEach(entry=>{
             const label = getChecklistItemLabel(entry.item);
+            if(isDefaultChecklistItemLabel(label)){
+                appendChecklistRow({
+                    item: ROOM_CLEANING_DEFAULT_ITEM,
+                    answer: entry.answer,
+                    lockRow: true
+                })
+                return
+            }
             const checkbox = Array.from(document.querySelectorAll('#checklistitemscontainer input[data-item-label]')).find(el=>el.dataset.itemLabel === label);
             if(!checkbox) return;
             checkbox.checked = true;
             checklistaction(checkbox.dataset.itemId, label, entry.answer);
         })
+    }else{
+        ensureDefaultChecklistRow()
     }
     
     // scrollToTop('scrolldiv')
