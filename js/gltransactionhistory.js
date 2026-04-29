@@ -51,8 +51,8 @@ async function ongltransactionhistoryTableDataSignal() {
          <td> ${index+1} </td>
          <td> ${data.accountnumber} </td>
          <td> ${data.accountname} </td>
-        <td> ${data.credittotal} </td>
-        <td> ${data.debittotal} </td>
+        <td> ${data.credit ?? data.credittotal ?? 0} </td>
+        <td> ${data.debit ?? data.debittotal ?? 0} </td>
         <td> ${data.description} </td>
         <td> ${data.paymentmethod} </td>
         <td> ${data.reference} </td>

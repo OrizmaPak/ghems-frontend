@@ -140,13 +140,20 @@ async function onaddgltransactionTableDataSignal() {
 }
 
 function addgltransactionFormResetHandler() {
-    document.querySelector('#addgltransactionform').reset();
+    const form = document.querySelector('#addgltransactionform')
+    form.reset();
     did('gltdebitcontainer').innerHTML = ''
     did('gltcreditcontainer').innerHTML = ''
+    if(did('creditaccount_0')) did('creditaccount_0').value = ''
+    if(did('creditamount_0')) did('creditamount_0').value = ''
+    if(did('debitaccount_0')) did('debitaccount_0').value = ''
+    if(did('debitamount_0')) did('debitamount_0').value = ''
+    if(did('description')) did('description').value = ''
+    if(did('transactiondate')) did('transactiondate').value = ''
     totalcreditnumber = 0
     totaldebitnumber = 0
-    document.getElementById('glttotalcredit').value = ''
-    document.getElementById('glttotaldebit').value = ''
+    document.getElementById('glttotalcredit').value = '0'
+    document.getElementById('glttotaldebit').value = '0'
 }
 
 async function addgltransactionFormSubmitHandler() {
