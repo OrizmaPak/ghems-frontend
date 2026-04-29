@@ -35,23 +35,7 @@
                             </ul>
                             
                             <form id="salesform" class="">
-                                     <ol class="flex items-center !text-xs w-full  p-3 space-x-2 text-sm font-medium text-center text-gray-500 bg-white mt-4 shadow-sm sm:text-base  sm:p-4 sm:space-x-4 rtl:space-x-reverse">
-                                   
-                                <div class="flex justify-end w-full">
-                                                <!-- <button onclick="printContent('HEMS sales FORM', null, 'salesform', true)" type="button" class="w-full h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div>-->
-                                                <!--    <span>print</span> -->
-                                                <!--</button>-->
-                                                 <button onclick="exportToPDF('salesform')" type="button" class="btn">
-                                                    <div class="btnloader" style="display: none;"></div>
-                                                    <span>Export PDF</span> 
-                                                </button>
-                                                <!-- <button onclick="exportToPDF('salesform')" type="button" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div>-->
-                                                <!--    <span>Export PDF</span> -->
-                                                <!--</button>-->
-                                            </div>
-                                </ol>
+                                     <ol class="flex items-center !text-xs w-full p-3 space-x-2 text-sm font-medium text-center text-gray-500 bg-white mt-4 shadow-sm sm:text-base sm:p-4 sm:space-x-4 rtl:space-x-reverse"></ol>
                                     <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                         <div class="grid grid-cols-1  lg:grid-cols-1 gap-10 p-3 bg-[#3b82f6] text-white rounded shadow-sm">
                                             <div class="form-group">
@@ -281,7 +265,15 @@
                                 </div>
                             </form>
                                 <div class="table-content">
-                                    <table id="tableer">
+                                    <div class="flex justify-end mb-3 gap-2">
+                                        <button onclick="exportToPDF('salesviewtable')" type="button" class="btn !py-2 !px-4 !text-xs">
+                                            <span>Export PDF</span>
+                                        </button>
+                                        <button onclick="exportToExcel('salesviewtable','HEMS SALES VIEW')" type="button" class="btn !py-2 !px-4 !text-xs">
+                                            <span>Export Excel</span>
+                                        </button>
+                                    </div>
+                                    <table id="salesviewtable">
                                         <thead>
                                             <tr>
                                                 <?php if(!$isOrderRoute): ?>
@@ -372,9 +364,17 @@
                                             <button type="button" id="clearbillfilters" class="btn !py-2 !px-4 !text-xs !bg-slate-500">Clear</button>
                                         </div>
                                     </div>
+                                    <div class="flex justify-end mt-3 gap-2">
+                                        <button onclick="exportToPDF('salesbillsviewtable')" type="button" class="btn !py-2 !px-4 !text-xs">
+                                            <span>Export PDF</span>
+                                        </button>
+                                        <button onclick="exportToExcel('salesbillsviewtable','HEMS BILLS VIEW')" type="button" class="btn !py-2 !px-4 !text-xs">
+                                            <span>Export Excel</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="table-content">
-                                    <table id="tableer">
+                                    <table id="salesbillsviewtable">
                                         <thead>
                                             <tr>
                                                 <th>s/n</th>
