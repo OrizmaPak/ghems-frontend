@@ -276,15 +276,13 @@
                                     <table id="salesviewtable">
                                         <thead>
                                             <tr>
-                                                <?php if(!$isOrderRoute): ?>
-                                                <th>s/n</th>
-                                                <?php endif; ?>
                                                 <th>data</th>
                                                 <?php if($isOrderRoute): ?>
                                                 <th>items</th>
                                                 <th>comments</th>
                                                 <?php else: ?>
                                                 <th>ref</th>
+                                                <th>items</th>
                                                 <th>description</th>
                                                 <?php endif; ?>
                                                 <?php if(!$isOrderRoute): ?>

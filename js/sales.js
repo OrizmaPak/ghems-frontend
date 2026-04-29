@@ -1068,11 +1068,24 @@ async function onsalesTableDataSignal() {
             ? item.saleentry.ownerid
             : item.saleentry.reference
         const itemSummary = (item.saledetail || []).map((detail) => `${detail.itemname || '-'} (${formatNumber(detail.qty || 0)})`).join(', ') || '-'
+        const itemRows = (item.saledetail || [])
+        const salesItemsPreview = `
+            <table class="w-full text-xs">
+                <tbody>
+                    ${itemRows.slice(0, 3).map((detail, detailIndex) => `
+                        <tr>
+                            <td class="pr-2">${detailIndex + 1}.</td>
+                            <td>${detail.itemname || '-'} (${formatNumber(detail.qty || 0)})</td>
+                        </tr>
+                    `).join('')}
+                    ${itemRows.length > 3 ? `<tr><td colspan="2"><span class="text-blue-600 text-xs cp" onclick="openSalesReportModal('${safeRef}', '', true)">click to view all products (${itemRows.length})</span></td></tr>` : ''}
+                </tbody>
+            </table>
+        `
         if(orderMode){
             const currentStatus = normalizeOrderStatusValue(item.saleentry.moredata, true) || 'ORDER'
             const statusOptions = getOrderStatusOptions(currentStatus)
             const safeComment = item.saleentry.description || item.saledetail?.[0]?.description || ''
-            const itemRows = (item.saledetail || [])
             const renderItemLabel = (label) => {
                 const raw = String(label || '-')
                 if(raw.length > 30){
@@ -1117,16 +1130,16 @@ async function onsalesTableDataSignal() {
         }
         return `
             <tr>
-                <td>${index + 1}</td>
                 <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
                 <td>${item.saleentry.reference}</td>
+                <td>${salesItemsPreview}</td>
                 <td>${item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description}</td>
                 <td>${formatNumber(item.saleentry.servicecharge)}</td>
                 <td>${formatNumber(item.amountreceived)}</td>
                 <td>${item.saleentry.paymentmethod}</td>
                 <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
                 <td class="flex items-center gap-3">
-                    <button title="View Item" onclick="openSalesReportModal('${safeRef}', '${item.saleentry.ownerid < 0 ? '' : String(item.saleentry.ownerid).replace(/'/g, "\\'")}', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                    <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
                     <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchsalesbyreference', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
                 </td>
             </tr>
