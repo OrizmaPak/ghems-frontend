@@ -49,6 +49,7 @@
                                                         <div class="btnloader" style="display: none;"></div>
                                                         <span class="material-symbols-outlined">send</span>
                                                     </button>
+                                                    <button id="openTrackRoomPicker" type="button" class="w-full h-[40px] md:w-max bg-white text-sm capitalize text-blue-400 px-4 py-1 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-2 ml-2">Find</button>
                                                 </div>
                                             </div>
                                             <!--<div class="grid grid-cols-1 !mb-5 lg:grid-cols-1 gap-10">-->
@@ -111,6 +112,36 @@
                             </div>
                         
                         </section>  
+
+                        <div id="trackRoomPickerModal" onclick="if(event.target.id=='trackRoomPickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+                          <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
+                            <div class="flex justify-between items-center mb-3">
+                              <p class="font-semibold">Select Checked-In / Reservation</p>
+                              <span class="material-symbols-outlined cp text-red-500" onclick="did('trackRoomPickerModal').classList.add('hidden')">close</span>
+                            </div>
+                            <div class="flex gap-2 mb-3">
+                              <button type="button" id="trackPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchTrackPickerTab('checkedin')">All Checked In</button>
+                              <button type="button" id="trackPickerTabReservations" class="btn btn-sm" onclick="switchTrackPickerTab('reservations')">All Reservations</button>
+                              <input id="trackPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderTrackPickerRows()">
+                            </div>
+                            <div class="table-content">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>ref</th>
+                                    <th>room</th>
+                                    <th>guest</th>
+                                    <th>phone</th>
+                                    <th>action</th>
+                                  </tr>
+                                </thead>
+                                <tbody id="trackPickerRows">
+                                  <tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
                         
                         
   <!--                      <div id="modalreceipt" onclick="if(event.target.id == 'modalreceipt')this.classList.add('hidden')" class="!z-[100] w-screen h-screen fixed bg-[#5a5a5a3e] top-0 left-0 p-10 overflow-auto hidden">-->
