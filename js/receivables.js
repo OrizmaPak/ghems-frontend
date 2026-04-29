@@ -23,6 +23,7 @@ async function receivablesActive(mode='receivables') {
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
     if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => fetchreceiveables('', did('receiveablesroomnumber').value))
+    setupReceivablesRoomPicker()
     if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
     datasource = []
     receiveablesFiltered = false
@@ -32,6 +33,91 @@ async function receivablesActive(mode='receivables') {
         return
     }
     await fetchreceiveables()
+}
+
+let receivablesPickerData = { checkedin: [], reservations: [] }
+let receivablesPickerTab = 'checkedin'
+let receivablesPickerViewRows = []
+
+function setupReceivablesRoomPicker(){
+    const submitBtn = did('submitreceiveablesfilter')
+    if(!submitBtn || did('openReceivablesRoomPicker'))return
+    submitBtn.insertAdjacentHTML('afterend', `<button id="openReceivablesRoomPicker" type="button" class="btn"><span>Find</span></button>`)
+    buildReceivablesPickerModal()
+    did('openReceivablesRoomPicker').addEventListener('click', openReceivablesRoomPicker)
+}
+
+function buildReceivablesPickerModal(){
+    if(did('receivablesRoomPickerModal'))return
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="receivablesRoomPickerModal" onclick="if(event.target.id=='receivablesRoomPickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+      <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
+        <div class="flex justify-between items-center mb-3">
+          <p class="font-semibold">Select Checked-In / Reservation</p>
+          <span class="material-symbols-outlined cp text-red-500" onclick="did('receivablesRoomPickerModal').classList.add('hidden')">close</span>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button type="button" id="receivablesPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchReceivablesPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="receivablesPickerTabReservations" class="btn btn-sm" onclick="switchReceivablesPickerTab('reservations')">All Reservations</button>
+          <input id="receivablesPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderReceivablesPickerRows()">
+        </div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>action</th></tr></thead><tbody id="receivablesPickerRows"></tbody></table></div>
+      </div>
+    </div>`)
+}
+
+async function openReceivablesRoomPicker(){
+    did('receivablesRoomPickerModal').classList.remove('hidden')
+    if(!receivablesPickerData.checkedin.length){
+        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
+        if(reqCheckin.status) receivablesPickerData.checkedin = normalizeReceivablesPickerRows(reqCheckin.data || [])
+    }
+    if(!receivablesPickerData.reservations.length){
+        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
+        if(reqRes.status) receivablesPickerData.reservations = normalizeReceivablesPickerRows(reqRes.data || [])
+    }
+    renderReceivablesPickerRows()
+}
+
+function switchReceivablesPickerTab(tab){
+    receivablesPickerTab = tab
+    did('receivablesPickerTabCheckedin').className = `btn btn-sm ${tab=='checkedin' ? 'bg-blue-500 text-white' : ''}`
+    did('receivablesPickerTabReservations').className = `btn btn-sm ${tab=='reservations' ? 'bg-blue-500 text-white' : ''}`
+    renderReceivablesPickerRows()
+}
+
+function normalizeReceivablesPickerRows(data){
+    return data.map(item => {
+        const res = item.reservations || item
+        const rows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = rows.map(r => r.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
+        const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return { reference: res.reference || '', roomnumber: rooms, guestname, phone }
+    }).filter(x => x.reference || x.roomnumber)
+}
+
+function renderReceivablesPickerRows(){
+    const search = (did('receivablesPickerSearch')?.value || '').toLowerCase().trim()
+    const source = receivablesPickerTab == 'checkedin' ? receivablesPickerData.checkedin : receivablesPickerData.reservations
+    const rows = source.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone}`.toLowerCase().includes(search))
+    receivablesPickerViewRows = rows
+    did('receivablesPickerRows').innerHTML = rows.map((item, idx) => `
+        <tr>
+            <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
+            <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick='useReceivablesRoomPicker(${idx})'>Use</button></td>
+        </tr>
+    `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+}
+
+function useReceivablesRoomPicker(rowIndex){
+    const item = receivablesPickerViewRows[rowIndex]
+    if(!item)return
+    const room = (item.roomnumber || '').split(',')[0].trim()
+    if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = room
+    did('receivablesRoomPickerModal').classList.add('hidden')
+    fetchreceiveables('', room)
 }
 
 async function fetchreceiveables(id='', roomnumber='') {

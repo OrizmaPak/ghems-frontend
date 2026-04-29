@@ -2,9 +2,110 @@ let trackid
 async function trackActive() {
     // const form = document.querySelector('#trackform')
     if(document.querySelector('#submit')) document.querySelector('#submit').addEventListener('click', fetchtrack)
+    setupTrackRoomPicker()
     // if(document.querySelector('#submittrack')) document.querySelector('#submittrack').addEventListener('click', trackFormSubmitHandler)
     datasource = []
     // await fetchtrack()
+}
+
+let trackPickerData = { checkedin: [], reservations: [] }
+let trackPickerTab = 'checkedin'
+let trackPickerViewRows = []
+
+function setupTrackRoomPicker(){
+    const submitBtn = did('submit')
+    if(!submitBtn || did('openTrackRoomPicker'))return
+    submitBtn.insertAdjacentHTML('afterend', `
+        <button id="openTrackRoomPicker" type="button" class="w-full h-[40px] md:w-max bg-white text-sm capitalize text-blue-400 px-4 py-1 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-2">Find</button>
+    `)
+    submitBtn.parentElement.classList.add('gap-2')
+    buildTrackRoomPickerModal()
+    did('openTrackRoomPicker').addEventListener('click', openTrackRoomPicker)
+}
+
+function buildTrackRoomPickerModal(){
+    if(did('trackRoomPickerModal'))return
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="trackRoomPickerModal" onclick="if(event.target.id=='trackRoomPickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+      <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
+        <div class="flex justify-between items-center mb-3">
+          <p class="font-semibold">Select Checked-In / Reservation</p>
+          <span class="material-symbols-outlined cp text-red-500" onclick="did('trackRoomPickerModal').classList.add('hidden')">close</span>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button type="button" id="trackPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchTrackPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="trackPickerTabReservations" class="btn btn-sm" onclick="switchTrackPickerTab('reservations')">All Reservations</button>
+          <input id="trackPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderTrackPickerRows()">
+        </div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>action</th></tr></thead><tbody id="trackPickerRows"></tbody></table></div>
+      </div>
+    </div>`)
+}
+
+async function openTrackRoomPicker(){
+    did('trackRoomPickerModal').classList.remove('hidden')
+    if(!trackPickerData.checkedin.length){
+        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
+        if(reqCheckin.status) trackPickerData.checkedin = normalizeTrackPickerCheckins(reqCheckin.data || [])
+    }
+    if(!trackPickerData.reservations.length){
+        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
+        if(reqRes.status) trackPickerData.reservations = normalizeTrackPickerReservations(reqRes.data || [])
+    }
+    renderTrackPickerRows()
+}
+
+function switchTrackPickerTab(tab){
+    trackPickerTab = tab
+    did('trackPickerTabCheckedin').className = `btn btn-sm ${tab=='checkedin' ? 'bg-blue-500 text-white' : ''}`
+    did('trackPickerTabReservations').className = `btn btn-sm ${tab=='reservations' ? 'bg-blue-500 text-white' : ''}`
+    renderTrackPickerRows()
+}
+
+function normalizeTrackPickerCheckins(data){
+    return data.map(item => {
+        const res = item.reservations || {}
+        const rows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = rows.map(r => r.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
+        const guestName = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return { reference: res.reference || '', roomnumber: rooms, guestname: guestName, phone }
+    }).filter(x => x.reference || x.roomnumber)
+}
+
+function normalizeTrackPickerReservations(data){
+    return data.map(item => {
+        const res = item.reservations || item
+        const rows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = rows.map(r => r.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
+        const guestName = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return { reference: res.reference || '', roomnumber: rooms, guestname: guestName, phone }
+    }).filter(x => x.reference || x.roomnumber)
+}
+
+function renderTrackPickerRows(){
+    const search = (did('trackPickerSearch')?.value || '').toLowerCase().trim()
+    const source = trackPickerTab == 'checkedin' ? trackPickerData.checkedin : trackPickerData.reservations
+    const rows = source.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone}`.toLowerCase().includes(search))
+    trackPickerViewRows = rows
+    did('trackPickerRows').innerHTML = rows.map((item, idx) => `
+        <tr>
+            <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
+            <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick='useTrackRoomPicker(${idx})'>Use</button></td>
+        </tr>
+    `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+}
+
+function useTrackRoomPicker(rowIndex){
+    const item = trackPickerViewRows[rowIndex]
+    if(!item)return
+    const room = (item.roomnumber || '').split(',')[0].trim()
+    if(did('roomnumber'))did('roomnumber').value = room
+    did('trackRoomPickerModal').classList.add('hidden')
+    fetchtrack()
 }
 
 async function fetchtrack() {

@@ -4,8 +4,96 @@ async function invoicingActive() {
     if(document.querySelector('#submit')) document.querySelector('#submit').addEventListener('click', fetchinvoicing)
     if(document.querySelector('#submitinvoice')) document.querySelector('#submitinvoice').addEventListener('click', invoicingFormSubmitHandler)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    setupInvoicingReferencePicker()
     datasource = []
     // await fetchinvoicing()
+}
+
+let invoicingPickerData = { checkedin: [], reservations: [] }
+let invoicingPickerTab = 'checkedin'
+let invoicingPickerViewRows = []
+
+function setupInvoicingReferencePicker(){
+    const submitBtn = did('submit')
+    if(!submitBtn || did('openInvoicingReferencePicker'))return
+    submitBtn.insertAdjacentHTML('afterend', `
+        <button id="openInvoicingReferencePicker" type="button" class="w-full h-[40px] md:w-max bg-white text-sm capitalize text-blue-400 px-4 py-1 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-2">Find</button>
+    `)
+    submitBtn.parentElement.classList.add('gap-2')
+    buildInvoicingPickerModal()
+    did('openInvoicingReferencePicker').addEventListener('click', openInvoicingReferencePicker)
+}
+
+function buildInvoicingPickerModal(){
+    if(did('invoicingReferencePickerModal'))return
+    document.body.insertAdjacentHTML('beforeend', `
+    <div id="invoicingReferencePickerModal" onclick="if(event.target.id=='invoicingReferencePickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+      <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
+        <div class="flex justify-between items-center mb-3">
+          <p class="font-semibold">Select Checked-In / Reservation</p>
+          <span class="material-symbols-outlined cp text-red-500" onclick="did('invoicingReferencePickerModal').classList.add('hidden')">close</span>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button type="button" id="invoicingPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchInvoicingPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="invoicingPickerTabReservations" class="btn btn-sm" onclick="switchInvoicingPickerTab('reservations')">All Reservations</button>
+          <input id="invoicingPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderInvoicingPickerRows()">
+        </div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>action</th></tr></thead><tbody id="invoicingPickerRows"></tbody></table></div>
+      </div>
+    </div>`)
+}
+
+async function openInvoicingReferencePicker(){
+    did('invoicingReferencePickerModal').classList.remove('hidden')
+    if(!invoicingPickerData.checkedin.length){
+        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
+        if(reqCheckin.status) invoicingPickerData.checkedin = normalizeInvoicingPickerRows(reqCheckin.data || [])
+    }
+    if(!invoicingPickerData.reservations.length){
+        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
+        if(reqRes.status) invoicingPickerData.reservations = normalizeInvoicingPickerRows(reqRes.data || [])
+    }
+    renderInvoicingPickerRows()
+}
+
+function switchInvoicingPickerTab(tab){
+    invoicingPickerTab = tab
+    did('invoicingPickerTabCheckedin').className = `btn btn-sm ${tab=='checkedin' ? 'bg-blue-500 text-white' : ''}`
+    did('invoicingPickerTabReservations').className = `btn btn-sm ${tab=='reservations' ? 'bg-blue-500 text-white' : ''}`
+    renderInvoicingPickerRows()
+}
+
+function normalizeInvoicingPickerRows(data){
+    return data.map(item => {
+        const res = item.reservations || item
+        const rows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = rows.map(r => r.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
+        const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return { reference: res.reference || '', roomnumber: rooms, guestname, phone }
+    }).filter(x => x.reference)
+}
+
+function renderInvoicingPickerRows(){
+    const search = (did('invoicingPickerSearch')?.value || '').toLowerCase().trim()
+    const source = invoicingPickerTab == 'checkedin' ? invoicingPickerData.checkedin : invoicingPickerData.reservations
+    const rows = source.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone}`.toLowerCase().includes(search))
+    invoicingPickerViewRows = rows
+    did('invoicingPickerRows').innerHTML = rows.map((item, idx) => `
+        <tr>
+            <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
+            <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick='useInvoicingReferencePicker(${idx})'>Use</button></td>
+        </tr>
+    `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+}
+
+function useInvoicingReferencePicker(rowIndex){
+    const item = invoicingPickerViewRows[rowIndex]
+    if(!item)return
+    if(did('reference'))did('reference').value = item.reference
+    did('invoicingReferencePickerModal').classList.add('hidden')
+    fetchinvoicing()
 }
 
 async function fetchinvoicing() {
