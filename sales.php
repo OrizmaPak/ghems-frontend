@@ -70,7 +70,7 @@
                                                 </select>
                                             </div>
                                             <div class="form-group" id="ownercontainer">
-                                                <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Order Number' : 'Invoice / reciept to'; ?></label>
+                                                <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Order Details' : 'Invoice / reciept to'; ?></label>
                                                 <input autocomplete="off" type="text" name="" id="owner1" class="form-control comp" onchange="checkdatalist(this, 'owner');" placeholder="">
                                                 <input type="text" name="owner" id="owner" class="form-control hidden" onchange="checkdatalist(this);" placeholder="">
                                             </div>

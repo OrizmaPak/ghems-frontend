@@ -153,7 +153,7 @@ function configureOrderWorkspaceUi() {
     }
 
     const ownerLabel = did('ownercontainer')?.querySelector('label')
-    if(ownerLabel) ownerLabel.textContent = 'Order Number'
+    if(ownerLabel) ownerLabel.textContent = 'Order Details'
 
     const commentsLabel = did('description')?.closest('.form-group')?.querySelector('label')
     if(commentsLabel) commentsLabel.textContent = 'Comments'
@@ -748,6 +748,7 @@ function handlesalesapplyto (){
     if(!document.getElementById('applyto').value)return
     document.getElementById('owner').value = '';
     document.getElementById('owner1').value = '';
+    document.getElementById('owner1').removeAttribute('list')
     document.getElementById('owner').removeAttribute('list')
     if(document.getElementById('applyto').value == 'ROOMS'){
         document.getElementById('owner1').setAttribute('list', 'hems_roomnumber_id1')
