@@ -129,6 +129,9 @@ async function settingsFormSubmitHandler() {
     let payload
 
     payload = getFormData2(document.querySelector('#settingsform'), [['photofilename', showFileName('fileInput')],['userphotoname', getFile('fileInput')]])
+    // Ensure these charges are always present in the controller payload.
+    payload.set('consumptioncharge', String(did('consumptioncharge')?.value || '0'))
+    payload.set('servicecharge', String(did('servicecharge')?.value || '0'))
     let request = await httpRequest2('../controllers/organisationinfoscript', payload, document.querySelector('#settingsform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
