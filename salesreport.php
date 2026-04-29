@@ -141,9 +141,17 @@
                             <hr class="my-10">
                             
                             
-                             <div >
+                             <div id="salesreporttablewrap">
+                                <div class="w-full flex justify-end gap-2 my-3">
+                                    <button onclick="printContent('SALES REPORT TABLE', null, 'salesreporttablewrap', true)" type="button" class="btn">
+                                        <span>Print</span>
+                                    </button>
+                                    <button onclick="exportToExcel('salesreporttable', 'HEMS SALES REPORT')" type="button" class="btn">
+                                        <span>Export Excel</span>
+                                    </button>
+                                </div>
                                 <div class="table-content">
-                                    <table>
+                                    <table id="salesreporttable">
                                         <thead>
                                             <tr>
                                                 <th>s/n</th>
