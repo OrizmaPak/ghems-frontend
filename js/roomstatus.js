@@ -117,6 +117,9 @@ async function fetchallroomstatus() {
         //                                 </div>
         // `).join('')
         did('roomer').innerHTML = map.map((data, i)=>{
+            const normalizedRoomStatus = String(data.roomstatus || '').trim().toUpperCase() === 'CHECKED IN'
+                ? 'OCCUPIED'
+                : String(data.roomstatus || '').trim().toUpperCase()
             // Determine status colors and gradients
             let statusConfig = {
                 'AVAILABLE': {
@@ -147,7 +150,7 @@ async function fetchallroomstatus() {
                     pulse: ''
                 }
             };
-            let config = statusConfig[data.roomstatus] || statusConfig['AVAILABLE'];
+            let config = statusConfig[normalizedRoomStatus] || statusConfig['AVAILABLE'];
             
         return`
              <div class="room-status-card group relative w-full max-w-[320px] h-auto
@@ -157,9 +160,9 @@ async function fetchallroomstatus() {
                     rounded-2xl shadow-xl overflow-hidden
                     transition-all duration-500 ease-out
                     hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1
-                    ${data.roomstatus == 'AVAILABLE' ? 'hover:border-emerald-500' : ''}
-                    ${data.roomstatus == 'OCCUPIED' ? 'hover:border-red-500' : ''}
-                    ${data.roomstatus == 'RESERVED' ? 'hover:border-amber-500' : ''}
+                    ${normalizedRoomStatus == 'AVAILABLE' ? 'hover:border-emerald-500' : ''}
+                    ${normalizedRoomStatus == 'OCCUPIED' ? 'hover:border-red-500' : ''}
+                    ${normalizedRoomStatus == 'RESERVED' ? 'hover:border-amber-500' : ''}
                     animate-fade-in"
                     style="animation-delay: ${i * 0.05}s"
                     id="room-card-${data.roomnumber}">
@@ -188,7 +191,7 @@ async function fetchallroomstatus() {
                         <div class="flex flex-col items-end gap-1">
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${config.statusBg} ${config.statusColor} border border-white/70 shadow-sm">
                                 <span class="material-symbols-outlined text-[14px] leading-none">${config.icon}</span>
-                                <span class="leading-none">${data.roomstatus}</span>
+                                <span class="leading-none">${normalizedRoomStatus}</span>
                             </span>
                             <button onclick="toggleRoomCard('${data.roomnumber}')"
                                     id="toggle-btn-${data.roomnumber}"
@@ -297,7 +300,7 @@ async function fetchallroomstatus() {
                         
                         <!-- Action Buttons -->
                         <div class="flex flex-wrap gap-2 pt-2">
-                            ${data.roomstatus == 'AVAILABLE' ? `
+                            ${normalizedRoomStatus == 'AVAILABLE' ? `
                                 <button onclick="sessionStorage.setItem('roomsetting', '${data.categoryid}_${data.roomnumber}');did('checkin').click()" 
                                         type="button" 
                                         class="flex-1 group/btn bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
@@ -312,7 +315,7 @@ async function fetchallroomstatus() {
                                 </button>
                             ` : ''}
                             
-                            ${data.roomstatus == 'OCCUPIED' ? `
+                            ${normalizedRoomStatus == 'OCCUPIED' ? `
                                 <button type="button" 
                                         class="flex-1 group/btn bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
                                     <span class="material-symbols-outlined text-lg">logout</span>
@@ -325,7 +328,7 @@ async function fetchallroomstatus() {
                                 </button>
                             ` : ''}
                             
-                            ${data.roomstatus == 'RESERVED' ? `
+                            ${normalizedRoomStatus == 'RESERVED' ? `
                                 <button onclick="viewroomreservationcheckin('${data.reservationid}', this)" 
                                         type="button" 
                                         class="flex-1 group/btn bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
