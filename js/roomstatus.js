@@ -24,7 +24,12 @@ async function fetchallroomstatus() {
         if(did('roomstatuser').value == ''){
             map = request.data
         }else{
-            map = request.data.filter(dat=>dat.roomstatus == did('roomstatuser').value)
+            const selectedStatus = String(did('roomstatuser').value || '').trim().toUpperCase()
+            map = request.data.filter(dat=>{
+                const rawStatus = String(dat.roomstatus || '').trim().toUpperCase()
+                const normalizedStatus = rawStatus === 'CHECKED IN' ? 'OCCUPIED' : rawStatus
+                return normalizedStatus === selectedStatus
+            })
         }
         if(map.length<1){
             did('roomer').innerHTML = 'No Room found for this category'
