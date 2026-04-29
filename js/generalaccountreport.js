@@ -1,4 +1,10 @@
 let generalaccountreportid
+function parseGeneralReportNumber(value){
+    const cleaned = String(value ?? '').replace(/,/g, '').trim()
+    const parsed = Number(cleaned)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
 async function generalaccountreportActive() {
     if(document.querySelector('#submit')) document.querySelector('#submit').addEventListener('click', e=>fetchgeneralaccountreport())
     datasource = []
@@ -17,7 +23,7 @@ async function fetchgeneralaccountreport() {
     let request = await httpRequest2('../controllers/fetchgeneraltransactions', getparamm(), document.querySelector('#submit'), 'json')
     document.getElementById('tabledata').innerHTML = `No records retrieved`;
     if(request.status) {
-                datasource = request.data
+                datasource = (request.data || []).filter((item) => parseGeneralReportNumber(item?.Amount) !== 0)
                 await resolvePagination(datasource, ongeneralaccountreportTableDataSignal)
                 document.getElementById('tabledata').innerHTML += `
                                         <tr> 
@@ -25,11 +31,11 @@ async function fetchgeneralaccountreport() {
                                             <td></td>
                                             <td></td>
                                             <td></td>
-                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.Amount),0))}</td>
-                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.Consumption),0))}</td>
-                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+Number(item['Service Charge']),0))}</td>
-                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.VAT),0))}</td>
-                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.Total),0))}</td>
+                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.Amount),0))}</td>
+                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.Consumption),0))}</td>
+                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item['Service Charge']),0))}</td>
+                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.VAT),0))}</td>
+                                            <td>${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.Total),0))}</td>
                                         </tr> `
                 if (document.getElementById('tabledata')) {
   const container = document.getElementById('tabledata').parentElement.parentElement;
@@ -42,7 +48,7 @@ async function fetchgeneralaccountreport() {
                 <div class="sm:flex sm:items-start">
                     <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                         <h3 class="text-xs leading-6 font-medium text-blue-400">Total Amount</h3>
-                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.Amount),0))}</p>
+                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.Amount),0))}</p>
                     </div>
                 </div>
             </div>
@@ -52,7 +58,7 @@ async function fetchgeneralaccountreport() {
                 <div class="sm:flex sm:items-start">
                     <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                         <h3 class="text-xs leading-6 font-medium text-blue-400">Total Consumption</h3>
-                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.Consumption),0))}</p>
+                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.Consumption),0))}</p>
                     </div>
                 </div>
             </div>
@@ -62,7 +68,7 @@ async function fetchgeneralaccountreport() {
                 <div class="sm:flex sm:items-start">
                     <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                         <h3 class="text-xs leading-6 font-medium text-blue-400">Total Service Charge</h3>
-                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+Number(item['Service Charge']),0))}</p>
+                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item['Service Charge']),0))}</p>
                     </div>
                 </div>
             </div>
@@ -74,7 +80,7 @@ async function fetchgeneralaccountreport() {
                 <div class="sm:flex sm:items-start">
                     <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                         <h3 class="text-xs leading-6 font-medium text-blue-400">Total VAT</h3>
-                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.VAT),0))}</p>
+                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.VAT),0))}</p>
                     </div>
                 </div>
             </div>
@@ -84,7 +90,7 @@ async function fetchgeneralaccountreport() {
                 <div class="sm:flex sm:items-start">
                     <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                         <h3 class="text-xs leading-6 font-medium text-blue-400">Grand Total</h3>
-                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+Number(item.Total),0))}</p>
+                        <p class="text-md font-bold text-black opacity-[0.7]">${formatNumber(datasource.reduce((sum, item)=>sum+parseGeneralReportNumber(item.Total),0))}</p>
                     </div>
                 </div>
             </div>
