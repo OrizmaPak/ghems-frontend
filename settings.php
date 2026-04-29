@@ -345,6 +345,34 @@
                             </div>
                             <div class="flex flex-col lg:flex-row items-start gap-3 mt-3">
                                 <div class="form-group-auth mt-5">
+                                    <label for="default_glservicecharge" class="text-gray-500 font-normal capitalize text-xs font-heebo">Default GL Service Charge<span class="text-[red]">*</span></label>
+                                    <select name="default_glservicecharge" id="default_glservicecharge" class="populateaccounts font-semibold text-xs focus:outline-none focus:ring-0 comp bg-transparent border-b-2 border-gray-300 focus:border-primary-g transition ease-linear duration-300 w-full">
+                                        <option value=""> -- SELECT ACCOUNT --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group-auth mt-5">
+                                    <label for="default_glconsumptioncharge" class="text-gray-500 font-normal capitalize text-xs font-heebo">Default GL Consumption Charge<span class="text-[red]">*</span></label>
+                                    <select name="default_glconsumptioncharge" id="default_glconsumptioncharge" class="populateaccounts font-semibold text-xs focus:outline-none focus:ring-0 comp bg-transparent border-b-2 border-gray-300 focus:border-primary-g transition ease-linear duration-300 w-full">
+                                        <option value=""> -- SELECT ACCOUNT --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group-auth mt-5">
+                                    <label for="default_gltravelagency" class="text-gray-500 font-normal capitalize text-xs font-heebo">Default GL Travel Agency<span class="text-[red]">*</span></label>
+                                    <select name="default_gltravelagency" id="default_gltravelagency" class="populateaccounts font-semibold text-xs focus:outline-none focus:ring-0 comp bg-transparent border-b-2 border-gray-300 focus:border-primary-g transition ease-linear duration-300 w-full">
+                                        <option value=""> -- SELECT ACCOUNT --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex flex-col lg:flex-row items-start gap-3 mt-3">
+                                <div class="form-group-auth mt-5">
+                                    <label for="default_glfoodbeverages" class="text-gray-500 font-normal capitalize text-xs font-heebo">Default GL Food Beverages<span class="text-[red]">*</span></label>
+                                    <select name="default_glfoodbeverages" id="default_glfoodbeverages" class="populateaccounts font-semibold text-xs focus:outline-none focus:ring-0 comp bg-transparent border-b-2 border-gray-300 focus:border-primary-g transition ease-linear duration-300 w-full">
+                                        <option value=""> -- SELECT ACCOUNT --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex flex-col lg:flex-row items-start gap-3 mt-3">
+                                <div class="form-group-auth mt-5">
                                     <label for="role" class="text-gray-500 font-normal capitalize text-xs font-heebo">Default Bank Account<span class="text-[red]">*</span></label>
                                     <select name="default_bankaccount" id="default_bankaccount" class="populateaccounts font-semibold text-xs focus:outline-none focus:ring-0 comp bg-transparent border-b-2 border-gray-300 focus:border-primary-g transition ease-linear duration-300 w-full">
                                         <option value=""> -- SELECT ACCOUNT --</option>
