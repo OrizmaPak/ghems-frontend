@@ -197,13 +197,14 @@ function receivepurchasestotalcount(){
 
 
 async function reqstockbalance2 (itemid, id, direct=false){
-     function getparamm(){
+    function getparamm(){
         let paramstr = new FormData()
         paramstr.append('itemid', itemid)
         const location = document.getElementById('salespointnamemainstore') ? did('salespointnamemainstore').value : ''
+        const salespoint = did('salespointname')?.value || location || default_department
         paramstr.append('location', location)
-        console.log( 'default_department:', default_department, 'did(salespointname).value:', did('salespointname').value)
-        paramstr.append('salespoint', did('salespointname').value)
+        console.log('default_department:', default_department, 'salespoint:', salespoint, 'location:', location)
+        paramstr.append('salespoint', salespoint)
         return paramstr
     }
     let request = await httpRequest2('../controllers/fetchitembalanceinlocation', getparamm(), null, 'json')
