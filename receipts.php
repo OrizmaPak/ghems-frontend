@@ -23,6 +23,9 @@
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span class="material-symbols-outlined">send</span>
                                             </button>
+                                            <button id="openCashierReceiptRefPicker" type="button" class="w-full h-[40px] md:w-max text-blue-400 text-sm capitalize bg-white px-4 py-1 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-2 ml-2">
+                                                <span>Find</span>
+                                            </button>
                                         </div>
                                     </div>
                                     <!--<div class="grid grid-cols-1 !mb-5 lg:grid-cols-1 gap-10">-->

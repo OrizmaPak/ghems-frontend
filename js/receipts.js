@@ -1,12 +1,116 @@
 let receiptsid
+let cashierReceiptPickerData = { checkedin: [], reservations: [] }
+let cashierReceiptPickerTab = 'checkedin'
+let cashierReceiptPickerViewRows = []
 async function receiptsActive() {
     const form = document.querySelector('#receiptsform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiptsFormSubmitHandler)
     if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', fetchreceipts)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    setupCashierReceiptReferencePicker()
     datasource = []
     // await fetchreceipts()
     checkforassignmentpayment()
+}
+
+function setupCashierReceiptReferencePicker(){
+    if(!did('openCashierReceiptRefPicker'))return
+    initCashierReceiptReferencePickerModal()
+    did('openCashierReceiptRefPicker').onclick = openCashierReceiptReferencePicker
+}
+
+function initCashierReceiptReferencePickerModal(){
+    if(!did('cashierReceiptRefPickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="cashierReceiptRefPickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center"></div>`)
+    did('cashierReceiptRefPickerModal').className = 'hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center'
+    did('cashierReceiptRefPickerModal').innerHTML = `
+      <div class="max-w-5xl w-full bg-white rounded shadow p-4 max-h-[90vh] overflow-auto">
+        <div class="flex justify-between items-center mb-3">
+          <p class="font-semibold">Select Checked-In / Reservation</p>
+          <span class="material-symbols-outlined cp text-red-500" onclick="did('cashierReceiptRefPickerModal').classList.add('hidden')">close</span>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-3 items-end">
+          <button type="button" id="cashierReceiptPickerTabCheckedin" class="inline-block p-3 border-b-2 border-blue-500 text-blue-600 font-semibold" onclick="switchCashierReceiptPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="cashierReceiptPickerTabReservations" class="inline-block p-3 border-b-2 border-transparent text-gray-500 font-semibold" onclick="switchCashierReceiptPickerTab('reservations')">All Reservations</button>
+          <div class="ml-auto grid grid-cols-1 md:grid-cols-3 gap-2 w-full md:w-auto">
+            <input id="cashierReceiptPickerStartDate" type="date" class="form-control">
+            <input id="cashierReceiptPickerEndDate" type="date" class="form-control">
+            <button type="button" class="btn btn-sm" onclick="reloadCashierReceiptPickerTabData()">Filter</button>
+          </div>
+          <input id="cashierReceiptPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderCashierReceiptPickerRows()">
+        </div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="cashierReceiptPickerRows"></tbody></table></div>
+      </div>
+    `
+    did('cashierReceiptRefPickerModal').onclick = function(event){ if(event.target.id=='cashierReceiptRefPickerModal') this.classList.add('hidden') }
+    const year = new Date().getFullYear()
+    if(did('cashierReceiptPickerStartDate') && !did('cashierReceiptPickerStartDate').value) did('cashierReceiptPickerStartDate').value = `${year}-01-01`
+    if(did('cashierReceiptPickerEndDate') && !did('cashierReceiptPickerEndDate').value) did('cashierReceiptPickerEndDate').value = `${year + 1}-12-31`
+}
+
+async function openCashierReceiptReferencePicker(){
+    did('cashierReceiptRefPickerModal').classList.remove('hidden')
+    await reloadCashierReceiptPickerTabData()
+}
+
+function switchCashierReceiptPickerTab(tab){
+    cashierReceiptPickerTab = tab
+    did('cashierReceiptPickerTabCheckedin').className = `inline-block p-3 border-b-2 font-semibold ${tab=='checkedin' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    did('cashierReceiptPickerTabReservations').className = `inline-block p-3 border-b-2 font-semibold ${tab=='reservations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    reloadCashierReceiptPickerTabData()
+}
+
+async function reloadCashierReceiptPickerTabData(){
+    const startdate = did('cashierReceiptPickerStartDate')?.value || ''
+    const enddate = did('cashierReceiptPickerEndDate')?.value || ''
+    const payload = new FormData()
+    payload.append('startdate', startdate)
+    payload.append('enddate', enddate)
+    if(cashierReceiptPickerTab == 'checkedin'){
+        const req = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
+        cashierReceiptPickerData.checkedin = req.status ? normalizeCashierReceiptPickerRows(req.data || []) : []
+    }else{
+        const req = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
+        cashierReceiptPickerData.reservations = req.status ? normalizeCashierReceiptPickerRows(req.data || []) : []
+    }
+    renderCashierReceiptPickerRows()
+}
+
+function normalizeCashierReceiptPickerRows(data){
+    return data.map(item => {
+        const res = item.reservations || item
+        const rows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = rows.map(r => r.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
+        const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return { reference: res.reference || '', roomnumber: rooms, guestname, phone, arrivaldate: res.arrivaldate || '', departuredate: res.departuredate || '' }
+    }).filter(x => x.reference)
+}
+
+function renderCashierReceiptPickerRows(){
+    const search = (did('cashierReceiptPickerSearch')?.value || '').toLowerCase().trim()
+    const source = cashierReceiptPickerTab == 'checkedin' ? cashierReceiptPickerData.checkedin : cashierReceiptPickerData.reservations
+    const rows = source.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone}`.toLowerCase().includes(search))
+    cashierReceiptPickerViewRows = rows
+    did('cashierReceiptPickerRows').innerHTML = rows.map((item, idx) => `
+        <tr>
+            <td>${item.reference || '-'}</td>
+            <td>${item.roomnumber || '-'}</td>
+            <td>${item.guestname || '-'}</td>
+            <td>${item.phone || '-'}</td>
+            <td>${item.arrivaldate ? specialformatDateTime(item.arrivaldate) : '-'}</td>
+            <td>${item.departuredate ? specialformatDateTime(item.departuredate) : '-'}</td>
+            <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick="useCashierReceiptReference(${idx})">Use</button></td>
+        </tr>
+    `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+}
+
+function useCashierReceiptReference(index){
+    const item = cashierReceiptPickerViewRows[index]
+    if(!item)return
+    if(did('referencer'))did('referencer').value = item.reference
+    did('cashierReceiptRefPickerModal').classList.add('hidden')
+    fetchreceipts()
 }
 
 function checkforassignmentpayment(){
