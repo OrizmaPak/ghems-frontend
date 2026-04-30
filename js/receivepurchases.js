@@ -184,15 +184,26 @@ function populateReqSelect2(){
 
 
 function receivepurchasestotalcount(){
-    let totalqty = 0
-    let totalcost = 0
-    
-    for(let i=0;i<document.getElementsByName('qty').length;i++){
-        if(document.getElementsByName('qty')[i].value)totalqty = Number(document.getElementsByName('qty')[i].value) + totalqty
-        if(document.getElementsByName('cost')[i].value)totalcost = Number(document.getElementsByName('cost')[i].value) + totalcost
+    let totalOrder = 0
+
+    const qtyInputs = document.getElementsByName('qty')
+    const costInputs = document.getElementsByName('cost')
+    const valueInputs = document.querySelectorAll('input[id^="val_"]')
+
+    for (let i = 0; i < qtyInputs.length; i++) {
+        const valueFromField = Number(valueInputs[i]?.value || 0)
+        if (valueFromField) {
+            totalOrder += valueFromField
+            continue
+        }
+
+        const qty = Number(qtyInputs[i]?.value || 0)
+        const cost = Number(costInputs[i]?.value || 0)
+        totalOrder += qty * cost
     }
-    console.log('qty:', totalqty, 'totalcost:', totalcost)
-    document.getElementById('rptotalorder').textContent = formatCurrency(totalqty*totalcost)
+
+    console.log('totalOrder:', totalOrder)
+    document.getElementById('rptotalorder').textContent = formatCurrency(totalOrder)
 }
 
 
