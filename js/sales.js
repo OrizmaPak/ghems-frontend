@@ -1547,7 +1547,11 @@ async function composeOrderToBill(orderEntry = null) {
         : ''
     if(did('owner1')) did('owner1').value = ownerValue
     if(did('owner')) did('owner').value = ownerValue
-    if(did('description')) did('description').value = String(orderEntry.saleentry.description || '')
+    if(did('description')) {
+        const existingDescription = String(orderEntry.saleentry.description || '').trim()
+        const orderRef = String(orderEntry.saleentry.reference || '').trim()
+        did('description').value = existingDescription || `From Order Ref ${orderRef}`
+    }
     if(did('transactiondate')) did('transactiondate').value = new Date().toISOString().split('T')[0]
     if(did('billreferencecode')) did('billreferencecode').value = ''
     const missingItems = []
@@ -1985,6 +1989,8 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
+            const receiptDescription = String(firstRow.description || rows.find((row) => String(row.description || '').trim())?.description || '').trim()
+            const shouldShowSignatures = !orderPrintMode && !!showSignatures
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
                                         <h4 class="font-semibold">${did('your_companyname').value}</h4>
@@ -2015,6 +2021,10 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Transaction Date:</span>
                                         <span>${specialformatDateTime(rows[0].transactiondate)}</span>
+                                      </p>
+                                      <p class="flex justify-between gap-3 items-start">
+                                        <span class="text-gray-400">${orderPrintMode ? 'Order Comment:' : 'Bill Description:'}</span>
+                                        <span class="text-right break-words max-w-[65%]">${receiptDescription || '-'}</span>
                                       </p>
                                     </div>
                                     <div class="flex flex-col gap-3 pb-6 pt-2 text-[10px] w-full overflow-x-auto">
@@ -2061,15 +2071,20 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                         </tbody>
                                       </table>
                                       <div class=" border-b border border-dashed"></div>
-                                      ${showSignatures ? `<div class="pt-4 pb-2 text-xs">
-                                        <div class="flex justify-between gap-8">
-                                          <div class="flex-1">
-                                            <p class="text-gray-500">Customer Signature</p>
-                                            <div class="h-8 border-b border-gray-400"></div>
-                                          </div>
-                                          <div class="flex-1">
-                                            <p class="text-gray-500">Salesperson Signature</p>
-                                            <div class="h-8 border-b border-gray-400"></div>
+                                      ${shouldShowSignatures ? `<div class="pt-5 pb-3 text-xs">
+                                        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+                                          <p class="text-[11px] tracking-[0.2em] text-slate-500 uppercase mb-3 font-semibold">Authorization Signatures</p>
+                                          <div class="grid grid-cols-2 gap-6">
+                                            <div class="flex flex-col gap-1">
+                                              <p class="text-slate-600 font-medium">Customer Signature</p>
+                                              <div class="h-10 border-b-2 border-slate-400"></div>
+                                              <p class="text-[10px] text-slate-400">Name / Date</p>
+                                            </div>
+                                            <div class="flex flex-col gap-1">
+                                              <p class="text-slate-600 font-medium">Salesperson Signature</p>
+                                              <div class="h-10 border-b-2 border-slate-400"></div>
+                                              <p class="text-[10px] text-slate-400">Name / Date</p>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>` : ``}
