@@ -4,8 +4,62 @@ const ROOM_CLEANING_DEFAULT_ITEM = 'Make Available'
 let roomCleaningRoomSelect = null
 let roomCleaningTomSelectAssetsPromise = null
 let currentRoomCleaningPrintId = ''
+const roomGuestNameCache = new Map()
+
+function extractGuestNameFromLookupResponse(payload) {
+    if (!payload) return ''
+    if (typeof payload === 'string') return payload
+    const preferredKeys = ['guestname', 'guest_name', 'fullname', 'name', 'guest']
+    for (const key of preferredKeys) {
+        if (payload[key]) return String(payload[key])
+    }
+    if (Array.isArray(payload)) {
+        for (const entry of payload) {
+            const nested = extractGuestNameFromLookupResponse(entry)
+            if (nested) return nested
+        }
+    }
+    if (typeof payload === 'object') {
+        for (const value of Object.values(payload)) {
+            const nested = extractGuestNameFromLookupResponse(value)
+            if (nested) return nested
+        }
+    }
+    return ''
+}
+
+async function fetchGuestNameByRoom(roomNumber) {
+    const key = String(roomNumber || '').trim()
+    if (!key) return 'Not Available'
+    if (roomGuestNameCache.has(key)) return roomGuestNameCache.get(key)
+    try {
+        const param = new FormData()
+        param.append('roomnumber', key)
+        const response = await httpRequest2('../controllers/fetchguestnamebyroom.php', param, null, 'json')
+        const source = response?.data ?? response
+        const guestName = extractGuestNameFromLookupResponse(source) || 'Not Occupied'
+        roomGuestNameCache.set(key, guestName)
+        return guestName
+    } catch (error) {
+        roomGuestNameCache.set(key, 'Not Available')
+        return 'Not Available'
+    }
+}
+
+async function hydrateChecklistGuestNames(items = []) {
+    for (const item of items) {
+        const rooms = parseRoomNumberValues(item?.roomnumber)
+        const names = []
+        for (const room of rooms) {
+            const guestName = await fetchGuestNameByRoom(room)
+            names.push(`${room}: ${guestName}`)
+        }
+        item._resolvedGuestName = names.length ? names.join(', ') : 'Not Available'
+    }
+}
 
 function resolveRoomCleaningGuestName(item) {
+    if (item?._resolvedGuestName) return item._resolvedGuestName
     const directGuestName = item?.guestname || item?.guest_name || item?.guest || item?.customername
     const fallback = item?.isoccupied === 'NO' ? 'Not Occupied' : 'Not Available'
     return String(directGuestName || fallback).trim()
@@ -344,6 +398,7 @@ async function fetchroomcleaningchecklist(id='', filters=null) {
         if(!id){
             if(request.data.length) {
                 datasource = request.data
+                await hydrateChecklistGuestNames(datasource)
                 resolvePagination(datasource, onroomcleaningchecklistTableDataSignal)
             }
         }else{
