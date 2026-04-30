@@ -28,21 +28,22 @@ function extractGuestNameFromLookupResponse(payload) {
     return ''
 }
 
-async function fetchGuestNameByRoom(roomNumber) {
+async function fetchGuestNameByRoom(roomNumber, options = {}) {
+    const forceRefresh = !!options.forceRefresh
     const key = String(roomNumber || '').trim()
-    if (!key) return 'Not Available'
-    if (roomGuestNameCache.has(key)) return roomGuestNameCache.get(key)
+    if (!key) return ''
+    if (!forceRefresh && roomGuestNameCache.has(key)) return roomGuestNameCache.get(key)
     try {
         const param = new FormData()
         param.append('roomnumber', key)
         const response = await httpRequest2('../controllers/fetchguestnamebyroom.php', param, null, 'json')
         const source = response?.data ?? response
-        const guestName = extractGuestNameFromLookupResponse(source) || 'No Guest'
+        const guestName = extractGuestNameFromLookupResponse(source) || ''
         roomGuestNameCache.set(key, guestName)
         return guestName
     } catch (error) {
-        roomGuestNameCache.set(key, 'No Guest')
-        return 'No Guest'
+        roomGuestNameCache.set(key, '')
+        return ''
     }
 }
 
@@ -481,12 +482,19 @@ async function onroomcleaningchecklistTableDataSignal() {
     injectPaginatatedTable(rows)
 } 
 
-function fetchroomcleaningchecklistview(id){
-    did('roomcleaningchecklistmodal').classList.remove('hidden')
+async function fetchroomcleaningchecklistview(id){
     const item = datasource.filter(item => item.id == id)[0];
+    if (!item) return
     currentRoomCleaningPrintId = id
     let y = item;
     let x = normalizeChecklistItems(item.items);
+    const rooms = parseRoomNumberValues(y.roomnumber)
+    const roomGuestRows = []
+    for (const room of rooms) {
+        const guestName = await fetchGuestNameByRoom(room, { forceRefresh: true })
+        roomGuestRows.push({ room, guestName: guestName || '' })
+    }
+    did('roomcleaningchecklistmodal').classList.remove('hidden')
     document.getElementById('tabledatarcc').innerHTML = `${x.map((item, i)=>{
         const label = getChecklistItemLabel(item.item);
         return ` <tr><td id="rowrcc_${id}" class="">${i+1}</td>
@@ -514,9 +522,8 @@ function fetchroomcleaningchecklistview(id){
             <span class="whitespace-nowrap">&#9633; Yes &nbsp;&nbsp; &#9633; No</span>
         </div>`
     }).join('')
-    const rooms = parseRoomNumberValues(y.roomnumber)
-    did('rccroomguesttable').innerHTML = rooms.length
-        ? rooms.map(room => `<tr><td class="p-2 border-b border-gray-100">${room}</td><td class="p-2 border-b border-gray-100">${roomGuestNameCache.get(room) || 'No Guest'}</td></tr>`).join('')
+    did('rccroomguesttable').innerHTML = roomGuestRows.length
+        ? roomGuestRows.map(({ room, guestName }) => `<tr><td class="p-2 border-b border-gray-100">${room}</td><td class="p-2 border-b border-gray-100">${guestName}</td></tr>`).join('')
         : `<tr><td class="p-2" colspan="2">No room data</td></tr>`
     did('rcccsupervisor').value = y.supervisor
     did('rcccworkerassigned').value = y.workerassigned || ''
@@ -524,22 +531,14 @@ function fetchroomcleaningchecklistview(id){
     did('rcccentrydate').value = y.entrydate
     did('rcccshift').value = y.shift
     roomcleaningchecklistid = y.id
-    ;(async () => {
-        if (!rooms.length) return
-        for (const room of rooms) {
-            const guestName = await fetchGuestNameByRoom(room)
-            roomGuestNameCache.set(room, guestName || 'No Guest')
-        }
-        did('rccroomguesttable').innerHTML = rooms.map(room => `<tr><td class="p-2 border-b border-gray-100">${room}</td><td class="p-2 border-b border-gray-100">${roomGuestNameCache.get(room) || 'No Guest'}</td></tr>`).join('')
-    })()
 }
 
 function printRoomCleaningChecklistView() {
     return printDomContent('ROOM CLEANING CHECKLIST', 'roomcleaningchecklistprint')
 }
 
-function printRoomCleaningChecklistRow(id) {
-    fetchroomcleaningchecklistview(id)
+async function printRoomCleaningChecklistRow(id) {
+    await fetchroomcleaningchecklistview(id)
     return printRoomCleaningChecklistView()
 }
 
