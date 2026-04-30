@@ -24,7 +24,7 @@
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-2 gap-6">
                                         <div class="form-group">
                                             <label for="logoname" class="control-label">Room Number</label>
-                                            <input type="text" name="roomnumber" id="roomnumber" list="hems_roomnumber_id" onchange="checkdatalist(this)" class="form-control comp" placeholder="Enter Room Number">
+                                            <select name="roomnumber" id="roomnumber" class="form-control comp" multiple></select>
                                         </div>
                                         <div class="form-group">
                                             <label for="logoname" class="control-label">worker assigned</label>

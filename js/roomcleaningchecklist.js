@@ -1,6 +1,107 @@
 let roomcleaningchecklistid
 let roomcleaningchecklistitem
 const ROOM_CLEANING_DEFAULT_ITEM = 'Make Available'
+let roomCleaningRoomSelect = null
+let roomCleaningTomSelectAssetsPromise = null
+
+function parseRoomNumberValues(value) {
+    if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean)
+    return String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+}
+
+function getSelectedRoomNumbers() {
+    const control = did('roomnumber')
+    if (!control) return []
+    if (control.tomselect && typeof control.tomselect.getValue === 'function') {
+        return parseRoomNumberValues(control.tomselect.getValue())
+    }
+    return Array.from(control.selectedOptions || []).map((option) => String(option.value || '').trim()).filter(Boolean)
+}
+
+function setSelectedRoomNumbers(values) {
+    const normalized = parseRoomNumberValues(values)
+    const control = did('roomnumber')
+    if (!control) return
+    if (control.tomselect && typeof control.tomselect.setValue === 'function') {
+        control.tomselect.setValue(normalized, true)
+        return
+    }
+    Array.from(control.options || []).forEach((option) => {
+        option.selected = normalized.includes(String(option.value || '').trim())
+    })
+}
+
+function clearSelectedRoomNumbers() {
+    const control = did('roomnumber')
+    if (!control) return
+    if (control.tomselect && typeof control.tomselect.clear === 'function') {
+        control.tomselect.clear(true)
+        return
+    }
+    Array.from(control.options || []).forEach((option) => {
+        option.selected = false
+    })
+}
+
+function populateRoomNumberOptionsFromDatalist() {
+    const roomControl = did('roomnumber')
+    const source = did('hems_roomnumber_id')
+    if (!roomControl || !source) return
+    const options = Array.from(source.querySelectorAll('option'))
+        .map((option) => String(option.value || '').trim())
+        .filter(Boolean)
+    const unique = [...new Set(options)]
+    roomControl.innerHTML = unique.map((value) => `<option value="${value}">${value}</option>`).join('')
+}
+
+function roomCleaningEnsureTomSelectAssets() {
+    if (window.TomSelect) return Promise.resolve()
+    if (roomCleaningTomSelectAssetsPromise) return roomCleaningTomSelectAssetsPromise
+    roomCleaningTomSelectAssetsPromise = new Promise((resolve, reject) => {
+        if (!document.querySelector('link[data-room-cleaning-tom-select]')) {
+            const css = document.createElement('link')
+            css.rel = 'stylesheet'
+            css.href = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css'
+            css.dataset.roomCleaningTomSelect = '1'
+            document.head.appendChild(css)
+        }
+        const existingScript = document.querySelector('script[data-room-cleaning-tom-select]')
+        if (existingScript) {
+            if (window.TomSelect) resolve()
+            else existingScript.addEventListener('load', () => resolve(), { once: true })
+            return
+        }
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js'
+        script.dataset.roomCleaningTomSelect = '1'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Unable to load Tom Select'))
+        document.head.appendChild(script)
+    })
+    return roomCleaningTomSelectAssetsPromise
+}
+
+async function initializeRoomNumberMultiSelect() {
+    populateRoomNumberOptionsFromDatalist()
+    await roomCleaningEnsureTomSelectAssets()
+    const roomControl = did('roomnumber')
+    if (!roomControl || !window.TomSelect) return
+    if (roomCleaningRoomSelect) {
+        roomCleaningRoomSelect.destroy()
+        roomCleaningRoomSelect = null
+    }
+    roomCleaningRoomSelect = new window.TomSelect(roomControl, {
+        plugins: ['remove_button'],
+        create: false,
+        persist: false,
+        closeAfterSelect: false,
+        maxOptions: 1000,
+        placeholder: 'Select room numbers'
+    })
+}
 // Safely parse checklist items regardless of whether they arrive as a JSON string or array
 const normalizeChecklistItems = (items) => {
     if (!items) return [];
@@ -77,6 +178,7 @@ async function roomcleaningchecklistActive() {
     if(did('rccfilter_apply')) did('rccfilter_apply').addEventListener('click', () => fetchroomcleaningchecklist('', getRoomCleaningChecklistFilters()))
     if(did('rccfilter_reset')) did('rccfilter_reset').addEventListener('click', clearRoomCleaningChecklistFilters)
     datasource = []
+    await initializeRoomNumberMultiSelect()
     await fetchroomcleaningchecklist()
     await populatechecklister()
     ensureDefaultChecklistRow()
@@ -233,6 +335,7 @@ async function fetchroomcleaningchecklist(id='', filters=null) {
         }else{
              roomcleaningchecklistid = request.data[0].id
             populateData(request.data[0])
+            setSelectedRoomNumbers(request.data[0].roomnumber)
             did('supervisor').value = request.data[0].supervisorname + ' || '+ request.data[0].supervisor
         }
     }
@@ -389,6 +492,8 @@ async function roomcleaningchecklistFormSubmitHandler() {
     
     function payload(){
         let param = new FormData(document.querySelector('#roomcleaningchecklistform'))
+        const selectedRooms = getSelectedRoomNumbers()
+        param.set('roomnumber', selectedRooms.join(','))
         if(roomcleaningchecklistid)param.append('id', roomcleaningchecklistid)
         param.append('rowsize', document.getElementsByClassName('itemer').length)
         param.set('supervisor', document.getElementById('supervisor').value.split('||')[1].trim())
@@ -405,6 +510,7 @@ async function roomcleaningchecklistFormSubmitHandler() {
     if(request.status) {
         notification('Record saved successfully!', 1);
         document.querySelector('#roomcleaningchecklistform').reset();
+        clearSelectedRoomNumbers()
         document.getElementById('roomcleaningchecklist').click()
         fetchroomcleaningchecklist();
         return
