@@ -545,7 +545,10 @@ async function runratcod(stop='', state=false){
 // this is called when the adult and children changes
 function handlecheckinrate(idd, state=false){
     if(!did('numberofnights').value)return notification('Please enter your arrival and departure date inorder to get your rates', 0);
-    if(did('roomcategory-'+idd) && did('roomnumber-'+idd))if(!did('roomcategory-'+idd).value || !did('roomnumber-'+idd).value)return notification('Please Enter room details', 0);
+    const allowOptionalReservationRoom = did('guestreservationform');
+    if(did('roomcategory-'+idd) && did('roomnumber-'+idd)){
+        if(!did('roomcategory-'+idd).value || (!allowOptionalReservationRoom && !did('roomnumber-'+idd).value))return notification('Please Enter room details', 0);
+    }
     if(!idd & !actionid)return calculatetotals();
     if(!idd)idd = actionid;
     if(!actionid)actionid = idd;
@@ -621,6 +624,11 @@ async function controlroomlist(idd, type){
         
     }else{
         document.getElementById('searchroombtn-'+idd).classList.remove('hidden')
+        if(did('guestreservationform')){
+            if(!document.getElementById('adult-'+idd).value)document.getElementById('adult-'+idd).value = 1
+            actionid = idd
+            await runratcod()
+        }
         did('roomtable').innerHTML = 'Loading...'
         function param(){
             let p = new FormData()
@@ -2065,12 +2073,17 @@ function opencheckinreceipt(id, ratee, rooms){
     did('modalreceipt').classList.remove('hidden')
 }
 
+function getGuestReservationRequiredIds() {
+    return getIdFromCls('comp', 'guestreservationform').filter(id => !String(id || '').startsWith('roomnumber-'));
+}
+
 function checkDuplicateRoomNumbers() {
     const roomNumberElements = document.getElementsByClassName('roomnumber');
     const roomNumbers = new Set();
 
     for (let i = 0; i < roomNumberElements.length; i++) {
-        const roomNumber = roomNumberElements[i].value; // Assuming the room number is in the value attribute
+        const roomNumber = String(roomNumberElements[i].value || '').trim();
+        if(!roomNumber)continue;
         if (roomNumbers.has(roomNumber)) {
             notification('Duplicate room number found: ' + roomNumber);
             return true; // Duplicate found
@@ -2091,7 +2104,7 @@ async function checkinnFormSubmitHandler(guest){
         if(!validateForm('reassignroomsform', getIdFromCls('comp', 'reassignroomsform')))return notification('some data are not provided...', 0)
     }
     if(did('guestreservationform')){
-        if(!validateForm('guestreservationform', getIdFromCls('comp', 'guestreservationform')))return notification('some data are not provided...', 0)
+        if(!validateForm('guestreservationform', getGuestReservationRequiredIds()))return notification('some data are not provided...', 0)
     }
     if(did('reservationcheckinform')){
         if(!validateForm('reservationcheckinform', getIdFromCls('comp', 'reservationcheckinform')))return notification('some data are not provided...', 0)
@@ -2134,7 +2147,8 @@ async function checkinnFormSubmitHandler(guest){
         const guestCount = document.getElementsByClassName('moreguestcontainer')[i].children.length;
 
         if (adultCount !== guestCount.toString()) {
-            notification(`The number of adults in room ${document.getElementsByClassName('roomnumber')[i].value} does not match with the number of guest provided.`, 0);
+            const roomLabel = document.getElementsByClassName('roomnumber')[i].value || `row ${i + 1}`;
+            notification(`The number of adults in room ${roomLabel} does not match with the number of guest provided.`, 0);
             err = true
             break;
         }
