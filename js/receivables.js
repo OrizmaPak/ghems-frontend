@@ -49,6 +49,7 @@ function setupReceivablesRoomPicker(){
 
 function buildReceivablesPickerModal(){
     if(!did('receivablesRoomPickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="receivablesRoomPickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center"></div>`)
+    did('receivablesRoomPickerModal').className = 'hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center'
     did('receivablesRoomPickerModal').innerHTML = `
       <div class="max-w-5xl w-full bg-white rounded shadow p-4 max-h-[90vh] overflow-auto">
         <div class="flex justify-between items-center mb-3">

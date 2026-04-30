@@ -32,6 +32,7 @@ function initReversalSalesFinderModal(){
     const year = new Date().getFullYear()
     if(did('reversalSalesStartDate')) did('reversalSalesStartDate').value = `${year}-01-01`
     if(did('reversalSalesEndDate')) did('reversalSalesEndDate').value = `${year + 1}-12-31`
+    did('reversalSalesFinderModal').className = 'hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center'
 }
 
 async function openReversalSalesFinder(){
