@@ -14,51 +14,68 @@ let trackPickerViewRows = []
 
 function setupTrackRoomPicker(){
     const submitBtn = did('submit')
-    if(!submitBtn || did('openTrackRoomPicker'))return
-    submitBtn.insertAdjacentHTML('afterend', `
+    if(!submitBtn)return
+    if(!did('openTrackRoomPicker')) submitBtn.insertAdjacentHTML('afterend', `
         <button id="openTrackRoomPicker" type="button" class="w-full h-[40px] md:w-max bg-white text-sm capitalize text-blue-400 px-4 py-1 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-2">Find</button>
     `)
     submitBtn.parentElement.classList.add('gap-2')
-    buildTrackRoomPickerModal()
-    did('openTrackRoomPicker').addEventListener('click', openTrackRoomPicker)
+    initTrackRoomPickerModal()
+    did('openTrackRoomPicker').onclick = openTrackRoomPicker
 }
 
-function buildTrackRoomPickerModal(){
-    if(did('trackRoomPickerModal'))return
-    document.body.insertAdjacentHTML('beforeend', `
-    <div id="trackRoomPickerModal" onclick="if(event.target.id=='trackRoomPickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+function initTrackRoomPickerModal(){
+    if(!did('trackRoomPickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="trackRoomPickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto"></div>`)
+    did('trackRoomPickerModal').innerHTML = `
       <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
         <div class="flex justify-between items-center mb-3">
           <p class="font-semibold">Select Checked-In / Reservation</p>
           <span class="material-symbols-outlined cp text-red-500" onclick="did('trackRoomPickerModal').classList.add('hidden')">close</span>
         </div>
-        <div class="flex gap-2 mb-3">
-          <button type="button" id="trackPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchTrackPickerTab('checkedin')">All Checked In</button>
-          <button type="button" id="trackPickerTabReservations" class="btn btn-sm" onclick="switchTrackPickerTab('reservations')">All Reservations</button>
+        <div class="flex flex-wrap gap-2 mb-3 items-end">
+          <button type="button" id="trackPickerTabCheckedin" class="inline-block p-3 border-b-2 border-blue-500 text-blue-600 font-semibold" onclick="switchTrackPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="trackPickerTabReservations" class="inline-block p-3 border-b-2 border-transparent text-gray-500 font-semibold" onclick="switchTrackPickerTab('reservations')">All Reservations</button>
+          <div class="ml-auto grid grid-cols-1 md:grid-cols-3 gap-2 w-full md:w-auto">
+            <input id="trackPickerStartDate" type="date" class="form-control">
+            <input id="trackPickerEndDate" type="date" class="form-control">
+            <button type="button" class="btn btn-sm" onclick="reloadTrackPickerTabData()">Filter</button>
+          </div>
           <input id="trackPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderTrackPickerRows()">
         </div>
-        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>action</th></tr></thead><tbody id="trackPickerRows"></tbody></table></div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="trackPickerRows"></tbody></table></div>
       </div>
-    </div>`)
+    `
+    did('trackRoomPickerModal').onclick = function(event){ if(event.target.id=='trackRoomPickerModal')this.classList.add('hidden') }
+    const year = new Date().getFullYear()
+    if(did('trackPickerStartDate') && !did('trackPickerStartDate').value) did('trackPickerStartDate').value = `${year}-01-01`
+    if(did('trackPickerEndDate') && !did('trackPickerEndDate').value) did('trackPickerEndDate').value = `${year + 1}-12-31`
 }
 
 async function openTrackRoomPicker(){
     did('trackRoomPickerModal').classList.remove('hidden')
-    if(!trackPickerData.checkedin.length){
-        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
-        if(reqCheckin.status) trackPickerData.checkedin = normalizeTrackPickerCheckins(reqCheckin.data || [])
-    }
-    if(!trackPickerData.reservations.length){
-        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
-        if(reqRes.status) trackPickerData.reservations = normalizeTrackPickerReservations(reqRes.data || [])
-    }
+    await reloadTrackPickerTabData()
     renderTrackPickerRows()
 }
 
 function switchTrackPickerTab(tab){
     trackPickerTab = tab
-    did('trackPickerTabCheckedin').className = `btn btn-sm ${tab=='checkedin' ? 'bg-blue-500 text-white' : ''}`
-    did('trackPickerTabReservations').className = `btn btn-sm ${tab=='reservations' ? 'bg-blue-500 text-white' : ''}`
+    did('trackPickerTabCheckedin').className = `inline-block p-3 border-b-2 font-semibold ${tab=='checkedin' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    did('trackPickerTabReservations').className = `inline-block p-3 border-b-2 font-semibold ${tab=='reservations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    reloadTrackPickerTabData()
+}
+
+async function reloadTrackPickerTabData(){
+    const startdate = did('trackPickerStartDate')?.value || ''
+    const enddate = did('trackPickerEndDate')?.value || ''
+    const payload = new FormData()
+    payload.append('startdate', startdate)
+    payload.append('enddate', enddate)
+    if(trackPickerTab == 'checkedin'){
+        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
+        trackPickerData.checkedin = reqCheckin.status ? normalizeTrackPickerCheckins(reqCheckin.data || []) : []
+    }else{
+        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
+        trackPickerData.reservations = reqRes.status ? normalizeTrackPickerReservations(reqRes.data || []) : []
+    }
     renderTrackPickerRows()
 }
 
@@ -70,7 +87,7 @@ function normalizeTrackPickerCheckins(data){
         const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
         const guestName = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
         const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
-        return { reference: res.reference || '', roomnumber: rooms, guestname: guestName, phone }
+        return { reference: res.reference || '', roomnumber: rooms, guestname: guestName, phone, arrivaldate: res.arrivaldate || '', departuredate: res.departuredate || '' }
     }).filter(x => x.reference || x.roomnumber)
 }
 
@@ -82,7 +99,7 @@ function normalizeTrackPickerReservations(data){
         const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
         const guestName = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
         const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
-        return { reference: res.reference || '', roomnumber: rooms, guestname: guestName, phone }
+        return { reference: res.reference || '', roomnumber: rooms, guestname: guestName, phone, arrivaldate: res.arrivaldate || '', departuredate: res.departuredate || '' }
     }).filter(x => x.reference || x.roomnumber)
 }
 
@@ -94,6 +111,8 @@ function renderTrackPickerRows(){
     did('trackPickerRows').innerHTML = rows.map((item, idx) => `
         <tr>
             <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
+            <td>${item.arrivaldate ? specialformatDateTime(item.arrivaldate) : '-'}</td>
+            <td>${item.departuredate ? specialformatDateTime(item.departuredate) : '-'}</td>
             <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick='useTrackRoomPicker(${idx})'>Use</button></td>
         </tr>
     `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`

@@ -41,48 +41,65 @@ let receivablesPickerViewRows = []
 
 function setupReceivablesRoomPicker(){
     const submitBtn = did('submitreceiveablesfilter')
-    if(!submitBtn || did('openReceivablesRoomPicker'))return
-    submitBtn.insertAdjacentHTML('afterend', `<button id="openReceivablesRoomPicker" type="button" class="btn"><span>Find</span></button>`)
+    if(!submitBtn)return
+    if(!did('openReceivablesRoomPicker')) submitBtn.insertAdjacentHTML('afterend', `<button id="openReceivablesRoomPicker" type="button" class="btn"><span>Find</span></button>`)
     buildReceivablesPickerModal()
-    did('openReceivablesRoomPicker').addEventListener('click', openReceivablesRoomPicker)
+    did('openReceivablesRoomPicker').onclick = openReceivablesRoomPicker
 }
 
 function buildReceivablesPickerModal(){
-    if(did('receivablesRoomPickerModal'))return
-    document.body.insertAdjacentHTML('beforeend', `
-    <div id="receivablesRoomPickerModal" onclick="if(event.target.id=='receivablesRoomPickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+    if(!did('receivablesRoomPickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="receivablesRoomPickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto"></div>`)
+    did('receivablesRoomPickerModal').innerHTML = `
       <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
         <div class="flex justify-between items-center mb-3">
           <p class="font-semibold">Select Checked-In / Reservation</p>
           <span class="material-symbols-outlined cp text-red-500" onclick="did('receivablesRoomPickerModal').classList.add('hidden')">close</span>
         </div>
-        <div class="flex gap-2 mb-3">
-          <button type="button" id="receivablesPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchReceivablesPickerTab('checkedin')">All Checked In</button>
-          <button type="button" id="receivablesPickerTabReservations" class="btn btn-sm" onclick="switchReceivablesPickerTab('reservations')">All Reservations</button>
+        <div class="flex flex-wrap gap-2 mb-3 items-end">
+          <button type="button" id="receivablesPickerTabCheckedin" class="inline-block p-3 border-b-2 border-blue-500 text-blue-600 font-semibold" onclick="switchReceivablesPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="receivablesPickerTabReservations" class="inline-block p-3 border-b-2 border-transparent text-gray-500 font-semibold" onclick="switchReceivablesPickerTab('reservations')">All Reservations</button>
+          <div class="ml-auto grid grid-cols-1 md:grid-cols-3 gap-2 w-full md:w-auto">
+            <input id="receivablesPickerStartDate" type="date" class="form-control">
+            <input id="receivablesPickerEndDate" type="date" class="form-control">
+            <button type="button" class="btn btn-sm" onclick="reloadReceivablesPickerTabData()">Filter</button>
+          </div>
           <input id="receivablesPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderReceivablesPickerRows()">
         </div>
-        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>action</th></tr></thead><tbody id="receivablesPickerRows"></tbody></table></div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="receivablesPickerRows"></tbody></table></div>
       </div>
-    </div>`)
+    `
+    did('receivablesRoomPickerModal').onclick = function(event){ if(event.target.id=='receivablesRoomPickerModal')this.classList.add('hidden') }
+    const year = new Date().getFullYear()
+    if(did('receivablesPickerStartDate') && !did('receivablesPickerStartDate').value) did('receivablesPickerStartDate').value = `${year}-01-01`
+    if(did('receivablesPickerEndDate') && !did('receivablesPickerEndDate').value) did('receivablesPickerEndDate').value = `${year + 1}-12-31`
 }
 
 async function openReceivablesRoomPicker(){
     did('receivablesRoomPickerModal').classList.remove('hidden')
-    if(!receivablesPickerData.checkedin.length){
-        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
-        if(reqCheckin.status) receivablesPickerData.checkedin = normalizeReceivablesPickerRows(reqCheckin.data || [])
-    }
-    if(!receivablesPickerData.reservations.length){
-        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
-        if(reqRes.status) receivablesPickerData.reservations = normalizeReceivablesPickerRows(reqRes.data || [])
-    }
+    await reloadReceivablesPickerTabData()
     renderReceivablesPickerRows()
 }
 
 function switchReceivablesPickerTab(tab){
     receivablesPickerTab = tab
-    did('receivablesPickerTabCheckedin').className = `btn btn-sm ${tab=='checkedin' ? 'bg-blue-500 text-white' : ''}`
-    did('receivablesPickerTabReservations').className = `btn btn-sm ${tab=='reservations' ? 'bg-blue-500 text-white' : ''}`
+    did('receivablesPickerTabCheckedin').className = `inline-block p-3 border-b-2 font-semibold ${tab=='checkedin' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    did('receivablesPickerTabReservations').className = `inline-block p-3 border-b-2 font-semibold ${tab=='reservations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    reloadReceivablesPickerTabData()
+}
+
+async function reloadReceivablesPickerTabData(){
+    const startdate = did('receivablesPickerStartDate')?.value || ''
+    const enddate = did('receivablesPickerEndDate')?.value || ''
+    const payload = new FormData()
+    payload.append('startdate', startdate)
+    payload.append('enddate', enddate)
+    if(receivablesPickerTab == 'checkedin'){
+        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
+        receivablesPickerData.checkedin = reqCheckin.status ? normalizeReceivablesPickerRows(reqCheckin.data || []) : []
+    }else{
+        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
+        receivablesPickerData.reservations = reqRes.status ? normalizeReceivablesPickerRows(reqRes.data || []) : []
+    }
     renderReceivablesPickerRows()
 }
 
@@ -94,7 +111,7 @@ function normalizeReceivablesPickerRows(data){
         const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
         const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
         const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
-        return { reference: res.reference || '', roomnumber: rooms, guestname, phone }
+        return { reference: res.reference || '', roomnumber: rooms, guestname, phone, arrivaldate: res.arrivaldate || '', departuredate: res.departuredate || '' }
     }).filter(x => x.reference || x.roomnumber)
 }
 
@@ -106,6 +123,8 @@ function renderReceivablesPickerRows(){
     did('receivablesPickerRows').innerHTML = rows.map((item, idx) => `
         <tr>
             <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
+            <td>${item.arrivaldate ? specialformatDateTime(item.arrivaldate) : '-'}</td>
+            <td>${item.departuredate ? specialformatDateTime(item.departuredate) : '-'}</td>
             <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick='useReceivablesRoomPicker(${idx})'>Use</button></td>
         </tr>
     `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`

@@ -15,51 +15,68 @@ let invoicingPickerViewRows = []
 
 function setupInvoicingReferencePicker(){
     const submitBtn = did('submit')
-    if(!submitBtn || did('openInvoicingReferencePicker'))return
-    submitBtn.insertAdjacentHTML('afterend', `
+    if(!submitBtn)return
+    if(!did('openInvoicingReferencePicker')) submitBtn.insertAdjacentHTML('afterend', `
         <button id="openInvoicingReferencePicker" type="button" class="w-full h-[40px] md:w-max bg-white text-sm capitalize text-blue-400 px-4 py-1 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-2">Find</button>
     `)
     submitBtn.parentElement.classList.add('gap-2')
     buildInvoicingPickerModal()
-    did('openInvoicingReferencePicker').addEventListener('click', openInvoicingReferencePicker)
+    did('openInvoicingReferencePicker').onclick = openInvoicingReferencePicker
 }
 
 function buildInvoicingPickerModal(){
-    if(did('invoicingReferencePickerModal'))return
-    document.body.insertAdjacentHTML('beforeend', `
-    <div id="invoicingReferencePickerModal" onclick="if(event.target.id=='invoicingReferencePickerModal')this.classList.add('hidden')" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto">
+    if(!did('invoicingReferencePickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="invoicingReferencePickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto"></div>`)
+    did('invoicingReferencePickerModal').innerHTML = `
       <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
         <div class="flex justify-between items-center mb-3">
           <p class="font-semibold">Select Checked-In / Reservation</p>
           <span class="material-symbols-outlined cp text-red-500" onclick="did('invoicingReferencePickerModal').classList.add('hidden')">close</span>
         </div>
-        <div class="flex gap-2 mb-3">
-          <button type="button" id="invoicingPickerTabCheckedin" class="btn btn-sm bg-blue-500 text-white" onclick="switchInvoicingPickerTab('checkedin')">All Checked In</button>
-          <button type="button" id="invoicingPickerTabReservations" class="btn btn-sm" onclick="switchInvoicingPickerTab('reservations')">All Reservations</button>
+        <div class="flex flex-wrap gap-2 mb-3 items-end">
+          <button type="button" id="invoicingPickerTabCheckedin" class="inline-block p-3 border-b-2 border-blue-500 text-blue-600 font-semibold" onclick="switchInvoicingPickerTab('checkedin')">All Checked In</button>
+          <button type="button" id="invoicingPickerTabReservations" class="inline-block p-3 border-b-2 border-transparent text-gray-500 font-semibold" onclick="switchInvoicingPickerTab('reservations')">All Reservations</button>
+          <div class="ml-auto grid grid-cols-1 md:grid-cols-3 gap-2 w-full md:w-auto">
+            <input id="invoicingPickerStartDate" type="date" class="form-control">
+            <input id="invoicingPickerEndDate" type="date" class="form-control">
+            <button type="button" class="btn btn-sm" onclick="reloadInvoicingPickerTabData()">Filter</button>
+          </div>
           <input id="invoicingPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderInvoicingPickerRows()">
         </div>
-        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>action</th></tr></thead><tbody id="invoicingPickerRows"></tbody></table></div>
+        <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="invoicingPickerRows"></tbody></table></div>
       </div>
-    </div>`)
+    `
+    did('invoicingReferencePickerModal').onclick = function(event){ if(event.target.id=='invoicingReferencePickerModal')this.classList.add('hidden') }
+    const year = new Date().getFullYear()
+    if(did('invoicingPickerStartDate') && !did('invoicingPickerStartDate').value) did('invoicingPickerStartDate').value = `${year}-01-01`
+    if(did('invoicingPickerEndDate') && !did('invoicingPickerEndDate').value) did('invoicingPickerEndDate').value = `${year + 1}-12-31`
 }
 
 async function openInvoicingReferencePicker(){
     did('invoicingReferencePickerModal').classList.remove('hidden')
-    if(!invoicingPickerData.checkedin.length){
-        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
-        if(reqCheckin.status) invoicingPickerData.checkedin = normalizeInvoicingPickerRows(reqCheckin.data || [])
-    }
-    if(!invoicingPickerData.reservations.length){
-        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
-        if(reqRes.status) invoicingPickerData.reservations = normalizeInvoicingPickerRows(reqRes.data || [])
-    }
+    await reloadInvoicingPickerTabData()
     renderInvoicingPickerRows()
 }
 
 function switchInvoicingPickerTab(tab){
     invoicingPickerTab = tab
-    did('invoicingPickerTabCheckedin').className = `btn btn-sm ${tab=='checkedin' ? 'bg-blue-500 text-white' : ''}`
-    did('invoicingPickerTabReservations').className = `btn btn-sm ${tab=='reservations' ? 'bg-blue-500 text-white' : ''}`
+    did('invoicingPickerTabCheckedin').className = `inline-block p-3 border-b-2 font-semibold ${tab=='checkedin' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    did('invoicingPickerTabReservations').className = `inline-block p-3 border-b-2 font-semibold ${tab=='reservations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    reloadInvoicingPickerTabData()
+}
+
+async function reloadInvoicingPickerTabData(){
+    const startdate = did('invoicingPickerStartDate')?.value || ''
+    const enddate = did('invoicingPickerEndDate')?.value || ''
+    const payload = new FormData()
+    payload.append('startdate', startdate)
+    payload.append('enddate', enddate)
+    if(invoicingPickerTab == 'checkedin'){
+        const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
+        invoicingPickerData.checkedin = reqCheckin.status ? normalizeInvoicingPickerRows(reqCheckin.data || []) : []
+    }else{
+        const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
+        invoicingPickerData.reservations = reqRes.status ? normalizeInvoicingPickerRows(reqRes.data || []) : []
+    }
     renderInvoicingPickerRows()
 }
 
@@ -71,7 +88,7 @@ function normalizeInvoicingPickerRows(data){
         const guests = rows.flatMap(r => [ ...(r.guest1 || []), ...(r.guest2 || []), ...(r.guest3 || []), ...(r.guest4 || []) ])
         const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''}`.trim()).filter(Boolean).join(', ')
         const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
-        return { reference: res.reference || '', roomnumber: rooms, guestname, phone }
+        return { reference: res.reference || '', roomnumber: rooms, guestname, phone, arrivaldate: res.arrivaldate || '', departuredate: res.departuredate || '' }
     }).filter(x => x.reference)
 }
 
@@ -83,6 +100,8 @@ function renderInvoicingPickerRows(){
     did('invoicingPickerRows').innerHTML = rows.map((item, idx) => `
         <tr>
             <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
+            <td>${item.arrivaldate ? specialformatDateTime(item.arrivaldate) : '-'}</td>
+            <td>${item.departuredate ? specialformatDateTime(item.departuredate) : '-'}</td>
             <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick='useInvoicingReferencePicker(${idx})'>Use</button></td>
         </tr>
     `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
