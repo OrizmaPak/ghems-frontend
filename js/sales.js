@@ -158,14 +158,6 @@ function configureOrderWorkspaceUi() {
     const commentsLabel = did('description')?.closest('.form-group')?.querySelector('label')
     if(commentsLabel) commentsLabel.textContent = 'Comments'
 
-    const salesViewHeaders = document.querySelectorAll('#salesview thead th')
-    if(salesViewHeaders.length >= 5){
-        // Keep order view headers aligned with rendered row columns.
-        salesViewHeaders[1].textContent = 'data'
-        salesViewHeaders[2].textContent = 'items'
-        salesViewHeaders[3].textContent = 'comments'
-        salesViewHeaders[4].textContent = 'status'
-    }
     relaxOrderItemInputs()
 }
 
@@ -1989,7 +1981,15 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
-            const receiptDescription = String(firstRow.description || rows.find((row) => String(row.description || '').trim())?.description || '').trim()
+            const ownerText = String(firstRow.owner ?? firstRow.ownerid ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.owner ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.ownerid ?? '').trim()
+            const shouldShowOwner = ownerText !== '' && ownerText !== '-1'
+            const receiptDescription = String(
+                firstRow.description
+                || firstRow.comment
+                || rows.find((row) => String(row.description || row.comment || '').trim())?.description
+                || rows.find((row) => String(row.description || row.comment || '').trim())?.comment
+                || ''
+            ).trim()
             const shouldShowSignatures = !orderPrintMode && !!showSignatures
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
@@ -2002,9 +2002,9 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                         <span class="text-gray-400">${orderPrintMode ? 'Order Ref.:' : 'Receipt No.:'}</span>
                                         <span>${rows[0].reference}</span>
                                       </p>
-                                      ${(rows[0].owner && rows[0].owner !== '-1' && rows[0].owner !== '-1' && Number(rows[0].owner) >= 0) || (rows[0].ownerid && rows[0].ownerid !== '-1' && Number(rows[0].ownerid) >= 0) ? `<p class="flex justify-between">
-                                        <span class="text-gray-400">${orderPrintMode ? 'Order No.:' : 'Room / CC:'}</span>
-                                        <span>${rows[0].owner || rows[0].ownerid || ''}</span>
+                                      ${shouldShowOwner ? `<p class="flex justify-between">
+                                        <span class="text-gray-400">${orderPrintMode ? 'Order Details:' : 'Room / CC:'}</span>
+                                        <span>${ownerText}</span>
                                       </p>` : ''}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Total Amount:</span>
