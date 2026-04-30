@@ -27,6 +27,9 @@
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Submit</span>
                                             </button>
+                                            <button id="openReceivablesRoomPicker" type="button" class="btn">
+                                                <span>Find</span>
+                                            </button>
                                             <button id="resetreceiveablesfilter" type="button" class="btn">
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Reset</span>

@@ -1,11 +1,13 @@
 let reversalsid
 let reversalSalesRows = []
+let reversalFinderTarget = 'payment'
 async function reversalsActive() {
     const form = document.querySelector('#reversepaymentform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', reversepaymentformSubmitHandler)
     const formreversereceivepurchases = document.querySelector('#reversereceivepurchasesform')
     if(formreversereceivepurchases.querySelector('#submit')) formreversereceivepurchases.querySelector('#submit').addEventListener('click', reversereceivepurchasesformSubmitHandler)
-    if(did('findreversalreference')) did('findreversalreference').onclick = openReversalSalesFinder
+    if(did('findreversalreference')) did('findreversalreference').onclick = () => openReversalSalesFinder('payment')
+    if(did('findreversalreceiptreference')) did('findreversalreceiptreference').onclick = () => openReversalSalesFinder('receipt')
     initReversalSalesFinderModal()
     datasource = []
     // await fetchreversals()
@@ -35,7 +37,8 @@ function initReversalSalesFinderModal(){
     did('reversalSalesFinderModal').className = 'hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center'
 }
 
-async function openReversalSalesFinder(){
+async function openReversalSalesFinder(target='payment'){
+    reversalFinderTarget = target
     did('reversalSalesFinderModal').classList.remove('hidden')
     await reloadReversalSalesRows()
 }
@@ -80,7 +83,9 @@ function useReversalSalesReference(index){
     const item = rows[index]
     if(!item)return
     const reference = item.saleentry?.reference || ''
-    const targetInput = document.querySelector('#reversepaymentform #reference')
+    const targetInput = reversalFinderTarget == 'receipt'
+        ? document.querySelector('#reversereceivepurchasesform #reference')
+        : document.querySelector('#reversepaymentform #reference')
     if(targetInput) targetInput.value = reference
     did('reversalSalesFinderModal').classList.add('hidden')
 }

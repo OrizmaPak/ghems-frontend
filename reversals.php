@@ -44,6 +44,9 @@
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Submit</span>
                                                 </button>
+                                                <button id="findreversalreceiptreference" type="button" class="btn ml-2">
+                                                    <span>Find</span>
+                                                </button>
                                             </div>
                                             
                                         </div> 
