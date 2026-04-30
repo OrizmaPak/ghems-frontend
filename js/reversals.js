@@ -49,25 +49,45 @@ async function reloadReversalSalesRows(){
     const payload = new FormData()
     payload.append('startdate', startdate)
     payload.append('enddate', enddate)
-    const request = await httpRequest2('../controllers/fetchsales', payload, null, 'json')
+    const controller = reversalFinderTarget == 'receipt' ? '../controllers/fetchreceipts' : '../controllers/fetchsales'
+    const request = await httpRequest2(controller, payload, null, 'json')
     reversalSalesRows = request.status ? (request.data || []) : []
     renderReversalSalesRows()
+}
+
+function normalizeReversalFinderRow(item){
+    if(item?.saleentry){
+        return {
+            reference: item.saleentry.reference || '',
+            ownerid: item.saleentry.ownerid || '',
+            paymentmethod: item.saleentry.paymentmethod || '',
+            transactiondate: item.saleentry.transactiondate || '',
+            amount: item.saleentry.servicecharge || 0
+        }
+    }
+    return {
+        reference: item.reference || '',
+        ownerid: item.ownerid || '',
+        paymentmethod: item.paymentmethod || '',
+        transactiondate: item.transactiondate || '',
+        amount: item.credittotal || item.credit || item.totalamount || 0
+    }
 }
 
 function renderReversalSalesRows(){
     const search = (did('reversalSalesSearch')?.value || '').toLowerCase().trim()
     const rows = reversalSalesRows.filter(item => {
-        const sale = item.saleentry || {}
-        return `${sale.reference || ''} ${sale.ownerid || ''} ${sale.paymentmethod || ''} ${sale.transactiondate || ''}`.toLowerCase().includes(search)
+        const sale = normalizeReversalFinderRow(item)
+        return `${sale.reference} ${sale.ownerid} ${sale.paymentmethod} ${sale.transactiondate}`.toLowerCase().includes(search)
     })
     did('reversalSalesRows').innerHTML = rows.map((item, idx) => {
-        const sale = item.saleentry || {}
+        const sale = normalizeReversalFinderRow(item)
         return `
         <tr>
           <td>${sale.transactiondate ? specialformatDateTime(sale.transactiondate) : '-'}</td>
           <td>${sale.reference || '-'}</td>
           <td>${sale.ownerid || '-'}</td>
-          <td>${formatNumber(sale.servicecharge || 0)}</td>
+          <td>${formatNumber(sale.amount || 0)}</td>
           <td>${sale.paymentmethod || '-'}</td>
           <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick="useReversalSalesReference(${idx})">Use</button></td>
         </tr>`
@@ -76,13 +96,13 @@ function renderReversalSalesRows(){
 
 function useReversalSalesReference(index){
     const rows = reversalSalesRows.filter(item => {
-        const sale = item.saleentry || {}
+        const sale = normalizeReversalFinderRow(item)
         const search = (did('reversalSalesSearch')?.value || '').toLowerCase().trim()
-        return `${sale.reference || ''} ${sale.ownerid || ''} ${sale.paymentmethod || ''} ${sale.transactiondate || ''}`.toLowerCase().includes(search)
+        return `${sale.reference} ${sale.ownerid} ${sale.paymentmethod} ${sale.transactiondate}`.toLowerCase().includes(search)
     })
     const item = rows[index]
     if(!item)return
-    const reference = item.saleentry?.reference || ''
+    const reference = item?.saleentry?.reference || item?.reference || ''
     const targetInput = reversalFinderTarget == 'receipt'
         ? document.querySelector('#reversereceivepurchasesform #reference')
         : document.querySelector('#reversepaymentform #reference')
