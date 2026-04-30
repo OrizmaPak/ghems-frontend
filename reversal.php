@@ -24,6 +24,9 @@
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Submit</span>
                                                 </button>
+                                                <button id="findcashierreversalsalesreference" type="button" class="btn ml-2">
+                                                    <span>Find</span>
+                                                </button>
                                             </div>
                                             
                                         </div> 
@@ -41,6 +44,9 @@
                                                  <button id="submit" type="button" class="btn">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span>Submit</span>
+                                                </button>
+                                                <button id="findcashierreversalreceiptreference" type="button" class="btn ml-2">
+                                                    <span>Find</span>
                                                 </button>
                                             </div>
                                             
