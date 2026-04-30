@@ -25,9 +25,9 @@ function setupInvoicingReferencePicker(){
 }
 
 function buildInvoicingPickerModal(){
-    if(!did('invoicingReferencePickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="invoicingReferencePickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto"></div>`)
+    if(!did('invoicingReferencePickerModal')) document.body.insertAdjacentHTML('beforeend', `<div id="invoicingReferencePickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center"></div>`)
     did('invoicingReferencePickerModal').innerHTML = `
-      <div class="max-w-5xl mx-auto bg-white rounded shadow p-4">
+      <div class="max-w-5xl w-full bg-white rounded shadow p-4 max-h-[90vh] overflow-auto">
         <div class="flex justify-between items-center mb-3">
           <p class="font-semibold">Select Checked-In / Reservation</p>
           <span class="material-symbols-outlined cp text-red-500" onclick="did('invoicingReferencePickerModal').classList.add('hidden')">close</span>
