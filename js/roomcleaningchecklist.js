@@ -50,11 +50,18 @@ function populateRoomNumberOptionsFromDatalist() {
     const roomControl = did('roomnumber')
     const source = did('hems_roomnumber_id')
     if (!roomControl || !source) return
-    const options = Array.from(source.querySelectorAll('option'))
-        .map((option) => String(option.value || '').trim())
-        .filter(Boolean)
-    const unique = [...new Set(options)]
-    roomControl.innerHTML = unique.map((value) => `<option value="${value}">${value}</option>`).join('')
+    const roomOptions = Array.from(source.querySelectorAll('option')).map((option) => {
+        const value = String(option.value || '').trim()
+        const label = String(option.textContent || '').trim()
+        return { value, label: label || value }
+    }).filter((item) => item.value)
+    const uniqueMap = new Map()
+    roomOptions.forEach((item) => {
+        if (!uniqueMap.has(item.value)) uniqueMap.set(item.value, item.label)
+    })
+    roomControl.innerHTML = Array.from(uniqueMap.entries())
+        .map(([value, label]) => `<option value="${value}">${label}</option>`)
+        .join('')
 }
 
 function roomCleaningEnsureTomSelectAssets() {
