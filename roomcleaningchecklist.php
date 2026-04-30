@@ -160,6 +160,7 @@
                                         <th>Supervisor</th>
                                         <th>worker assigned</th>
                                         <th>room number</th>
+                                        <th>guest name</th>
                                         <th>items</th>
                                         <th>entry date</th>
                                         <th>SHIFT</th>
@@ -197,10 +198,16 @@
                                     <hr class="opacity-[0.3]"/>
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">shift: </span><span id="rccshift" class="uppercase !text-sm font-semibold" style=""></span></p>
                                     <hr class="opacity-[0.3]"/>
+                                    <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">guest name: </span><span id="rccguestname" class="!text-sm font-semibold" style=""></span></p>
+                                    <hr class="opacity-[0.3]"/>
                                     <!--<p class="!text-sm font-thin capitalize" style="marginLeft: 20px;">Description: <span id="vpodesc" class="font-semibold" style=""></span> </p>-->
+                                    <div class="my-3">
+                                        <p class="text-xs text-gray-600 mb-2">Tick each checklist item manually on paper (`Yes` or `No`) and enter in system after inspection.</p>
+                                        <div id="rccprintcheckitems" class="space-y-1 text-sm"></div>
+                                    </div>
                                     
                                     
-                                       <form id="modalcleanform" class="table-content my-4">
+                                       <form id="modalcleanform" class="table-content my-4 phide">
                                            <input type="text" class="hidden" name="supervisor" id="rcccsupervisor" />
                                            <input type="text" class="hidden" name="workerassigned" id="rcccworkerassigned" />
                                            <input type="text" class="hidden" name="roomnumber" id="rcccroomnumber" />

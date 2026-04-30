@@ -3,6 +3,13 @@ let roomcleaningchecklistitem
 const ROOM_CLEANING_DEFAULT_ITEM = 'Make Available'
 let roomCleaningRoomSelect = null
 let roomCleaningTomSelectAssetsPromise = null
+let currentRoomCleaningPrintId = ''
+
+function resolveRoomCleaningGuestName(item) {
+    const directGuestName = item?.guestname || item?.guest_name || item?.guest || item?.customername
+    const fallback = item?.isoccupied === 'NO' ? 'Not Occupied' : 'Not Available'
+    return String(directGuestName || fallback).trim()
+}
 
 function parseRoomNumberValues(value) {
     if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean)
@@ -380,6 +387,7 @@ async function onroomcleaningchecklistTableDataSignal() {
         <td>${item.supervisorname}</td>
         <td>${item.workerassigned || ''}</td>
         <td>${item.roomnumber}</td>
+        <td>${resolveRoomCleaningGuestName(item)}</td>
         <td>
             <table>
                 <tbody>
@@ -407,6 +415,7 @@ async function onroomcleaningchecklistTableDataSignal() {
         <td>
         <div class="flex items-center gap-3">
             <button title="Edit row entry" onclick="fetchroomcleaningchecklistview('${item.id}')" class="material-symbols-outlined rounded-full bg-[green] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">view_list</button>
+            <button title="Print" onclick="printRoomCleaningChecklistRow('${item.id}')" class="material-symbols-outlined rounded-full bg-[#0f766e] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
             <button title="Edit row entry" onclick="fetchroomcleaningchecklist('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
             <button title="Delete row entry"s onclick="removeroomcleaningchecklist('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </div>
@@ -420,6 +429,7 @@ async function onroomcleaningchecklistTableDataSignal() {
 function fetchroomcleaningchecklistview(id){
     did('roomcleaningchecklistmodal').classList.remove('hidden')
     const item = datasource.filter(item => item.id == id)[0];
+    currentRoomCleaningPrintId = id
     let y = item;
     let x = normalizeChecklistItems(item.items);
     document.getElementById('tabledatarcc').innerHTML = `${x.map((item, i)=>{
@@ -443,6 +453,14 @@ function fetchroomcleaningchecklistview(id){
     did('rccroomnumber').innerHTML = y.roomnumber
     did('rccentrydate').innerHTML = specialformatDateTime(y.entrydate)
     did('rccshift').innerHTML = y.shift
+    did('rccguestname').innerHTML = resolveRoomCleaningGuestName(y)
+    did('rccprintcheckitems').innerHTML = x.map((entry, idx) => {
+        const label = getChecklistItemLabel(entry.item)
+        return `<div class="flex items-center justify-between gap-3 py-1 border-b border-gray-100">
+            <span>${idx + 1}. ${label}</span>
+            <span class="whitespace-nowrap">&#9633; Yes &nbsp;&nbsp; &#9633; No</span>
+        </div>`
+    }).join('')
     did('rcccsupervisor').value = y.supervisor
     did('rcccworkerassigned').value = y.workerassigned || ''
     did('rcccroomnumber').value = y.roomnumber
@@ -453,6 +471,11 @@ function fetchroomcleaningchecklistview(id){
 
 function printRoomCleaningChecklistView() {
     return printDomContent('ROOM CLEANING CHECKLIST', 'roomcleaningchecklistprint')
+}
+
+function printRoomCleaningChecklistRow(id) {
+    fetchroomcleaningchecklistview(id)
+    return printRoomCleaningChecklistView()
 }
 
 async function roomcleaningsavechecklistformsubmithandler() {
