@@ -1,20 +1,43 @@
 let orderid = ''
 let orderCanDelete = false
+let orderFetchSequence = 0
+let orderAutoRefreshTimer = null
+
+function hasActiveOrderFilters() {
+    const searchReference = String(did('orderreference')?.value || '').trim()
+    const startdate = String(did('startdate')?.value || '').trim()
+    const enddate = String(did('enddate')?.value || '').trim()
+    return !!(searchReference || startdate || enddate)
+}
+
+function ensureDefaultOrderDates() {
+    const startEl = did('startdate')
+    const endEl = did('enddate')
+    const today = new Date().toISOString().slice(0, 10)
+    if (startEl && !String(startEl.value || '').trim()) startEl.value = today
+    if (endEl && !String(endEl.value || '').trim()) endEl.value = today
+}
 
 async function orderActive() {
     const orderForm = document.querySelector('#orderform')
     const viewForm = document.querySelector('#orderviewform')
 
-    if (orderForm?.querySelector('#submit')) {
+    if (orderForm?.querySelector('#submit') && !orderForm.dataset.boundSubmit) {
         orderForm.querySelector('#submit').addEventListener('click', orderFormSubmitHandler)
+        orderForm.dataset.boundSubmit = '1'
     }
-    if (viewForm?.querySelector('#submitvieworder')) {
-        viewForm.querySelector('#submitvieworder').addEventListener('click', () => fetchorders())
+    if (viewForm?.querySelector('#submitvieworder') && !viewForm.dataset.boundSubmitView) {
+        viewForm.querySelector('#submitvieworder').addEventListener('click', () => fetchorders('', { source: 'user' }))
+        viewForm.dataset.boundSubmitView = '1'
     }
 
+    ensureDefaultOrderDates()
     datasource = []
     orderCanDelete = await userCanDeleteOrder()
-    await fetchorders()
+    await fetchorders('', { source: 'initial' })
+    if (orderAutoRefreshTimer) clearInterval(orderAutoRefreshTimer)
+    // Keep fresh-order notifications in sync without overriding user-filtered results.
+    orderAutoRefreshTimer = setInterval(() => fetchorders('', { source: 'background' }), 45000)
 }
 
 async function userCanDeleteOrder() {
@@ -55,7 +78,10 @@ function populateOrderForm(row = {}) {
     if (did('description')) did('description').value = row.description || ''
 }
 
-async function fetchorders(id = '') {
+async function fetchorders(id = '', options = {}) {
+    const source = options?.source || 'user'
+    const isBackground = source === 'background'
+    const sequence = ++orderFetchSequence
     const payload = new FormData()
     const searchReference = String(did('orderreference')?.value || '').trim()
     const shouldUseId = id || searchReference
@@ -72,10 +98,12 @@ async function fetchorders(id = '') {
     const request = await httpRequest2(
         '../controllers/fetchorders.php',
         payload,
-        did('submitvieworder'),
+        isBackground ? null : did('submitvieworder'),
         'json'
     )
 
+    // Ignore stale responses from older requests.
+    if (sequence !== orderFetchSequence) return
     if (!id && did('tabledata')) did('tabledata').innerHTML = 'No records retrieved'
 
     if (request?.status) {
@@ -86,11 +114,13 @@ async function fetchorders(id = '') {
             runoptioner(did('order_updater_tab'))
             return
         }
+        // Background refresh should not replace a filtered/search view.
+        if (isBackground && hasActiveOrderFilters()) return
         datasource = rows
         return resolvePagination(datasource, onorderTableDataSignal)
     }
 
-    return notification(request?.message || 'No records retrieved', 0)
+    if (!isBackground) return notification(request?.message || 'No records retrieved', 0)
 }
 
 async function removeorder(batchid) {
