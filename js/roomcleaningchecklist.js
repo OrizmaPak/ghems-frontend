@@ -37,12 +37,12 @@ async function fetchGuestNameByRoom(roomNumber) {
         param.append('roomnumber', key)
         const response = await httpRequest2('../controllers/fetchguestnamebyroom.php', param, null, 'json')
         const source = response?.data ?? response
-        const guestName = extractGuestNameFromLookupResponse(source) || 'Not Occupied'
+        const guestName = extractGuestNameFromLookupResponse(source) || 'No Guest'
         roomGuestNameCache.set(key, guestName)
         return guestName
     } catch (error) {
-        roomGuestNameCache.set(key, 'Not Available')
-        return 'Not Available'
+        roomGuestNameCache.set(key, 'No Guest')
+        return 'No Guest'
     }
 }
 
@@ -505,10 +505,8 @@ function fetchroomcleaningchecklistview(id){
     }).join('')}`
     did('rccsupervisor').innerHTML = y.supervisorname
     did('rccworkerassigned').innerHTML = y.workerassigned || ''
-    did('rccroomnumber').innerHTML = y.roomnumber
     did('rccentrydate').innerHTML = specialformatDateTime(y.entrydate)
     did('rccshift').innerHTML = y.shift
-    did('rccguestname').innerHTML = resolveRoomCleaningGuestName(y)
     did('rccprintcheckitems').innerHTML = x.map((entry, idx) => {
         const label = getChecklistItemLabel(entry.item)
         return `<div class="flex items-center justify-between gap-3 py-1 border-b border-gray-100">
@@ -516,12 +514,24 @@ function fetchroomcleaningchecklistview(id){
             <span class="whitespace-nowrap">&#9633; Yes &nbsp;&nbsp; &#9633; No</span>
         </div>`
     }).join('')
+    const rooms = parseRoomNumberValues(y.roomnumber)
+    did('rccroomguesttable').innerHTML = rooms.length
+        ? rooms.map(room => `<tr><td class="p-2 border-b border-gray-100">${room}</td><td class="p-2 border-b border-gray-100">${roomGuestNameCache.get(room) || 'No Guest'}</td></tr>`).join('')
+        : `<tr><td class="p-2" colspan="2">No room data</td></tr>`
     did('rcccsupervisor').value = y.supervisor
     did('rcccworkerassigned').value = y.workerassigned || ''
     did('rcccroomnumber').value = y.roomnumber
     did('rcccentrydate').value = y.entrydate
     did('rcccshift').value = y.shift
     roomcleaningchecklistid = y.id
+    ;(async () => {
+        if (!rooms.length) return
+        for (const room of rooms) {
+            const guestName = await fetchGuestNameByRoom(room)
+            roomGuestNameCache.set(room, guestName || 'No Guest')
+        }
+        did('rccroomguesttable').innerHTML = rooms.map(room => `<tr><td class="p-2 border-b border-gray-100">${room}</td><td class="p-2 border-b border-gray-100">${roomGuestNameCache.get(room) || 'No Guest'}</td></tr>`).join('')
+    })()
 }
 
 function printRoomCleaningChecklistView() {

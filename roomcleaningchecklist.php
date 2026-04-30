@@ -192,13 +192,25 @@
                                     <hr class="opacity-[0.3]"/>
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">worker assigned: </span><span id="rccworkerassigned" class="!text-sm font-semibold" style=""></span></p>
                                     <hr class="opacity-[0.3]"/>
-                                    <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">room number: </span><span class="!text-sm font-semibold" id="rccroomnumber" style="">  </span></p>
-                                    <hr class="opacity-[0.3]"/>
+                                    <div class="my-2">
+                                        <p class="!text-sm font-thin capitalize mb-2">room and guest details:</p>
+                                        <table class="w-full border border-gray-200 text-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-left p-2 border-b border-gray-200">room number</th>
+                                                    <th class="text-left p-2 border-b border-gray-200">guest name</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="rccroomguesttable">
+                                                <tr>
+                                                    <td colspan="2" class="p-2">No room data</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">entry date: </span><span class="!text-sm font-semibold" id="rccentrydate" style=""> </span> </p>
                                     <hr class="opacity-[0.3]"/>
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">shift: </span><span id="rccshift" class="uppercase !text-sm font-semibold" style=""></span></p>
-                                    <hr class="opacity-[0.3]"/>
-                                    <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">guest name: </span><span id="rccguestname" class="!text-sm font-semibold" style=""></span></p>
                                     <hr class="opacity-[0.3]"/>
                                     <!--<p class="!text-sm font-thin capitalize" style="marginLeft: 20px;">Description: <span id="vpodesc" class="font-semibold" style=""></span> </p>-->
                                     <div class="my-3">
