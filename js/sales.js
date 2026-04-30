@@ -1984,10 +1984,12 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const firstRow = rows[0] || {}
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
+            const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
                                         <h4 class="font-semibold">${did('your_companyname').value}</h4>
                                         <p class="text-xs">${did('your_companyaddress').value}</p>
+                                        <p class="text-[11px] font-bold tracking-[0.2em] uppercase border border-slate-300 px-3 py-1 rounded">${documentTypeLabel}</p>
                                     </div>
                                     <div class="flex flex-col gap-3 border-b py-6 text-xs">
                                       <p class="flex justify-between">

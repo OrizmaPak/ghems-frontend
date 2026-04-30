@@ -661,6 +661,11 @@ var printContent = (header, path = `<link rel="stylesheet" type="text/css" media
         var winPrint = window.open(`${header}`, '', 'width=1000,height=900');
         winPrint.document.write('<html><head><title></title>');
         winPrint.document.write(`${path}`);
+        winPrint.document.write(`<style>
+            @page { size: auto; margin: 8mm 6mm; }
+            html, body { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+            body { display: inline-block; width: auto; }
+        </style>`);
         winPrint.document.write(`<h1 class="text-center font-medium uppercase text-sm">${header}</h1>` + contentClone.innerHTML);
         winPrint.document.write('<script type="text/javascript">addEventListener("load", () => { print(); close(); })</script></body></html>');
         winPrint.document.close();

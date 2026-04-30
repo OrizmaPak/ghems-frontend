@@ -771,6 +771,11 @@ var printDomContent = (header, contentid, path = `<link rel="stylesheet" type="t
     var winPrint = window.open(`${header}`, '', 'width=1000,height=900');
     winPrint.document.write('<html><head><title></title>');
     winPrint.document.write(`${path}`);
+    winPrint.document.write(`<style>
+        @page { size: auto; margin: 8mm 6mm; }
+        html, body { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+        body { display: inline-block; width: auto; }
+    </style>`);
     winPrint.document.write(`<h1 style="text-align:center;font-weight:400px;text-transform:uppercase;font-size:14px;">${header}</h1>` + content.innerHTML);
     winPrint.document.write('<script src="https://cdn.tailwindcss.com"></script>');
     winPrint.document.write('<script type="text/javascript">addEventListener("load", () => { print(); close(); })</script></body></html>');
