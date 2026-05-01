@@ -1542,7 +1542,11 @@ async function composeOrderToBill(orderEntry = null) {
     if(did('description')) {
         const existingDescription = String(orderEntry.saleentry.description || '').trim()
         const orderRef = String(orderEntry.saleentry.reference || '').trim()
-        did('description').value = existingDescription || `From Order Ref ${orderRef}`
+        const refTag = orderRef ? `Order Ref ${orderRef}` : ''
+        const hasRefAlready = refTag && existingDescription.toLowerCase().includes(refTag.toLowerCase())
+        did('description').value = hasRefAlready
+            ? existingDescription
+            : [existingDescription, refTag].filter(Boolean).join(' | ')
     }
     if(did('transactiondate')) did('transactiondate').value = new Date().toISOString().split('T')[0]
     if(did('billreferencecode')) did('billreferencecode').value = ''
