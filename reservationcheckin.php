@@ -65,11 +65,11 @@
                                             <div class="grid grid-cols-1 !mb-2 lg:grid-cols-5 gap-10">
                                                 <div class="form-group col-span-2">
                                                     <label for="logoname" class="control-label text-md">arrival date</label>
-                                                    <input type="datetime-local" onchange="datedifference()" name="arrivaldate" id="arrivaldate" class="bg-white form-control !p-2 comp" placeholder="Enter arrival date">
+                                                    <input type="datetime-local" onchange="recalculateCheckinFormFromDates()" name="arrivaldate" id="arrivaldate" class="bg-white form-control !p-2 comp" placeholder="Enter arrival date">
                                                 </div>
                                                 <div class="form-group col-span-2">
                                                     <label for="logoname" class="control-label text-md">departure date</label>
-                                                    <input type="datetime-local" onchange="datedifference()" name="departuredate" id="departuredate" class="bg-white form-control !p-2 comp" placeholder="Enter departure date">
+                                                    <input type="datetime-local" onchange="recalculateCheckinFormFromDates()" name="departuredate" id="departuredate" class="bg-white form-control !p-2 comp" placeholder="Enter departure date">
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="logoname" class="control-label text-md">Nights</label>

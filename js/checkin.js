@@ -181,6 +181,23 @@ function openGuestReservationForEdit(id = '') {
     fetchcheckinn(reservationId)
 }
 
+async function recalculateCheckinFormFromDates() {
+    datedifference()
+    const nightsValue = Number(document.querySelector('#numberofnights')?.value || 0)
+    if(!nightsValue) {
+        calculatetotals()
+        return
+    }
+    const roomInputs = Array.from(document.getElementsByClassName('roomnumber'))
+    for (const roomInput of roomInputs) {
+        const id = String(roomInput?.id || '').replace('roomnumber-', '').trim()
+        if(!id) continue
+        if(!String(roomInput.value || '').trim()) continue
+        handlecheckinrate(id, false)
+    }
+    calculatetotals()
+}
+
 function datedifference() {
             const startdate = document.querySelector('#arrivaldate').value;
             const enddate = document.querySelector('#departuredate').value;
@@ -1211,6 +1228,9 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
             if(did('checkoutformfilter'))populateData(request.data[0].reservations, [], [], 'checkoutformfilter')
             let x = JSON.stringify(request.data[0])
             populaterestcheckindata(x)
+            setTimeout(() => {
+                recalculateCheckinFormFromDates()
+            }, 0)
             // Prefill payment details from the first invoice record (if available)
             const invoice = request.data[0]?.invoicedata?.[0]
             if(invoice){
