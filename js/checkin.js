@@ -173,6 +173,14 @@ function checksessionstorage(id=''){
     }
 }
 
+function openGuestReservationForEdit(id = '') {
+    const reservationId = String(id || '').trim()
+    if(!reservationId) return
+    const guestReservationUpdaterTab = document.querySelector('.optioner[name="guestreservationform"]')
+    if(guestReservationUpdaterTab) runoptioner(guestReservationUpdaterTab)
+    fetchcheckinn(reservationId)
+}
+
 function datedifference() {
             const startdate = document.querySelector('#arrivaldate').value;
             const enddate = document.querySelector('#departuredate').value;
@@ -1648,6 +1656,7 @@ async function oncheckinTableDataSignal() {
                 <button title="Reverse Reservation" onclick="reverseareservation('${item.reservations.id}', 'reserved')" class="material-symbols-outlined ${item.reservations.status == 'RESERVED' ? '' : item.reservations.status == 'OPEN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Check In" onclick="reverseareservation('${item.reservations.id}', 'checked in')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Check Out" onclick="reverseareservation('${item.reservations.id}', 'checked out')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED OUT' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
+                <button title="Edit Reservation" onclick="openGuestReservationForEdit('${item.reservations.id}')" class="${did('guestreservationform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' || item.reservations.status == 'CHECKED OUT' ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Edit row entry" onclick="fetchcheckinn('${item.reservations.id}')" class="${item.reservations.status == 'CHECKED IN' ? 'hidden' : ''} ${did('cancelreservationformfilter') ? '' : 'hidden'} ${!did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Cancel Reservation" onclick="removeguestsreservations('${item.reservations.reference}')" class="${item.reservations.status != 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
             </div>
