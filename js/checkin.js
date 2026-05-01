@@ -2230,44 +2230,40 @@ async function checkinnFormSubmitHandler(guest){
             // if amount its from a reservation and direct then an invoice must be called
             if(guest){
                 async function payloadinvoice() {
-                      // Show SweetAlert modal to ask if the user wants to distribute payment
-                      const result = await Swal.fire({
-                        title: 'Distribute Payment',
-                        text: 'Do you want to distribute the payment?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes',
-                        cancelButtonText: 'No',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                          cancelButton: 'btn btn-md !bg-red-500 !text-white mx-2'
-                        },
-                        buttonsStyling: false
-                      });
-                    
-                      // Set the distribute variable based on user choice
-                      let distribute;
-                      if (result.isConfirmed) {
-                        distribute = 'YES';
-                      } else if (result.isDismissed) {
-                        distribute = 'NO'; // Default to "YES" if the modal is closed without a choice
-                      } else {
-                        distribute = 'YES';
-                      }
-                    
-                      // Prepare FormData with the chosen distribute value
-                      
-                        let p = new FormData();
-                      p.append('reference', request.reference);
-                      p.append('paymentmethod', did('paymentmethod').value);
-                      p.append('totaldue', did('totalamount').value);
-                      p.append('amountpaid', did('amountpaid').value || 0);
-                      p.append('distribute', distribute);
-                      p.append('bankname', did('bankname').value);
-                      p.append('otherdetails', did('otherdetails').value);
-                    
-                      return p;
+                    const roomCardsCount = rn.length;
+                    const amountPaidValue = Number((did('amountpaid')?.value || 0));
+                    const isReservationFlow = guest == 'guestreservationform' || guest == 'reservationcheckinform';
+                    const shouldAskDistribution = roomCardsCount > 1 && amountPaidValue > 0 && !isReservationFlow;
+
+                    let distribute = 'NO';
+                    if (shouldAskDistribution) {
+                        const result = await Swal.fire({
+                            title: 'Distribute Payment',
+                            text: 'Do you want to distribute the payment?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes',
+                            cancelButtonText: 'No',
+                            customClass: {
+                                confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
+                                cancelButton: 'btn btn-md !bg-red-500 !text-white mx-2'
+                            },
+                            buttonsStyling: false
+                        });
+                        distribute = result.isConfirmed ? 'YES' : 'NO';
                     }
+
+                    let p = new FormData();
+                    p.append('reference', request.reference);
+                    p.append('paymentmethod', did('paymentmethod')?.value || '');
+                    p.append('totaldue', did('totalamount')?.value || 0);
+                    p.append('amountpaid', did('amountpaid')?.value || 0);
+                    p.append('distribute', distribute);
+                    p.append('bankname', did('bankname')?.value || '');
+                    p.append('otherdetails', did('otherdetails')?.value || '');
+
+                    return p;
+                }
                 if(populateddata && checkinid && populateddata.amountpaid && populateddata.ampuntpaid != document.getElementById('amountpaid').value){
                     let requestinvoice = await httpRequest2('../controllers/invoicing', await payloadinvoice(), document.querySelector(`#${guest} #submit`))
                     if(requestinvoice.status) {
