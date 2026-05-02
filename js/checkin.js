@@ -1177,6 +1177,42 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
     if(did('checkoutformfilter'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchcheckoutsbyfilter'}`, getparamm(), btn, 'json')
     if(did('extendstayform'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchreservationsbyfilter'}`, getparamm(), null, 'json')
     // let request = await httpRequest2(`../controllers/${id? 'fetchcheckindirect' : 'fetchcheckindirect'}`, id ? getparamm() : null, null, 'json')
+
+    function applyFetchedReservationRecord(record){
+        if(!record || !record.reservations) return false
+        checkinid = record.reservations.id
+        populateddata = record.reservations
+        if(did('checkinform'))populateData(record.reservations, [], [], 'checkinform')
+        if(did('reassignroomsform'))populateData(record.reservations, [], [], 'reassignroomsform')
+        if(did('guestreservationform'))populateData(record.reservations, [], [], 'guestreservationform')
+        if(did('reservationcheckinform'))populateData(record.reservations, [], [], 'reservationcheckinform')
+        if(did('groupcheckinform'))populateData(record.reservations, [], [], 'groupcheckinform')
+        if(did('extendstayform'))populateData(record.reservations, [], [], 'extendstayform')
+        if(did('cancelreservationform'))populateData(record.reservations, [], [], 'cancelreservationform')
+        if(did('checkoutformfilter'))populateData(record.reservations, [], [], 'checkoutformfilter')
+        let x = JSON.stringify(record)
+        populaterestcheckindata(x)
+        setTimeout(() => {
+            recalculateCheckinFormFromDates()
+        }, 0)
+        const invoice = record?.invoicedata?.[0]
+        if(invoice){
+            if(did('bankname') && invoice.bankname) did('bankname').value = invoice.bankname
+            if(did('otherdetails') && invoice.tlog){
+                const tlogParts = String(invoice.tlog).split('|')
+                const detail = tlogParts.length > 1 ? tlogParts[1] : ''
+                did('otherdetails').value = detail
+            }
+        }
+        if(did('reassignroomsform'))disablefortransfer(reassignroom)
+        return true
+    }
+
+    if(id && request?.status && Array.isArray(request.data) && request.data.length === 0){
+        const fallbackRecord = (datasource || []).find((row) => String(row?.reservations?.id || '') === String(id))
+        if(fallbackRecord) return applyFetchedReservationRecord(fallbackRecord)
+    }
+
     if(!id && document.getElementById('tabledata'))document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`;
     if(request.status) { 
         if(!id){
@@ -1216,33 +1252,12 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
                 resolvePagination(datasource, oncheckinTableDataSignal)
             }  
         }else{
-             checkinid = request.data[0].reservations.id;
-             populateddata = request.data[0].reservations;
-            if(did('checkinform'))populateData(request.data[0].reservations, [], [], 'checkinform')
-            if(did('reassignroomsform'))populateData(request.data[0].reservations, [], [], 'reassignroomsform')
-            if(did('guestreservationform'))populateData(request.data[0].reservations, [], [], 'guestreservationform')
-            if(did('reservationcheckinform'))populateData(request.data[0].reservations, [], [], 'reservationcheckinform')
-            if(did('groupcheckinform'))populateData(request.data[0].reservations, [], [], 'groupcheckinform')
-            if(did('extendstayform'))populateData(request.data[0].reservations, [], [], 'extendstayform')
-            if(did('cancelreservationform'))populateData(request.data[0].reservations, [], [], 'cancelreservationform')
-            if(did('checkoutformfilter'))populateData(request.data[0].reservations, [], [], 'checkoutformfilter')
-            let x = JSON.stringify(request.data[0])
-            populaterestcheckindata(x)
-            setTimeout(() => {
-                recalculateCheckinFormFromDates()
-            }, 0)
-            // Prefill payment details from the first invoice record (if available)
-            const invoice = request.data[0]?.invoicedata?.[0]
-            if(invoice){
-                if(did('bankname') && invoice.bankname) did('bankname').value = invoice.bankname
-                if(did('otherdetails') && invoice.tlog){
-                    const tlogParts = String(invoice.tlog).split('|')
-                    const detail = tlogParts.length > 1 ? tlogParts[1] : ''
-                    did('otherdetails').value = detail
-                }
+            if(Array.isArray(request.data) && request.data.length){
+                return applyFetchedReservationRecord(request.data[0])
             }
-            if(did('reassignroomsform'))disablefortransfer(reassignroom)
-            // document.getElementById('foundby').value = request.data[0].foundbyname+' || '+request.data[0].foundby
+            const fallbackRecord = (datasource || []).find((row) => String(row?.reservations?.id || '') === String(id))
+            if(fallbackRecord) return applyFetchedReservationRecord(fallbackRecord)
+            return notification('No records retrieved')
         }
     }
     else return notification('No records retrieved')
