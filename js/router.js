@@ -92,6 +92,11 @@ const routerTree = {
         startingFunction: 'approverequisitionActive',
         scriptName: './js/approverequisition.js'
     },
+    approvepurchaseorder: {
+        template: 'approvepurchaseorder',
+        startingFunction: 'approvepurchaseorderActive',
+        scriptName: './js/approvepurchaseorder.js'
+    },
     settings: {
         template: 'settings',
         startingFunction: 'settingsActive',
