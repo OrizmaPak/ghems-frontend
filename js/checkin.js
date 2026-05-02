@@ -181,6 +181,18 @@ function openGuestReservationForEdit(id = '') {
     fetchcheckinn(reservationId)
 }
 
+function normalizeRoomNumberDisplay(value = '') {
+    const normalized = String(value ?? '').trim()
+    if (!normalized || normalized === '0') return ''
+    return normalized
+}
+
+function normalizeAmountPaidDisplay(value = 0) {
+    const numeric = Number(value || 0)
+    if (!numeric) return ''
+    return formatNumber(numeric)
+}
+
 async function recalculateCheckinFormFromDates() {
     datedifference()
     const nightsValue = Number(document.querySelector('#numberofnights')?.value || 0)
@@ -1190,8 +1202,12 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
         if(did('extendstayform'))populateData(record.reservations, [], [], 'extendstayform')
         if(did('cancelreservationform'))populateData(record.reservations, [], [], 'cancelreservationform')
         if(did('checkoutformfilter'))populateData(record.reservations, [], [], 'checkoutformfilter')
+        if(did('amountpaid') && Number(did('amountpaid').value || 0) === 0) did('amountpaid').value = ''
         let x = JSON.stringify(record)
         populaterestcheckindata(x)
+        document.querySelectorAll('.roomnumber').forEach((control) => {
+            if(String(control.value || '').trim() === '0') control.value = ''
+        })
         setTimeout(() => {
             recalculateCheckinFormFromDates()
         }, 0)
@@ -1286,7 +1302,7 @@ function populaterestcheckindata(x){
                         <div class="">
                             <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">Room</label>
                             <!--<input type="text" readonly  id="roomnumber" list="hems_available_roomnumber_id" onchange="checkdatalist(this);getcategoryrateguest(this)" class="bg-white form-control !p-2 comp2" placeholder="Enter root category">-->
-                            <input type="text" value="${item.roomdata.roomnumber}" readonly name="roomnumber"  id="roomnumber-${id}" class="bg-white form-control roomnumber !p-2 comp" placeholder="">
+                            <input type="text" value="${normalizeRoomNumberDisplay(item.roomdata.roomnumber)}" readonly name="roomnumber"  id="roomnumber-${id}" class="bg-white form-control roomnumber !p-2 comp" placeholder="">
                             <!--<input type="text" name="roomnumber" id="roomnumber1" list="hems_available_roomnumber_id" onchange="checkdatalist(this);getcategoryrateguest(this)" class="bg-white form-control !p-2 comp2" placeholder="Enter root category">-->
                         </div>
                         <button id="searchroombtn-${id}" onclick="opentheroomboard('${id}')" type="button" class=" scale-[0.7] absolute top-0 right-0 text-white w-10 h-10 bg-blue-400 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-blue-600 cark:hover:bg-blue-700 focus:outline-none cark:focus:ring-blue-800"><span class="material-symbols-outlined">search</span></button>
@@ -1697,29 +1713,29 @@ async function oncheckinTableDataSignal() {
             </div>
         </td> 
         <td>${item.roomgeustrow.length}&nbsp;Room(s)</td>
-        <td>${formatNumber(item.reservations.amountpaid)}</td>
+        <td>${normalizeAmountPaidDisplay(item.reservations.amountpaid)}</td>
         <td>${x}&nbsp;Person(s)
             <table  class="mx-auto">
                     <tbody>
                         ${item.roomgeustrow ?
                             item.roomgeustrow.map((datt, i)=>`
                                 ${datt.guest1.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest1[0].firstname}&nbsp;${datt.guest1[0].lastname}&nbsp;${datt.guest1[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest1[0].phone}</td>
                                 </tr>` : ''}
                                 ${datt.guest2.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest2[0].firstname}&nbsp;${datt.guest2[0].lastname}&nbsp;${datt.guest2[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest2[0].phone}</td>
                                 </tr>` : ''}
                                 ${datt.guest3.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest3[0].firstname}&nbsp;${datt.guest1[0].lastname}&nbsp;${datt.guest3[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest3[0].phone}</td>
                                 </tr>` : ''}
                                 ${datt.guest4.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest4[0].firstname}&nbsp;${datt.guest1[0].lastname}&nbsp;${datt.guest4[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest4[0].phone}</td>
                                 </tr>` : ''}
@@ -1727,22 +1743,22 @@ async function oncheckinTableDataSignal() {
                             :
                             item.roomguestrow.map((datt, i)=>`
                                 ${datt.guest1.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest1[0].firstname}&nbsp;${datt.guest1[0].lastname}&nbsp;${datt.guest1[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest1[0].phone}</td>
                                 </tr>` : ''}
                                 ${datt.guest2.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest2[0].firstname}&nbsp;${datt.guest2[0].lastname}&nbsp;${datt.guest2[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest2[0].phone}</td>
                                 </tr>` : ''}
                                 ${datt.guest3.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest3[0].firstname}&nbsp;${datt.guest1[0].lastname}&nbsp;${datt.guest3[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest3[0].phone}</td>
                                 </tr>` : ''}
                                 ${datt.guest4.length>0 ? `<tr>
-                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${datt.roomdata?.roomnumber}</td>
+                                    <td class="text-center opacity-70"><button title="Room Transfer" onclick="roomtransfer('${datt.roomdata?.roomnumber}', '${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} rounded-full bg-yellow-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">move_up</button> ${normalizeRoomNumberDisplay(datt.roomdata?.roomnumber)}</td>
                                     <td class="text-center opacity-70">${datt.guest4[0].firstname}&nbsp;${datt.guest1[0].lastname}&nbsp;${datt.guest4[0].othernames}</td>
                                     <td class="text-center opacity-70">${datt.guest4[0].phone}</td>
                                 </tr>` : ''}
