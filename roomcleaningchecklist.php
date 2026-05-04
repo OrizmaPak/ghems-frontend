@@ -45,6 +45,17 @@
                                             </select>
                                         </div>
                                         </div>
+                                    <div class="grid grid-cols-1 !mb-5 gap-6">
+                                        <div class="form-group">
+                                            <label for="generalstatus" class="control-label">General Status</label>
+                                            <select name="status" id="generalstatus" class="form-control comp">
+                                                <option value="">-- Select General Status --</option>
+                                                <option value="READY">READY</option>
+                                                <option value="DIRTY">DIRTY</option>
+                                                <option value="NOT IN ORDER">NOT IN ORDER</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     </div>
                                     <div class="grid grid-cols-1 !mb-5 gap-6">
                                         <div class="form-group">
@@ -212,6 +223,8 @@
                                     <hr class="opacity-[0.3]"/>
                                     <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">shift: </span><span id="rccshift" class="uppercase !text-sm font-semibold" style=""></span></p>
                                     <hr class="opacity-[0.3]"/>
+                                    <p class="!text-sm font-thin capitalize flex"><span class="w-[180px]">general status: </span><span id="rccgeneralstatus" class="uppercase !text-sm font-semibold" style=""></span></p>
+                                    <hr class="opacity-[0.3]"/>
                                     <!--<p class="!text-sm font-thin capitalize" style="marginLeft: 20px;">Description: <span id="vpodesc" class="font-semibold" style=""></span> </p>-->
                                     <div class="my-3">
                                         <p class="text-xs text-gray-600 mb-2">Tick each checklist item manually on paper (`Yes` or `No`) and enter in system after inspection.</p>
@@ -225,6 +238,7 @@
                                            <input type="text" class="hidden" name="roomnumber" id="rcccroomnumber" />
                                            <input type="text" class="hidden" name="entrydate" id="rcccentrydate" />
                                            <input type="text" class="hidden" name="shift" id="rcccshift" />
+                                           <input type="text" class="hidden" name="status" id="rcccstatus" />
                                             <table>
                                                 <thead>
                                                     <tr>

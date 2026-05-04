@@ -230,15 +230,6 @@ function appendChecklistRow({ id = '', item = '', answer = 'NO', lockRow = false
     runCount()
 }
 
-function ensureDefaultChecklistRow() {
-    if(roomcleaningchecklistid) return
-    appendChecklistRow({
-        item: ROOM_CLEANING_DEFAULT_ITEM,
-        answer: 'NO',
-        lockRow: true
-    })
-}
-
 async function roomcleaningchecklistActive() {
     runCount('s/n')
     const form = document.querySelector('#roomcleaningchecklistform')
@@ -250,7 +241,6 @@ async function roomcleaningchecklistActive() {
     await initializeRoomNumberMultiSelect()
     await fetchroomcleaningchecklist()
     await populatechecklister()
-    ensureDefaultChecklistRow()
     // await runpopulateitemroomcleaning()
 }
 
@@ -289,6 +279,7 @@ async function populatechecklister(id=''){
             if(request.data.length) {
                 did('checklistitemscontainer').innerHTML = request.data.map(dat=>{
                     const label = getChecklistItemLabel(dat.item);
+                    if(isDefaultChecklistItemLabel(label)) return ''
                     return `<div id="cont_${dat.id}" class="flex w-full items-center cp ps-4 h-fit border pr-3 border-gray-200 rounded w-fit">
                                                     <input id="bordered-checkbox-${dat.id}" data-item-id="${dat.id}" data-item-label="${label.replace(/\"/g, '&quot;')}" type="checkbox" value=""  class="cp bordered-checkboxxa w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ">
                                                     <label for="bordered-checkbox-${dat.id}" data-item-label="${label.replace(/\"/g, '&quot;')}" class="w-full py-4 ms-2 cp text-sm font-medium text-black">${label}</label>
@@ -363,21 +354,12 @@ async function fetchroomcleaningchecklist(id='', filters=null) {
         await populatechecklister()
         x.forEach(entry=>{
             const label = getChecklistItemLabel(entry.item);
-            if(isDefaultChecklistItemLabel(label)){
-                appendChecklistRow({
-                    item: ROOM_CLEANING_DEFAULT_ITEM,
-                    answer: entry.answer,
-                    lockRow: true
-                })
-                return
-            }
+            if(isDefaultChecklistItemLabel(label)) return
             const checkbox = Array.from(document.querySelectorAll('#checklistitemscontainer input[data-item-label]')).find(el=>el.dataset.itemLabel === label);
             if(!checkbox) return;
             checkbox.checked = true;
             checklistaction(checkbox.dataset.itemId, label, entry.answer);
         })
-    }else{
-        ensureDefaultChecklistRow()
     }
     
     // scrollToTop('scrolldiv')
@@ -407,6 +389,7 @@ async function fetchroomcleaningchecklist(id='', filters=null) {
             populateData(request.data[0])
             setSelectedRoomNumbers(request.data[0].roomnumber)
             did('supervisor').value = request.data[0].supervisorname + ' || '+ request.data[0].supervisor
+            if(did('generalstatus')) did('generalstatus').value = request.data[0].status || ''
         }
     }
     else return notification('No records retrieved')
@@ -515,6 +498,7 @@ async function fetchroomcleaningchecklistview(id){
     did('rccworkerassigned').innerHTML = y.workerassigned || ''
     did('rccentrydate').innerHTML = specialformatDateTime(y.entrydate)
     did('rccshift').innerHTML = y.shift
+    did('rccgeneralstatus').innerHTML = y.status || ''
     did('rccprintcheckitems').innerHTML = x.map((entry, idx) => {
         const label = getChecklistItemLabel(entry.item)
         return `<div class="flex items-center justify-between gap-3 py-1 border-b border-gray-100">
@@ -530,6 +514,7 @@ async function fetchroomcleaningchecklistview(id){
     did('rcccroomnumber').value = y.roomnumber
     did('rcccentrydate').value = y.entrydate
     did('rcccshift').value = y.shift
+    did('rcccstatus').value = y.status || ''
     roomcleaningchecklistid = y.id
 }
 
