@@ -292,11 +292,12 @@ function calculatetotals(){
         tp = Number(document.getElementsByClassName('planamount')[i].value)+tp
         tpd = Number(document.getElementsByClassName('plandiscountamount')[i].value)+tpd
     }
-    const subtotalAfterRoomPlanDiscount = Math.max((tr + tp) - (trd + tpd), 0)
-    const otherDiscountAmount = (otherdiscount / 100) * subtotalAfterRoomPlanDiscount
-    let totalamount = Math.max(subtotalAfterRoomPlanDiscount - otherDiscountAmount, 0)
-    did('totalrate').textContent = formatNumber(tr + tp)
-    did('totaldiscount').textContent = formatNumber(trd + tpd + otherDiscountAmount)
+    const grossTotalAmount = tr + tp
+    const otherDiscountAmount = (otherdiscount / 100) * grossTotalAmount
+    const totalDiscountAmount = trd + tpd + otherDiscountAmount
+    let totalamount = Math.max(grossTotalAmount - totalDiscountAmount, 0)
+    did('totalrate').textContent = formatNumber(grossTotalAmount)
+    did('totaldiscount').textContent = formatNumber(totalDiscountAmount)
     did('totalplan').textContent = formatNumber(totalamount)
     if(document.getElementById('totalamount'))document.getElementById('totalamount').value = totalamount
 }
@@ -1798,8 +1799,8 @@ function opencheckinreceipt(id, ratee, rooms){
     const totalRoomDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.discountamount || 0), 0)
     const totalPlanDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.plandiscountamount || 0), 0)
     const otherDiscountPerc = Number(receiptdata?.reservations?.otherdiscount || 0)
-    const baseAfterRoomPlanDiscount = Math.max((totalRoomRate + totalPlanAmount) - (totalRoomDiscount + totalPlanDiscount), 0)
-    const otherDiscount = Math.max((Math.max(Math.min(otherDiscountPerc, 100), 0) / 100) * baseAfterRoomPlanDiscount, 0)
+    const grossTotalAmount = totalRoomRate + totalPlanAmount
+    const otherDiscount = Math.max((Math.max(Math.min(otherDiscountPerc, 100), 0) / 100) * grossTotalAmount, 0)
     const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
     const calculatedTotalAmount = Math.max((totalRoomRate + totalPlanAmount) - totalDiscount, 0)
     const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
