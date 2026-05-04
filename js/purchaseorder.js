@@ -1,6 +1,14 @@
 let purchaseorderid
 let purchaseorderitem
 let supplierdataa
+
+function parseNumericValue(value){
+    if(value === null || value === undefined) return 0
+    const normalized = String(value).replace(/,/g, '').replace(/[^\d.-]/g, '').trim()
+    if(!normalized) return 0
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+}
 async function purchaseorderActive() {
     const form = document.querySelector('#purchaseorderform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', purchaseorderFormSubmitHandler)
@@ -28,9 +36,11 @@ async function purchaseorderActive() {
             document.getElementById(`type_${i}`).innerHTML = dat[0].itemtype
             document.getElementById(`group_${i}`).innerHTML = dat[0].groupname
            reqstockbalance(data.items[i].itemid, i, data.items[i].location)
-           document.getElementById(`cost_${i}`).value = Number(data.items[i].cost)
-           document.getElementById(`qty_${i}`).value = Number(data.items[i].qty)
-           document.getElementById(`val_${i}`).value = Number(data.items[i].qty) * Number(data.items[i].cost)
+           const cost = parseNumericValue(data.items[i].cost)
+           const qty = parseNumericValue(data.items[i].qty)
+           document.getElementById(`cost_${i}`).value = cost
+           document.getElementById(`qty_${i}`).value = qty
+           document.getElementById(`val_${i}`).value = qty * cost
        }
        purchaseordertotalcount()
     }
@@ -79,20 +89,27 @@ function populateReqSelect(){
                 let el = e.target.id.split('_')[1]
                 reqstockbalance(val, el)
                 if(!val){
-                     document.getElementById(`type_${el}`).innerHTML = ''
-                document.getElementById(`group_${el}`).innerHTML = ''
-                document.getElementById(`class_${el}`).innerHTML = ''
-                document.getElementById(`cost_${el}`).value = ''
-                document.getElementById(`qty_${el}`).setAttribute('placeholder', 'Enter Quantity')
+                    document.getElementById(`type_${el}`).innerHTML = ''
+                    document.getElementById(`group_${el}`).innerHTML = ''
+                    document.getElementById(`class_${el}`).innerHTML = ''
+                    document.getElementById(`cost_${el}`).value = ''
+                    document.getElementById(`val_${el}`).value = ''
+                    document.getElementById(`qty_${el}`).setAttribute('placeholder', 'Enter Quantity')
                 }else{
-                let data = purchaseorderitem
-                data = data.filter(item=>item.itemid==val)
-                document.getElementById(`type_${el}`).innerHTML = data[0].itemtype
-                document.getElementById(`group_${el}`).innerHTML = data[0].groupname
-                document.getElementById(`qty_${el}`).setAttribute('placeholder', data[0].units)
-                document.getElementById(`cost_${el}`).value = Number(data[0].price)
+                    let data = purchaseorderitem
+                    data = data.filter(item=>item.itemid==val)
+                    document.getElementById(`type_${el}`).innerHTML = data[0].itemtype
+                    document.getElementById(`group_${el}`).innerHTML = data[0].groupname
+                    document.getElementById(`qty_${el}`).setAttribute('placeholder', data[0].units)
+                    document.getElementById(`cost_${el}`).value = parseNumericValue(data[0].price)
+                    if(document.getElementById(`qty_${el}`).value){
+                        document.getElementById(`val_${el}`).value = parseNumericValue(document.getElementById(`qty_${el}`).value) * parseNumericValue(document.getElementById(`cost_${el}`).value)
+                    }else{
+                        document.getElementById(`val_${el}`).value = ''
+                    }
                 }
                 // document.getElementById(`cost_${el}`).innerHTML = 0
+                purchaseordertotalcount()
             })
             
         }
@@ -126,6 +143,7 @@ function poreqcal(element){
         did(`val_${el}`).value = '';
         did(`cost_${el}`).value = '';
         did(`qty_${el}`).value = '';
+        purchaseordertotalcount()
         return
     }
     // if(Number(did(`class_${el}`).textContent)<Number(did(`qty_${el}`).value)){
@@ -134,7 +152,7 @@ function poreqcal(element){
     //     return
     // }
     if(did(`cost_${el}`).value && did(`qty_${el}`).value){
-        did(`val_${el}`).value = Number(did(`cost_${el}`).value) * Number(did(`qty_${el}`).value)
+        did(`val_${el}`).value = parseNumericValue(did(`cost_${el}`).value) * parseNumericValue(did(`qty_${el}`).value)
     }else{
         did(`val_${el}`).value = '';
     }
@@ -148,8 +166,8 @@ function purchaseordertotalcount(){
     const costControls = document.getElementsByName('cost')
 
     for(let i=0;i<qtyControls.length;i++){
-        const qty = Number(qtyControls[i].value || 0)
-        const cost = Number(costControls[i]?.value || 0)
+        const qty = parseNumericValue(qtyControls[i].value || 0)
+        const cost = parseNumericValue(costControls[i]?.value || 0)
         totalorder += qty * cost
     }
 
