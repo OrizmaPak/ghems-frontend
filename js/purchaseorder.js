@@ -143,15 +143,17 @@ function poreqcal(element){
 }
 
 function purchaseordertotalcount(){
-    let totalqty = 0
-    let totalcost = 0
-    
-    for(let i=0;i<document.getElementsByName('qty').length;i++){
-        if(document.getElementsByName('qty')[i].value)totalqty = Number(document.getElementsByName('qty')[i].value) + totalqty
-        if(document.getElementsByName('cost')[i].value)totalcost = Number(document.getElementsByName('cost')[i].value) + totalcost
+    let totalorder = 0
+    const qtyControls = document.getElementsByName('qty')
+    const costControls = document.getElementsByName('cost')
+
+    for(let i=0;i<qtyControls.length;i++){
+        const qty = Number(qtyControls[i].value || 0)
+        const cost = Number(costControls[i]?.value || 0)
+        totalorder += qty * cost
     }
-    console.log('qty:', totalqty, 'totalcost:', totalcost)
-    document.getElementById('totalorder').textContent = formatCurrency(totalqty*totalcost)
+
+    document.getElementById('totalorder').textContent = formatCurrency(totalorder)
 }
 
 function reqaddrowpurchaseorder(idd=''){
@@ -188,7 +190,7 @@ function reqaddrowpurchaseorder(idd=''){
                 <td>
                     <div class="flex gap-4 items-center h-full w-fit py-3">
                         <button onclick="reqaddrowpurchaseorder()" title="Edit row entry" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">add</button>
-                        <button id="delbtn_${elid}" onclick="this.parentElement.parentElement.parentElement.remove()" title="Edit row entry" class="material-symbols-outlined rounded-full bg-[red] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+                        <button id="delbtn_${elid}" onclick="this.parentElement.parentElement.parentElement.remove();purchaseordertotalcount()" title="Edit row entry" class="material-symbols-outlined rounded-full bg-[red] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
                     </div>
                 </td>`
     el.innerHTML = x
