@@ -287,6 +287,11 @@ const routerTree = {
         startingFunction: 'salesActive',
         scriptName: './js/sales.js'
     },
+    splitbill: {
+        template: 'splitbill',
+        startingFunction: 'splitbillActive',
+        scriptName: './js/splitbill.js'
+    },
     order: {
         template: 'sales',
         startingFunction: 'salesActive',
