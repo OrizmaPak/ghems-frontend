@@ -550,6 +550,7 @@ function renderSalesBillsTable(rows = []) {
                 <div class="flex items-center gap-2">
                     <button title="Edit" type="button" onclick="editBillEntryByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs">edit</button>
                     <button title="Retrieve" type="button" onclick="retrieveBillToSalesByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
+                    <button title="Transfer Bill" type="button" onclick="openBillTransferModal('${String(item.reference || '').replace(/'/g, "\\'")}', '${String(item.salespoint || '').replace(/'/g, "\\'")}', 'fetchsalesbills')" class="material-symbols-outlined rounded-full bg-violet-600 h-8 w-8 text-white drop-shadow-md text-xs">swap_horiz</button>
                     <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false, true)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
                     ${deleteActionButton(item)}
                 </div>

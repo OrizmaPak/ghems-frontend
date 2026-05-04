@@ -80,6 +80,7 @@ function normalizeSplitBillItem(item = {}, index = 0) {
 }
 
 async function splitbillActive() {
+    if (typeof hemsdepartment === 'function') await hemsdepartment()
     if (did('splitbill_fetch')) did('splitbill_fetch').addEventListener('click', fetchSplitBills)
     if (did('splitbill_clear')) did('splitbill_clear').addEventListener('click', clearSplitBillFilters)
     if (did('splitbill_reset')) did('splitbill_reset').addEventListener('click', resetActiveSplitBill)
@@ -136,7 +137,10 @@ function renderSplitBillTable() {
             <td>${bill.transactiondate ? specialformatDateTime(bill.transactiondate) : ''}</td>
             <td>${splitBillMoney(bill.totalamount || splitBillTotal(bill.items))}</td>
             <td>
-                <button type="button" title="Split Bill" onclick="selectSplitBill('${String(bill.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full h-8 w-8 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 18px; background:#2563eb; color:#ffffff;">call_split</button>
+                <div class="flex items-center gap-2">
+                    <button type="button" title="Split Bill" onclick="selectSplitBill('${String(bill.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full h-8 w-8 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 18px; background:#2563eb; color:#ffffff;">call_split</button>
+                    <button type="button" title="Transfer Bill" onclick="openBillTransferModal('${String(bill.reference || '').replace(/'/g, "\\'")}', '${String(bill.salespoint || '').replace(/'/g, "\\'")}', 'fetchSplitBills')" class="material-symbols-outlined rounded-full h-8 w-8 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 18px; background:#7c3aed; color:#ffffff;">swap_horiz</button>
+                </div>
             </td>
         </tr>
     `).join('')

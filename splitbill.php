@@ -2,6 +2,7 @@
     <p class="page-title">
         <span>SPLIT BILL</span>
     </p>
+    <select id="salespointname" class="hidden"></select>
 
     <div class="bg-white/90 p-5 xl:p-6 rounded-sm mb-4">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">

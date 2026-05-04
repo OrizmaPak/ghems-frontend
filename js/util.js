@@ -533,6 +533,96 @@ function normalizeInventoryItems(data) {
     }, [])
 }
 
+let billTransferController = ''
+let pendingBillTransferRefreshFunction = ''
+
+function getBillTransferSalespointOptions() {
+    const sourceIds = ['salespointname', 'salespointname2']
+    const options = []
+    sourceIds.forEach((id) => {
+        const source = did(id)
+        if(!source) return
+        Array.from(source.options || []).forEach((option) => {
+            const value = String(option.value || option.textContent || '').trim()
+            if(value && value.toUpperCase() !== 'ALL' && !options.includes(value)) options.push(value)
+        })
+    })
+    return options
+}
+
+function ensureBillTransferModal() {
+    if(did('billtransfermodal')) return
+    const modal = document.createElement('div')
+    modal.id = 'billtransfermodal'
+    modal.className = 'hidden fixed inset-0 z-[500] bg-[#00000066] flex items-center justify-center p-4'
+    modal.onclick = (event) => {
+        if(event.target.id === 'billtransfermodal') closeBillTransferModal()
+    }
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-[460px] overflow-hidden animate__animated animate__fadeInUp">
+            <div class="p-5 bg-[#1d4ed8] text-white">
+                <p class="font-semibold text-lg">Transfer Bill</p>
+                <p class="text-xs opacity-80 mt-1">Select the destination salespoint for this bill.</p>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="rounded-lg bg-slate-50 border p-3 text-sm">
+                    <span class="text-slate-500">Reference</span>
+                    <p id="billtransfer_reference_label" class="font-semibold text-slate-900"></p>
+                    <input type="hidden" id="billtransfer_reference">
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Destination Salespoint</label>
+                    <select id="billtransfer_newsalespoint" class="form-control"></select>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeBillTransferModal()" class="btn !bg-gray-500 !py-2 !px-4 !text-xs">Cancel</button>
+                    <button type="button" onclick="submitBillSalespointTransfer()" id="billtransfer_submit" class="btn !py-2 !px-4 !text-xs">Transfer</button>
+                </div>
+            </div>
+        </div>
+    `
+    document.body.appendChild(modal)
+}
+
+function openBillTransferModal(reference = '', currentSalespoint = '', refreshFunctionName = '') {
+    const cleanedReference = String(reference || '').trim()
+    if(!cleanedReference) return notification('Bill reference is required', 0)
+    ensureBillTransferModal()
+    pendingBillTransferRefreshFunction = refreshFunctionName || ''
+    const options = getBillTransferSalespointOptions().filter((value) => value !== currentSalespoint)
+    did('billtransfer_reference').value = cleanedReference
+    did('billtransfer_reference_label').textContent = cleanedReference
+    did('billtransfer_newsalespoint').innerHTML = `<option value="">-- Select Destination --</option>${options.map((option) => `<option>${option}</option>`).join('')}`
+    did('billtransfermodal').classList.remove('hidden')
+}
+
+function closeBillTransferModal() {
+    if(did('billtransfermodal')) did('billtransfermodal').classList.add('hidden')
+}
+
+async function submitBillSalespointTransfer() {
+    const reference = String(did('billtransfer_reference')?.value || '').trim()
+    const newsalespoint = String(did('billtransfer_newsalespoint')?.value || '').trim()
+    if(!reference) return notification('Bill reference is required', 0)
+    if(!newsalespoint) return notification('Select destination salespoint', 0)
+    const controller = window.billTransferController || billTransferController
+    if(!controller) return notification('Transfer controller is not configured yet', 0)
+
+    const payload = new FormData()
+    payload.append('reference', reference)
+    payload.append('newsalespoint', newsalespoint)
+    const request = await httpRequest2(controller, payload, did('billtransfer_submit'), 'json')
+    if(request?.status){
+        notification(request.message || 'Bill transferred successfully', 1)
+        closeBillTransferModal()
+        if(pendingBillTransferRefreshFunction && typeof window[pendingBillTransferRefreshFunction] === 'function'){
+            window[pendingBillTransferRefreshFunction]()
+        }
+        return
+    }
+    return notification(request?.message || 'Unable to transfer bill', 0)
+}
+
 
 // THIS CODE IS TO MAKE SURE ALL DEPARTURE DATE TIME IS SET TO 12:00:00
 function setDepartureTimetotwelveoclock() {
