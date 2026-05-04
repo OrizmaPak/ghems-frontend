@@ -48,7 +48,7 @@
                                     <div class="grid grid-cols-1 !mb-5 gap-6">
                                         <div class="form-group">
                                             <label for="generalstatus" class="control-label">General Status</label>
-                                            <select name="status" id="generalstatus" class="form-control comp">
+                                            <select name="generalstatus" id="generalstatus" class="form-control comp">
                                                 <option value="">-- Select General Status --</option>
                                                 <option value="READY">READY</option>
                                                 <option value="DIRTY">DIRTY</option>
@@ -238,7 +238,7 @@
                                            <input type="text" class="hidden" name="roomnumber" id="rcccroomnumber" />
                                            <input type="text" class="hidden" name="entrydate" id="rcccentrydate" />
                                            <input type="text" class="hidden" name="shift" id="rcccshift" />
-                                           <input type="text" class="hidden" name="status" id="rcccstatus" />
+                                           <input type="text" class="hidden" name="generalstatus" id="rcccstatus" />
                                             <table>
                                                 <thead>
                                                     <tr>

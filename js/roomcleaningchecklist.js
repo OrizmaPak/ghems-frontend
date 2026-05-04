@@ -6,6 +6,10 @@ let roomCleaningTomSelectAssetsPromise = null
 let currentRoomCleaningPrintId = ''
 const roomGuestNameCache = new Map()
 
+function getRoomCleaningGeneralStatus(item = {}) {
+    return item.generalstatus || item.status || ''
+}
+
 function extractGuestNameFromLookupResponse(payload) {
     if (!payload) return ''
     if (typeof payload === 'string') return payload
@@ -389,7 +393,7 @@ async function fetchroomcleaningchecklist(id='', filters=null) {
             populateData(request.data[0])
             setSelectedRoomNumbers(request.data[0].roomnumber)
             did('supervisor').value = request.data[0].supervisorname + ' || '+ request.data[0].supervisor
-            if(did('generalstatus')) did('generalstatus').value = request.data[0].status || ''
+            if(did('generalstatus')) did('generalstatus').value = getRoomCleaningGeneralStatus(request.data[0])
         }
     }
     else return notification('No records retrieved')
@@ -498,7 +502,7 @@ async function fetchroomcleaningchecklistview(id){
     did('rccworkerassigned').innerHTML = y.workerassigned || ''
     did('rccentrydate').innerHTML = specialformatDateTime(y.entrydate)
     did('rccshift').innerHTML = y.shift
-    did('rccgeneralstatus').innerHTML = y.status || ''
+    did('rccgeneralstatus').innerHTML = getRoomCleaningGeneralStatus(y)
     did('rccprintcheckitems').innerHTML = x.map((entry, idx) => {
         const label = getChecklistItemLabel(entry.item)
         return `<div class="flex items-center justify-between gap-3 py-1 border-b border-gray-100">
@@ -514,7 +518,7 @@ async function fetchroomcleaningchecklistview(id){
     did('rcccroomnumber').value = y.roomnumber
     did('rcccentrydate').value = y.entrydate
     did('rcccshift').value = y.shift
-    did('rcccstatus').value = y.status || ''
+    did('rcccstatus').value = getRoomCleaningGeneralStatus(y)
     roomcleaningchecklistid = y.id
 }
 
