@@ -100,7 +100,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="table-status"></div>
+                        <div class="roomcleaning-create-table-status"></div>
                     </div> 
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-3 gap-6">
                                         
