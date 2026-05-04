@@ -50,8 +50,17 @@ async function checkreferenceforreceivepurchase(){
     param.append('entrypoint', 'PO')
     let request = await httpRequest2('../controllers/fetchintakes', param, null, 'json')
     if(request.status){
-        did('owner').value = request.data[0].suppliername
-        did('tabledata').innerHTML = request.data.map((dat, elid)=>{
+        const approvedRows = (request.data || []).filter((row) => {
+            const status = String(row?.status || row?.approvalstatus || '').trim().toUpperCase()
+            return status === 'APPROVED'
+        })
+        if(!approvedRows.length){
+            did('tabledata').innerHTML = ''
+            did('owner').value = ''
+            return notification('Only approved purchase orders can be received', 0)
+        }
+        did('owner').value = approvedRows[0].suppliername
+        did('tabledata').innerHTML = approvedRows.map((dat, elid)=>{
             let datt = receivepurchasesitem
             datt = datt.filter(item=>item.itemid==dat.itemid)
         return`

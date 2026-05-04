@@ -16,6 +16,20 @@
     </ul>
 
     <div id="apoviewunapproved" class="mt-6">
+        <form id="apo_unapproved_filter_form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div class="form-group">
+                <label class="control-label">Start Date</label>
+                <input type="date" id="apo_unapproved_startdate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="control-label">End Date</label>
+                <input type="date" id="apo_unapproved_enddate" class="form-control">
+            </div>
+            <div class="form-group flex items-end gap-2">
+                <button type="button" id="apo_unapproved_filter_btn" class="btn">Filter</button>
+                <button type="button" id="apo_unapproved_clear_btn" class="btn !bg-gray-500">Clear</button>
+            </div>
+        </form>
         <div class="table-content">
             <table>
                 <thead>
@@ -48,6 +62,20 @@
     </div>
 
     <div id="apoviewapproved" class="mt-6 hidden">
+        <form id="apo_approved_filter_form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div class="form-group">
+                <label class="control-label">Start Date</label>
+                <input type="date" id="apo_approved_startdate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="control-label">End Date</label>
+                <input type="date" id="apo_approved_enddate" class="form-control">
+            </div>
+            <div class="form-group flex items-end gap-2">
+                <button type="button" id="apo_approved_filter_btn" class="btn">Filter</button>
+                <button type="button" id="apo_approved_clear_btn" class="btn !bg-gray-500">Clear</button>
+            </div>
+        </form>
         <div class="table-content">
             <table>
                 <thead>
@@ -74,6 +102,20 @@
     </div>
 
     <div id="apoviewdeclined" class="mt-6 hidden">
+        <form id="apo_declined_filter_form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div class="form-group">
+                <label class="control-label">Start Date</label>
+                <input type="date" id="apo_declined_startdate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="control-label">End Date</label>
+                <input type="date" id="apo_declined_enddate" class="form-control">
+            </div>
+            <div class="form-group flex items-end gap-2">
+                <button type="button" id="apo_declined_filter_btn" class="btn">Filter</button>
+                <button type="button" id="apo_declined_clear_btn" class="btn !bg-gray-500">Clear</button>
+            </div>
+        </form>
         <div class="table-content">
             <table>
                 <thead>
