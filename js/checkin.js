@@ -284,15 +284,19 @@ function calculatetotals(){
     let tpd = 0;
     let otherdiscount = document.getElementById('otherdiscount') ? Number(document.getElementById('otherdiscount').value || 0) : 0;
     if(otherdiscount < 0)otherdiscount = 0
+    if(otherdiscount > 100)otherdiscount = 100
+    if(document.getElementById('otherdiscount'))document.getElementById('otherdiscount').value = otherdiscount
     for(let i=0;i<document.getElementsByClassName('roomnumber').length;i++){
         tr = Number(document.getElementsByClassName('roomrate')[i].value)+tr
         trd = Number(document.getElementsByClassName('discountamount')[i].value)+trd
         tp = Number(document.getElementsByClassName('planamount')[i].value)+tp
         tpd = Number(document.getElementsByClassName('plandiscountamount')[i].value)+tpd
     }
-    let totalamount = Math.max(((tr + tp) - (trd + tpd)) - otherdiscount, 0)
+    const subtotalAfterRoomPlanDiscount = Math.max((tr + tp) - (trd + tpd), 0)
+    const otherDiscountAmount = (otherdiscount / 100) * subtotalAfterRoomPlanDiscount
+    let totalamount = Math.max(subtotalAfterRoomPlanDiscount - otherDiscountAmount, 0)
     did('totalrate').textContent = formatNumber(tr + tp)
-    did('totaldiscount').textContent = formatNumber(trd + tpd + otherdiscount)
+    did('totaldiscount').textContent = formatNumber(trd + tpd + otherDiscountAmount)
     did('totalplan').textContent = formatNumber(totalamount)
     if(document.getElementById('totalamount'))document.getElementById('totalamount').value = totalamount
 }
@@ -1793,7 +1797,9 @@ function opencheckinreceipt(id, ratee, rooms){
     const totalPlanAmount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.planamount || 0), 0)
     const totalRoomDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.discountamount || 0), 0)
     const totalPlanDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.plandiscountamount || 0), 0)
-    const otherDiscount = Number(receiptdata?.reservations?.otherdiscount || 0)
+    const otherDiscountPerc = Number(receiptdata?.reservations?.otherdiscount || 0)
+    const baseAfterRoomPlanDiscount = Math.max((totalRoomRate + totalPlanAmount) - (totalRoomDiscount + totalPlanDiscount), 0)
+    const otherDiscount = Math.max((Math.max(Math.min(otherDiscountPerc, 100), 0) / 100) * baseAfterRoomPlanDiscount, 0)
     const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
     const calculatedTotalAmount = Math.max((totalRoomRate + totalPlanAmount) - totalDiscount, 0)
     const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
@@ -2088,7 +2094,7 @@ function opencheckinreceipt(id, ratee, rooms){
                         				</div>
                         			</div>
                         			<div class="flex justify-between mb-3">
-                        				<div class="text-gray-800 text-right flex-1">Other Discount</div>
+                        				<div class="text-gray-800 text-right flex-1">Other Discount (${formatNumber(otherDiscountPerc)}%)</div>
                         				<div class="text-right w-40">
                         					<div class="text-gray-800 font-medium">${formatNumber(otherDiscount)}</div>
                         				</div>
