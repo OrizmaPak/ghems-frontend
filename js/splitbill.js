@@ -241,6 +241,7 @@ function buildSplitBillDescription() {
 function buildSplitBillPayload(bill, items, options = {}) {
     const payload = new FormData()
     if (options.id) payload.append('id', options.id)
+    if (options.batchid) payload.append('batchid', options.batchid)
     payload.append('salespoint', bill.salespoint || '')
     payload.append('applyto', bill.applyto || 'OTHERS')
     payload.append('owner', bill.owner || '-1')
@@ -274,6 +275,7 @@ async function submitSplitBill() {
     const submitButton = did('splitbill_submit')
     const originalPayload = buildSplitBillPayload(splitBillActiveBill, splitBillOriginalItems, {
         id: originalId,
+        batchid: splitBillActiveBill.batchid,
         reference: splitBillActiveBill.reference,
         description: splitBillActiveBill.description || ''
     })
