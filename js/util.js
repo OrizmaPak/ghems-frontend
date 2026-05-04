@@ -533,7 +533,7 @@ function normalizeInventoryItems(data) {
     }, [])
 }
 
-let billTransferController = ''
+let billTransferController = '../controllers/transferbill.php'
 let pendingBillTransferRefreshFunction = ''
 
 function getBillTransferSalespointOptions() {
