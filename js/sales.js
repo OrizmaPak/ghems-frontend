@@ -1079,6 +1079,10 @@ async function onsalesTableDataSignal() {
             const currentStatus = normalizeOrderStatusValue(item.saleentry.moredata, true) || 'ORDER'
             const statusOptions = getOrderStatusOptions(currentStatus)
             const safeComment = item.saleentry.description || item.saledetail?.[0]?.description || ''
+            const safeOrderDetails = (() => {
+                const raw = String(item.saleentry.ownerid ?? '').trim()
+                return raw && raw !== '-1' ? raw : '-'
+            })()
             const renderItemLabel = (label) => {
                 const raw = String(label || '-')
                 if(raw.length > 30){
@@ -1106,7 +1110,12 @@ async function onsalesTableDataSignal() {
                 <tr>
                     <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
                     <td>${nestedItemsTable}</td>
-                    <td>${safeComment}</td>
+                    <td>
+                        <div class="text-xs leading-5">
+                            <p><span class="font-semibold">Order Details:</span> ${safeOrderDetails}</p>
+                            <p><span class="font-semibold">Comment:</span> ${safeComment || '-'}</p>
+                        </div>
+                    </td>
                     <td>
                         <select class="form-control !min-w-[150px]" onchange="if(this.value)updateOrderStatus('${String(item.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this)">
                             <option value="">${currentStatus}</option>
@@ -1146,6 +1155,8 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
     const orderMode = isOrderWorkspaceMode()
     const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || null
     if(preferLocal && !room && localData){
+        const localOrderDetails = String(localData.saleentry.ownerid ?? '').trim()
+        const localOrderComment = String(localData.saleentry.description || '').trim()
         did('tableheader').innerHTML = `
             <th>s/n </th>
             <th> Item ID </th>
@@ -1157,8 +1168,8 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
         did('modaldetails').innerHTML = `
             <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
             <div class="col-span-2">
-                <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${localData.saleentry.description || ''}</span></p>
-                ${localData.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.ownerid || ''}</span></p>`}
+                <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Comment' : 'Description'}: <span class="uppercase !text-sm font-normal text-left w-[50%]">${localOrderComment || '-'}</span></p>
+                <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Details' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (localOrderDetails && localOrderDetails !== '-1' ? localOrderDetails : '-') : (localData.saleentry.ownerid < 0 ? '-' : (localData.saleentry.ownerid || '-'))}</span></p>
                 <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(localData.saleentry.servicecharge || 0)}</span></p>
                 <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.reference || ref}</span></p>
                 ${orderMode ? `<div class="!text-sm font-semibold flex w-full justify-between items-center gap-3"><span>Status:</span><span class="w-[220px]"><select class="form-control" onchange="if(this.value)updateOrderStatus('${String(localData.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this, '${String(localData.saleentry.reference || '').replace(/'/g, "\\'")}')"><option value="">${normalizeOrderStatusValue(localData.saleentry.moredata, true) || 'ORDER'}</option>${getOrderStatusOptions(localData.saleentry.moredata).map((opt) => `<option value="${opt}">${opt}</option>`).join('')}</select></span></div>` : `<p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left">${localData.saleentry.paymentmethod || ''}</span></p>`}
@@ -1191,6 +1202,8 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
     let request = await httpRequest2(`../controllers/${controller}`, getparamm(), null, 'json');
     let data1 = localData || {saleentry:{}, amountreceived:0}
     if(!request.status) return notification('No records retrieved')
+    const fallbackOrderDetails = String(data1.saleentry.ownerid ?? '').trim()
+    const fallbackOrderComment = String(data1.saleentry.description || '').trim()
 
     did('tableheader').innerHTML = `
         <th>s/n </th>
@@ -1203,8 +1216,8 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
     did('modaldetails').innerHTML = `
         <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
         <div class="col-span-2">
-            <p class="!text-sm font-semibold flex w-full justify-between">Description: <span class="uppercase !text-sm font-normal text-left w-[50%]">${data1.saleentry.description || ''}</span></p>
-            ${data1.saleentry.ownerid < 0 ? '' : `<p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Number' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.ownerid || ''}</span></p>`}
+            <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Comment' : 'Description'}: <span class="uppercase !text-sm font-normal text-left w-[50%]">${fallbackOrderComment || '-'}</span></p>
+            <p class="!text-sm font-semibold flex w-full justify-between">${orderMode ? 'Order Details' : 'Room / CC'}: <span class="uppercase !text-sm font-normal text-left">${orderMode ? (fallbackOrderDetails && fallbackOrderDetails !== '-1' ? fallbackOrderDetails : '-') : (data1.saleentry.ownerid < 0 ? '-' : (data1.saleentry.ownerid || '-'))}</span></p>
             <p class="!text-sm font-semibold flex w-full justify-between">Total Amount: <span class="uppercase !text-sm font-normal text-left">${formatNumber(data1.saleentry.servicecharge || 0)}</span></p>
             <p class="!text-sm font-semibold flex w-full justify-between">Ref: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.reference || ref}</span></p>
             ${orderMode ? `<div class="!text-sm font-semibold flex w-full justify-between items-center gap-3"><span>Status:</span><span class="w-[220px]"><select class="form-control" onchange="if(this.value)updateOrderStatus('${String(data1.saleentry.batchid || '').replace(/'/g, "\\'")}', this.value, this, '${String(data1.saleentry.reference || '').replace(/'/g, "\\'")}')"><option value="">${normalizeOrderStatusValue(data1.saleentry.moredata, true) || 'ORDER'}</option>${getOrderStatusOptions(data1.saleentry.moredata).map((opt) => `<option value="${opt}">${opt}</option>`).join('')}</select></span></div>` : `<p class="!text-sm font-semibold flex w-full justify-between">Payment Method: <span class="uppercase !text-sm font-normal text-left">${data1.saleentry.paymentmethod || ''}</span></p>`}
@@ -1985,8 +1998,9 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
-            const ownerText = String(firstRow.owner ?? firstRow.ownerid ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.owner ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.ownerid ?? '').trim()
-            const shouldShowOwner = ownerText !== '' && ownerText !== '-1'
+            const ownerTextRaw = String(firstRow.owner ?? firstRow.ownerid ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.owner ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.ownerid ?? '').trim()
+            const ownerText = ownerTextRaw && ownerTextRaw !== '-1' ? ownerTextRaw : '-'
+            const shouldShowOwner = orderPrintMode ? true : (ownerTextRaw !== '' && ownerTextRaw !== '-1')
             const receiptDescription = String(
                 firstRow.description
                 || firstRow.comment
