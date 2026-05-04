@@ -1803,7 +1803,7 @@ function opencheckinreceipt(id, ratee, rooms){
     const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
     const calculatedTotalAmount = Math.max((totalRoomRate + totalPlanAmount) - totalDiscount, 0)
     const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
-    const showSavedTotalAmount = savedTotalAmount > 0 && Math.round(savedTotalAmount) !== Math.round(calculatedTotalAmount)
+    const finalTotalAmount = savedTotalAmount > 0 ? savedTotalAmount : calculatedTotalAmount
     // did('invoiceno').setAttribute('value', receiptdata.reservations.reference)
     // did('invoiceno').value = receiptdata.reservations.reference
     // did('invoicedate').setAttribute('value', specialformatDateTime(receiptdata.reservations.reservationdate))
@@ -2105,20 +2105,11 @@ function opencheckinreceipt(id, ratee, rooms){
                         					<div class="text-gray-800 font-medium">${formatNumber(totalDiscount)}</div>
                         				</div>
                         			</div>
-                                    ${showSavedTotalAmount ? `
-                                        <div class="flex justify-between mb-4">
-                                            <div class="text-sm text-gray-600 text-right flex-1">Saved Total Amount</div>
-                                            <div class="text-right w-40">
-                                                <div class="text-sm text-gray-600">${formatNumber(savedTotalAmount)}</div>
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                        		
                         			<div class="py-2 border-t border-b">
                         				<div class="flex justify-between">
                         					<div class="text-xl text-gray-600 text-right flex-1">Total&nbsp;Amount</div>
                         					<div class="text-right w-40">
-                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatNumber(calculatedTotalAmount)}</div>
+                        						<div id="rtotalpaid" class="text-xl text-gray-800 font-bold">${formatNumber(finalTotalAmount)}</div>
                         					</div>
                         				</div>
                         			</div>
