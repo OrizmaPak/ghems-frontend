@@ -136,7 +136,7 @@ function renderSplitBillTable() {
             <td>${bill.transactiondate ? specialformatDateTime(bill.transactiondate) : ''}</td>
             <td>${splitBillMoney(bill.totalamount || splitBillTotal(bill.items))}</td>
             <td>
-                <button type="button" title="Split Bill" onclick="selectSplitBill('${String(bill.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">call_split</button>
+                <button type="button" title="Split Bill" onclick="selectSplitBill('${String(bill.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full h-8 w-8 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 18px; background:#2563eb; color:#ffffff;">call_split</button>
             </td>
         </tr>
     `).join('')

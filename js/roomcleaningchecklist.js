@@ -453,9 +453,9 @@ async function onroomcleaningchecklistTableDataSignal() {
         <td>${item.shift}</td>
         <td>
         <div class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="fetchroomcleaningchecklistview('${item.id}')" class="material-symbols-outlined rounded-full bg-[green] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">view_list</button>
+            <button title="Modal Edit" onclick="fetchroomcleaningchecklistview('${item.id}')" class="material-symbols-outlined rounded-full bg-[green] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">view_list</button>
             <button title="Print" onclick="printRoomCleaningChecklistRow('${item.id}')" class="material-symbols-outlined rounded-full bg-[#0f766e] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
-            <button title="Edit row entry" onclick="fetchroomcleaningchecklist('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
+            <button title="Full Edit" onclick="fetchroomcleaningchecklist('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
             <button title="Delete row entry"s onclick="removeroomcleaningchecklist('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </div>
         </td>
