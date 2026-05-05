@@ -136,16 +136,20 @@ function getRoomCategoryMatrixStyles(){
             from { opacity: 0.68; }
             to { opacity: 1; }
         }
-        .occ-matrix-table { border-collapse: separate; border-spacing: 0; width: 100%; background: #fff; }
+        .occ-matrix-table { border-collapse: separate; border-spacing: 0; width: 100%; background: #fff; table-layout: fixed; }
         .occ-matrix-table-right { min-width: 840px; }
-        .occ-matrix-table th, .occ-matrix-table td { border-right: 1px solid #dbe3ef; border-bottom: 1px solid #dbe3ef; height: 40px; }
+        .occ-matrix-table tr { height: 40px; }
+        .occ-matrix-table thead tr { height: 50px; }
+        .occ-matrix-table th, .occ-matrix-table td { border-right: 1px solid #dbe3ef; border-bottom: 1px solid #dbe3ef; box-sizing: border-box; height: 40px; padding: 0; vertical-align: middle; }
+        .occ-matrix-table thead th { height: 50px; }
         .occ-matrix-table thead th { background: #7589a8; color: #fff; font-size: 12px; }
         .occ-matrix-table .cat-col { background: #f7f9fc; min-width: 280px; max-width: 280px; }
         .occ-matrix-table thead .cat-col { background: #647a9b; color: #0f2138; }
-        .occ-matrix-table .day-head { width: 60px; min-width: 60px; text-align: center; padding: 7px 4px; }
+        .occ-matrix-table .day-head { width: 60px; min-width: 60px; text-align: center; padding: 0 4px; }
         .occ-matrix-table .day-head .d1 { font-size: 10px; opacity: 0.9; font-weight: 800; }
         .occ-matrix-table .day-head .d2 { font-size: 15px; font-weight: 900; line-height: 1; margin-top: 3px; }
-        .occ-matrix-table .cat-cell { padding: 0 12px; font-weight: 800; color: #052442; font-size: 12px; text-transform: uppercase; white-space: nowrap; }
+        .occ-matrix-table .cat-cell { padding: 0 12px; font-weight: 800; color: #052442; font-size: 12px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 40px; }
+        .occ-matrix-table thead .cat-cell { line-height: 50px; }
         .occ-matrix-table .val-cell { text-align: center; font-weight: 800; color: #111827; font-size: 13px; background: #fff; }
         .occ-matrix-table tbody tr:nth-child(even) .val-cell { background: #fbfdff; }
         .occ-matrix-table tbody tr:nth-child(even) .cat-cell { background: #f1f5f9; }
@@ -294,6 +298,7 @@ function getRowsFromCategoryFourteenDayResponse(response){
 }
 
 function applyCategoryFourteenDayRows(buckets, rows = [], dateWindow = []){
+    const availableTotals = Array.from({ length: 14 }, () => 0)
     if(Array.isArray(rows) && Array.isArray(rows[0]?.occupancy)){
         let mapped = false
         rows.slice(0, 14).forEach((dayRow, dayIndex) => {
@@ -301,13 +306,14 @@ function applyCategoryFourteenDayRows(buckets, rows = [], dateWindow = []){
                 const category = String(item.categoryname || item.roomcategoryname || item.roomcategory || item.category || '').trim().toUpperCase()
                 if(!category || !buckets[category]) return
                 mapped = true
-                const value = Number(item.available ?? item.value ?? item.count ?? item.total ?? 0)
+                const value = Number(item.occupied ?? item.value ?? item.count ?? item.total ?? 0)
+                availableTotals[dayIndex] += Number(item.available ?? 0)
                 if(value > 0){
                     for(let n = 0; n < value; n++) buckets[category].occupiedByDay[dayIndex].add(`${category}_${dayIndex}_${n}`)
                 }
             })
         })
-        return mapped
+        return { mapped, availableTotals }
     }
 
     let mapped = false
@@ -332,7 +338,7 @@ function applyCategoryFourteenDayRows(buckets, rows = [], dateWindow = []){
             }
         }
     })
-    return mapped
+    return { mapped, availableTotals: null }
 }
 
 function buildDateWindowFromCategoryFourteenDayRows(rows = [], fallback = []){
@@ -408,8 +414,6 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
 
     const payload = new FormData()
     payload.append('arrivaldate', startIso)
-    payload.append('startdate', startIso)
-    payload.append('enddate', endIso)
     const occupancyByCategoryReq = await httpRequest2('../controllers/fetchreservationsbycategoryfourteendays.php', payload, triggerBtn, 'json')
     window.lastCategoryFourteenDaysResponse = occupancyByCategoryReq
     if(sequence !== roomCategoryMatrixState.requestSequence) return
@@ -417,9 +421,10 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
     const buckets = createRoomCategoryBuckets()
     const categoryControllerRows = getRowsFromCategoryFourteenDayResponse(occupancyByCategoryReq)
     const finalDateWindow = buildDateWindowFromCategoryFourteenDayRows(categoryControllerRows, dateWindow)
-    const usedCategoryController = occupancyByCategoryReq?.status
+    const categoryMapping = occupancyByCategoryReq?.status
         ? applyCategoryFourteenDayRows(buckets, categoryControllerRows, finalDateWindow)
-        : false
+        : { mapped: false, availableTotals: null }
+    const usedCategoryController = categoryMapping.mapped
 
     const categoryRows = roomCategoryMatrixState.categories.map(({ category }) => {
         const bucket = buckets[category]
@@ -429,8 +434,11 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
 
     const grandTotalRooms = roomCategoryMatrixState.allRoomNumbers.size
     const vacantTotals = Array.from({ length: 14 }, (_, index) => {
+        if(usedCategoryController && Array.isArray(categoryMapping.availableTotals)){
+            return Number(categoryMapping.availableTotals[index] || 0)
+        }
         const total = categoryRows.reduce((sum, row) => sum + Number(row.totals[index] || 0), 0)
-        return usedCategoryController ? total : Math.max(grandTotalRooms - total, 0)
+        return Math.max(grandTotalRooms - total, 0)
     })
 
     renderRoomCategoryMatrixRightValues(categoryRows, vacantTotals, finalDateWindow)
