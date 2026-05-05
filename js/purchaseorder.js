@@ -101,7 +101,8 @@ function populateReqSelect(){
                     document.getElementById(`type_${el}`).innerHTML = data[0].itemtype
                     document.getElementById(`group_${el}`).innerHTML = data[0].groupname
                     document.getElementById(`qty_${el}`).setAttribute('placeholder', data[0].units)
-                    document.getElementById(`cost_${el}`).value = parseNumericValue(data[0].price)
+                    const unitCost = parseNumericValue(data[0].cost ?? data[0].price ?? 0)
+                    document.getElementById(`cost_${el}`).value = unitCost
                     if(document.getElementById(`qty_${el}`).value){
                         document.getElementById(`val_${el}`).value = parseNumericValue(document.getElementById(`qty_${el}`).value) * parseNumericValue(document.getElementById(`cost_${el}`).value)
                     }else{

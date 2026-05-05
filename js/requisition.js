@@ -166,7 +166,8 @@ function populateRequitionSelect2(){
                 document.getElementById(`type_${el}`).innerHTML = data[0].itemtype
                 document.getElementById(`group_${el}`).innerHTML = data[0].groupname
                 document.getElementById(`qty_${el}`).setAttribute('placeholder', data[0].units)
-                document.getElementById(`cost_${el}`).value = Number(data[0].price)
+                const unitCost = Number(data[0].cost ?? data[0].price ?? 0)
+                document.getElementById(`cost_${el}`).value = unitCost
                 }
                 // document.getElementById(`cost_${el}`).innerHTML = 0
             })
