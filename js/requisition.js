@@ -174,6 +174,7 @@ function populateRequitionSelect2(){
             
         }
     }
+    enableSearchOnItemSelects()
 }
 
 function requisitiontotalcount(){

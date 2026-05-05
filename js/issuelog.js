@@ -172,6 +172,7 @@ function populateIssuelogSelect2(){
             
         }
     }
+    enableSearchOnItemSelects()
 }
 
 function issuelogtotalcount(){

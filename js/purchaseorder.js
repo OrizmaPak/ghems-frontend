@@ -115,6 +115,7 @@ function populateReqSelect(){
             
         }
     }
+    enableSearchOnItemSelects()
 }
 
 async function reqstockbalance (itemid, id, location=''){

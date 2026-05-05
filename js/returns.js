@@ -170,6 +170,7 @@ function populatereturnsSelect2(){
             
         }
     }
+    enableSearchOnItemSelects()
 }
 
 function returnstotalcount(){

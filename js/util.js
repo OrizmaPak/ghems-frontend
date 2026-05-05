@@ -533,6 +533,57 @@ function normalizeInventoryItems(data) {
     }, [])
 }
 
+let appTomSelectAssetsPromise = null
+
+function ensureAppTomSelectAssets() {
+    if (window.TomSelect) return Promise.resolve()
+    if (appTomSelectAssetsPromise) return appTomSelectAssetsPromise
+    appTomSelectAssetsPromise = new Promise((resolve, reject) => {
+        if (!document.querySelector('link[data-app-tomselect="1"]')) {
+            const css = document.createElement('link')
+            css.rel = 'stylesheet'
+            css.href = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css'
+            css.dataset.appTomselect = '1'
+            document.head.appendChild(css)
+        }
+        if (window.TomSelect) return resolve()
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js'
+        script.dataset.appTomselect = '1'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Unable to load Tom Select assets'))
+        document.head.appendChild(script)
+    }).catch((error) => {
+        console.log(error)
+    }).finally(() => {
+        appTomSelectAssetsPromise = null
+    })
+    return appTomSelectAssetsPromise
+}
+
+function makeSelectSearchable(control, placeholder = 'Search item...') {
+    if (!control || control.tagName !== 'SELECT') return
+    const apply = () => {
+        if (!window.TomSelect) return
+        if (control.tomselect) control.tomselect.destroy()
+        new window.TomSelect(control, {
+            create: false,
+            allowEmptyOption: true,
+            searchField: ['text', 'value'],
+            placeholder,
+            maxOptions: 10000
+        })
+    }
+    if (window.TomSelect) return apply()
+    ensureAppTomSelectAssets().then(apply)
+}
+
+function enableSearchOnItemSelects(container = document) {
+    const root = container || document
+    const controls = root.querySelectorAll('select[name="supplyfrom"]')
+    controls.forEach((control) => makeSelectSearchable(control, 'Search item...'))
+}
+
 let billTransferController = '../controllers/transferbill.php'
 let pendingBillTransferRefreshFunction = ''
 

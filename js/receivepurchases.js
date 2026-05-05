@@ -190,6 +190,7 @@ function populateReqSelect2(){
             
         }
     }
+    enableSearchOnItemSelects()
 }
 
 
