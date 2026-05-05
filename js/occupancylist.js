@@ -14,6 +14,7 @@ async function occupancylistActive() {
 
 const roomCategoryMatrixState = {
     startDate: new Date(),
+    transitionDirection: 'next',
 }
 
 function toISODate(value){
@@ -48,6 +49,7 @@ function monthInputValueFromDate(dateValue){
 function initializeRoomCategoryMatrixEvents(){
     if(did('roomcategorymatrixprev')){
         did('roomcategorymatrixprev').onclick = async () => {
+            roomCategoryMatrixState.transitionDirection = 'prev'
             roomCategoryMatrixState.startDate = addDays(roomCategoryMatrixState.startDate, -14)
             syncRoomCategoryMatrixMonthInput()
             await renderRoomCategoryNext14DaysMatrix()
@@ -55,6 +57,7 @@ function initializeRoomCategoryMatrixEvents(){
     }
     if(did('roomcategorymatrixnext')){
         did('roomcategorymatrixnext').onclick = async () => {
+            roomCategoryMatrixState.transitionDirection = 'next'
             roomCategoryMatrixState.startDate = addDays(roomCategoryMatrixState.startDate, 14)
             syncRoomCategoryMatrixMonthInput()
             await renderRoomCategoryNext14DaysMatrix()
@@ -64,6 +67,7 @@ function initializeRoomCategoryMatrixEvents(){
         did('roomcategorymatrixmonth').onchange = async (event) => {
             const raw = String(event.target.value || '').trim()
             if(!raw) return
+            roomCategoryMatrixState.transitionDirection = 'next'
             const [year, month] = raw.split('-').map(Number)
             const currentDay = new Date(roomCategoryMatrixState.startDate).getDate()
             roomCategoryMatrixState.startDate = new Date(year, month - 1, Math.min(currentDay, 28))
@@ -72,6 +76,7 @@ function initializeRoomCategoryMatrixEvents(){
     }
     if(did('roomcategorymatrixrefresh')){
         did('roomcategorymatrixrefresh').onclick = async () => {
+            roomCategoryMatrixState.transitionDirection = 'next'
             await renderRoomCategoryNext14DaysMatrix(did('roomcategorymatrixrefresh'))
         }
     }
@@ -106,7 +111,19 @@ function ensureCategoryBucket(map, category){
 function getRoomCategoryMatrixStyles(){
     return `
     <style>
-        .occ-matrix-table { border-collapse: separate; border-spacing: 0; min-width: 1040px; width: 100%; }
+        .occ-matrix-shell { position: relative; overflow: hidden; border-radius: 8px; }
+        .occ-matrix-panel { will-change: transform, opacity; }
+        .occ-matrix-panel.slide-next { animation: occSlideInNext .34s cubic-bezier(0.22, 1, 0.36, 1); }
+        .occ-matrix-panel.slide-prev { animation: occSlideInPrev .34s cubic-bezier(0.22, 1, 0.36, 1); }
+        @keyframes occSlideInNext {
+            from { transform: translateX(34px); opacity: 0.62; filter: blur(1px); }
+            to { transform: translateX(0); opacity: 1; filter: blur(0); }
+        }
+        @keyframes occSlideInPrev {
+            from { transform: translateX(-34px); opacity: 0.62; filter: blur(1px); }
+            to { transform: translateX(0); opacity: 1; filter: blur(0); }
+        }
+        .occ-matrix-table { border-collapse: separate; border-spacing: 0; min-width: 1040px; width: 100%; background: #fff; }
         .occ-matrix-table th, .occ-matrix-table td { border-right: 1px solid #dbe3ef; border-bottom: 1px solid #dbe3ef; }
         .occ-matrix-table thead th { background: #6f86a8; color: #fff; font-size: 12px; letter-spacing: 0.02em; }
         .occ-matrix-table .cat-col { position: sticky; left: 0; z-index: 2; background: #f8fafc; min-width: 260px; max-width: 260px; }
@@ -118,7 +135,35 @@ function getRoomCategoryMatrixStyles(){
         .occ-matrix-table .val-cell { text-align: center; font-weight: 700; color: #0f172a; font-size: 13px; background: #fff; }
         .occ-matrix-table .vacant-row .cat-cell { color: #b91c1c; background: #fff8f8; }
         .occ-matrix-table .vacant-row .val-cell { color: #b91c1c; background: #fff; }
+
+        .occ-skeleton-wrap { min-width: 1040px; padding: 8px; background: linear-gradient(145deg, #f7fafc, #eef4ff); border-radius: 8px; }
+        .occ-skeleton-line, .occ-skeleton-cell {
+            border-radius: 6px;
+            background: linear-gradient(90deg, #e7edf8 20%, #dce6f7 38%, #e7edf8 56%);
+            background-size: 220% 100%;
+            animation: occShimmer 1.2s ease-in-out infinite;
+        }
+        .occ-skeleton-line { height: 18px; width: 180px; margin-bottom: 10px; }
+        .occ-skeleton-grid { display: grid; grid-template-columns: 260px repeat(14, minmax(50px, 1fr)); gap: 6px; }
+        .occ-skeleton-cell { height: 28px; }
+        @keyframes occShimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
     </style>`
+}
+
+function getRoomCategoryMatrixSkeleton(){
+    return `
+        <div class="occ-matrix-shell">
+            <div class="occ-skeleton-wrap">
+                <div class="occ-skeleton-line"></div>
+                <div class="occ-skeleton-grid">
+                    ${Array.from({ length: 15 * 8 }).map(() => `<div class="occ-skeleton-cell"></div>`).join('')}
+                </div>
+            </div>
+        </div>
+    `
 }
 
 async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
@@ -128,7 +173,7 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
         roomCategoryMatrixState.startDate = new Date()
     }
     syncRoomCategoryMatrixMonthInput()
-    holder.innerHTML = `<div class="p-6 text-sm text-slate-500">Loading room categories and occupancy...</div>`
+    holder.innerHTML = `${getRoomCategoryMatrixStyles()}${getRoomCategoryMatrixSkeleton()}`
 
     const startIso = toISODate(roomCategoryMatrixState.startDate)
     const endIso = toISODate(addDays(roomCategoryMatrixState.startDate, 13))
@@ -223,20 +268,25 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
         </tr>
     `
 
+    const slideClass = roomCategoryMatrixState.transitionDirection === 'prev' ? 'slide-prev' : 'slide-next'
     holder.innerHTML = `
         ${getRoomCategoryMatrixStyles()}
-        <table class="occ-matrix-table">
-            <thead>
-                <tr>
-                    <th class="cat-col cat-cell">Room Category</th>
-                    ${headCols}
-                </tr>
-            </thead>
-            <tbody>
-                ${bodyRows}
-                ${vacantRow}
-            </tbody>
-        </table>
+        <div class="occ-matrix-shell">
+            <div class="occ-matrix-panel ${slideClass}">
+                <table class="occ-matrix-table">
+                    <thead>
+                        <tr>
+                            <th class="cat-col cat-cell">Room Category</th>
+                            ${headCols}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bodyRows}
+                        ${vacantRow}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     `
 }
 
