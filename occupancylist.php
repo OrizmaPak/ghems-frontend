@@ -21,6 +21,9 @@
                                         <li class="me-2 cp viewer optioner" name="roomstatusnextthirtydays"  onclick="runoptioner(this)">
                                             <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Room Status Next 30 Days</p>
                                         </li>
+                                        <li class="me-2 cp viewer optioner" name="roomstatuscategorynext14days"  onclick="runoptioner(this)">
+                                            <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Room Status Categories</p>
+                                        </li>
                                     </ul>
                                     
                                     <div id="viewchartter">
@@ -182,6 +185,29 @@
                                         
                                     </div>
                                     
+                                    <div id="roomstatuscategorynext14days" class="hidden">
+                                        <div class="bg-white/90 p-5 xl:p-6 rounded-sm border border-slate-200">
+                                            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                                                <div>
+                                                    <p class="text-lg font-semibold text-slate-800">Room Categories Occupancy (Next 14 Days)</p>
+                                                    <p id="roomcategorymatrixrange" class="text-xs text-slate-500 mt-1">Loading range...</p>
+                                                </div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 w-full lg:w-auto">
+                                                    <div class="form-group">
+                                                        <label for="roomcategorymatrixmonth" class="control-label">Month</label>
+                                                        <input type="month" id="roomcategorymatrixmonth" class="form-control">
+                                                    </div>
+                                                    <button type="button" id="roomcategorymatrixprev" class="btn !h-[42px] !px-4 !py-2 !text-xs">Prev 14 Days</button>
+                                                    <button type="button" id="roomcategorymatrixnext" class="btn !h-[42px] !px-4 !py-2 !text-xs">Next 14 Days</button>
+                                                    <button type="button" id="roomcategorymatrixrefresh" class="btn !h-[42px] !px-4 !py-2 !text-xs !bg-slate-600">Refresh</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 bg-white/90 rounded-sm border border-slate-200 overflow-hidden">
+                                            <div id="roomcategorymatrixholder" class="overflow-auto"></div>
+                                        </div>
+                                    </div>
+
                                 </div>
                                 
                                 

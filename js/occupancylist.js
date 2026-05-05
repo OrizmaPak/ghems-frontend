@@ -2,12 +2,242 @@ async function occupancylistActive() {
     const form = document.querySelector('#occupancylistform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', generatallcheckin)
     if(document.querySelector('#calbtn')) document.querySelector('#calbtn').addEventListener('click', e=>rundateroomstatus(document.getElementById('arrivaldate').value))
+    initializeRoomCategoryMatrixEvents()
     
     datasource = []
     await runcheckinpiedata()
     await fetchOrgData()
     await generatallcheckin() 
     await rundateroomstatus() 
+    await renderRoomCategoryNext14DaysMatrix()
+}
+
+const roomCategoryMatrixState = {
+    startDate: new Date(),
+}
+
+function toISODate(value){
+    const d = new Date(value)
+    if(Number.isNaN(d.getTime())) return ''
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+function addDays(baseDate, offset){
+    const d = new Date(baseDate)
+    d.setDate(d.getDate() + Number(offset || 0))
+    return d
+}
+
+function buildDateWindow(startDate, days = 14){
+    const result = []
+    for(let i = 0; i < days; i++){
+        result.push(addDays(startDate, i))
+    }
+    return result
+}
+
+function monthInputValueFromDate(dateValue){
+    const d = new Date(dateValue)
+    if(Number.isNaN(d.getTime())) return ''
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function initializeRoomCategoryMatrixEvents(){
+    if(did('roomcategorymatrixprev')){
+        did('roomcategorymatrixprev').onclick = async () => {
+            roomCategoryMatrixState.startDate = addDays(roomCategoryMatrixState.startDate, -14)
+            syncRoomCategoryMatrixMonthInput()
+            await renderRoomCategoryNext14DaysMatrix()
+        }
+    }
+    if(did('roomcategorymatrixnext')){
+        did('roomcategorymatrixnext').onclick = async () => {
+            roomCategoryMatrixState.startDate = addDays(roomCategoryMatrixState.startDate, 14)
+            syncRoomCategoryMatrixMonthInput()
+            await renderRoomCategoryNext14DaysMatrix()
+        }
+    }
+    if(did('roomcategorymatrixmonth')){
+        did('roomcategorymatrixmonth').onchange = async (event) => {
+            const raw = String(event.target.value || '').trim()
+            if(!raw) return
+            const [year, month] = raw.split('-').map(Number)
+            const currentDay = new Date(roomCategoryMatrixState.startDate).getDate()
+            roomCategoryMatrixState.startDate = new Date(year, month - 1, Math.min(currentDay, 28))
+            await renderRoomCategoryNext14DaysMatrix()
+        }
+    }
+    if(did('roomcategorymatrixrefresh')){
+        did('roomcategorymatrixrefresh').onclick = async () => {
+            await renderRoomCategoryNext14DaysMatrix(did('roomcategorymatrixrefresh'))
+        }
+    }
+}
+
+function syncRoomCategoryMatrixMonthInput(){
+    if(!did('roomcategorymatrixmonth')) return
+    did('roomcategorymatrixmonth').value = monthInputValueFromDate(roomCategoryMatrixState.startDate)
+}
+
+function roomCategoryCellDateLabel(dateValue){
+    const d = new Date(dateValue)
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+    const day = String(d.getDate()).padStart(2, '0')
+    return { weekday, day }
+}
+
+function normalizeRoomCategoryName(room = {}){
+    return String(room.roomcategory || room.roomcategoryname || room.category || 'UNSPECIFIED').trim().toUpperCase()
+}
+
+function ensureCategoryBucket(map, category){
+    if(!map[category]){
+        map[category] = {
+            rooms: new Set(),
+            occupiedByDay: Array.from({ length: 14 }, () => new Set()),
+        }
+    }
+    return map[category]
+}
+
+function getRoomCategoryMatrixStyles(){
+    return `
+    <style>
+        .occ-matrix-table { border-collapse: separate; border-spacing: 0; min-width: 1040px; width: 100%; }
+        .occ-matrix-table th, .occ-matrix-table td { border-right: 1px solid #dbe3ef; border-bottom: 1px solid #dbe3ef; }
+        .occ-matrix-table thead th { background: #6f86a8; color: #fff; font-size: 12px; letter-spacing: 0.02em; }
+        .occ-matrix-table .cat-col { position: sticky; left: 0; z-index: 2; background: #f8fafc; min-width: 260px; max-width: 260px; }
+        .occ-matrix-table thead .cat-col { z-index: 3; background: #5f7698; }
+        .occ-matrix-table .day-head { width: 60px; min-width: 60px; text-align: center; padding: 8px 4px; }
+        .occ-matrix-table .day-head .d1 { font-size: 11px; opacity: 0.85; }
+        .occ-matrix-table .day-head .d2 { font-size: 15px; font-weight: 800; line-height: 1; margin-top: 3px; }
+        .occ-matrix-table .cat-cell { padding: 10px 12px; font-weight: 700; color: #1f334d; font-size: 13px; text-transform: uppercase; white-space: nowrap; }
+        .occ-matrix-table .val-cell { text-align: center; font-weight: 700; color: #0f172a; font-size: 13px; background: #fff; }
+        .occ-matrix-table .vacant-row .cat-cell { color: #b91c1c; background: #fff8f8; }
+        .occ-matrix-table .vacant-row .val-cell { color: #b91c1c; background: #fff; }
+    </style>`
+}
+
+async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
+    const holder = did('roomcategorymatrixholder')
+    if(!holder) return
+    if(!roomCategoryMatrixState.startDate || Number.isNaN(new Date(roomCategoryMatrixState.startDate).getTime())){
+        roomCategoryMatrixState.startDate = new Date()
+    }
+    syncRoomCategoryMatrixMonthInput()
+    holder.innerHTML = `<div class="p-6 text-sm text-slate-500">Loading room categories and occupancy...</div>`
+
+    const startIso = toISODate(roomCategoryMatrixState.startDate)
+    const endIso = toISODate(addDays(roomCategoryMatrixState.startDate, 13))
+    if(did('roomcategorymatrixrange')) did('roomcategorymatrixrange').textContent = `${formatDate(startIso)} - ${formatDate(endIso)}`
+
+    const payload = new FormData()
+    payload.append('arrivaldate', startIso)
+    const [roomsReq, occupancyReq] = await Promise.all([
+        httpRequest2('../controllers/fetchrooms.php', null, null, 'json'),
+        httpRequest2('../controllers/fetchreservationsovernextthirtydays', payload, triggerBtn, 'json')
+    ])
+
+    if(!roomsReq?.status || !Array.isArray(roomsReq.data) || !roomsReq.data.length){
+        holder.innerHTML = `<div class="p-6 text-sm text-red-500">Unable to load rooms/categories.</div>`
+        return
+    }
+
+    const dateWindow = buildDateWindow(roomCategoryMatrixState.startDate, 14)
+    const buckets = {}
+    const allRoomNumbers = new Set()
+    roomsReq.data.forEach((room) => {
+        const category = normalizeRoomCategoryName(room)
+        const roomNumber = String(room.roomnumber || '').trim()
+        const bucket = ensureCategoryBucket(buckets, category)
+        if(roomNumber){
+            bucket.rooms.add(roomNumber)
+            allRoomNumbers.add(roomNumber)
+        }
+    })
+
+    const occupancyRows = occupancyReq?.status && Array.isArray(occupancyReq.data?.occupancystatistics)
+        ? occupancyReq.data.occupancystatistics
+        : []
+
+    occupancyRows.forEach((entry) => {
+        const roomData = entry?.roomdata || {}
+        const reservation = Array.isArray(entry?.reservationdata) ? entry.reservationdata[0] : null
+        if(!reservation) return
+        const category = normalizeRoomCategoryName(roomData)
+        const roomNumber = String(roomData.roomnumber || '').trim()
+        if(!roomNumber) return
+        const bucket = ensureCategoryBucket(buckets, category)
+        const arrival = new Date(String(reservation.arrivaldate || '').replace(' ', 'T'))
+        const departure = new Date(String(reservation.departuredate || '').replace(' ', 'T'))
+        if(Number.isNaN(arrival.getTime()) || Number.isNaN(departure.getTime())) return
+
+        dateWindow.forEach((dateObj, index) => {
+            const dayStart = new Date(dateObj)
+            dayStart.setHours(0, 0, 0, 0)
+            const dayEnd = new Date(dateObj)
+            dayEnd.setHours(23, 59, 59, 999)
+            if(arrival <= dayEnd && departure > dayStart){
+                bucket.occupiedByDay[index].add(roomNumber)
+            }
+        })
+    })
+
+    const sortedCategories = Object.keys(buckets).sort((a, b) => a.localeCompare(b))
+    if(!sortedCategories.length){
+        holder.innerHTML = `<div class="p-6 text-sm text-slate-500">No room categories available.</div>`
+        return
+    }
+
+    const categoryRows = sortedCategories.map((category) => {
+        const bucket = buckets[category]
+        const totals = bucket.occupiedByDay.map((setObj) => setObj.size)
+        return { category, totals }
+    })
+
+    const grandTotalRooms = allRoomNumbers.size
+    const vacantTotals = Array.from({ length: 14 }, (_, index) => {
+        const occupied = categoryRows.reduce((sum, row) => sum + Number(row.totals[index] || 0), 0)
+        return Math.max(grandTotalRooms - occupied, 0)
+    })
+
+    const headCols = dateWindow.map((d) => {
+        const label = roomCategoryCellDateLabel(d)
+        return `<th class="day-head"><div class="d1">${label.weekday}</div><div class="d2">${label.day}</div></th>`
+    }).join('')
+
+    const bodyRows = categoryRows.map((row) => `
+        <tr>
+            <td class="cat-col cat-cell">${row.category}</td>
+            ${row.totals.map((value) => `<td class="val-cell">${value}</td>`).join('')}
+        </tr>
+    `).join('')
+
+    const vacantRow = `
+        <tr class="vacant-row">
+            <td class="cat-col cat-cell">VACANT</td>
+            ${vacantTotals.map((value) => `<td class="val-cell">${value}</td>`).join('')}
+        </tr>
+    `
+
+    holder.innerHTML = `
+        ${getRoomCategoryMatrixStyles()}
+        <table class="occ-matrix-table">
+            <thead>
+                <tr>
+                    <th class="cat-col cat-cell">Room Category</th>
+                    ${headCols}
+                </tr>
+            </thead>
+            <tbody>
+                ${bodyRows}
+                ${vacantRow}
+            </tbody>
+        </table>
+    `
 }
 
 function seetodaysdate() {
