@@ -186,20 +186,28 @@
                                     </div>
                                     
                                     <div id="roomstatuscategorynext14days" class="hidden">
-                                        <div class="bg-white/90 p-5 xl:p-6 rounded-sm border border-slate-200">
-                                            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-                                                <div>
-                                                    <p class="text-lg font-semibold text-slate-800">Room Categories Occupancy (Next 14 Days)</p>
-                                                    <p id="roomcategorymatrixrange" class="text-xs text-slate-500 mt-1">Loading range...</p>
-                                                </div>
-                                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 w-full lg:w-auto">
-                                                    <div class="form-group">
-                                                        <label for="roomcategorymatrixmonth" class="control-label">Month</label>
-                                                        <input type="month" id="roomcategorymatrixmonth" class="form-control !bg-white !border-slate-300">
+                                        <div class="bg-white/95 p-4 xl:p-5 rounded-sm border border-slate-200 shadow-sm">
+                                            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="h-12 w-1.5 bg-primary-g rounded-sm"></div>
+                                                    <div>
+                                                        <p class="text-lg font-semibold text-slate-800 leading-tight">Room Categories Occupancy</p>
+                                                        <p id="roomcategorymatrixrange" class="text-xs text-slate-500 mt-1">Loading range...</p>
                                                     </div>
-                                                    <button type="button" id="roomcategorymatrixprev" class="btn !h-[42px] !px-4 !py-2 !text-xs">Prev 14 Days</button>
-                                                    <button type="button" id="roomcategorymatrixnext" class="btn !h-[42px] !px-4 !py-2 !text-xs">Next 14 Days</button>
-                                                    <button type="button" id="roomcategorymatrixrefresh" class="btn !h-[42px] !px-4 !py-2 !text-xs !bg-slate-600">Refresh</button>
+                                                </div>
+                                                <div class="flex flex-col sm:flex-row sm:items-end gap-3 w-full xl:w-auto">
+                                                    <div class="form-group min-w-[190px]">
+                                                        <label for="roomcategorymatrixmonth" class="control-label !text-[11px] uppercase">Month</label>
+                                                        <input type="month" id="roomcategorymatrixmonth" class="form-control !bg-white !border-slate-300 !h-[42px]">
+                                                    </div>
+                                                    <div class="flex items-center gap-2 rounded-sm border border-slate-200 bg-slate-50 p-1 h-[46px]">
+                                                        <button type="button" id="roomcategorymatrixprev" title="Previous 14 days" class="btn !h-[36px] !w-[42px] !min-w-[42px] !p-0 material-symbols-outlined">chevron_left</button>
+                                                        <button type="button" id="roomcategorymatrixnext" title="Next 14 days" class="btn !h-[36px] !w-[42px] !min-w-[42px] !p-0 material-symbols-outlined">chevron_right</button>
+                                                    </div>
+                                                    <button type="button" id="roomcategorymatrixrefresh" class="btn !h-[46px] !px-5 !py-2 !text-xs !bg-slate-600 flex items-center gap-2">
+                                                        <span class="material-symbols-outlined" style="font-size: 17px;">sync</span>
+                                                        <span>Refresh</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
