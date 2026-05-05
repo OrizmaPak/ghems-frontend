@@ -294,6 +294,22 @@ function getRowsFromCategoryFourteenDayResponse(response){
 }
 
 function applyCategoryFourteenDayRows(buckets, rows = [], dateWindow = []){
+    if(Array.isArray(rows) && Array.isArray(rows[0]?.occupancy)){
+        let mapped = false
+        rows.slice(0, 14).forEach((dayRow, dayIndex) => {
+            dayRow.occupancy.forEach((item) => {
+                const category = String(item.categoryname || item.roomcategoryname || item.roomcategory || item.category || '').trim().toUpperCase()
+                if(!category || !buckets[category]) return
+                mapped = true
+                const value = Number(item.available ?? item.value ?? item.count ?? item.total ?? 0)
+                if(value > 0){
+                    for(let n = 0; n < value; n++) buckets[category].occupiedByDay[dayIndex].add(`${category}_${dayIndex}_${n}`)
+                }
+            })
+        })
+        return mapped
+    }
+
     let mapped = false
     rows.forEach((row) => {
         const name = String(row.roomcategory || row.roomcategoryname || row.category || row.roomtype || row.room_type || '').trim()
@@ -317,6 +333,12 @@ function applyCategoryFourteenDayRows(buckets, rows = [], dateWindow = []){
         }
     })
     return mapped
+}
+
+function buildDateWindowFromCategoryFourteenDayRows(rows = [], fallback = []){
+    if(!Array.isArray(rows) || !Array.isArray(rows[0]?.occupancy)) return fallback
+    const parsed = rows.slice(0, 14).map((row) => new Date(String(row.date || '').replace(' ', 'T')))
+    return parsed.every((date) => !Number.isNaN(date.getTime())) ? parsed : fallback
 }
 
 function applyReservationRowsToCategoryBuckets(buckets, occupancyRows = [], dateWindow = []){
@@ -388,25 +410,16 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
     payload.append('arrivaldate', startIso)
     payload.append('startdate', startIso)
     payload.append('enddate', endIso)
-    const [occupancyByCategoryReq, occupancyReq] = await Promise.all([
-        httpRequest2('../controllers/fetchreservationsbycategoryfourteendays.php', payload, triggerBtn, 'json'),
-        httpRequest2('../controllers/fetchreservationsovernextthirtydays', payload, triggerBtn, 'json')
-    ])
+    const occupancyByCategoryReq = await httpRequest2('../controllers/fetchreservationsbycategoryfourteendays.php', payload, triggerBtn, 'json')
     window.lastCategoryFourteenDaysResponse = occupancyByCategoryReq
     if(sequence !== roomCategoryMatrixState.requestSequence) return
 
     const buckets = createRoomCategoryBuckets()
-
-    const occupancyRows = occupancyReq?.status && Array.isArray(occupancyReq.data?.occupancystatistics)
-        ? occupancyReq.data.occupancystatistics
-        : []
+    const categoryControllerRows = getRowsFromCategoryFourteenDayResponse(occupancyByCategoryReq)
+    const finalDateWindow = buildDateWindowFromCategoryFourteenDayRows(categoryControllerRows, dateWindow)
     const usedCategoryController = occupancyByCategoryReq?.status
-        ? applyCategoryFourteenDayRows(buckets, getRowsFromCategoryFourteenDayResponse(occupancyByCategoryReq), dateWindow)
+        ? applyCategoryFourteenDayRows(buckets, categoryControllerRows, finalDateWindow)
         : false
-
-    if(!usedCategoryController){
-        applyReservationRowsToCategoryBuckets(buckets, occupancyRows, dateWindow)
-    }
 
     const categoryRows = roomCategoryMatrixState.categories.map(({ category }) => {
         const bucket = buckets[category]
@@ -416,11 +429,11 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
 
     const grandTotalRooms = roomCategoryMatrixState.allRoomNumbers.size
     const vacantTotals = Array.from({ length: 14 }, (_, index) => {
-        const occupied = categoryRows.reduce((sum, row) => sum + Number(row.totals[index] || 0), 0)
-        return Math.max(grandTotalRooms - occupied, 0)
+        const total = categoryRows.reduce((sum, row) => sum + Number(row.totals[index] || 0), 0)
+        return usedCategoryController ? total : Math.max(grandTotalRooms - total, 0)
     })
 
-    renderRoomCategoryMatrixRightValues(categoryRows, vacantTotals, dateWindow)
+    renderRoomCategoryMatrixRightValues(categoryRows, vacantTotals, finalDateWindow)
 }
 
 function seetodaysdate() {
