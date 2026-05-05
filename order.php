@@ -2,6 +2,7 @@
     <p class="page-title">
         <span>ORDER</span>
     </p>
+    <select id="salespointname" class="hidden"></select>
 
     <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200">
         <li id="order_viewer_tab" class="me-2 cp viewer optioner !text-blue-600 active" name="orderview" onclick="runoptioner(this)">
@@ -46,10 +47,16 @@
     <div id="orderview" class="">
         <form id="orderviewform">
             <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div class="form-group">
                         <label for="orderreference" class="control-label">Reference / ID</label>
                         <input type="text" name="orderreference" id="orderreference" class="form-control" placeholder="Enter reference/id to fetch one order">
+                    </div>
+                    <div class="form-group">
+                        <label for="ordersalespoint" class="control-label">Department / Salespoint</label>
+                        <select name="salespoint" id="ordersalespoint" class="form-control !text-black !bg-white">
+                            <option value="">-- ALL --</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="startdate" class="control-label">Start Date</label>

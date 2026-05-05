@@ -3,6 +3,13 @@ let splitBillActiveBill = null
 let splitBillOriginalItems = []
 let splitBillNewItems = []
 
+function syncSplitBillSalespointOptions() {
+    const source = did('salespointname')
+    const target = did('splitbill_salespoint')
+    if (!source || !target) return
+    target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+}
+
 function splitBillMoney(value = 0) {
     return typeof formatCurrency === 'function' ? formatCurrency(value || 0) : formatNumber(value || 0)
 }
@@ -81,8 +88,10 @@ function normalizeSplitBillItem(item = {}, index = 0) {
 
 async function splitbillActive() {
     if (typeof hemsdepartment === 'function') await hemsdepartment()
+    syncSplitBillSalespointOptions()
     if (did('splitbill_fetch')) did('splitbill_fetch').addEventListener('click', fetchSplitBills)
     if (did('splitbill_clear')) did('splitbill_clear').addEventListener('click', clearSplitBillFilters)
+    if (did('splitbill_salespoint')) did('splitbill_salespoint').addEventListener('change', fetchSplitBills)
     if (did('splitbill_reset')) did('splitbill_reset').addEventListener('click', resetActiveSplitBill)
     if (did('splitbill_submit')) did('splitbill_submit').addEventListener('click', submitSplitBill)
     if (did('splitbill_reference')) {
@@ -101,11 +110,13 @@ async function fetchSplitBills() {
     const reference = String(did('splitbill_reference')?.value || '').trim()
     const startdate = String(did('splitbill_startdate')?.value || '').trim()
     const enddate = String(did('splitbill_enddate')?.value || '').trim()
+    const salespoint = String(did('splitbill_salespoint')?.value || '').trim()
     if (reference) payload.append('reference', reference)
     if (startdate) payload.append('startdate', startdate)
     if (enddate) payload.append('enddate', enddate)
+    if (salespoint) payload.append('salespoint', salespoint)
 
-    const requestPayload = reference || startdate || enddate ? payload : null
+    const requestPayload = reference || startdate || enddate || salespoint ? payload : null
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', requestPayload, did('splitbill_fetch'), 'json')
     if (!request.status) {
         splitBillDatasource = []
@@ -120,6 +131,7 @@ function clearSplitBillFilters() {
     if (did('splitbill_reference')) did('splitbill_reference').value = ''
     if (did('splitbill_startdate')) did('splitbill_startdate').value = ''
     if (did('splitbill_enddate')) did('splitbill_enddate').value = ''
+    if (did('splitbill_salespoint')) did('splitbill_salespoint').value = ''
     fetchSplitBills()
 }
 

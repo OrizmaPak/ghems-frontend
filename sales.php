@@ -344,10 +344,16 @@
                             <?php if(!$isOrderRoute): ?>
                             <div id="salesbillsview" class="<?php echo $isBillsRoute ? '' : 'hidden'; ?>">
                                 <div class="bg-white/90 p-4 rounded-sm mb-4">
-                                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
                                         <div class="form-group">
                                             <label class="control-label">Reference</label>
                                             <input autocomplete="off" type="text" id="billfilterreference" class="form-control" placeholder="Search reference">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label">Department / Salespoint</label>
+                                            <select id="billfiltersalespoint" class="form-control !text-black !bg-white">
+                                                <option value="">-- ALL --</option>
+                                            </select>
                                         </div>
                                         <div class="form-group">
                                             <label class="control-label">Date From</label>

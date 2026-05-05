@@ -3,11 +3,19 @@ let orderCanDelete = false
 let orderFetchSequence = 0
 let orderAutoRefreshTimer = null
 
+function syncOrderSalespointOptions() {
+    const source = did('salespointname')
+    const target = did('ordersalespoint')
+    if (!source || !target) return
+    target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+}
+
 function hasActiveOrderFilters() {
     const searchReference = String(did('orderreference')?.value || '').trim()
     const startdate = String(did('startdate')?.value || '').trim()
     const enddate = String(did('enddate')?.value || '').trim()
-    return !!(searchReference || startdate || enddate)
+    const salespoint = String(did('ordersalespoint')?.value || '').trim()
+    return !!(searchReference || startdate || enddate || salespoint)
 }
 
 function ensureDefaultOrderDates() {
@@ -31,6 +39,8 @@ async function orderActive() {
         viewForm.dataset.boundSubmitView = '1'
     }
 
+    if (typeof hemsdepartment === 'function') await hemsdepartment()
+    syncOrderSalespointOptions()
     ensureDefaultOrderDates()
     datasource = []
     orderCanDelete = await userCanDeleteOrder()
@@ -91,8 +101,10 @@ async function fetchorders(id = '', options = {}) {
     } else {
         const startdate = String(did('startdate')?.value || '').trim()
         const enddate = String(did('enddate')?.value || '').trim()
+        const salespoint = String(did('ordersalespoint')?.value || '').trim()
         if (startdate) payload.append('startdate', startdate)
         if (enddate) payload.append('enddate', enddate)
+        if (salespoint) payload.append('salespoint', salespoint)
     }
 
     const request = await httpRequest2(

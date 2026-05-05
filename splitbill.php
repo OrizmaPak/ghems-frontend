@@ -5,10 +5,16 @@
     <select id="salespointname" class="hidden"></select>
 
     <div class="bg-white/90 p-5 xl:p-6 rounded-sm mb-4">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
             <div class="form-group">
                 <label class="control-label">Bill Reference</label>
                 <input type="text" id="splitbill_reference" class="form-control" placeholder="Search reference">
+            </div>
+            <div class="form-group">
+                <label class="control-label">Department / Salespoint</label>
+                <select id="splitbill_salespoint" class="form-control !text-black !bg-white">
+                    <option value="">-- ALL --</option>
+                </select>
             </div>
             <div class="form-group">
                 <label class="control-label">Start Date</label>

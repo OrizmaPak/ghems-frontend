@@ -228,6 +228,7 @@ async function salesActive() {
     await fetchsales()
     await getAllUsers()
     syncSalesViewFilterSalespointOptions()
+    syncSalesBillFilterSalespointOptions()
     if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
     if(did('ordervieworder')) did('ordervieworder').addEventListener('click', () => setOrderViewStatusFilter('ORDER'))
     if(did('orderviewcanceled')) did('orderviewcanceled').addEventListener('click', () => setOrderViewStatusFilter('CANCELED'))
@@ -254,6 +255,7 @@ async function salesActive() {
     if(did('billfilterreference')) did('billfilterreference').addEventListener('input', () => applySalesBillFilters())
     if(did('billfilterdatefrom')) did('billfilterdatefrom').addEventListener('change', () => applySalesBillFilters())
     if(did('billfilterdateto')) did('billfilterdateto').addEventListener('change', () => applySalesBillFilters())
+    if(did('billfiltersalespoint')) did('billfiltersalespoint').addEventListener('change', () => applySalesBillFilters())
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
     if(!(isBillsWorkspaceMode() && pendingOrderToBillData)) await handlesalesdepartment(default_department)
@@ -344,6 +346,13 @@ async function resolveBillDeletePermission() {
 function syncSalesViewFilterSalespointOptions() {
     const source = did('salespointname')
     const target = did('salespointname2')
+    if(!source || !target) return
+    target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+}
+
+function syncSalesBillFilterSalespointOptions() {
+    const source = did('salespointname')
+    const target = did('billfiltersalespoint')
     if(!source || !target) return
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
 }
@@ -505,12 +514,14 @@ async function fetchsalesbills(reference = '', triggerButton = null) {
     const cleanedReference = String(reference || '').trim()
     const startdate = String(did('billfilterdatefrom')?.value || '').trim()
     const enddate = String(did('billfilterdateto')?.value || '').trim()
+    const salespoint = String(did('billfiltersalespoint')?.value || '').trim()
     let payload = null
-    if(cleanedReference || startdate || enddate){
+    if(cleanedReference || startdate || enddate || salespoint){
         payload = new FormData()
         if(cleanedReference) payload.append('reference', cleanedReference)
         if(startdate) payload.append('startdate', startdate)
         if(enddate) payload.append('enddate', enddate)
+        if(salespoint) payload.append('salespoint', salespoint)
     }
 
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json')
@@ -627,14 +638,17 @@ function applySalesBillFilters() {
     const ref = String(did('billfilterreference')?.value || '').trim().toLowerCase()
     const from = did('billfilterdatefrom')?.value || ''
     const to = did('billfilterdateto')?.value || ''
+    const salespoint = String(did('billfiltersalespoint')?.value || '').trim().toLowerCase()
 
     salesBillFilteredDatasource = salesBillDatasource.filter((bill) => {
         const billRef = String(bill.reference || '').toLowerCase()
         const billDate = String(bill.transactiondate || '').slice(0, 10)
+        const billSalesPoint = String(bill.salespoint || '').trim().toLowerCase()
         const refPass = !ref || billRef.includes(ref)
         const fromPass = !from || (billDate && billDate >= from)
         const toPass = !to || (billDate && billDate <= to)
-        return refPass && fromPass && toPass
+        const salespointPass = !salespoint || billSalesPoint === salespoint
+        return refPass && fromPass && toPass && salespointPass
     })
 
     renderSalesBillsTable(salesBillFilteredDatasource)
@@ -644,6 +658,7 @@ function clearSalesBillFilters() {
     if(did('billfilterreference')) did('billfilterreference').value = ''
     if(did('billfilterdatefrom')) did('billfilterdatefrom').value = ''
     if(did('billfilterdateto')) did('billfilterdateto').value = ''
+    if(did('billfiltersalespoint')) did('billfiltersalespoint').value = ''
     applySalesBillFilters()
 }
 
@@ -855,11 +870,13 @@ async function handlesalesdepartment(store) {
                 hidesalesterminal(false)
                 did('loading').classList.add('hidden')
                 syncSalesViewFilterSalespointOptions()
+                syncSalesBillFilterSalespointOptions()
                 // resolvePagination(datasource, onupdateinventoryTableDataSignal)
                 return notification(request.message, 1);
             }
     }else{
         syncSalesViewFilterSalespointOptions()
+        syncSalesBillFilterSalespointOptions()
         did('loading').innerHTML = request.message
         return notification('No records retrieved')}
 }
