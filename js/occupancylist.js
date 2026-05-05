@@ -306,7 +306,7 @@ function applyCategoryFourteenDayRows(buckets, rows = [], dateWindow = []){
                 const category = String(item.categoryname || item.roomcategoryname || item.roomcategory || item.category || '').trim().toUpperCase()
                 if(!category || !buckets[category]) return
                 mapped = true
-                const value = Number(item.occupied ?? item.value ?? item.count ?? item.total ?? 0)
+                const value = Number(item.available ?? item.value ?? item.count ?? item.total ?? 0)
                 availableTotals[dayIndex] += Number(item.available ?? 0)
                 if(value > 0){
                     for(let n = 0; n < value; n++) buckets[category].occupiedByDay[dayIndex].add(`${category}_${dayIndex}_${n}`)
