@@ -5,7 +5,7 @@
 
     <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200">
         <li class="me-2 cp viewer optioner !text-blue-600 active" name="apoviewunapproved" onclick="runoptioner(this)">
-            <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Unapproved Order</p>
+            <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Approve Order</p>
         </li>
         <li class="me-2 cp updater optioner" name="apoviewapproved" onclick="runoptioner(this)">
             <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Approved Order</p>
