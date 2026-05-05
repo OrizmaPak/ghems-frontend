@@ -136,15 +136,15 @@ function getRoomCategoryMatrixStyles(){
             from { opacity: 0.68; }
             to { opacity: 1; }
         }
-        .occ-matrix-table { border-collapse: separate; border-spacing: 0; width: 100%; background: #fff; table-layout: fixed; }
+        .occ-matrix-table { border-collapse: collapse; border-spacing: 0; width: 100%; background: #fff; table-layout: fixed; }
         .occ-matrix-table-right { min-width: 840px; }
         .occ-matrix-table tr { height: 40px; }
-        .occ-matrix-table thead tr { height: 50px; }
-        .occ-matrix-table th, .occ-matrix-table td { border-right: 1px solid #dbe3ef; border-bottom: 1px solid #dbe3ef; box-sizing: border-box; height: 40px; padding: 0; vertical-align: middle; }
-        .occ-matrix-table thead th { height: 50px; }
+        .occ-matrix-table thead tr { height: 52px; }
+        .occ-matrix-table th, .occ-matrix-table td { border: 1px solid #dbe3ef; box-sizing: border-box; height: 40px; padding: 0; vertical-align: middle; }
+        .occ-matrix-table thead th { height: 52px; }
         .occ-matrix-table thead th { background: #7589a8; color: #fff; font-size: 12px; }
         .occ-matrix-table .cat-col { background: #f7f9fc; min-width: 280px; max-width: 280px; }
-        .occ-matrix-table thead .cat-col { background: #647a9b; color: #0f2138; }
+        .occ-matrix-table thead .cat-col { background: #647a9b; color: #fff; }
         .occ-matrix-table .day-head { width: 60px; min-width: 60px; text-align: center; padding: 0 4px; }
         .occ-matrix-table .day-head .d1 { font-size: 10px; opacity: 0.9; font-weight: 800; }
         .occ-matrix-table .day-head .d2 { font-size: 15px; font-weight: 900; line-height: 1; margin-top: 3px; }
