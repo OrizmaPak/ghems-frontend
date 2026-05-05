@@ -186,20 +186,20 @@
                                     </div>
                                     
                                     <div id="roomstatuscategorynext14days" class="hidden">
-                                        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900 p-5 xl:p-6 rounded-sm border border-slate-700 shadow-lg">
+                                        <div class="bg-white/90 p-5 xl:p-6 rounded-sm border border-slate-200">
                                             <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                                                 <div>
-                                                    <p class="text-lg font-semibold text-white">Room Categories Occupancy (Next 14 Days)</p>
-                                                    <p id="roomcategorymatrixrange" class="text-xs text-slate-200 mt-1">Loading range...</p>
+                                                    <p class="text-lg font-semibold text-slate-800">Room Categories Occupancy (Next 14 Days)</p>
+                                                    <p id="roomcategorymatrixrange" class="text-xs text-slate-500 mt-1">Loading range...</p>
                                                 </div>
                                                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 w-full lg:w-auto">
                                                     <div class="form-group">
-                                                        <label for="roomcategorymatrixmonth" class="control-label !text-white">Month</label>
-                                                        <input type="month" id="roomcategorymatrixmonth" class="form-control !bg-white/95 !border-slate-300">
+                                                        <label for="roomcategorymatrixmonth" class="control-label">Month</label>
+                                                        <input type="month" id="roomcategorymatrixmonth" class="form-control !bg-white !border-slate-300">
                                                     </div>
-                                                    <button type="button" id="roomcategorymatrixprev" class="btn !h-[42px] !px-4 !py-2 !text-xs !bg-white/20 !backdrop-blur !border !border-white/30">Prev 14 Days</button>
-                                                    <button type="button" id="roomcategorymatrixnext" class="btn !h-[42px] !px-4 !py-2 !text-xs !bg-white/20 !backdrop-blur !border !border-white/30">Next 14 Days</button>
-                                                    <button type="button" id="roomcategorymatrixrefresh" class="btn !h-[42px] !px-4 !py-2 !text-xs !bg-cyan-500 !border !border-cyan-300">Refresh</button>
+                                                    <button type="button" id="roomcategorymatrixprev" class="btn !h-[42px] !px-4 !py-2 !text-xs">Prev 14 Days</button>
+                                                    <button type="button" id="roomcategorymatrixnext" class="btn !h-[42px] !px-4 !py-2 !text-xs">Next 14 Days</button>
+                                                    <button type="button" id="roomcategorymatrixrefresh" class="btn !h-[42px] !px-4 !py-2 !text-xs !bg-slate-600">Refresh</button>
                                                 </div>
                                             </div>
                                         </div>

@@ -111,7 +111,11 @@ function ensureCategoryBucket(map, category){
 function getRoomCategoryMatrixStyles(){
     return `
     <style>
-        .occ-matrix-shell { position: relative; overflow: hidden; border-radius: 8px; }
+        .occ-matrix-shell { position: relative; border-radius: 8px; }
+        .occ-matrix-layout { display: grid; grid-template-columns: 260px 1fr; min-width: 1040px; }
+        .occ-matrix-left { position: sticky; left: 0; z-index: 4; background: #fff; border-right: 1px solid #dbe3ef; }
+        .occ-matrix-right-wrap { position: relative; overflow: hidden; }
+        .occ-matrix-right-scroll { overflow-x: auto; }
         .occ-matrix-panel { will-change: transform, opacity; }
         .occ-matrix-panel.slide-next { animation: occSlideInNext .34s cubic-bezier(0.22, 1, 0.36, 1); }
         .occ-matrix-panel.slide-prev { animation: occSlideInPrev .34s cubic-bezier(0.22, 1, 0.36, 1); }
@@ -123,11 +127,12 @@ function getRoomCategoryMatrixStyles(){
             from { transform: translateX(-34px); opacity: 0.62; filter: blur(1px); }
             to { transform: translateX(0); opacity: 1; filter: blur(0); }
         }
-        .occ-matrix-table { border-collapse: separate; border-spacing: 0; min-width: 1040px; width: 100%; background: #fff; }
+        .occ-matrix-table { border-collapse: separate; border-spacing: 0; width: 100%; background: #fff; }
+        .occ-matrix-table-right { min-width: 840px; }
         .occ-matrix-table th, .occ-matrix-table td { border-right: 1px solid #dbe3ef; border-bottom: 1px solid #dbe3ef; }
         .occ-matrix-table thead th { background: #6f86a8; color: #fff; font-size: 12px; letter-spacing: 0.02em; }
-        .occ-matrix-table .cat-col { position: sticky; left: 0; z-index: 2; background: #f8fafc; min-width: 260px; max-width: 260px; }
-        .occ-matrix-table thead .cat-col { z-index: 3; background: #5f7698; }
+        .occ-matrix-table .cat-col { background: #f8fafc; min-width: 260px; max-width: 260px; }
+        .occ-matrix-table thead .cat-col { background: #5f7698; }
         .occ-matrix-table .day-head { width: 60px; min-width: 60px; text-align: center; padding: 8px 4px; }
         .occ-matrix-table .day-head .d1 { font-size: 11px; opacity: 0.85; }
         .occ-matrix-table .day-head .d2 { font-size: 15px; font-weight: 800; line-height: 1; margin-top: 3px; }
@@ -181,10 +186,12 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
 
     const payload = new FormData()
     payload.append('arrivaldate', startIso)
-    const [roomsReq, occupancyReq] = await Promise.all([
+    const [roomsReq, occupancyByCategoryReq, occupancyReq] = await Promise.all([
         httpRequest2('../controllers/fetchrooms.php', null, null, 'json'),
+        httpRequest2('../controllers/fetchreservationbycategoryfourteendays', payload, triggerBtn, 'json'),
         httpRequest2('../controllers/fetchreservationsovernextthirtydays', payload, triggerBtn, 'json')
     ])
+    window.lastCategoryFourteenDaysResponse = occupancyByCategoryReq
 
     if(!roomsReq?.status || !Array.isArray(roomsReq.data) || !roomsReq.data.length){
         holder.innerHTML = `<div class="p-6 text-sm text-red-500">Unable to load rooms/categories.</div>`
@@ -207,29 +214,55 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
     const occupancyRows = occupancyReq?.status && Array.isArray(occupancyReq.data?.occupancystatistics)
         ? occupancyReq.data.occupancystatistics
         : []
-
-    occupancyRows.forEach((entry) => {
-        const roomData = entry?.roomdata || {}
-        const reservation = Array.isArray(entry?.reservationdata) ? entry.reservationdata[0] : null
-        if(!reservation) return
-        const category = normalizeRoomCategoryName(roomData)
-        const roomNumber = String(roomData.roomnumber || '').trim()
-        if(!roomNumber) return
-        const bucket = ensureCategoryBucket(buckets, category)
-        const arrival = new Date(String(reservation.arrivaldate || '').replace(' ', 'T'))
-        const departure = new Date(String(reservation.departuredate || '').replace(' ', 'T'))
-        if(Number.isNaN(arrival.getTime()) || Number.isNaN(departure.getTime())) return
-
-        dateWindow.forEach((dateObj, index) => {
-            const dayStart = new Date(dateObj)
-            dayStart.setHours(0, 0, 0, 0)
-            const dayEnd = new Date(dateObj)
-            dayEnd.setHours(23, 59, 59, 999)
-            if(arrival <= dayEnd && departure > dayStart){
-                bucket.occupiedByDay[index].add(roomNumber)
+    let usedCategoryController = false
+    if(occupancyByCategoryReq?.status && occupancyByCategoryReq?.data){
+        const rawRows = Array.isArray(occupancyByCategoryReq.data)
+            ? occupancyByCategoryReq.data
+            : (Array.isArray(occupancyByCategoryReq.data?.occupancystatistics) ? occupancyByCategoryReq.data.occupancystatistics : [])
+        rawRows.forEach((row) => {
+            const name = String(row.roomcategory || row.roomcategoryname || row.category || '').trim()
+            if(!name) return
+            usedCategoryController = true
+            const category = name.toUpperCase()
+            const bucket = ensureCategoryBucket(buckets, category)
+            for(let i = 0; i < 14; i++){
+                const idx = i + 1
+                const value = Number(
+                    row[`count${idx}`] ?? row[`day${idx}`] ?? row[`d${idx}`] ?? row[idx] ?? 0
+                )
+                if(value > 0){
+                    for(let n = 0; n < value; n++){
+                        bucket.occupiedByDay[i].add(`${category}_${idx}_${n}`)
+                    }
+                }
             }
         })
-    })
+    }
+
+    if(!usedCategoryController){
+        occupancyRows.forEach((entry) => {
+            const roomData = entry?.roomdata || {}
+            const reservation = Array.isArray(entry?.reservationdata) ? entry.reservationdata[0] : null
+            if(!reservation) return
+            const category = normalizeRoomCategoryName(roomData)
+            const roomNumber = String(roomData.roomnumber || '').trim()
+            if(!roomNumber) return
+            const bucket = ensureCategoryBucket(buckets, category)
+            const arrival = new Date(String(reservation.arrivaldate || '').replace(' ', 'T'))
+            const departure = new Date(String(reservation.departuredate || '').replace(' ', 'T'))
+            if(Number.isNaN(arrival.getTime()) || Number.isNaN(departure.getTime())) return
+
+            dateWindow.forEach((dateObj, index) => {
+                const dayStart = new Date(dateObj)
+                dayStart.setHours(0, 0, 0, 0)
+                const dayEnd = new Date(dateObj)
+                dayEnd.setHours(23, 59, 59, 999)
+                if(arrival <= dayEnd && departure > dayStart){
+                    bucket.occupiedByDay[index].add(roomNumber)
+                }
+            })
+        })
+    }
 
     const sortedCategories = Object.keys(buckets).sort((a, b) => a.localeCompare(b))
     if(!sortedCategories.length){
@@ -254,16 +287,24 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
         return `<th class="day-head"><div class="d1">${label.weekday}</div><div class="d2">${label.day}</div></th>`
     }).join('')
 
-    const bodyRows = categoryRows.map((row) => `
+    const leftRows = categoryRows.map((row) => `
         <tr>
             <td class="cat-col cat-cell">${row.category}</td>
+        </tr>
+    `).join('')
+    const rightRows = categoryRows.map((row) => `
+        <tr>
             ${row.totals.map((value) => `<td class="val-cell">${value}</td>`).join('')}
         </tr>
     `).join('')
 
-    const vacantRow = `
+    const vacantLeftRow = `
         <tr class="vacant-row">
             <td class="cat-col cat-cell">VACANT</td>
+        </tr>
+    `
+    const vacantRightRow = `
+        <tr class="vacant-row">
             ${vacantTotals.map((value) => `<td class="val-cell">${value}</td>`).join('')}
         </tr>
     `
@@ -272,19 +313,31 @@ async function renderRoomCategoryNext14DaysMatrix(triggerBtn = null){
     holder.innerHTML = `
         ${getRoomCategoryMatrixStyles()}
         <div class="occ-matrix-shell">
-            <div class="occ-matrix-panel ${slideClass}">
-                <table class="occ-matrix-table">
-                    <thead>
-                        <tr>
-                            <th class="cat-col cat-cell">Room Category</th>
-                            ${headCols}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${bodyRows}
-                        ${vacantRow}
-                    </tbody>
-                </table>
+            <div class="occ-matrix-layout">
+                <div class="occ-matrix-left">
+                    <table class="occ-matrix-table">
+                        <thead>
+                            <tr><th class="cat-col cat-cell">Room Category</th></tr>
+                        </thead>
+                        <tbody>
+                            ${leftRows}
+                            ${vacantLeftRow}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="occ-matrix-right-wrap">
+                    <div class="occ-matrix-panel ${slideClass}">
+                        <div class="occ-matrix-right-scroll">
+                            <table class="occ-matrix-table occ-matrix-table-right">
+                                <thead><tr>${headCols}</tr></thead>
+                                <tbody>
+                                    ${rightRows}
+                                    ${vacantRightRow}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `
