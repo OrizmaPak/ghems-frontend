@@ -46,7 +46,7 @@
                                                 <th style="width:100px">Unit cost</th>
                                                 <th style="width:100px">quantity</th>
                                                 <th style="width:150px">value</th>
-                                                <th><p class="flex gap-1 cp justify-center hover:border border-white transition-all items-center p-1 px-2 rounded bg-[#14ad16]" onclick="reqaddrowrequisition()"><button title="Edit row entry" class="material-symbols-outlined rounded-full bg-white h-8 w-8 text-[green] font-bold drop-shadow-md text-xs" style="font-size: 18px;">add</button>&nbsp;Add&nbsp;Item</p></th>
+                                                <th style="width:120px"><p class="flex gap-1 cp justify-center hover:border border-white transition-all items-center p-1 px-1 rounded bg-[#14ad16]" onclick="reqaddrowrequisition()"><button title="Add row" class="material-symbols-outlined rounded-full bg-white h-6 w-6 text-[green] font-bold drop-shadow-md text-xs flex items-center justify-center" style="font-size: 14px;">add</button><span class="text-xs font-medium">Add</span></p></th>
                                             </tr>
                                         </thead>
                                         <tbody id="tabledata" class="">

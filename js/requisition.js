@@ -117,9 +117,9 @@ async function requisititemrequisition(store) {
                                                     <input readonly type="text" id="val_0" name="value[]" class="form-control comp" placeholder="">
                                                 </td>
                                                 <td>
-                                                    <div class="flex gap-4 items-center h-full w-fit py-3">
-                                                        <button onclick="reqaddrowrequisition()" title="Edit row entry" class="hidden material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">add</button>
-                                                        <button onclick="this.parentElement.parentElement.parentElement.remove()" title="Edit row entry" class="material-symbols-outlined rounded-full bg-[red] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+                                                    <div class="flex gap-2 items-center h-full w-fit py-2">
+                                                        <button onclick="reqaddrowrequisition()" title="Add row" class="hidden material-symbols-outlined rounded-full bg-primary-g h-6 w-6 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 14px;">add</button>
+                                                        <button onclick="this.parentElement.parentElement.parentElement.remove()" title="Delete row" class="material-symbols-outlined rounded-full bg-[red] h-6 w-6 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 14px;">delete</button>
                                                         <!--<button onclick="reqaddrow()" title="Edit row entry" class="material-symbols-outlined rounded-full bg-[red] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>-->
                                                     </div>
                                                 </td>
@@ -269,9 +269,9 @@ function reqaddrowrequisition(idd=''){
                     <input readonly type="text" id="val_${elid}" name="value[]" class="form-control comp" placeholder="">
                 </td>
                 <td>
-                    <div class="flex gap-4 items-center h-full w-fit py-3">
-                        <button onclick="reqaddrowrequisition()" title="Edit row entry" class="material-symbols-outlined hidden rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">add</button>
-                        <button id="delbtn_${elid}" onclick="this.parentElement.parentElement.parentElement.remove()" title="Edit row entry" class="material-symbols-outlined rounded-full bg-[red] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+                    <div class="flex gap-2 items-center h-full w-fit py-2">
+                        <button onclick="reqaddrowrequisition()" title="Add row" class="material-symbols-outlined hidden rounded-full bg-primary-g h-6 w-6 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 14px;">add</button>
+                        <button id="delbtn_${elid}" onclick="this.parentElement.parentElement.parentElement.remove()" title="Delete row" class="material-symbols-outlined rounded-full bg-[red] h-6 w-6 text-white drop-shadow-md text-xs flex items-center justify-center" style="font-size: 14px;">delete</button>
                     </div>
                 </td>`
     el.innerHTML = x
