@@ -533,49 +533,57 @@ function normalizeInventoryItems(data) {
     }, [])
 }
 
-let appTomSelectAssetsPromise = null
+let appSearchSelectAssetsPromise = null
 
-function ensureAppTomSelectAssets() {
-    if (window.TomSelect) return Promise.resolve()
-    if (appTomSelectAssetsPromise) return appTomSelectAssetsPromise
-    appTomSelectAssetsPromise = new Promise((resolve, reject) => {
-        if (!document.querySelector('link[data-app-tomselect="1"]')) {
+function ensureAppSearchSelectAssets() {
+    if (window.SlimSelect) return Promise.resolve()
+    if (appSearchSelectAssetsPromise) return appSearchSelectAssetsPromise
+    appSearchSelectAssetsPromise = new Promise((resolve, reject) => {
+        if (!document.querySelector('link[data-app-slimselect="1"]')) {
             const css = document.createElement('link')
             css.rel = 'stylesheet'
-            css.href = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css'
-            css.dataset.appTomselect = '1'
+            css.href = 'https://cdn.jsdelivr.net/npm/slim-select@2.8.0/dist/slimselect.min.css'
+            css.dataset.appSlimselect = '1'
             document.head.appendChild(css)
         }
-        if (window.TomSelect) return resolve()
+        if (window.SlimSelect) return resolve()
         const script = document.createElement('script')
-        script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js'
-        script.dataset.appTomselect = '1'
+        script.src = 'https://cdn.jsdelivr.net/npm/slim-select@2.8.0/dist/slimselect.min.js'
+        script.dataset.appSlimselect = '1'
         script.onload = () => resolve()
-        script.onerror = () => reject(new Error('Unable to load Tom Select assets'))
+        script.onerror = () => reject(new Error('Unable to load Slim Select assets'))
         document.head.appendChild(script)
     }).catch((error) => {
         console.log(error)
     }).finally(() => {
-        appTomSelectAssetsPromise = null
+        appSearchSelectAssetsPromise = null
     })
-    return appTomSelectAssetsPromise
+    return appSearchSelectAssetsPromise
 }
 
 function makeSelectSearchable(control, placeholder = 'Search item...') {
     if (!control || control.tagName !== 'SELECT') return
+    const selectedValue = String(control.value || '')
     const apply = () => {
-        if (!window.TomSelect) return
-        if (control.tomselect) control.tomselect.destroy()
-        new window.TomSelect(control, {
-            create: false,
-            allowEmptyOption: true,
-            searchField: ['text', 'value'],
-            placeholder,
-            maxOptions: 10000
+        if (!window.SlimSelect) return
+        if (control._slimSelectInstance) {
+            try { control._slimSelectInstance.destroy() } catch (error) { console.log(error) }
+            control._slimSelectInstance = null
+        }
+        if (selectedValue) control.value = selectedValue
+        control._slimSelectInstance = new window.SlimSelect({
+            select: control,
+            settings: {
+                showSearch: true,
+                searchPlaceholder: placeholder,
+                searchText: 'No result found',
+                allowDeselect: false
+            },
+            contentLocation: document.body
         })
     }
-    if (window.TomSelect) return apply()
-    ensureAppTomSelectAssets().then(apply)
+    if (window.SlimSelect) return apply()
+    ensureAppSearchSelectAssets().then(apply)
 }
 
 function enableSearchOnItemSelects(container = document) {
