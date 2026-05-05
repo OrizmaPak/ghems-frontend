@@ -551,7 +551,7 @@ function renderSalesBillsTable(rows = []) {
                     <button title="Edit" type="button" onclick="editBillEntryByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs">edit</button>
                     <button title="Retrieve" type="button" onclick="retrieveBillToSalesByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs">download</button>
                     <button title="Transfer Bill" type="button" onclick="openBillTransferModal('${String(item.reference || '').replace(/'/g, "\\'")}', '${String(item.salespoint || '').replace(/'/g, "\\'")}', 'fetchsalesbills')" class="material-symbols-outlined rounded-full bg-violet-600 h-8 w-8 text-white drop-shadow-md text-xs">swap_horiz</button>
-                    <button title="Print" type="button" onclick="printsalesreceiptsales('${String(item.reference).replace(/'/g, "\\'")}', '', 'fetchsalesbillsonly.php', false, true)" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
+                    <button title="Print" type="button" onclick="printBillEntryByBatch('${String(item.batchid || item.reference || '').replace(/'/g, "\\'")}')" class="material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs">print</button>
                     ${deleteActionButton(item)}
                 </div>
             </td>
@@ -583,6 +583,44 @@ function retrieveBillToSalesByBatch(batchKey = '') {
         return
     }
     window.location.href = 'index.php?r=sales'
+}
+
+function buildReceiptRowsFromBillEntry(bill = {}) {
+    const details = Array.isArray(bill.items) ? bill.items : []
+    const ownerValue = String(bill.owner ?? bill.ownerid ?? '').trim()
+    const commentValue = String(bill.description || details.find((item) => String(item.description || '').trim())?.description || '').trim()
+    const common = {
+        reference: bill.reference || '',
+        owner: ownerValue || '-1',
+        ownerid: ownerValue || '-1',
+        totalamount: Number(bill.totalamount || 0),
+        amountpaid: Number(bill.amountpaid || bill.amountreceived || 0),
+        amountreceived: Number(bill.amountpaid || bill.amountreceived || 0),
+        paymentmethod: bill.paymentmethod || '',
+        transactiondate: bill.transactiondate || '',
+        description: commentValue,
+        comment: commentValue,
+        moredata: bill.moredata || '',
+        moredetails: bill.moredata || '',
+        status: bill.moredata || '',
+        ttype: bill.ttype || 'BILL'
+    }
+    if(!details.length) return [common]
+    return details.map((detail) => ({
+        ...common,
+        itemid: detail.itemid || '',
+        itemname: detail.itemname || '',
+        qty: Number(detail.qty || 0),
+        cost: Number(detail.cost || 0),
+        description: commentValue || detail.description || '',
+        comment: commentValue || detail.description || ''
+    }))
+}
+
+function printBillEntryByBatch(batchKey = '') {
+    const bill = findSalesBillEntryByBatchOrReference(batchKey)
+    if(!bill) return notification('Bill not found', 0)
+    return printsalesreceiptsales(bill.reference, '', 'fetchsalesbillsonly.php', false, true, false, buildReceiptRowsFromBillEntry(bill))
 }
 
 function applySalesBillFilters() {
@@ -1692,6 +1730,7 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
     const paymentMethodValue = String(did('paymentmethod')?.value || '').trim()
     const transactionDateValue = String(did('transactiondate')?.value || new Date().toISOString().slice(0, 10))
     const moreDataValue = String(did('moredata')?.value || did('status')?.value || ttype || '').trim()
+    const descriptionValue = String(did('description')?.value || '').trim()
 
     tableRows.forEach((row) => {
         const itemInput = row.querySelector('.iitem')
@@ -1715,6 +1754,8 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
             moredetails: moreDataValue,
             status: moreDataValue,
             ttype: ttype || '',
+            description: descriptionValue,
+            comment: descriptionValue,
             itemid: String(itemIdInput?.value || '').trim(),
             itemname: itemName,
             qty,
@@ -1973,6 +2014,8 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                 moredetails: localData.saleentry.moredata || '',
                 status: localData.saleentry.moredata || '',
                 ttype: localData.saleentry.ttype || '',
+                description: localData.saleentry.description || detail.description || '',
+                comment: localData.saleentry.description || detail.description || '',
                 itemid: detail.itemid || '',
                 itemname: detail.itemname || '',
                 qty: Number(detail.qty || 0),
@@ -1991,7 +2034,9 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                     moredata: localData.saleentry.moredata || '',
                     moredetails: localData.saleentry.moredata || '',
                     status: localData.saleentry.moredata || '',
-                    ttype: localData.saleentry.ttype || ''
+                    ttype: localData.saleentry.ttype || '',
+                    description: localData.saleentry.description || '',
+                    comment: localData.saleentry.description || ''
                 }]
             }
         }
