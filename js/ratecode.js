@@ -1,16 +1,21 @@
 let ratecodeid; 
 let ratecodeImportedRows = []
 let bookingplanslist = []
+let ratecodeCompanyList = []
+let ratecodeTravelAgencyList = []
 const ratecodeImportDelay = 1000
 async function ratecodeActive() {
     const form = document.querySelector('#ratecodeform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', ratecodeFormSubmitHandler)
     
     if(form.plan) form.plan.addEventListener('change', resolvePlanChanges)
+    if(form.organisationtype) form.organisationtype.addEventListener('change', resolveRatecodeOrganisationTypeChange)
     
     datasource = []
     await fetchratecode()
     await fetchbookplans()
+    await fetchRatecodeOrganisationSources()
+    initializeRatecodeOrganisationDefaults()
     wireRatecodeImport()
 }
 
@@ -60,6 +65,7 @@ async function fetchratecode(id) {
         }else{
              ratecodeid = request.data[0].id
             populateData(request.data[0])
+            applyRatecodeOrganisationFromRecord(request.data[0])
         }
     }
     else return notification('No records retrieved')
@@ -104,6 +110,8 @@ async function onratecodeTableDataSignal() {
         <td>${item.planname}</td>
         <td>${item.childplan}</td>
         <td>${item.currency}</td>
+        <td>${item.organisationtype || '-'}</td>
+        <td>${item.orgid || '-'}</td>
         <td class="flex items-center gap-3">
             <button title="Edit row entry" onclick="fetchratecode('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
             <button title="Delete row entry"s onclick="removeratecode('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
@@ -125,12 +133,69 @@ async function ratecodeFormSubmitHandler() {
         notification('Record saved successfully!', 1);
         ratecodeid = ''
         document.querySelector('#ratecode').click();
+        initializeRatecodeOrganisationDefaults()
         fetchratecode();
         return
     }
         document.querySelector('#ratecode').click();
+    initializeRatecodeOrganisationDefaults()
     fetchratecode();
     return notification(request.message, 0);
+}
+
+async function fetchRatecodeOrganisationSources() {
+    const [companyRequest, travelRequest] = await Promise.all([
+        httpRequest2('../controllers/fetchcompanyforgroups', null, null, 'json'),
+        httpRequest2('../controllers/fetchtravelagency', null, null, 'json')
+    ])
+
+    ratecodeCompanyList = companyRequest?.status && Array.isArray(companyRequest.data) ? companyRequest.data : []
+    ratecodeTravelAgencyList = travelRequest?.status && Array.isArray(travelRequest.data) ? travelRequest.data : []
+}
+
+function initializeRatecodeOrganisationDefaults() {
+    const form = document.querySelector('#ratecodeform')
+    if(!form) return
+    if(!form.organisationtype.value) {
+        form.organisationtype.value = 'HOTEL'
+    }
+    resolveRatecodeOrganisationTypeChange()
+}
+
+function resolveRatecodeOrganisationTypeChange() {
+    const form = document.querySelector('#ratecodeform')
+    if(!form || !form.organisationtype || !form.orgid) return
+    const type = String(form.organisationtype.value || '').trim().toUpperCase()
+
+    if(type === 'HOTEL') {
+        form.orgid.innerHTML = `<option value="1">HOTEL (1)</option>`
+        form.orgid.value = '1'
+        return
+    }
+
+    if(type === 'COMPANY') {
+        const options = ratecodeCompanyList.map(item => `<option value="${item.id}">${item.companyname}</option>`).join('')
+        form.orgid.innerHTML = `<option value="">-- Select Company --</option>${options}`
+        return
+    }
+
+    if(type === 'TRAVEL AGENCY') {
+        const options = ratecodeTravelAgencyList.map(item => `<option value="${item.id}">${item.agencyname}</option>`).join('')
+        form.orgid.innerHTML = `<option value="">-- Select Travel Agency --</option>${options}`
+        return
+    }
+
+    form.orgid.innerHTML = `<option value="">-- Select Organisation --</option>`
+}
+
+function applyRatecodeOrganisationFromRecord(record = {}) {
+    const form = document.querySelector('#ratecodeform')
+    if(!form || !form.organisationtype || !form.orgid) return
+    const type = String(record.organisationtype || '').trim().toUpperCase() || 'HOTEL'
+    form.organisationtype.value = type
+    resolveRatecodeOrganisationTypeChange()
+    const orgValue = String(record.orgid || '').trim()
+    if(orgValue) form.orgid.value = orgValue
 }
 
 function wireRatecodeImport(){
@@ -345,7 +410,10 @@ async function importSelectedRatecodes(){
 function mapRatecodeToFormData(row){
     const form = new FormData()
     const plan = resolvePlanSelection(row.plan)
+    const organisationtype = 'HOTEL'
     form.append('ratecode', (row.ratecode || '').toString().trim())
+    form.append('organisationtype', organisationtype)
+    form.append('orgid', '1')
     form.append('adult1', row.adult1 || '')
     form.append('adult2', row.adult2 || '')
     form.append('adult3', row.adult3 || '')

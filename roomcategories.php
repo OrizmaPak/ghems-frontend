@@ -52,42 +52,6 @@
                                             <input type="number" name="price_2" id="price_2" class="form-control comp" placeholder="Enter Price level 2">
                                         </div>
                                     </div>
-                                    <div class="mt-4 border rounded-md p-4 bg-[#f8fafc]">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="font-semibold text-sm">Company</h4>
-                                            <button type="button" id="addCompanyRateRowBtn" class="text-white bg-primary-g px-3 py-1 rounded text-xs">Add Row</button>
-                                        </div>
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full text-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th>OrgId</th>
-                                                        <th>Ratecode</th>
-                                                        <th style="width:80px;">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="companyRateGridBody"></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 border rounded-md p-4 bg-[#f8fafc]">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="font-semibold text-sm">Agency</h4>
-                                            <button type="button" id="addAgencyRateRowBtn" class="text-white bg-primary-g px-3 py-1 rounded text-xs">Add Row</button>
-                                        </div>
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full text-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th>OrgId</th>
-                                                        <th>Ratecode</th>
-                                                        <th style="width:80px;">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="agencyRateGridBody"></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
                                     <div class="flex justify-end mt-5">
                                          <button id="submit" type="button" class="btn">
                                             <div class="btnloader" style="display: none;"></div>
