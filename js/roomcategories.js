@@ -1,12 +1,20 @@
 let roomcategoriesid
 let roomcatImportedRows = []
+let roomCategoryRatecodes = []
+let roomCategoryCompanies = []
+let roomCategoryAgencies = []
 const roomcatImportDelay = 800
 async function roomcategoriesActive() {
     const form = document.querySelector('#roomcategoriesform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', roomcategoriesFormSubmitHandler)
+    if(document.getElementById('addCompanyRateRowBtn')) document.getElementById('addCompanyRateRowBtn').addEventListener('click', ()=>appendCompanyRateRow())
+    if(document.getElementById('addAgencyRateRowBtn')) document.getElementById('addAgencyRateRowBtn').addEventListener('click', ()=>appendAgencyRateRow())
     datasource = []
     await fetchroomcategories()
     await fetchratecodes()
+    await fetchcompanysources()
+    await fetchagencysources()
+    resetRoomCategoryGridRows()
     wireRoomCategoryImport()
 }
 
@@ -14,6 +22,7 @@ async function fetchratecodes(id) {
     let request = await httpRequest2('../controllers/fetchratecode', null, null, 'json')
     if(request.status) {
         if(request.data.length) {
+            roomCategoryRatecodes = request.data
             let options = request.data?.map( item => `<option value="${item.id}">${item.ratecode}</option>`).join('')
             try {
                 document.getElementById('roomcategoriesform').ratecode.innerHTML = options
@@ -41,6 +50,7 @@ async function fetchroomcategories(id) {
         }else{
              roomcategoriesid = request.data[0].id
             populateData(request.data[0])
+            populateRoomCategoryGridsFromRecord(request.data[0])
         }
     }
     else return notification('No records retrieved')
@@ -97,18 +107,143 @@ async function roomcategoriesFormSubmitHandler() {
     let payload
 
     payload = getFormData2(document.querySelector('#roomcategoriesform'), roomcategoriesid ? [['id', roomcategoriesid]] : null)
+    appendRoomCategoryGridPayload(payload)
     let request = await httpRequest2('../controllers/roomcategories', payload, document.querySelector('#roomcategoriesform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
         roomcategoriesid = ''
         document.querySelector('#roomcategoriesform').reset();
+        resetRoomCategoryGridRows()
         fetchroomcategories();
         return
     }
         roomcategoriesid = ''
     document.querySelector('#roomcategoriesform').reset();
+    resetRoomCategoryGridRows()
     fetchroomcategories();
     return notification(request.message, 0);
+}
+
+async function fetchcompanysources() {
+    let request = await httpRequest2('../controllers/fetchcompanyforgroups', null, null, 'json')
+    roomCategoryCompanies = request?.status && Array.isArray(request.data) ? request.data : []
+}
+
+async function fetchagencysources() {
+    let request = await httpRequest2('../controllers/fetchtravelagency', null, null, 'json')
+    roomCategoryAgencies = request?.status && Array.isArray(request.data) ? request.data : []
+}
+
+function getRatecodeOptionsHtml(selected = '') {
+    const target = String(selected || '')
+    const options = roomCategoryRatecodes.map(item => `<option value="${item.id}" ${String(item.id) === target ? 'selected' : ''}>${item.ratecode}</option>`).join('')
+    return `<option value="">-- Select Ratecode --</option>${options}`
+}
+
+function getCompanyOptionsHtml(selected = '') {
+    const target = String(selected || '')
+    const options = roomCategoryCompanies.map(item => `<option value="${item.id}" ${String(item.id) === target ? 'selected' : ''}>${item.companyname}</option>`).join('')
+    return `<option value="">-- Select Company --</option>${options}`
+}
+
+function getAgencyOptionsHtml(selected = '') {
+    const target = String(selected || '')
+    const options = roomCategoryAgencies.map(item => `<option value="${item.id}" ${String(item.id) === target ? 'selected' : ''}>${item.agencyname}</option>`).join('')
+    return `<option value="">-- Select Agency --</option>${options}`
+}
+
+function appendCompanyRateRow(orgid = '', ratecode = '') {
+    const tbody = document.getElementById('companyRateGridBody')
+    if(!tbody) return
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+        <td><select class="form-control company-orgid">${getCompanyOptionsHtml(orgid)}</select></td>
+        <td><select class="form-control company-ratecode">${getRatecodeOptionsHtml(ratecode)}</select></td>
+        <td><button type="button" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white text-xs" style="font-size: 18px;" onclick="this.closest('tr').remove()">delete</button></td>
+    `
+    tbody.appendChild(tr)
+}
+
+function appendAgencyRateRow(orgid = '', ratecode = '') {
+    const tbody = document.getElementById('agencyRateGridBody')
+    if(!tbody) return
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+        <td><select class="form-control agency-orgid">${getAgencyOptionsHtml(orgid)}</select></td>
+        <td><select class="form-control agency-ratecode">${getRatecodeOptionsHtml(ratecode)}</select></td>
+        <td><button type="button" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white text-xs" style="font-size: 18px;" onclick="this.closest('tr').remove()">delete</button></td>
+    `
+    tbody.appendChild(tr)
+}
+
+function resetRoomCategoryGridRows() {
+    const companyBody = document.getElementById('companyRateGridBody')
+    const agencyBody = document.getElementById('agencyRateGridBody')
+    if(companyBody) companyBody.innerHTML = ''
+    if(agencyBody) agencyBody.innerHTML = ''
+    appendCompanyRateRow()
+    appendAgencyRateRow()
+}
+
+function appendRoomCategoryGridPayload(payload) {
+    const companyRows = Array.from(document.querySelectorAll('#companyRateGridBody tr'))
+        .map(row => ({
+            orgid: String(row.querySelector('.company-orgid')?.value || '').trim(),
+            ratecode: String(row.querySelector('.company-ratecode')?.value || '').trim()
+        }))
+        .filter(row => row.orgid || row.ratecode)
+    payload.append('coyrowsize', String(companyRows.length))
+    companyRows.forEach((row, index) => {
+        const i = index + 1
+        payload.append(`coyorgid${i}`, row.orgid)
+        payload.append(`coyratecode${i}`, row.ratecode)
+    })
+
+    const agencyRows = Array.from(document.querySelectorAll('#agencyRateGridBody tr'))
+        .map(row => ({
+            orgid: String(row.querySelector('.agency-orgid')?.value || '').trim(),
+            ratecode: String(row.querySelector('.agency-ratecode')?.value || '').trim()
+        }))
+        .filter(row => row.orgid || row.ratecode)
+    payload.append('agrowsize', String(agencyRows.length))
+    agencyRows.forEach((row, index) => {
+        const i = index + 1
+        payload.append(`agorgid${i}`, row.orgid)
+        payload.append(`agratecode${i}`, row.ratecode)
+    })
+}
+
+function populateRoomCategoryGridsFromRecord(record = {}) {
+    const companyBody = document.getElementById('companyRateGridBody')
+    const agencyBody = document.getElementById('agencyRateGridBody')
+    if(companyBody) companyBody.innerHTML = ''
+    if(agencyBody) agencyBody.innerHTML = ''
+
+    let hasCompany = false
+    let hasAgency = false
+
+    const coyrowsize = Number(record.coyrowsize || 0)
+    for(let i = 1; i <= coyrowsize; i++) {
+        const orgid = record[`coyorgid${i}`]
+        const ratecode = record[`coyratecode${i}`]
+        if(String(orgid || '').trim() || String(ratecode || '').trim()) {
+            appendCompanyRateRow(orgid, ratecode)
+            hasCompany = true
+        }
+    }
+
+    const agrowsize = Number(record.agrowsize || 0)
+    for(let i = 1; i <= agrowsize; i++) {
+        const orgid = record[`agorgid${i}`]
+        const ratecode = record[`agratecode${i}`]
+        if(String(orgid || '').trim() || String(ratecode || '').trim()) {
+            appendAgencyRateRow(orgid, ratecode)
+            hasAgency = true
+        }
+    }
+
+    if(!hasCompany) appendCompanyRateRow()
+    if(!hasAgency) appendAgencyRateRow()
 }
 
 function wireRoomCategoryImport(){
