@@ -10,8 +10,8 @@ const roomcatImportDelay = 800
 async function roomcategoriesActive() {
     const form = document.querySelector('#roomcategoriesform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', roomcategoriesFormSubmitHandler)
-    if(document.getElementById('addCompanyRateRowBtn')) document.getElementById('addCompanyRateRowBtn').addEventListener('click', ()=>appendCompanyRateRow())
-    if(document.getElementById('addAgencyRateRowBtn')) document.getElementById('addAgencyRateRowBtn').addEventListener('click', ()=>appendAgencyRateRow())
+    if(document.getElementById('addCompanyRateRowBtn')) document.getElementById('addCompanyRateRowBtn').onclick = ()=>appendCompanyRateRow()
+    if(document.getElementById('addAgencyRateRowBtn')) document.getElementById('addAgencyRateRowBtn').onclick = ()=>appendAgencyRateRow()
     if(did('roomcategoriessearch')) did('roomcategoriessearch').addEventListener('input', applyRoomCategorySearchFilter)
     datasource = []
     await fetchroomcategories()
