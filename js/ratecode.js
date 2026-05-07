@@ -7,6 +7,7 @@ async function ratecodeActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', ratecodeFormSubmitHandler)
     
     if(form.plan) form.plan.addEventListener('change', resolvePlanChanges)
+    if(form.organisationtype && !form.organisationtype.value) form.organisationtype.value = 'HOTEL'
     
     datasource = []
     await fetchratecode()
@@ -104,6 +105,7 @@ async function onratecodeTableDataSignal() {
         <td>${item.planname}</td>
         <td>${item.childplan}</td>
         <td>${item.currency}</td>
+        <td>${item.organisationtype || '-'}</td>
         <td class="flex items-center gap-3">
             <button title="Edit row entry" onclick="fetchratecode('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
             <button title="Delete row entry"s onclick="removeratecode('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
@@ -346,6 +348,7 @@ function mapRatecodeToFormData(row){
     const form = new FormData()
     const plan = resolvePlanSelection(row.plan)
     form.append('ratecode', (row.ratecode || '').toString().trim())
+    form.append('organisationtype', 'HOTEL')
     form.append('adult1', row.adult1 || '')
     form.append('adult2', row.adult2 || '')
     form.append('adult3', row.adult3 || '')

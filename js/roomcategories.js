@@ -1,6 +1,8 @@
 let roomcategoriesid
 let roomcatImportedRows = []
 let roomCategoryRatecodeLookup = []
+let roomCategoryCompanyRatecodeLookup = []
+let roomCategoryAgencyRatecodeLookup = []
 let roomCategoryCompanyLookup = []
 let roomCategoryAgencyLookup = []
 const roomcatImportDelay = 800
@@ -12,23 +14,40 @@ async function roomcategoriesActive() {
     datasource = []
     await fetchroomcategories()
     await fetchratecodes()
+    await fetchratecodes('COMPANY')
+    await fetchratecodes('TRAVEL AGENCY')
     await fetchCompanyLookup()
     await fetchAgencyLookup()
     resetRoomCategoryGrids()
     wireRoomCategoryImport()
 }
 
-async function fetchratecodes(id) {
-    let request = await httpRequest2('../controllers/fetchratecode', null, null, 'json')
+async function fetchratecodes(organisationtype = '') {
+    let payload = null
+    if(organisationtype) {
+        payload = new FormData()
+        payload.append('organisationtype', organisationtype)
+    }
+    let request = await httpRequest2('../controllers/fetchratecode', payload, null, 'json')
     if(request.status) {
         if(request.data.length) {
-            roomCategoryRatecodeLookup = request.data
-            let options = request.data?.map( item => `<option value="${item.id}">${item.ratecode}</option>`).join('')
-            try {
-                document.getElementById('roomcategoriesform').ratecode.innerHTML = options
-                did('roomcatRateCodeList').innerHTML = request.data.map(item=>`<option value="${item.ratecode}"></option>`).join('')
-                did('roomcatRateCodeList2').innerHTML = request.data.map(item=>`<option value="${item.ratecode}">${item.id}</option>`).join('')
-            } catch(e) {console.log(e)}
+            if(!organisationtype || organisationtype === 'HOTEL') {
+                roomCategoryRatecodeLookup = request.data
+                let options = request.data?.map( item => `<option value="${item.id}">${item.ratecode}</option>`).join('')
+                try {
+                    document.getElementById('roomcategoriesform').ratecode.innerHTML = options
+                } catch(e) {console.log(e)}
+            }
+            if(organisationtype === 'COMPANY') {
+                roomCategoryCompanyRatecodeLookup = request.data
+                did('roomcatCompanyRateCodeList').innerHTML = request.data.map(item=>`<option value="${item.ratecode}"></option>`).join('')
+                did('roomcatCompanyRateCodeList2').innerHTML = request.data.map(item=>`<option value="${item.ratecode}">${item.id}</option>`).join('')
+            }
+            if(organisationtype === 'TRAVEL AGENCY') {
+                roomCategoryAgencyRatecodeLookup = request.data
+                did('roomcatAgencyRateCodeList').innerHTML = request.data.map(item=>`<option value="${item.ratecode}"></option>`).join('')
+                did('roomcatAgencyRateCodeList2').innerHTML = request.data.map(item=>`<option value="${item.ratecode}">${item.id}</option>`).join('')
+            }
         }
     }
     else return notification('No records retrieved')
@@ -152,7 +171,7 @@ function appendCompanyRateRow(orgName='', orgId='', ratecodeName='', ratecodeId=
             <input type="hidden" id="coyorgid-${rowId}" value="${orgId || ''}" class="company-orgid-hidden">
         </td>
         <td class="p-2">
-            <input type="text" list="roomcatRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'coyratecode-${rowId}', 'roomcatRateCodeList2')" class="form-control company-rate-input !h-[38px]" placeholder="Search rate code">
+            <input type="text" list="roomcatCompanyRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'coyratecode-${rowId}', 'roomcatCompanyRateCodeList2')" class="form-control company-rate-input !h-[38px]" placeholder="Search rate code">
             <input type="hidden" id="coyratecode-${rowId}" value="${ratecodeId || ''}" class="company-ratecode-hidden">
         </td>
         <td class="p-2"><button title="Remove row" type="button" class="material-symbols-outlined rounded-full bg-red-600 hover:bg-red-700 h-8 w-8 text-white text-xs shadow" style="font-size:18px;" onclick="this.closest('tr').remove()">delete</button></td>
@@ -172,7 +191,7 @@ function appendAgencyRateRow(orgName='', orgId='', ratecodeName='', ratecodeId='
             <input type="hidden" id="agorgid-${rowId}" value="${orgId || ''}" class="agency-orgid-hidden">
         </td>
         <td class="p-2">
-            <input type="text" list="roomcatRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'agratecode-${rowId}', 'roomcatRateCodeList2')" class="form-control agency-rate-input !h-[38px]" placeholder="Search rate code">
+            <input type="text" list="roomcatAgencyRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'agratecode-${rowId}', 'roomcatAgencyRateCodeList2')" class="form-control agency-rate-input !h-[38px]" placeholder="Search rate code">
             <input type="hidden" id="agratecode-${rowId}" value="${ratecodeId || ''}" class="agency-ratecode-hidden">
         </td>
         <td class="p-2"><button title="Remove row" type="button" class="material-symbols-outlined rounded-full bg-red-600 hover:bg-red-700 h-8 w-8 text-white text-xs shadow" style="font-size:18px;" onclick="this.closest('tr').remove()">delete</button></td>
@@ -249,7 +268,7 @@ function populateRoomCategoryGridsFromRecord(record = {}) {
         const ratecode = String(record[`coyratecode${i}`] || '').trim()
         if(!orgid && !ratecode) continue
         const org = roomCategoryCompanyLookup.find(x=>String(x.id) === orgid)
-        const rate = roomCategoryRatecodeLookup.find(x=>String(x.id) === ratecode)
+        const rate = roomCategoryCompanyRatecodeLookup.find(x=>String(x.id) === ratecode)
         appendCompanyRateRow(org ? org.companyname : '', orgid, rate ? rate.ratecode : '', ratecode)
         foundCompany = true
     }
@@ -260,7 +279,7 @@ function populateRoomCategoryGridsFromRecord(record = {}) {
         const ratecode = String(record[`agratecode${i}`] || '').trim()
         if(!orgid && !ratecode) continue
         const org = roomCategoryAgencyLookup.find(x=>String(x.id) === orgid)
-        const rate = roomCategoryRatecodeLookup.find(x=>String(x.id) === ratecode)
+        const rate = roomCategoryAgencyRatecodeLookup.find(x=>String(x.id) === ratecode)
         appendAgencyRateRow(org ? org.agencyname : '', orgid, rate ? rate.ratecode : '', ratecode)
         foundAgency = true
     }
@@ -278,7 +297,9 @@ function wireRoomCategoryImport(){
     const cancelBtn = document.getElementById('roomcatModalCancel')
     if(templateBtn) templateBtn.addEventListener('click', downloadRoomCategoryTemplate)
     if(importBtn && importInput) importBtn.addEventListener('click', async ()=>{
-        await fetchratecodes() // make sure lookups are fresh before mapping rows
+        await fetchratecodes()
+        await fetchratecodes('COMPANY')
+        await fetchratecodes('TRAVEL AGENCY')
         importInput.click()
     })
     if(importInput) importInput.addEventListener('change', handleRoomCategoryExcelImport)

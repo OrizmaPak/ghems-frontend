@@ -98,8 +98,10 @@
                                     <select id="roomcatCompanyList2" class="hidden"></select>
                                     <datalist id="roomcatAgencyList"></datalist>
                                     <select id="roomcatAgencyList2" class="hidden"></select>
-                                    <datalist id="roomcatRateCodeList"></datalist>
-                                    <select id="roomcatRateCodeList2" class="hidden"></select>
+                                    <datalist id="roomcatCompanyRateCodeList"></datalist>
+                                    <select id="roomcatCompanyRateCodeList2" class="hidden"></select>
+                                    <datalist id="roomcatAgencyRateCodeList"></datalist>
+                                    <select id="roomcatAgencyRateCodeList2" class="hidden"></select>
                                     <div class="flex justify-end mt-5">
                                          <button id="submit" type="button" class="btn">
                                             <div class="btnloader" style="display: none;"></div>

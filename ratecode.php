@@ -26,6 +26,17 @@
                                         </div>
                                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div class="form-group">
+                                            <label class="control-label">organisation type</label>
+                                            <select name="organisationtype" id="organisationtype" class="form-control comp">
+                                                <option value="">-- Select Organisation Type --</option>
+                                                <option value="HOTEL">HOTEL</option>
+                                                <option value="COMPANY">COMPANY</option>
+                                                <option value="TRAVEL AGENCY">TRAVEL AGENCY</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div class="form-group">
                                             <label for="logoname" class="control-label">adult one</label>
                                             <input type="number" name="adult1" id="adult1" class="form-control comp" placeholder="Enter adult one">
                                         </div>
@@ -130,6 +141,7 @@
                                                   <th>plan</th>
                                                   <th>child plan</th>
                                                   <th>currency</th>
+                                                  <th>organisation type</th>
                                                 <th>action</th>
                                                 
                                             </tr>
