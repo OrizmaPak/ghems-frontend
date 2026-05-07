@@ -7,6 +7,14 @@
                                     <input type="file" id="roomcatImportInput" accept=".xlsx,.xls,.csv" class="hidden" />
                                 </div>
                             </div>
+                            <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 mb-4">
+                                <li class="me-2 cp updater optioner !text-blue-600 active" name="roomcategoriesform" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Manage Room Category</p>
+                                </li>
+                                <li class="me-2 cp viewer optioner" name="roomcategoriesview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Room Category</p>
+                                </li>
+                            </ul>
                             <form id="roomcategoriesform">
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -54,7 +62,10 @@
                                     </div>
                                     <div class="mt-4 border border-[#d9e2ef] rounded-lg overflow-hidden bg-white shadow-sm">
                                         <div class="flex items-center justify-between px-4 py-3 bg-[#6f84a7]">
-                                            <h4 class="font-semibold text-sm text-white tracking-wide">Company Rate Code</h4>
+                                            <div>
+                                                <h4 class="font-semibold text-sm text-white tracking-wide">Company Rate Code</h4>
+                                                <p class="text-[11px] text-white/80 mt-0.5">Organisation | Rate Code | Action</p>
+                                            </div>
                                             <button type="button" id="addCompanyRateRowBtn" class="inline-flex items-center gap-1 text-white bg-[#1f7ae0] hover:bg-[#1368c6] px-3 py-1.5 rounded-md text-xs font-semibold shadow">
                                                 <span class="material-symbols-outlined !text-base">add</span>
                                                 <span>Add Row</span>
@@ -62,20 +73,16 @@
                                         </div>
                                         <div class="overflow-x-auto table-content !p-0">
                                             <table class="w-full text-sm !m-0">
-                                                <thead class="!bg-[#eaf0f8]">
-                                                    <tr>
-                                                        <th class="!text-[#324a6d]">Organisation</th>
-                                                        <th class="!text-[#324a6d]">Rate Code</th>
-                                                        <th class="!text-[#324a6d]" style="width:90px;">Action</th>
-                                                    </tr>
-                                                </thead>
                                                 <tbody id="companyRateGridBody" class="bg-white"></tbody>
                                             </table>
                                         </div>
                                     </div>
                                     <div class="mt-4 border border-[#d9e2ef] rounded-lg overflow-hidden bg-white shadow-sm">
                                         <div class="flex items-center justify-between px-4 py-3 bg-[#6f84a7]">
-                                            <h4 class="font-semibold text-sm text-white tracking-wide">Agency Rate Code</h4>
+                                            <div>
+                                                <h4 class="font-semibold text-sm text-white tracking-wide">Agency Rate Code</h4>
+                                                <p class="text-[11px] text-white/80 mt-0.5">Organisation | Rate Code | Action</p>
+                                            </div>
                                             <button type="button" id="addAgencyRateRowBtn" class="inline-flex items-center gap-1 text-white bg-[#1f7ae0] hover:bg-[#1368c6] px-3 py-1.5 rounded-md text-xs font-semibold shadow">
                                                 <span class="material-symbols-outlined !text-base">add</span>
                                                 <span>Add Row</span>
@@ -83,13 +90,6 @@
                                         </div>
                                         <div class="overflow-x-auto table-content !p-0">
                                             <table class="w-full text-sm !m-0">
-                                                <thead class="!bg-[#eaf0f8]">
-                                                    <tr>
-                                                        <th class="!text-[#324a6d]">Organisation</th>
-                                                        <th class="!text-[#324a6d]">Rate Code</th>
-                                                        <th class="!text-[#324a6d]" style="width:90px;">Action</th>
-                                                    </tr>
-                                                </thead>
                                                 <tbody id="agencyRateGridBody" class="bg-white"></tbody>
                                             </table>
                                         </div>
@@ -117,7 +117,12 @@
                             </form>
                             <hr class="my-10">
                             
-                            <div >
+                            <div id="roomcategoriesview" class="hidden">
+                                <div class="flex justify-end mb-3">
+                                    <div class="w-full md:w-[320px]">
+                                        <input type="text" id="roomcategoriessearch" class="form-control" placeholder="Search room categories...">
+                                    </div>
+                                </div>
                                 <div class="table-content">
                                     <table>
                                         <thead>

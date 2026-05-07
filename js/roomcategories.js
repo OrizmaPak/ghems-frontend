@@ -1,5 +1,6 @@
 let roomcategoriesid
 let roomcatImportedRows = []
+let roomcategoriesDatasourceAll = []
 let roomCategoryRatecodeLookup = []
 let roomCategoryCompanyRatecodeLookup = []
 let roomCategoryAgencyRatecodeLookup = []
@@ -11,6 +12,7 @@ async function roomcategoriesActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', roomcategoriesFormSubmitHandler)
     if(document.getElementById('addCompanyRateRowBtn')) document.getElementById('addCompanyRateRowBtn').addEventListener('click', ()=>appendCompanyRateRow())
     if(document.getElementById('addAgencyRateRowBtn')) document.getElementById('addAgencyRateRowBtn').addEventListener('click', ()=>appendAgencyRateRow())
+    if(did('roomcategoriessearch')) did('roomcategoriessearch').addEventListener('input', applyRoomCategorySearchFilter)
     datasource = []
     await fetchroomcategories()
     await fetchratecodes()
@@ -65,8 +67,11 @@ async function fetchroomcategories(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = request.data
-                resolvePagination(datasource, onroomcategoriesTableDataSignal)
+                roomcategoriesDatasourceAll = request.data
+                applyRoomCategorySearchFilter()
+            } else {
+                roomcategoriesDatasourceAll = []
+                resolvePagination([], onroomcategoriesTableDataSignal)
             }
         }else{
              roomcategoriesid = request.data[0].id
@@ -75,6 +80,20 @@ async function fetchroomcategories(id) {
         }
     }
     else return notification('No records retrieved')
+}
+
+function applyRoomCategorySearchFilter() {
+    const searchValue = String(did('roomcategoriessearch')?.value || '').trim().toLowerCase()
+    if(!searchValue) {
+        datasource = [...roomcategoriesDatasourceAll]
+        resolvePagination(datasource, onroomcategoriesTableDataSignal)
+        return
+    }
+    const filtered = roomcategoriesDatasourceAll.filter(item => {
+        return Object.values(item || {}).some(value => String(value || '').toLowerCase().includes(searchValue))
+    })
+    datasource = filtered
+    resolvePagination(datasource, onroomcategoriesTableDataSignal)
 }
 
 async function removeroomcategories(id) {
