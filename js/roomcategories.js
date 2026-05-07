@@ -72,7 +72,7 @@ async function fetchroomcategories(id) {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchroomcategories', id ? getparamm() : null, null, 'json')
+    let request = await httpRequest2('../controllers/fetchroomcategorycoyandagency', id ? getparamm() : null, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
