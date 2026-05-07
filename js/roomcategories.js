@@ -66,6 +66,10 @@ async function fetchratecodes(organisationtype = '') {
 }
 
 async function fetchroomcategories(id) {
+    if(id){
+        const updaterTab = document.querySelector('.optioner[name="roomcategoriesform"]')
+        if(updaterTab) runoptioner(updaterTab)
+    }
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
@@ -77,16 +81,39 @@ async function fetchroomcategories(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                roomcategoriesDatasourceAll = request.data
+                roomcategoriesDatasourceAll = request.data.map((entry) => {
+                    const category = entry?.categorydata || entry || {}
+                    return {
+                        ...category,
+                        categoryid: entry?.categoryid || category?.id || '',
+                        Organisationdata: Array.isArray(entry?.Organisationdata) ? entry.Organisationdata : []
+                    }
+                })
                 applyRoomCategorySearchFilter()
             } else {
                 roomcategoriesDatasourceAll = []
                 resolvePagination([], onroomcategoriesTableDataSignal)
             }
         }else{
-             roomcategoriesid = request.data[0].id
-            populateData(request.data[0])
-            populateRoomCategoryGridsFromRecord(request.data[0])
+            let record = null
+            if(request.data && request.data[0]) {
+                if(request.data[0].categorydata) {
+                    record = {
+                        ...request.data[0].categorydata,
+                        categoryid: request.data[0].categoryid || request.data[0].categorydata?.id || '',
+                        Organisationdata: Array.isArray(request.data[0].Organisationdata) ? request.data[0].Organisationdata : []
+                    }
+                } else {
+                    record = request.data[0]
+                }
+            }
+            if(!record) {
+                record = roomcategoriesDatasourceAll.find(item => String(item.id) === String(id) || String(item.categoryid) === String(id))
+            }
+            if(!record) return notification('Record not found', 0)
+            roomcategoriesid = record.id || record.categoryid
+            populateData(record)
+            populateRoomCategoryGridsFromRecord(record)
         }
     }
     else return notification('No records retrieved')
@@ -135,15 +162,16 @@ async function onroomcategoriesTableDataSignal() {
     <tr>
         <td>${item.index + 1 }</td>
         <td>${item.category}</td>
-        <td>${item.ratecode}</td>
+        <td>${item.ratecodename || item.ratecode || '-'}</td>
         <td>${item.currency}</td>
         <td>${item.categorytype}</td>
         <td>${formatCurrency(item.minimumrequireddeposit)}</td>
         <td>${formatCurrency(item.price)}</td>
         <td>${formatCurrency(item.price_2)}</td>
         <td class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="fetchroomcategories('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
-            <button title="Delete row entry"s onclick="removeroomcategories('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+            <button title="View details" onclick="viewRoomCategoryDetails('${item.id || item.categoryid}')" class="material-symbols-outlined rounded-full bg-[#16a34a] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+            <button title="Edit row entry" onclick="fetchroomcategories('${item.id || item.categoryid}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
+            <button title="Delete row entry"s onclick="removeroomcategories('${item.id || item.categoryid}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </td>
     </tr>`
     )
@@ -291,6 +319,26 @@ function populateRoomCategoryGridsFromRecord(record = {}) {
     let foundCompany = false
     let foundAgency = false
 
+    if(Array.isArray(record.Organisationdata) && record.Organisationdata.length) {
+        record.Organisationdata.forEach((orgRow) => {
+            const orgType = String(orgRow.organisationtype || '').trim().toUpperCase()
+            const orgid = String(orgRow.orgid || '').trim()
+            const ratecode = String(orgRow.ratecode || '').trim()
+            if(orgType === 'COMPANY') {
+                const org = roomCategoryCompanyLookup.find(x=>String(x.id) === orgid)
+                const rate = roomCategoryCompanyRatecodeLookup.find(x=>String(x.id) === ratecode)
+                appendCompanyRateRow(org ? org.companyname : (orgRow.organisationname || ''), orgid, rate ? rate.ratecode : (orgRow.ratecodename || ''), ratecode)
+                foundCompany = true
+            }
+            if(orgType === 'TRAVEL AGENCY') {
+                const org = roomCategoryAgencyLookup.find(x=>String(x.id) === orgid)
+                const rate = roomCategoryAgencyRatecodeLookup.find(x=>String(x.id) === ratecode)
+                appendAgencyRateRow(org ? org.agencyname : (orgRow.organisationname || ''), orgid, rate ? rate.ratecode : (orgRow.ratecodename || ''), ratecode)
+                foundAgency = true
+            }
+        })
+    }
+
     const coyrowsize = Number(record.coyrowsize || 0)
     for(let i = 1; i <= coyrowsize; i++) {
         const orgid = String(record[`coyorgid${i}`] || '').trim()
@@ -315,6 +363,80 @@ function populateRoomCategoryGridsFromRecord(record = {}) {
 
     if(!foundCompany) appendCompanyRateRow()
     if(!foundAgency) appendAgencyRateRow()
+}
+
+function getRoomCategoryById(id = '') {
+    const key = String(id || '').trim()
+    if(!key) return null
+    return roomcategoriesDatasourceAll.find(item => String(item.id) === key || String(item.categoryid) === key) || null
+}
+
+function ensureRoomCategoryDetailsModal() {
+    if(did('roomcategorydetailsmodal')) return
+    const modal = document.createElement('div')
+    modal.id = 'roomcategorydetailsmodal'
+    modal.className = 'hidden fixed inset-0 z-[500] bg-[#0000008a] p-4 flex items-center justify-center'
+    modal.onclick = (event) => {
+        if(event.target.id === 'roomcategorydetailsmodal') closeRoomCategoryDetailsModal()
+    }
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-[1000px] max-h-[90vh] overflow-hidden animate__animated animate__fadeInUp">
+            <div class="bg-[#5f7496] px-5 py-4 flex justify-between items-center">
+                <h3 class="text-white text-base font-semibold">Room Category Details</h3>
+                <button type="button" onclick="closeRoomCategoryDetailsModal()" class="material-symbols-outlined text-white">close</button>
+            </div>
+            <div id="roomcategorydetailsbody" class="p-5 overflow-auto max-h-[calc(90vh-70px)]"></div>
+        </div>`
+    document.body.appendChild(modal)
+}
+
+function closeRoomCategoryDetailsModal() {
+    if(did('roomcategorydetailsmodal')) did('roomcategorydetailsmodal').classList.add('hidden')
+}
+
+function viewRoomCategoryDetails(id = '') {
+    const record = getRoomCategoryById(id)
+    if(!record) return notification('Category record not found', 0)
+    ensureRoomCategoryDetailsModal()
+    const organisations = Array.isArray(record.Organisationdata) ? record.Organisationdata : []
+    const companies = organisations.filter(item => String(item.organisationtype || '').toUpperCase() === 'COMPANY')
+    const agencies = organisations.filter(item => String(item.organisationtype || '').toUpperCase() === 'TRAVEL AGENCY')
+
+    const companyRows = companies.length ? companies.map((item, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td>${item.organisationname || item.orgid || '-'}</td>
+            <td>${item.ratecodename || item.ratecode || '-'}</td>
+        </tr>`).join('') : `<tr><td colspan="3" class="text-center opacity-60">No company override rate codes</td></tr>`
+
+    const agencyRows = agencies.length ? agencies.map((item, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td>${item.organisationname || item.orgid || '-'}</td>
+            <td>${item.ratecodename || item.ratecode || '-'}</td>
+        </tr>`).join('') : `<tr><td colspan="3" class="text-center opacity-60">No travel agency override rate codes</td></tr>`
+
+    did('roomcategorydetailsbody').innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+            <div class="rounded-lg border p-3 bg-[#f8fbff]"><p class="text-xs opacity-60">Category</p><p class="font-semibold">${record.category || '-'}</p></div>
+            <div class="rounded-lg border p-3 bg-[#f8fbff]"><p class="text-xs opacity-60">Type</p><p class="font-semibold">${record.categorytype || '-'}</p></div>
+            <div class="rounded-lg border p-3 bg-[#f8fbff]"><p class="text-xs opacity-60">Currency</p><p class="font-semibold">${record.currency || '-'}</p></div>
+            <div class="rounded-lg border p-3 bg-[#f8fbff]"><p class="text-xs opacity-60">Hotel Rate Code</p><p class="font-semibold">${record.ratecodename || record.ratecode || '-'}</p></div>
+            <div class="rounded-lg border p-3 bg-[#f8fbff]"><p class="text-xs opacity-60">Price</p><p class="font-semibold">${formatCurrency(record.price || 0)}</p></div>
+            <div class="rounded-lg border p-3 bg-[#f8fbff]"><p class="text-xs opacity-60">Price Level 2</p><p class="font-semibold">${formatCurrency(record.price_2 || 0)}</p></div>
+        </div>
+
+        <div class="mt-4 border rounded-lg overflow-hidden">
+            <div class="px-4 py-2 bg-[#6f84a7] text-white text-sm font-semibold">Company Rate Codes</div>
+            <div class="table-content !p-0"><table><thead><tr><th>S/N</th><th>Organisation</th><th>Rate Code</th></tr></thead><tbody>${companyRows}</tbody></table></div>
+        </div>
+
+        <div class="mt-4 border rounded-lg overflow-hidden">
+            <div class="px-4 py-2 bg-[#6f84a7] text-white text-sm font-semibold">Travel Agency Rate Codes</div>
+            <div class="table-content !p-0"><table><thead><tr><th>S/N</th><th>Organisation</th><th>Rate Code</th></tr></thead><tbody>${agencyRows}</tbody></table></div>
+        </div>
+    `
+    did('roomcategorydetailsmodal').classList.remove('hidden')
 }
 
 function wireRoomCategoryImport(){
