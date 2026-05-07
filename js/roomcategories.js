@@ -37,7 +37,7 @@ async function fetchratecodes(organisationtype = '') {
                 roomCategoryRatecodeLookup = request.data
                 let options = request.data?.map( item => `<option value="${item.id}">${item.ratecode}</option>`).join('')
                 try {
-                    document.getElementById('roomcategoriesform').ratecode.innerHTML = options
+                    document.getElementById('roomcategoriesform').ratecode.innerHTML = `<option value="">Select rate code</option>${options}`
                 } catch(e) {console.log(e)}
             }
             if(organisationtype === 'COMPANY') {
@@ -51,8 +51,20 @@ async function fetchratecodes(organisationtype = '') {
                 did('roomcatAgencyRateCodeList2').innerHTML = request.data.map(item=>`<option value="${item.ratecode}">${item.id}</option>`).join('')
             }
         }
+        if((!organisationtype || organisationtype === 'HOTEL') && !request.data.length) {
+            try {
+                document.getElementById('roomcategoriesform').ratecode.innerHTML = `<option value="">Select rate code</option>`
+            } catch(e) {console.log(e)}
+        }
     }
-    else return notification('No records retrieved')
+    else {
+        if(!organisationtype || organisationtype === 'HOTEL') {
+            try {
+                document.getElementById('roomcategoriesform').ratecode.innerHTML = `<option value="">Select rate code</option>`
+            } catch(e) {console.log(e)}
+        }
+        return notification('No records retrieved')
+    }
 }
 
 async function fetchroomcategories(id) {
