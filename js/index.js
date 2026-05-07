@@ -613,21 +613,31 @@ async function hemsuserlist() {
 //     else return notification('No records retrieved')
 // }
 async function hemsroomcategories() {
-    let request = await httpRequest('../controllers/fetchroomcategories')
+    let request = await httpRequest('../controllers/fetchroomcategorycoyandagency')
     request = JSON.parse(request)
     if(request.status) {
         if(request.data.length) {
-            rumcat = request.data
-            document.getElementById('hems_roomcategories').innerHTML = request.data.map(data=>`<option>${data.category} || ${data.id}</option>`).join('')
+            const categories = request.data.map((item) => {
+                const categorydata = item.categorydata || item
+                return {
+                    ...categorydata,
+                    id: String(categorydata.id || item.categoryid || '').trim(),
+                    categoryid: String(item.categoryid || categorydata.id || '').trim(),
+                    category: categorydata.category || categorydata.categoryname || '',
+                    Organisationdata: Array.isArray(item.Organisationdata) ? item.Organisationdata : []
+                }
+            })
+            rumcat = categories
+            document.getElementById('hems_roomcategories').innerHTML = categories.map(data=>`<option>${data.category} || ${data.id}</option>`).join('')
             for(let i=0;i<document.getElementsByClassName('roomcategory').length;i++){
                 // console.log(document.getElementsByClassName('roomcategory')[i], document.getElementsByClassName('room-type')[i])
                 if(document.getElementsByClassName('roomcategory')[i] && document.getElementsByClassName('roomcategory')[i].children.length < 2){
                     if(document.getElementsByClassName('roomcategory')[i])document.getElementsByClassName('roomcategory')[i].innerHTML = `<option value="">-- Select Room Type --</option>`
-                    if(document.getElementsByClassName('roomcategory')[i])document.getElementsByClassName('roomcategory')[i].innerHTML += request.data.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
+                    if(document.getElementsByClassName('roomcategory')[i])document.getElementsByClassName('roomcategory')[i].innerHTML += categories.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
                 }
                 if(document.getElementsByClassName('room-type')[i] && document.getElementsByClassName('room-type')[i].children.length < 2){
                     if(document.getElementsByClassName('room-type')[i])document.getElementsByClassName('room-type')[i].innerHTML = `<option value="">-- Select Room Type --</option>`
-                    if(document.getElementsByClassName('room-type')[i])document.getElementsByClassName('room-type')[i].innerHTML += request.data.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
+                    if(document.getElementsByClassName('room-type')[i])document.getElementsByClassName('room-type')[i].innerHTML += categories.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
                 }
             }
         }

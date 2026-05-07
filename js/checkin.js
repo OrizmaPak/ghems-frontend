@@ -8,6 +8,238 @@ let nameandidofguest  // this will carry an array of the name and id of the newl
 let actionid // this is the variable that will hold id in memory for me
 let distribute = "YES"
 const checkinOtherDetailsPromptState = {}
+const checkinRateDataByCard = {}
+const checkinRateSourceByCard = {}
+let checkinOrgContextChangeLock = false
+
+function normalizeCheckinOrgType(value = '') {
+    const normalized = String(value || '').trim().toUpperCase()
+    if(normalized === 'TRAVEL AGENCY' || normalized === 'TRAVELAGENCY') return 'TRAVEL AGENCY'
+    if(normalized === 'COMPANY') return 'COMPANY'
+    return 'HOTEL'
+}
+
+function getCheckinSelectText(id = '') {
+    const el = did(id)
+    if(!el) return ''
+    const option = el.options ? el.options[el.selectedIndex] : null
+    return String(option?.textContent || option?.text || el.value || '').replace(/\s*\|\|.*$/, '').trim()
+}
+
+function getActiveCheckinRateContext() {
+    const companyValue = String(did('company')?.value || '').trim()
+    const agencyValue = String(did('travelagent')?.value || '').trim()
+    if(companyValue && companyValue !== 'ADD COMPANY') {
+        return { type: 'COMPANY', orgid: companyValue, orgname: getCheckinSelectText('company') || 'Company' }
+    }
+    if(agencyValue && agencyValue !== 'ADD TRAVEL AGENCY') {
+        return { type: 'TRAVEL AGENCY', orgid: agencyValue, orgname: getCheckinSelectText('travelagent') || 'Travel agency' }
+    }
+    return { type: 'HOTEL', orgid: '', orgname: 'Hotel' }
+}
+
+function getCheckinRoomCategoryMeta(categoryId = '') {
+    const id = String(categoryId || '').trim()
+    if(!id || !Array.isArray(rumcat)) return null
+    return rumcat.find(data => String(data?.id || data?.categoryid || '').trim() === id) || null
+}
+
+function ensureRateSourceNode(idd = '') {
+    let node = did('ratesource-'+idd)
+    if(node) return node
+    const rateCodeNode = did('ratecodee-'+idd)
+    if(!rateCodeNode || !rateCodeNode.parentElement) return null
+    node = document.createElement('div')
+    node.id = 'ratesource-'+idd
+    node.className = 'mt-1 text-[11px] leading-snug rounded-md border px-2 py-1 bg-slate-50 text-slate-600 border-slate-200'
+    rateCodeNode.parentElement.appendChild(node)
+    return node
+}
+
+function setRateSourceMessage(idd = '', resolution = null) {
+    const node = ensureRateSourceNode(idd)
+    if(!node) return
+    if(!resolution) {
+        node.textContent = ''
+        node.className = 'mt-1 text-[11px] leading-snug rounded-md border px-2 py-1 bg-slate-50 text-slate-600 border-slate-200'
+        return
+    }
+    const isFallback = !!resolution.usedFallback
+    const isOrg = resolution.sourceType === 'COMPANY' || resolution.sourceType === 'TRAVEL AGENCY'
+    node.textContent = resolution.message || ''
+    node.className = `mt-1 text-[11px] leading-snug rounded-md border px-2 py-1 ${
+        isFallback
+            ? 'bg-amber-50 text-amber-800 border-amber-200'
+            : isOrg
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-sky-50 text-sky-800 border-sky-200'
+    }`
+}
+
+function resolveCategoryRateForActiveContext(categoryId = '') {
+    const category = getCheckinRoomCategoryMeta(categoryId)
+    if(!category) return null
+    const context = getActiveCheckinRateContext()
+    const mappings = Array.isArray(category.Organisationdata) ? category.Organisationdata : []
+    const hotelRatecode = String(category.ratecode || '').trim()
+    const hotelRatecodename = String(category.ratecodename || '').trim()
+    const categoryName = String(category.category || category.categoryname || '').trim()
+
+    if(context.type !== 'HOTEL') {
+        const match = mappings.find(item => (
+            normalizeCheckinOrgType(item?.organisationtype) === context.type &&
+            String(item?.orgid || '').trim() === String(context.orgid || '').trim() &&
+            String(item?.ratecode || '').trim()
+        ))
+        if(match) {
+            const sourceLabel = context.type === 'COMPANY' ? 'Company' : 'Travel agency'
+            return {
+                category,
+                categoryName,
+                context,
+                sourceType: context.type,
+                usedFallback: false,
+                ratecode: String(match.ratecode || '').trim(),
+                ratecodename: String(match.ratecodename || '').trim(),
+                hotelRatecode,
+                hotelRatecodename,
+                message: `${sourceLabel} rate code: ${context.orgname}`
+            }
+        }
+        const missingLabel = context.type === 'COMPANY' ? 'company' : 'travel agency'
+        return {
+            category,
+            categoryName,
+            context,
+            sourceType: 'HOTEL',
+            usedFallback: true,
+            ratecode: hotelRatecode,
+            ratecodename: hotelRatecodename,
+            hotelRatecode,
+            hotelRatecodename,
+            message: `No available ${missingLabel} rate code for ${context.orgname}. Using hotel rate code.`
+        }
+    }
+
+    return {
+        category,
+        categoryName,
+        context,
+        sourceType: 'HOTEL',
+        usedFallback: false,
+        ratecode: hotelRatecode,
+        ratecodename: hotelRatecodename,
+        hotelRatecode,
+        hotelRatecodename,
+        message: 'Hotel rate code'
+    }
+}
+
+async function fetchCheckinRatecodeById(ratecode = '') {
+    const id = String(ratecode || '').trim()
+    if(!id) return null
+    const payload = new FormData()
+    payload.append('id', id)
+    const request = await httpRequest2('../controllers/fetchratecode', payload, null, 'json')
+    if(request?.status && Array.isArray(request.data) && request.data.length) return request.data[0]
+    return null
+}
+
+async function confirmCheckinRateUpgrade(idd = '', resolution = {}) {
+    if(!resolution?.context || resolution.context.type === 'HOTEL') return false
+    if(!window.Swal) return false
+    const source = resolution.context.type === 'COMPANY' ? 'company' : 'travel agency'
+    const category = resolution.categoryName || 'This room category'
+    const response = await Swal.fire({
+        title: 'Update Rate Code?',
+        text: `${category}: this reservation is using hotel rate code. A ${source} rate code is now available for ${resolution.context.orgname}. Update this room to the organisation rate code?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, update',
+        cancelButtonText: 'No, keep current',
+        customClass: {
+            confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
+            cancelButton: 'btn btn-md !bg-gray-500 !text-white mx-2'
+        },
+        buttonsStyling: false
+    })
+    return !!response.isConfirmed
+}
+
+async function resolveAndApplyRateForRoomCard(idd = actionid, options = {}) {
+    idd = String(idd || actionid || '').trim()
+    if(!idd || !did('roomcategory-'+idd)) return false
+    actionid = idd
+    const categoryId = String(did('roomcategory-'+idd).value || '').trim()
+    if(!categoryId) {
+        setRateSourceMessage(idd, null)
+        return false
+    }
+    const resolution = resolveCategoryRateForActiveContext(categoryId)
+    if(!resolution || !resolution.ratecode) {
+        setRateSourceMessage(idd, {
+            usedFallback: true,
+            message: `No rate code found for ${resolution?.categoryName || 'selected category'}.`
+        })
+        return false
+    }
+
+    const savedRatecode = String(did('ratecodee-'+idd)?.value || '').trim()
+    let selectedResolution = resolution
+    let selectedRatecode = resolution.ratecode
+    let selectedRatecodename = resolution.ratecodename
+
+    if(options.promptForUpgrade && resolution.context.type !== 'HOTEL' && !resolution.usedFallback && savedRatecode && savedRatecode === String(resolution.hotelRatecode || '').trim() && savedRatecode !== resolution.ratecode) {
+        const shouldUpgrade = await confirmCheckinRateUpgrade(idd, resolution)
+        if(!shouldUpgrade) {
+            selectedRatecode = savedRatecode
+            selectedRatecodename = resolution.hotelRatecodename || did('ratecodename-'+idd)?.value || ''
+            selectedResolution = {
+                ...resolution,
+                sourceType: 'HOTEL',
+                usedFallback: true,
+                ratecode: selectedRatecode,
+                ratecodename: selectedRatecodename,
+                message: `${resolution.categoryName || 'Room category'} is still using hotel rate code for ${resolution.context.orgname}.`
+            }
+        }
+    }
+
+    if(did('ratecodename-'+idd)) did('ratecodename-'+idd).value = selectedRatecodename || ''
+    if(did('ratecodee-'+idd)) did('ratecodee-'+idd).value = selectedRatecode || ''
+    setRateSourceMessage(idd, selectedResolution)
+    checkinRateSourceByCard[idd] = selectedResolution
+
+    const rateDetail = await fetchCheckinRatecodeById(selectedRatecode)
+    if(!rateDetail) {
+        return notification('No records retrieved')
+    }
+    ratedata = rateDetail
+    checkinRateDataByCard[idd] = rateDetail
+    if(rateDetail.plan == 0)notification('Please note that no plan was all allocated to the choosen reservation', 0)
+    if(did('plan-'+idd)) did('plan-'+idd).value = rateDetail.planname || ''
+    handlecheckinrate(idd, false, { skipResolve: true })
+    runcouponcalculations()
+    await getplanamount(idd, rateDetail)
+    calculatetotals()
+    return true
+}
+
+async function recalculateAllRoomCardsForRateContext(reason = '', options = {}) {
+    const cards = Array.from(document.getElementsByClassName('roomcategory'))
+    if(!cards.length) {
+        calculatetotals()
+        return
+    }
+    for(const card of cards) {
+        const id = String(card?.id || '').replace('roomcategory-', '').trim()
+        if(!id || !String(card.value || '').trim()) continue
+        await resolveAndApplyRateForRoomCard(id, {
+            promptForUpgrade: !!options.promptForUpgrade
+        })
+    }
+    calculatetotals()
+}
 
 function setCheckinPaymentMethodDefaultCash() {
     const paymentMethodEl = did('paymentmethod')
@@ -200,14 +432,7 @@ async function recalculateCheckinFormFromDates() {
         calculatetotals()
         return
     }
-    const roomInputs = Array.from(document.getElementsByClassName('roomnumber'))
-    for (const roomInput of roomInputs) {
-        const id = String(roomInput?.id || '').replace('roomnumber-', '').trim()
-        if(!id) continue
-        if(!String(roomInput.value || '').trim()) continue
-        handlecheckinrate(id, false)
-    }
-    calculatetotals()
+    await recalculateAllRoomCardsForRateContext('date-change')
 }
 
 function datedifference() {
@@ -348,6 +573,7 @@ async function checkinaddroom(){
                                                                 <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate&nbsp;code</label>
                                                                 <input type="text" name="ratecodename" list="hems_rate_code" onchange="checkdatalist(this, 'ratecodee-${id}', 'hems_rate_code_id')?runratcod('',true):runratcod('',true)" id="ratecodename-${id}" class="bg-transparent ratecodename !p-1 comp2 border" placeholder="">
                                                                 <input type="text" readonly name="ratecode" id="ratecodee-${id}" class="bg-transparent ratecode !p-1 comp2 border hidden" placeholder="">
+                                                                <div id="ratesource-${id}" class="mt-1 text-[11px] leading-snug rounded-md border px-2 py-1 bg-slate-50 text-slate-600 border-slate-200"></div>
                                                             </div>
                                                         </div>
                                             </div>
@@ -415,6 +641,9 @@ async function checkinaddroom(){
                                                 
                                                     `
      did('roomfullcontainer').appendChild(el)
+     if(Array.isArray(rumcat) && rumcat.length && did('roomcategory-'+id)){
+        did('roomcategory-'+id).innerHTML = `<option value="">-- Select Room Type --</option>` + rumcat.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
+     }
      fetchdiscountcouponres()
      recalldatalist()
      assignallcheckinlisteners()
@@ -506,25 +735,29 @@ function runcouponcalculations(){
 }
 
 // this is the function to get plan amount and im calling this function from the runratcod function
-async function getplanamount(){
-    if(ratedata.plan == 0){
-        did('planamount-'+actionid).value = '';
-        did('plandiscountperc-'+actionid).value =''
-        did('plandiscountamount-'+actionid).value =''
+async function getplanamount(idd=actionid, rateData=ratedata){
+    idd = String(idd || actionid || '').trim()
+    if(!idd) return calculatetotals()
+    actionid = idd
+    rateData = rateData || checkinRateDataByCard[idd] || ratedata
+    if(!rateData || rateData.plan == 0){
+        if(did('planamount-'+idd))did('planamount-'+idd).value = '';
+        if(did('plandiscountperc-'+idd))did('plandiscountperc-'+idd).value =''
+        if(did('plandiscountamount-'+idd))did('plandiscountamount-'+idd).value =''
         checkplandiscount()
         calculatetotals()
         return notification('No plan available for the rate code')
     }
     function param(){
         let p = new FormData()
-        p.append('id', ratedata.plan)
+        p.append('id', rateData.plan)
         return p
     }
     let request = await httpRequest2('../controllers/fetchbookingplan', param(), null, 'json')
     if(request.status) {
         planobj = request.data[0]
-        if(did('adult-'+actionid).value > 0)did('planamount-'+actionid).value = Number(request.data[0].adultamount)
-        if(did('children-'+actionid).value > 0)did('planamount-'+actionid).value = Number(request.data[0].adultamount)+Number(request.data[0].childamount)
+        if(did('adult-'+idd).value > 0)did('planamount-'+idd).value = Number(request.data[0].adultamount)
+        if(did('children-'+idd).value > 0)did('planamount-'+idd).value = Number(request.data[0].adultamount)+Number(request.data[0].childamount)
     console.log(`${Number(request.data[0].adultamount)} ${Number(request.data[0].adultamount)+Number(request.data[0].childamount)}`)
         checkplandiscount()
     calculatetotals()
@@ -535,57 +768,13 @@ async function getplanamount(){
 // to populate the rate code and plan and also to give the ratedata the values needed for handlecheckinrate also note that the state parameter is set to true if its just a change in ratecode
 async function runratcod(stop='', state=false){
     console.log('ratecode calculation started', state);
-    // console.log('ratecode', rumcat, did('roomcategory').value);
     if(!actionid)return notification('Something went wront.', 0)
-    // if(!did('roomcategory-'+actionid).value)return notification('Please Select a room category', 0)
-    rr = rumcat.filter(data=>data.id ==  did('roomcategory-'+actionid).value)[0];
-    if(!rr)return notification('Start with entering room category')
-    console.log('rr', rr)
-    // this is when the room change triggers the function
-    if(!did('ratecodename-'+actionid).value){
-        if(rr)did('ratecodename-'+actionid).value = rr.ratecodename;
-        if(rr)did('ratecodee-'+actionid).value = rr.ratecode;
-        function param(){
-            let p = new FormData()
-            p.append('id', rr.ratecode)
-            return p
-        }
-        let request = await httpRequest2('../controllers/fetchratecode', param(), null, 'json')
-        if(request.status) {
-            console.log('ratedata', request.data, request.data[0])
-            ratedata = request.data[0]
-            if(ratedata.plan == 0)notification('Please note that no plan was all allocated to the choosen reservation', 0)
-            did('plan-'+actionid).value = ratedata.planname
-            if(stop != 'handlecheckinrate')handlecheckinrate()
-            runcouponcalculations()
-            getplanamount()
-            calculatetotals()
-        }else return notification('No records retrieved')
-        
-    }
-    if(did('ratecodename-'+actionid).value){
-        function param(){
-            let p = new FormData()
-            p.append('id', did('ratecodee-'+actionid).value)
-            return p
-        }
-        let request = await httpRequest2('../controllers/fetchratecode', param(), null, 'json')
-        if(request.status) {
-            console.log('ratedata', request.data, request.data[0])
-            ratedata = request.data[0]
-            if(ratedata.plan == 0)notification('Please note that no plan was all allocated to the choosen reservation', 0)
-            did('plan-'+actionid).value = ratedata.planname
-            if(stop != 'handlecheckinrate')handlecheckinrate()
-            runcouponcalculations()
-            getplanamount()
-            calculatetotals()
-        }else return notification('No records retrieved')
-    }
+    await resolveAndApplyRateForRoomCard(actionid)
     calculatetotals()
 }
 
 // this is called when the adult and children changes
-function handlecheckinrate(idd, state=false){
+function handlecheckinrate(idd, state=false, options={}){
     if(!did('numberofnights').value)return notification('Please enter your arrival and departure date inorder to get your rates', 0);
     const allowOptionalReservationRoom = did('guestreservationform');
     if(did('roomcategory-'+idd) && did('roomnumber-'+idd)){
@@ -594,20 +783,27 @@ function handlecheckinrate(idd, state=false){
     if(!idd & !actionid)return calculatetotals();
     if(!idd)idd = actionid;
     if(!actionid)actionid = idd;
+    actionid = idd;
     if(did('adult-'+idd).value < 0)did('roomrate-'+idd).value = 0;  
     if(did('adult-'+idd).value < 0)did('adult-'+idd).value = 0;  
     if(!did('adult-'+idd).value || did('adult-'+idd).value == 0)return state ? notification('Please enter number of Adult', 0) : '';
-    if(!ratedata)did('adult-'+idd).value = '';
-    if(!ratedata)return state ? notification('Please fill out the room details first') : '';
-    if(Number(did('adult-'+idd).value) == 1)did('roomrate-'+idd).value = Number(ratedata.adult1)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) == 2)did('roomrate-'+idd).value = Number(ratedata.adult2)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) == 3)did('roomrate-'+idd).value = Number(ratedata.adult3)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) == 4)did('roomrate-'+idd).value = Number(ratedata.adult4)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) > 4){did('adult-'+idd).value = 4;did('roomrate-'+idd).value = Number(ratedata.adult4);return state ? notification('Number of Adults in a room cannot exceed four', 0) : '';}
-    if(Number(did('children-'+idd).value) == 1)did('roomrate-'+idd).value = did('roomrate-'+idd).value+Number(ratedata.extchild);
-    if(Number(did('children-'+idd).value) == 2)did('roomrate-'+idd).value = did('roomrate-'+idd).value+Number(ratedata.aditchild);
-    if(Number(did('children-'+idd).value) > 2 && did('children-'+idd).value <= 5)did('roomrate-'+idd).value = did('roomrate-'+idd).value+Number(ratedata.aditchild)*did('children-'+idd).value;
-    if(Number(did('children-'+idd).value) > 5){did('children-'+idd).value = 5;did('roomrate-'+idd).value = did('roomrate-'+idd).value+Number(ratedata.aditchild)*did('children-'+idd).value;return state ? notification('Number of Children in a room cannot exceed five', 0) : '';}
+    const activeRateData = checkinRateDataByCard[idd] || ratedata
+    if(!activeRateData && !options.skipResolve){
+        did('adult-'+idd).value = '';
+        resolveAndApplyRateForRoomCard(idd)
+        return state ? notification('Please fill out the room details first') : '';
+    }
+    if(!activeRateData)return state ? notification('Please fill out the room details first') : '';
+    ratedata = activeRateData
+    if(Number(did('adult-'+idd).value) == 1)did('roomrate-'+idd).value = Number(activeRateData.adult1)*Number(did('numberofnights').value);
+    if(Number(did('adult-'+idd).value) == 2)did('roomrate-'+idd).value = Number(activeRateData.adult2)*Number(did('numberofnights').value);
+    if(Number(did('adult-'+idd).value) == 3)did('roomrate-'+idd).value = Number(activeRateData.adult3)*Number(did('numberofnights').value);
+    if(Number(did('adult-'+idd).value) == 4)did('roomrate-'+idd).value = Number(activeRateData.adult4)*Number(did('numberofnights').value);
+    if(Number(did('adult-'+idd).value) > 4){did('adult-'+idd).value = 4;did('roomrate-'+idd).value = Number(activeRateData.adult4);return state ? notification('Number of Adults in a room cannot exceed four', 0) : '';}
+    if(Number(did('children-'+idd).value) == 1)did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.extchild);
+    if(Number(did('children-'+idd).value) == 2)did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.aditchild);
+    if(Number(did('children-'+idd).value) > 2 && did('children-'+idd).value <= 5)did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.aditchild)*Number(did('children-'+idd).value);
+    if(Number(did('children-'+idd).value) > 5){did('children-'+idd).value = 5;did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.aditchild)*Number(did('children-'+idd).value);return state ? notification('Number of Children in a room cannot exceed five', 0) : '';}
     if(Number(did('adult-'+idd).value) > 1 && did('moreguestcontainer-'+idd).children.length < Number(did('adult-'+idd).value)){
         let l =  Number(Number(did('adult-'+idd).value) - did('moreguestcontainer-'+idd).children.length);
         console.log('l', l)
@@ -634,7 +830,7 @@ function handlecheckinrate(idd, state=false){
         }
     }
     runcouponcalculations()
-    runratcod('handlecheckinrate')
+    getplanamount(idd, activeRateData)
     calculatetotals()
 }
 
@@ -658,6 +854,9 @@ async function controlroomlist(idd, type){
     document.getElementById('children-'+idd).value = ''
     document.getElementById('plan-'+idd).value = ''
     document.getElementById('planamount-'+idd).value = ''
+    delete checkinRateDataByCard[idd]
+    delete checkinRateSourceByCard[idd]
+    setRateSourceMessage(idd, null)
     if(!document.querySelector('#roomcategory-'+idd).value){
         document.getElementById('searchroombtn-'+idd).classList.add('hidden')
         document.getElementById('roomnumber-'+idd).value = ''
@@ -669,8 +868,8 @@ async function controlroomlist(idd, type){
         if(did('guestreservationform')){
             if(!document.getElementById('adult-'+idd).value)document.getElementById('adult-'+idd).value = 1
             actionid = idd
-            await runratcod()
         }
+        await resolveAndApplyRateForRoomCard(idd)
         did('roomtable').innerHTML = 'Loading...'
         function param(){
             let p = new FormData()
@@ -783,8 +982,9 @@ const getButtonClass = (status) => {
 
 const handleRoomClick = (isAvailable, roomNumber, actionId) => {
   if (isAvailable) {
-    runratcod();
     document.getElementById(`roomnumber-${actionId}`).value = roomNumber;
+    actionid = actionId;
+    runratcod();
     notification(`Room ${roomNumber} Selected`, 1);
     document.getElementById('roommodal').classList.add('hidden');
   } else {
@@ -795,22 +995,41 @@ const handleRoomClick = (isAvailable, roomNumber, actionId) => {
 
 
 function groupcompanyres(){
-    if(!did('company').value)return notification('Please note that group name is required if you cannot find your company name select Add COMPANY', 0)
+    if(!did('company').value){
+        recalculateAllRoomCardsForRateContext('company-cleared')
+        return
+    }
     if(did('company').value == 'ADD COMPANY'){
         did('companyformm').classList.remove('hidden')
+        return
     }
     // if(did('company1').value == 'ADD COMPANY'){
     //     did('companyformm').classList.remove('hidden')
     // }
+    if(checkinOrgContextChangeLock) return
+    checkinOrgContextChangeLock = true
+    if(did('travelagent')) did('travelagent').value = ''
+    checkinOrgContextChangeLock = false
+    recalculateAllRoomCardsForRateContext('company-change')
 }
 function grouptravelagentres(){
-    if(!did('travelagent').value)return notification('Please note that agency name is required if you cannot find your agency name select Add TRAVEL AGENCY', 0)
+    if(!did('travelagent').value){
+        recalculateAllRoomCardsForRateContext('travelagency-cleared')
+        return
+    }
     if(did('travelagent').value == 'ADD TRAVEL AGENCY'){
         did('travelform').classList.remove('hidden')
+        return
     }
-    if(did('travelagent1').value == 'ADD TRAVEL AGENCY'){
+    if(did('travelagent1') && did('travelagent1').value == 'ADD TRAVEL AGENCY'){
         did('travelform').classList.remove('hidden')
+        return
     }
+    if(checkinOrgContextChangeLock) return
+    checkinOrgContextChangeLock = true
+    if(did('company')) did('company').value = ''
+    checkinOrgContextChangeLock = false
+    recalculateAllRoomCardsForRateContext('travelagency-change')
 }
 function groupres(){
     if(!did('group_id').value)return notification('Please note that agency name is required if you cannot find your group name select Add GROUP', 0)
@@ -1214,7 +1433,7 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
             if(String(control.value || '').trim() === '0') control.value = ''
         })
         setTimeout(() => {
-            recalculateCheckinFormFromDates()
+            recalculateAllRoomCardsForRateContext('edit-load', { promptForUpgrade: true })
         }, 0)
         const invoice = record?.invoicedata?.[0]
         if(invoice){
@@ -1330,6 +1549,7 @@ function populaterestcheckindata(x){
                             <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate&nbsp;code</label>
                             <input type="text" name="ratecodename" list="hems_rate_code" onchange="checkdatalist(this, 'ratecodee-${id}', 'hems_rate_code_id')?runratcod('',true):runratcod('',true)" id="ratecodename-${id}" value="${item.roomdata.ratecodename}" class="bg-transparent ratecodename !p-1 comp2 border " placeholder="">
                             <input type="text" readonly name="ratecode" id="ratecodee-${id}" value="${item.roomdata.ratecode}" class="bg-transparent ratecode !p-1 comp2 border hidden" placeholder="">
+                            <div id="ratesource-${id}" class="mt-1 text-[11px] leading-snug rounded-md border px-2 py-1 bg-slate-50 text-slate-600 border-slate-200"></div>
                         </div>
                     </div>
         </div>
