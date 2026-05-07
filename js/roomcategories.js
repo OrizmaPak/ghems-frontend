@@ -145,16 +145,17 @@ function appendCompanyRateRow(orgName='', orgId='', ratecodeName='', ratecodeId=
     if(!tbody) return
     const rowId = genID()
     const tr = document.createElement('tr')
+    tr.classList.add('border-b', 'border-[#edf2f7]')
     tr.innerHTML = `
-        <td>
-            <input type="text" list="roomcatCompanyList" value="${orgName || ''}" onchange="checkdatalist(this, 'coyorgid-${rowId}', 'roomcatCompanyList2')" class="form-control company-org-input" placeholder="Search company">
+        <td class="p-2">
+            <input type="text" list="roomcatCompanyList" value="${orgName || ''}" onchange="checkdatalist(this, 'coyorgid-${rowId}', 'roomcatCompanyList2')" class="form-control company-org-input !h-[38px]" placeholder="Search company">
             <input type="hidden" id="coyorgid-${rowId}" value="${orgId || ''}" class="company-orgid-hidden">
         </td>
-        <td>
-            <input type="text" list="roomcatRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'coyratecode-${rowId}', 'roomcatRateCodeList2')" class="form-control company-rate-input" placeholder="Search rate code">
+        <td class="p-2">
+            <input type="text" list="roomcatRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'coyratecode-${rowId}', 'roomcatRateCodeList2')" class="form-control company-rate-input !h-[38px]" placeholder="Search rate code">
             <input type="hidden" id="coyratecode-${rowId}" value="${ratecodeId || ''}" class="company-ratecode-hidden">
         </td>
-        <td><button type="button" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white text-xs" style="font-size:18px;" onclick="this.closest('tr').remove()">delete</button></td>
+        <td class="p-2"><button title="Remove row" type="button" class="material-symbols-outlined rounded-full bg-red-600 hover:bg-red-700 h-8 w-8 text-white text-xs shadow" style="font-size:18px;" onclick="this.closest('tr').remove()">delete</button></td>
     `
     tbody.appendChild(tr)
 }
@@ -164,16 +165,17 @@ function appendAgencyRateRow(orgName='', orgId='', ratecodeName='', ratecodeId='
     if(!tbody) return
     const rowId = genID()
     const tr = document.createElement('tr')
+    tr.classList.add('border-b', 'border-[#edf2f7]')
     tr.innerHTML = `
-        <td>
-            <input type="text" list="roomcatAgencyList" value="${orgName || ''}" onchange="checkdatalist(this, 'agorgid-${rowId}', 'roomcatAgencyList2')" class="form-control agency-org-input" placeholder="Search agency">
+        <td class="p-2">
+            <input type="text" list="roomcatAgencyList" value="${orgName || ''}" onchange="checkdatalist(this, 'agorgid-${rowId}', 'roomcatAgencyList2')" class="form-control agency-org-input !h-[38px]" placeholder="Search agency">
             <input type="hidden" id="agorgid-${rowId}" value="${orgId || ''}" class="agency-orgid-hidden">
         </td>
-        <td>
-            <input type="text" list="roomcatRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'agratecode-${rowId}', 'roomcatRateCodeList2')" class="form-control agency-rate-input" placeholder="Search rate code">
+        <td class="p-2">
+            <input type="text" list="roomcatRateCodeList" value="${ratecodeName || ''}" onchange="checkdatalist(this, 'agratecode-${rowId}', 'roomcatRateCodeList2')" class="form-control agency-rate-input !h-[38px]" placeholder="Search rate code">
             <input type="hidden" id="agratecode-${rowId}" value="${ratecodeId || ''}" class="agency-ratecode-hidden">
         </td>
-        <td><button type="button" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white text-xs" style="font-size:18px;" onclick="this.closest('tr').remove()">delete</button></td>
+        <td class="p-2"><button title="Remove row" type="button" class="material-symbols-outlined rounded-full bg-red-600 hover:bg-red-700 h-8 w-8 text-white text-xs shadow" style="font-size:18px;" onclick="this.closest('tr').remove()">delete</button></td>
     `
     tbody.appendChild(tr)
 }

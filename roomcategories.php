@@ -52,39 +52,45 @@
                                             <input type="number" name="price_2" id="price_2" class="form-control comp" placeholder="Enter Price level 2">
                                         </div>
                                     </div>
-                                    <div class="mt-2 border rounded-md p-4 bg-[#f8fafc]">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="font-semibold text-sm">Company</h4>
-                                            <button type="button" id="addCompanyRateRowBtn" class="text-white bg-primary-g px-3 py-1 rounded text-xs">Add Row</button>
+                                    <div class="mt-4 border border-[#d9e2ef] rounded-lg overflow-hidden bg-white shadow-sm">
+                                        <div class="flex items-center justify-between px-4 py-3 bg-[#6f84a7]">
+                                            <h4 class="font-semibold text-sm text-white tracking-wide">Company Rate Code</h4>
+                                            <button type="button" id="addCompanyRateRowBtn" class="inline-flex items-center gap-1 text-white bg-[#1f7ae0] hover:bg-[#1368c6] px-3 py-1.5 rounded-md text-xs font-semibold shadow">
+                                                <span class="material-symbols-outlined !text-base">add</span>
+                                                <span>Add Row</span>
+                                            </button>
                                         </div>
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full text-sm">
-                                                <thead>
+                                        <div class="overflow-x-auto table-content !p-0">
+                                            <table class="w-full text-sm !m-0">
+                                                <thead class="!bg-[#eaf0f8]">
                                                     <tr>
-                                                        <th>OrgId</th>
-                                                        <th>Rate Code</th>
-                                                        <th style="width:80px;">Action</th>
+                                                        <th class="!text-[#324a6d]">Organisation</th>
+                                                        <th class="!text-[#324a6d]">Rate Code</th>
+                                                        <th class="!text-[#324a6d]" style="width:90px;">Action</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody id="companyRateGridBody"></tbody>
+                                                <tbody id="companyRateGridBody" class="bg-white"></tbody>
                                             </table>
                                         </div>
                                     </div>
-                                    <div class="mt-2 border rounded-md p-4 bg-[#f8fafc]">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="font-semibold text-sm">Agency</h4>
-                                            <button type="button" id="addAgencyRateRowBtn" class="text-white bg-primary-g px-3 py-1 rounded text-xs">Add Row</button>
+                                    <div class="mt-4 border border-[#d9e2ef] rounded-lg overflow-hidden bg-white shadow-sm">
+                                        <div class="flex items-center justify-between px-4 py-3 bg-[#6f84a7]">
+                                            <h4 class="font-semibold text-sm text-white tracking-wide">Agency Rate Code</h4>
+                                            <button type="button" id="addAgencyRateRowBtn" class="inline-flex items-center gap-1 text-white bg-[#1f7ae0] hover:bg-[#1368c6] px-3 py-1.5 rounded-md text-xs font-semibold shadow">
+                                                <span class="material-symbols-outlined !text-base">add</span>
+                                                <span>Add Row</span>
+                                            </button>
                                         </div>
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full text-sm">
-                                                <thead>
+                                        <div class="overflow-x-auto table-content !p-0">
+                                            <table class="w-full text-sm !m-0">
+                                                <thead class="!bg-[#eaf0f8]">
                                                     <tr>
-                                                        <th>OrgId</th>
-                                                        <th>Rate Code</th>
-                                                        <th style="width:80px;">Action</th>
+                                                        <th class="!text-[#324a6d]">Organisation</th>
+                                                        <th class="!text-[#324a6d]">Rate Code</th>
+                                                        <th class="!text-[#324a6d]" style="width:90px;">Action</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody id="agencyRateGridBody"></tbody>
+                                                <tbody id="agencyRateGridBody" class="bg-white"></tbody>
                                             </table>
                                         </div>
                                     </div>
