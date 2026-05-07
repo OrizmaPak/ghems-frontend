@@ -1,12 +1,14 @@
 let ratecodeid; 
 let ratecodeImportedRows = []
 let bookingplanslist = []
+let ratecodeDatasourceAll = []
 const ratecodeImportDelay = 1000
 async function ratecodeActive() {
     const form = document.querySelector('#ratecodeform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', ratecodeFormSubmitHandler)
     
     if(form.plan) form.plan.addEventListener('change', resolvePlanChanges)
+    if(did('ratecodesearch')) did('ratecodesearch').addEventListener('input', applyRatecodeSearchFilter)
     if(form.organisationtype && !form.organisationtype.value) form.organisationtype.value = 'HOTEL'
     
     datasource = []
@@ -55,8 +57,11 @@ async function fetchratecode(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = request.data
-                resolvePagination(datasource, onratecodeTableDataSignal)
+                ratecodeDatasourceAll = request.data
+                applyRatecodeSearchFilter()
+            } else {
+                ratecodeDatasourceAll = []
+                resolvePagination([], onratecodeTableDataSignal)
             }
         }else{
              ratecodeid = request.data[0].id
@@ -133,6 +138,20 @@ async function ratecodeFormSubmitHandler() {
         document.querySelector('#ratecode').click();
     fetchratecode();
     return notification(request.message, 0);
+}
+
+function applyRatecodeSearchFilter() {
+    const searchValue = String(did('ratecodesearch')?.value || '').trim().toLowerCase()
+    if(!searchValue) {
+        datasource = [...ratecodeDatasourceAll]
+        resolvePagination(datasource, onratecodeTableDataSignal)
+        return
+    }
+    const filtered = ratecodeDatasourceAll.filter(item => {
+        return Object.values(item || {}).some(value => String(value || '').toLowerCase().includes(searchValue))
+    })
+    datasource = filtered
+    resolvePagination(datasource, onratecodeTableDataSignal)
 }
 
 function wireRatecodeImport(){

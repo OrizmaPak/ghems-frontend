@@ -124,6 +124,11 @@
                             
                             
                              <div id="ratecodeview" class="hidden">
+                                <div class="flex justify-end mb-3">
+                                    <div class="w-full md:w-[320px]">
+                                        <input type="text" id="ratecodesearch" class="form-control" placeholder="Search rate codes...">
+                                    </div>
+                                </div>
                                 <div class="table-content">
                                     <!--<p class="text-md font-semibold">Balance Brought Forward(B/F): <span id="bbf"></span></p>-->
                                     <table>
