@@ -25,40 +25,38 @@ async function roomcategoriesActive() {
 }
 
 async function fetchratecodes(organisationtype = '') {
-    let payload = null
-    if(organisationtype) {
-        payload = new FormData()
-        payload.append('organisationtype', organisationtype)
-    }
+    const effectiveType = organisationtype || 'HOTEL'
+    let payload = new FormData()
+    payload.append('organisationtype', effectiveType)
     let request = await httpRequest2('../controllers/fetchratecode', payload, null, 'json')
     if(request.status) {
         if(request.data.length) {
-            if(!organisationtype || organisationtype === 'HOTEL') {
+            if(effectiveType === 'HOTEL') {
                 roomCategoryRatecodeLookup = request.data
                 let options = request.data?.map( item => `<option value="${item.id}">${item.ratecode}</option>`).join('')
                 try {
                     document.getElementById('roomcategoriesform').ratecode.innerHTML = `<option value="">Select rate code</option>${options}`
                 } catch(e) {console.log(e)}
             }
-            if(organisationtype === 'COMPANY') {
+            if(effectiveType === 'COMPANY') {
                 roomCategoryCompanyRatecodeLookup = request.data
                 did('roomcatCompanyRateCodeList').innerHTML = request.data.map(item=>`<option value="${item.ratecode}"></option>`).join('')
                 did('roomcatCompanyRateCodeList2').innerHTML = request.data.map(item=>`<option value="${item.ratecode}">${item.id}</option>`).join('')
             }
-            if(organisationtype === 'TRAVEL AGENCY') {
+            if(effectiveType === 'TRAVEL AGENCY') {
                 roomCategoryAgencyRatecodeLookup = request.data
                 did('roomcatAgencyRateCodeList').innerHTML = request.data.map(item=>`<option value="${item.ratecode}"></option>`).join('')
                 did('roomcatAgencyRateCodeList2').innerHTML = request.data.map(item=>`<option value="${item.ratecode}">${item.id}</option>`).join('')
             }
         }
-        if((!organisationtype || organisationtype === 'HOTEL') && !request.data.length) {
+        if(effectiveType === 'HOTEL' && !request.data.length) {
             try {
                 document.getElementById('roomcategoriesform').ratecode.innerHTML = `<option value="">Select rate code</option>`
             } catch(e) {console.log(e)}
         }
     }
     else {
-        if(!organisationtype || organisationtype === 'HOTEL') {
+        if(effectiveType === 'HOTEL') {
             try {
                 document.getElementById('roomcategoriesform').ratecode.innerHTML = `<option value="">Select rate code</option>`
             } catch(e) {console.log(e)}
