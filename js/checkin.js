@@ -189,6 +189,33 @@ async function resolveAndApplyRateForRoomCard(idd = actionid, options = {}) {
     let selectedRatecode = resolution.ratecode
     let selectedRatecodename = resolution.ratecodename
 
+    if(options.preserveExistingRate && savedRatecode) {
+        selectedRatecode = savedRatecode
+        selectedRatecodename = String(did('ratecodename-'+idd)?.value || resolution.ratecodename || '').trim()
+        selectedResolution = {
+            ...resolution,
+            ratecode: selectedRatecode,
+            ratecodename: selectedRatecodename
+        }
+        if(resolution.context.type !== 'HOTEL' && !resolution.usedFallback && savedRatecode !== resolution.ratecode) {
+            const source = resolution.context.type === 'COMPANY' ? 'company' : 'travel agency'
+            selectedResolution.usedFallback = savedRatecode === String(resolution.hotelRatecode || '').trim()
+            selectedResolution.sourceType = selectedResolution.usedFallback ? 'HOTEL' : resolution.sourceType
+            selectedResolution.message = selectedResolution.usedFallback
+                ? `${resolution.categoryName || 'Room category'} is using the loaded hotel rate code. A ${source} rate code is available for ${resolution.context.orgname}.`
+                : `${resolution.categoryName || 'Room category'} is using the loaded rate code. Current ${source} rate code differs for ${resolution.context.orgname}.`
+        }
+        setRateSourceMessage(idd, selectedResolution)
+        checkinRateSourceByCard[idd] = selectedResolution
+        const loadedRateDetail = await fetchCheckinRatecodeById(selectedRatecode)
+        if(loadedRateDetail) {
+            ratedata = loadedRateDetail
+            checkinRateDataByCard[idd] = loadedRateDetail
+        }
+        calculatetotals()
+        return true
+    }
+
     if(options.promptForUpgrade && resolution.context.type !== 'HOTEL' && !resolution.usedFallback && savedRatecode && savedRatecode === String(resolution.hotelRatecode || '').trim() && savedRatecode !== resolution.ratecode) {
         const shouldUpgrade = await confirmCheckinRateUpgrade(idd, resolution)
         if(!shouldUpgrade) {
@@ -235,7 +262,8 @@ async function recalculateAllRoomCardsForRateContext(reason = '', options = {}) 
         const id = String(card?.id || '').replace('roomcategory-', '').trim()
         if(!id || !String(card.value || '').trim()) continue
         await resolveAndApplyRateForRoomCard(id, {
-            promptForUpgrade: !!options.promptForUpgrade
+            promptForUpgrade: !!options.promptForUpgrade,
+            preserveExistingRate: !!options.preserveExistingRate
         })
     }
     calculatetotals()
@@ -1433,7 +1461,7 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
             if(String(control.value || '').trim() === '0') control.value = ''
         })
         setTimeout(() => {
-            recalculateAllRoomCardsForRateContext('edit-load', { promptForUpgrade: true })
+            recalculateAllRoomCardsForRateContext('edit-load', { preserveExistingRate: true })
         }, 0)
         const invoice = record?.invoicedata?.[0]
         if(invoice){
