@@ -1162,7 +1162,7 @@ function opentheroomboard(idd){
     actionid=idd;
     did('room-type').value = did('roomcategory-'+idd).value
     did('roommodal').classList.remove('hidden')
-    controlroomlist(idd, 'roomcategory')
+    controlroomlist(idd, 'roomsearch')
 }
 
 function categorizeRoomsByBuilding(data) {
@@ -1333,25 +1333,28 @@ function handlecheckinrate(idd, state=false, options={}){
 async function controlroomlist(idd, type){
     if(!idd)return
     if(!document.querySelector('#arrivaldate').value)return notification('Please enter a valid arrival date', 0)
+    const isRoomSearch = type === 'roomsearch'
     // if(type == 'roomcategory'){
     //     document.querySelector(`#room-type-${idd}`).value = document.querySelector(`#room-type`).value
     // }
     // if(type == 'room-type'){
     //     document.querySelector(`#room-type-${idd}`).value = document.querySelector(`#room-type-${idd}`).value
     // }
-    document.getElementById('ratecodename-'+idd).value = ''
-    document.getElementById('ratecodee-'+idd).value = ''
-    document.getElementById('roomrate-'+idd).value = ''
-    document.getElementById('roomnumber-'+idd).value = ''
-    document.getElementById('discountcoupon-'+idd).value = ''
-    document.getElementById('discountamount-'+idd).value = ''
-    document.getElementById('adult-'+idd).value = ''
-    document.getElementById('children-'+idd).value = ''
-    document.getElementById('plan-'+idd).value = ''
-    document.getElementById('planamount-'+idd).value = ''
-    delete checkinRateDataByCard[idd]
-    delete checkinRateSourceByCard[idd]
-    setRateSourceMessage(idd, null)
+    if(!isRoomSearch){
+        document.getElementById('ratecodename-'+idd).value = ''
+        document.getElementById('ratecodee-'+idd).value = ''
+        document.getElementById('roomrate-'+idd).value = ''
+        document.getElementById('roomnumber-'+idd).value = ''
+        document.getElementById('discountcoupon-'+idd).value = ''
+        document.getElementById('discountamount-'+idd).value = ''
+        document.getElementById('adult-'+idd).value = ''
+        document.getElementById('children-'+idd).value = ''
+        document.getElementById('plan-'+idd).value = ''
+        document.getElementById('planamount-'+idd).value = ''
+        delete checkinRateDataByCard[idd]
+        delete checkinRateSourceByCard[idd]
+        setRateSourceMessage(idd, null)
+    }
     if(!document.querySelector('#roomcategory-'+idd).value){
         document.getElementById('searchroombtn-'+idd).classList.add('hidden')
         document.getElementById('roomnumber-'+idd).value = ''
@@ -1364,7 +1367,7 @@ async function controlroomlist(idd, type){
             if(!document.getElementById('adult-'+idd).value)document.getElementById('adult-'+idd).value = 1
             actionid = idd
         }
-        await resolveAndApplyRateForRoomCard(idd)
+        if(!isRoomSearch) await resolveAndApplyRateForRoomCard(idd)
         did('roomtable').innerHTML = 'Loading...'
         function param(){
             let p = new FormData()
