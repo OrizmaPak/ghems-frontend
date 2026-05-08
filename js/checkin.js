@@ -663,11 +663,18 @@ function renderCheckinSummaryTabButton(tab, activeTab, label, icon) {
 }
 
 function renderCheckinCalculationSummary(data, discountRows) {
+    const nightLabel = `${data.nights} ${data.nights === 1 ? 'Night' : 'Nights'}`
     return `
+        ${data.formDetails.length ? `<div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
+            ${data.formDetails.map(([label, value]) => `<div class="rounded bg-white border border-slate-200 px-3 py-2">
+                <div class="text-[11px] uppercase text-slate-500 font-semibold">${escapeCheckinSummaryText(label)}</div>
+                <div class="text-sm font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(value)}">${escapeCheckinSummaryText(value)}</div>
+            </div>`).join('')}
+        </div>` : ''}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             ${renderSummaryMetric('Net Tariff', data.netTariff)}
-            ${renderSummaryMetric('Net Tariff After Discount', data.netTariffAfterDiscount, 'text-emerald-700')}
-            ${renderSummaryMetric('Total Net Tariff For Nights', data.totalNetTariffForNights, 'text-blue-700')}
+            ${renderSummaryMetric(`Net Tariff for ${nightLabel}`, data.totalNetTariffForNights, 'text-blue-700')}
+            ${renderSummaryMetric('Net Tariff After Discount Per Day', data.netTariffAfterDiscount, 'text-emerald-700')}
         </div>
         ${discountRows.length ? `<div class="rounded border border-slate-200 bg-white overflow-hidden mb-4">
             <div class="grid grid-cols-3 bg-slate-100 text-xs font-bold text-slate-600 uppercase">
@@ -861,17 +868,6 @@ function renderCheckinTariffSummary(){
                 <span class="material-symbols-outlined text-slate-500 transition ${isOpen ? 'rotate-180' : ''}">expand_more</span>
             </button>
             <div class="${isOpen ? '' : 'hidden'} border-t border-slate-200 p-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                    ${renderSummaryMetric('Net Tariff', data.netTariff)}
-                    ${renderSummaryMetric('Net Tariff After Discount', data.netTariffAfterDiscount, 'text-emerald-700')}
-                    ${renderSummaryMetric('Total Net Tariff For Nights', data.totalNetTariffForNights, 'text-blue-700')}
-                </div>
-                ${data.formDetails.length ? `<div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-                    ${data.formDetails.map(([label, value]) => `<div class="rounded bg-white border border-slate-200 px-3 py-2">
-                        <div class="text-[11px] uppercase text-slate-500 font-semibold">${escapeCheckinSummaryText(label)}</div>
-                        <div class="text-sm font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(value)}">${escapeCheckinSummaryText(value)}</div>
-                    </div>`).join('')}
-                </div>` : ''}
                 <div class="rounded border border-slate-200 bg-white overflow-hidden">
                     <div class="flex flex-wrap items-center border-b border-slate-200 bg-white">
                         ${renderCheckinSummaryTabButton('calculation', activeTab, 'Room Calculation', 'calculate')}
