@@ -252,6 +252,45 @@ async function resolveAndApplyRateForRoomCard(idd = actionid, options = {}) {
     return true
 }
 
+function clearCalculatedRoomCardValues(idd = '') {
+    ;[
+        'ratecodename',
+        'ratecodee',
+        'plan',
+        'planamount',
+        'roomrate',
+        'discountamount',
+        'plandiscountamount'
+    ].forEach((prefix) => {
+        if(did(prefix+'-'+idd)) did(prefix+'-'+idd).value = ''
+    })
+    if(did('discountcoupon-'+idd)) did('discountcoupon-'+idd).value = ''
+    delete checkinRateDataByCard[idd]
+    delete checkinRateSourceByCard[idd]
+    setRateSourceMessage(idd, null)
+}
+
+async function recalculateRoomCardAfterRoomSelection(cardId = '') {
+    const idd = String(cardId || actionid || '').trim()
+    if(!idd || !did('roomcategory-'+idd) || !did('roomnumber-'+idd)) {
+        calculatetotals()
+        return false
+    }
+    actionid = idd
+    if(!String(did('roomcategory-'+idd).value || '').trim() || !String(did('roomnumber-'+idd).value || '').trim()) {
+        calculatetotals()
+        return false
+    }
+    clearCalculatedRoomCardValues(idd)
+    const resolved = await resolveAndApplyRateForRoomCard(idd)
+    if(!resolved) {
+        calculatetotals()
+        return false
+    }
+    calculatetotals()
+    return true
+}
+
 async function recalculateAllRoomCardsForRateContext(reason = '', options = {}) {
     const cards = Array.from(document.getElementsByClassName('roomcategory'))
     if(!cards.length) {
@@ -1436,17 +1475,11 @@ const getButtonClass = (status) => {
   }
 };
 
-const handleRoomClick = (isAvailable, roomNumber, actionId) => {
+const handleRoomClick = async (isAvailable, roomNumber, actionId) => {
   if (isAvailable) {
     document.getElementById(`roomnumber-${actionId}`).value = roomNumber;
     actionid = actionId;
-    // Re-run card pricing when room number changes so card values stay in sync.
-    runratcod();
-    setTimeout(() => {
-      try {
-        handlecheckinrate(String(actionId), false);
-      } catch (e) {}
-    }, 0);
+    await recalculateRoomCardAfterRoomSelection(actionId);
     notification(`Room ${roomNumber} Selected`, 1);
     document.getElementById('roommodal').classList.add('hidden');
   } else {
