@@ -689,7 +689,7 @@ function renderCheckinCalculationSummary(data, discountRows) {
             </div>`).join('')}
         </div>` : ''}
         ${data.totalPlanAmount > 0 ? `<div class="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-            Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (informational, not added to payable tariff)
+            Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (information is already in ratecode)
         </div>` : ''}
         <div class="rounded border border-slate-200 bg-white overflow-auto">
             <table class="w-full text-sm min-w-[900px]">
@@ -889,9 +889,15 @@ function toggleCheckinTariffSummary(){
     renderCheckinTariffSummary()
 }
 
+function updateNetTariffFooterLabel(){
+    const label = did('totalrate')?.previousElementSibling
+    if(!label) return
+    label.innerHTML = 'Net Tariff <span class="block text-xs font-normal opacity-70">(per day)</span>'
+    label.setAttribute('title', 'Total rate code amount for one day')
+}
+
 function calculatetotals(){
-    did('totalrate').previousElementSibling.textContent = 'Net Tariff'
-    did('totalrate').previousElementSibling.setAttribute('title', 'Total rate code amount for one day')
+    updateNetTariffFooterLabel()
     did('totalplan').previousElementSibling.textContent = 'Total Due'
     let tr = 0;
     let trd = 0;
