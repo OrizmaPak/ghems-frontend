@@ -545,7 +545,8 @@ function calculatetotals(){
         tp = Number(document.getElementsByClassName('planamount')[i].value)+tp
         tpd = Number(document.getElementsByClassName('plandiscountamount')[i].value)+tpd
     }
-    const grossTotalAmount = tr + tp
+    // ANI payable total is now rate-only; plan amount remains informational.
+    const grossTotalAmount = tr
     const otherDiscountAmount = (otherdiscount / 100) * grossTotalAmount
     const totalDiscountAmount = trd + tpd + otherDiscountAmount
     let totalamount = Math.max(grossTotalAmount - totalDiscountAmount, 0)
@@ -2047,10 +2048,11 @@ function opencheckinreceipt(id, ratee, rooms){
     const totalRoomDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.discountamount || 0), 0)
     const totalPlanDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.plandiscountamount || 0), 0)
     const otherDiscountPerc = Number(receiptdata?.reservations?.otherdiscount || 0)
-    const grossTotalAmount = totalRoomRate + totalPlanAmount
+    // Receipt total mirrors form total: room-rate payable base only.
+    const grossTotalAmount = totalRoomRate
     const otherDiscount = Math.max((Math.max(Math.min(otherDiscountPerc, 100), 0) / 100) * grossTotalAmount, 0)
     const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
-    const calculatedTotalAmount = Math.max((totalRoomRate + totalPlanAmount) - totalDiscount, 0)
+    const calculatedTotalAmount = Math.max(totalRoomRate - totalDiscount, 0)
     const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
     const finalTotalAmount = savedTotalAmount > 0 ? savedTotalAmount : calculatedTotalAmount
     // did('invoiceno').setAttribute('value', receiptdata.reservations.reference)
@@ -2205,7 +2207,7 @@ function opencheckinreceipt(id, ratee, rooms){
                                                     const planAmount = Number(item.roomdata.planamount || 0)
                                                     const roomDiscount = Number(item.roomdata.discountamount || 0)
                                                     const planDiscount = Number(item.roomdata.plandiscountamount || 0)
-                                                    const lineTotal = Math.max((roomRate + planAmount) - (roomDiscount + planDiscount), 0)
+                                                    const lineTotal = Math.max(roomRate - (roomDiscount + planDiscount), 0)
                                                     return ` 
                                                         <tr> 
                                                             <td>${index + 1 }</td> 
