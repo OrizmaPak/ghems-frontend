@@ -535,6 +535,33 @@ function getCheckinSummarySelectText(id = '') {
     return String(el.value || '').trim()
 }
 
+function escapeCheckinSummaryText(value = '') {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]))
+}
+
+function getCheckinSummaryGuests(roomId = '') {
+    const container = did('moreguestcontainer-'+roomId)
+    if(!container) return []
+    return Array.from(container.querySelectorAll('input[id^="guest-'+roomId+'_"]'))
+        .map((input, index) => {
+            const rawValue = String(input.value || '').trim()
+            if(!rawValue) return null
+            const [nameAndPhone] = rawValue.split('_')
+            return {
+                serial: index + 1,
+                name: String(nameAndPhone || rawValue).trim(),
+                rawValue
+            }
+        })
+        .filter(Boolean)
+}
+
 function collectCheckinTariffSummaryData(){
     const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
     const otherDiscountPerc = Math.max(Math.min(Number(did('otherdiscount')?.value || 0), 100), 0)
@@ -551,19 +578,31 @@ function collectCheckinTariffSummaryData(){
         const oneDayTariff = roomRate / nights
         const oneDayRoomDiscount = roomDiscount / nights
         const oneDayPlanDiscount = planDiscount / nights
+        const guests = getCheckinSummaryGuests(id)
+        const adults = Number(did('adult-'+id)?.value || 0)
+        const children = Number(did('children-'+id)?.value || 0)
+        const infants = Number(did('infant-'+id)?.value || 0)
+        const discountCoupon = String(did('discountcoupon-'+id)?.options?.[did('discountcoupon-'+id)?.selectedIndex]?.textContent || '').trim()
+        const planName = String(did('plan-'+id)?.value || '').trim()
         if(!categoryEl.value && !roomNumber && !rateCodeName && !roomRate && !planAmount) return null
         return {
             id,
             categoryName,
             roomNumber,
             rateCodeName,
+            planName,
+            discountCoupon,
             roomRate,
             roomDiscount,
             planAmount,
             planDiscount,
             oneDayTariff,
             oneDayRoomDiscount,
-            oneDayPlanDiscount
+            oneDayPlanDiscount,
+            guests,
+            adults,
+            children,
+            infants
         }
     }).filter(Boolean)
     const totalRoomRate = rooms.reduce((sum, room) => sum + room.roomRate, 0)
@@ -608,11 +647,205 @@ function renderSummaryMetric(label, value, tone='text-slate-900') {
     </div>`
 }
 
+function setCheckinTariffSummaryTab(tab = 'calculation') {
+    const container = did('checkinTariffSummary')
+    if(!container) return
+    container.dataset.tab = tab
+    renderCheckinTariffSummary()
+}
+
+function renderCheckinSummaryTabButton(tab, activeTab, label, icon) {
+    const isActive = tab === activeTab
+    return `<button type="button" onclick="setCheckinTariffSummaryTab('${tab}')" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold border-b-2 ${isActive ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-transparent text-slate-600 hover:bg-slate-50'}">
+        <span class="material-symbols-outlined text-base">${icon}</span>
+        ${label}
+    </button>`
+}
+
+function renderCheckinCalculationSummary(data, discountRows) {
+    return `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            ${renderSummaryMetric('Net Tariff', data.netTariff)}
+            ${renderSummaryMetric('Net Tariff After Discount', data.netTariffAfterDiscount, 'text-emerald-700')}
+            ${renderSummaryMetric('Total Net Tariff For Nights', data.totalNetTariffForNights, 'text-blue-700')}
+        </div>
+        ${discountRows.length ? `<div class="rounded border border-slate-200 bg-white overflow-hidden mb-4">
+            <div class="grid grid-cols-3 bg-slate-100 text-xs font-bold text-slate-600 uppercase">
+                <div class="p-2">Discount</div>
+                <div class="p-2 text-right">Per Day</div>
+                <div class="p-2 text-right">Total</div>
+            </div>
+            ${discountRows.map(([label, perDay, total]) => `<div class="grid grid-cols-3 border-t border-slate-100 text-sm">
+                <div class="p-2 text-slate-700">${escapeCheckinSummaryText(label)}</div>
+                <div class="p-2 text-right font-semibold">${formatNumber(perDay)}</div>
+                <div class="p-2 text-right font-semibold">${formatNumber(total)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+        ${data.totalPlanAmount > 0 ? `<div class="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (informational, not added to payable tariff)
+        </div>` : ''}
+        <div class="rounded border border-slate-200 bg-white overflow-auto">
+            <table class="w-full text-sm min-w-[900px]">
+                <thead class="bg-[#64748b] text-white">
+                    <tr>
+                        <th class="p-2 text-left">Room</th>
+                        <th class="p-2 text-left">Rate Code</th>
+                        <th class="p-2 text-left">Plan / Coupon</th>
+                        <th class="p-2 text-right">Per Day</th>
+                        <th class="p-2 text-right">Room Total</th>
+                        <th class="p-2 text-right">Discount Total</th>
+                        <th class="p-2 text-right">Net Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.rooms.length ? data.rooms.map((room) => {
+                        const roomDiscountTotal = room.roomDiscount + room.planDiscount
+                        const roomNetTotal = Math.max(room.roomRate - roomDiscountTotal, 0)
+                        return `<tr class="border-t border-slate-100 align-top">
+                            <td class="p-2">
+                                <div class="font-semibold text-slate-800">${escapeCheckinSummaryText(room.categoryName || '-')}</div>
+                                ${room.roomNumber ? `<div class="text-xs text-slate-500">Room ${escapeCheckinSummaryText(room.roomNumber)}</div>` : ''}
+                            </td>
+                            <td class="p-2 text-slate-700">${escapeCheckinSummaryText(room.rateCodeName || '-')}</td>
+                            <td class="p-2 text-slate-700">
+                                ${room.planName ? `<div>${escapeCheckinSummaryText(room.planName)}</div>` : ''}
+                                ${room.discountCoupon && !/select/i.test(room.discountCoupon) ? `<div class="text-xs text-slate-500">${escapeCheckinSummaryText(room.discountCoupon)}</div>` : ''}
+                                ${!room.planName && (!room.discountCoupon || /select/i.test(room.discountCoupon)) ? '-' : ''}
+                            </td>
+                            <td class="p-2 text-right font-semibold">${formatNumber(room.oneDayTariff)}</td>
+                            <td class="p-2 text-right font-semibold">${formatNumber(room.roomRate)}</td>
+                            <td class="p-2 text-right">${formatNumber(roomDiscountTotal)}</td>
+                            <td class="p-2 text-right font-bold text-blue-700">${formatNumber(roomNetTotal)}</td>
+                        </tr>`
+                    }).join('') : `<tr><td colspan="7" class="p-4 text-center text-slate-500">No room tariff data yet</td></tr>`}
+                </tbody>
+            </table>
+        </div>`
+}
+
+function renderCheckinGuestsSummary(data) {
+    return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            ${data.rooms.length ? data.rooms.map((room, index) => `<div class="rounded border border-slate-200 bg-white p-3">
+                <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 mb-3">
+                    <div>
+                        <div class="text-xs uppercase font-bold text-slate-500">Room ${index + 1}</div>
+                        <div class="text-base font-bold text-slate-800">${escapeCheckinSummaryText(room.categoryName || 'Room Category')}</div>
+                        ${room.roomNumber ? `<div class="text-xs text-slate-500">Room No: ${escapeCheckinSummaryText(room.roomNumber)}</div>` : ''}
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs uppercase font-bold text-slate-500">Guests</div>
+                        <div class="text-lg font-bold text-blue-700">${room.guests.length || room.adults || 0}</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <div class="rounded bg-slate-50 p-2 text-center">
+                        <div class="text-[11px] text-slate-500 font-semibold uppercase">Adults</div>
+                        <div class="font-bold">${formatNumber(room.adults)}</div>
+                    </div>
+                    <div class="rounded bg-slate-50 p-2 text-center">
+                        <div class="text-[11px] text-slate-500 font-semibold uppercase">Children</div>
+                        <div class="font-bold">${formatNumber(room.children)}</div>
+                    </div>
+                    <div class="rounded bg-slate-50 p-2 text-center">
+                        <div class="text-[11px] text-slate-500 font-semibold uppercase">Infants</div>
+                        <div class="font-bold">${formatNumber(room.infants)}</div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    ${room.guests.length ? room.guests.map((guest) => `<div class="flex items-center justify-between gap-2 rounded border border-slate-100 px-3 py-2">
+                        <div class="font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(guest.rawValue)}">${escapeCheckinSummaryText(guest.name)}</div>
+                        <span class="text-xs font-bold text-slate-500">#${guest.serial}</span>
+                    </div>`).join('') : `<div class="rounded border border-dashed border-slate-200 p-3 text-sm text-slate-500">No guest names entered yet</div>`}
+                </div>
+            </div>`).join('') : `<div class="rounded border border-dashed border-slate-200 bg-white p-4 text-center text-slate-500">No room or guest data yet</div>`}
+        </div>`
+}
+
+function renderCheckinFullDetailSummary(data) {
+    return `
+        <div class="space-y-4">
+            ${data.formDetails.length ? `<div class="rounded border border-slate-200 bg-white overflow-hidden">
+                <div class="bg-[#64748b] text-white text-xs font-bold uppercase px-3 py-2">Booking Details</div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 p-3">
+                    ${data.formDetails.map(([label, value]) => `<div class="rounded bg-slate-50 px-3 py-2">
+                        <div class="text-[11px] uppercase text-slate-500 font-semibold">${escapeCheckinSummaryText(label)}</div>
+                        <div class="text-sm font-bold text-slate-800 truncate" title="${escapeCheckinSummaryText(value)}">${escapeCheckinSummaryText(value)}</div>
+                    </div>`).join('')}
+                </div>
+            </div>` : ''}
+            <div class="rounded border border-slate-200 bg-white overflow-hidden">
+                <div class="bg-[#64748b] text-white text-xs font-bold uppercase px-3 py-2">Rooms, Guests, Tariff And Discount Details</div>
+                <div class="divide-y divide-slate-100">
+                    ${data.rooms.length ? data.rooms.map((room, index) => {
+                        const discountTotal = room.roomDiscount + room.planDiscount
+                        const netTotal = Math.max(room.roomRate - discountTotal, 0)
+                        const detailRows = [
+                            ['Room Category', room.categoryName],
+                            ['Room Number', room.roomNumber],
+                            ['Rate Code', room.rateCodeName],
+                            ['Plan', room.planName],
+                            ['Discount Coupon', room.discountCoupon && !/select/i.test(room.discountCoupon) ? room.discountCoupon : ''],
+                            ['One-Day Tariff', formatNumber(room.oneDayTariff)],
+                            ['Room Rate Total', formatNumber(room.roomRate)],
+                            ['Room Discount', formatNumber(room.roomDiscount)],
+                            ['Plan Amount', room.planAmount ? formatNumber(room.planAmount) : ''],
+                            ['Plan Discount', room.planDiscount ? formatNumber(room.planDiscount) : ''],
+                            ['Net Room Total', formatNumber(netTotal)]
+                        ].filter(([, value]) => String(value || '').trim())
+                        return `<div class="p-3">
+                            <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                                <div>
+                                    <div class="text-xs font-bold uppercase text-slate-500">Room ${index + 1}</div>
+                                    <div class="text-base font-bold text-slate-800">${escapeCheckinSummaryText(room.categoryName || 'Room')}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs font-bold uppercase text-slate-500">Net Total</div>
+                                    <div class="text-lg font-bold text-blue-700">${formatNumber(netTotal)}</div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
+                                ${detailRows.map(([label, value]) => `<div class="rounded bg-slate-50 px-3 py-2">
+                                    <div class="text-[11px] uppercase text-slate-500 font-semibold">${escapeCheckinSummaryText(label)}</div>
+                                    <div class="text-sm font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(value)}">${escapeCheckinSummaryText(value)}</div>
+                                </div>`).join('')}
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                                <div class="rounded border border-slate-100 px-3 py-2 text-center">
+                                    <div class="text-[11px] uppercase text-slate-500 font-semibold">Adults</div>
+                                    <div class="font-bold">${formatNumber(room.adults)}</div>
+                                </div>
+                                <div class="rounded border border-slate-100 px-3 py-2 text-center">
+                                    <div class="text-[11px] uppercase text-slate-500 font-semibold">Children</div>
+                                    <div class="font-bold">${formatNumber(room.children)}</div>
+                                </div>
+                                <div class="rounded border border-slate-100 px-3 py-2 text-center">
+                                    <div class="text-[11px] uppercase text-slate-500 font-semibold">Infants</div>
+                                    <div class="font-bold">${formatNumber(room.infants)}</div>
+                                </div>
+                            </div>
+                            <div class="rounded bg-slate-50 p-2">
+                                <div class="text-[11px] uppercase text-slate-500 font-bold mb-2">Guests</div>
+                                ${room.guests.length ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    ${room.guests.map((guest) => `<div class="rounded bg-white border border-slate-100 px-3 py-2 flex items-center justify-between gap-2">
+                                        <span class="font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(guest.rawValue)}">${escapeCheckinSummaryText(guest.name)}</span>
+                                        <span class="text-xs font-bold text-slate-500">#${guest.serial}</span>
+                                    </div>`).join('')}
+                                </div>` : `<div class="text-sm text-slate-500">No guest names entered yet</div>`}
+                            </div>
+                        </div>`
+                    }).join('') : `<div class="p-4 text-center text-slate-500">No room data yet</div>`}
+                </div>
+            </div>
+        </div>`
+}
+
 function renderCheckinTariffSummary(){
     const container = did('checkinTariffSummary')
     if(!container) return
     const data = collectCheckinTariffSummaryData()
     const isOpen = container.dataset.open === 'true'
+    const activeTab = container.dataset.tab || 'calculation'
     const discountRows = [
         ['Room Discount', data.totalRoomDiscount / data.nights, data.totalRoomDiscount],
         ['Plan Discount', data.totalPlanDiscount / data.nights, data.totalPlanDiscount],
@@ -635,51 +868,19 @@ function renderCheckinTariffSummary(){
                 </div>
                 ${data.formDetails.length ? `<div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
                     ${data.formDetails.map(([label, value]) => `<div class="rounded bg-white border border-slate-200 px-3 py-2">
-                        <div class="text-[11px] uppercase text-slate-500 font-semibold">${label}</div>
-                        <div class="text-sm font-semibold text-slate-800 truncate" title="${value}">${value}</div>
+                        <div class="text-[11px] uppercase text-slate-500 font-semibold">${escapeCheckinSummaryText(label)}</div>
+                        <div class="text-sm font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(value)}">${escapeCheckinSummaryText(value)}</div>
                     </div>`).join('')}
                 </div>` : ''}
-                ${discountRows.length ? `<div class="rounded border border-slate-200 bg-white overflow-hidden mb-4">
-                    <div class="grid grid-cols-3 bg-slate-100 text-xs font-bold text-slate-600 uppercase">
-                        <div class="p-2">Discount</div>
-                        <div class="p-2 text-right">Per Day</div>
-                        <div class="p-2 text-right">Total</div>
+                <div class="rounded border border-slate-200 bg-white overflow-hidden">
+                    <div class="flex flex-wrap items-center border-b border-slate-200 bg-white">
+                        ${renderCheckinSummaryTabButton('calculation', activeTab, 'Room Calculation', 'calculate')}
+                        ${renderCheckinSummaryTabButton('guests', activeTab, 'Rooms & Guests', 'groups')}
+                        ${renderCheckinSummaryTabButton('full', activeTab, 'Full Detail', 'fact_check')}
                     </div>
-                    ${discountRows.map(([label, perDay, total]) => `<div class="grid grid-cols-3 border-t border-slate-100 text-sm">
-                        <div class="p-2 text-slate-700">${label}</div>
-                        <div class="p-2 text-right font-semibold">${formatNumber(perDay)}</div>
-                        <div class="p-2 text-right font-semibold">${formatNumber(total)}</div>
-                    </div>`).join('')}
-                </div>` : ''}
-                ${data.totalPlanAmount > 0 ? `<div class="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                    Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (informational, not added to payable tariff)
-                </div>` : ''}
-                <div class="rounded border border-slate-200 bg-white overflow-auto">
-                    <table class="w-full text-sm min-w-[780px]">
-                        <thead class="bg-[#64748b] text-white">
-                            <tr>
-                                <th class="p-2 text-left">Room</th>
-                                <th class="p-2 text-left">Rate Code</th>
-                                <th class="p-2 text-right">One-Day Tariff</th>
-                                <th class="p-2 text-right">Room Rate Total</th>
-                                <th class="p-2 text-right">Discounts</th>
-                                <th class="p-2 text-right">Plan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.rooms.length ? data.rooms.map((room) => `<tr class="border-t border-slate-100">
-                                <td class="p-2">
-                                    <div class="font-semibold text-slate-800">${room.categoryName || '-'}</div>
-                                    ${room.roomNumber ? `<div class="text-xs text-slate-500">Room ${room.roomNumber}</div>` : ''}
-                                </td>
-                                <td class="p-2 text-slate-700">${room.rateCodeName || '-'}</td>
-                                <td class="p-2 text-right font-semibold">${formatNumber(room.oneDayTariff)}</td>
-                                <td class="p-2 text-right font-semibold">${formatNumber(room.roomRate)}</td>
-                                <td class="p-2 text-right">${formatNumber(room.roomDiscount + room.planDiscount)}</td>
-                                <td class="p-2 text-right">${room.planAmount || room.planDiscount ? `${formatNumber(room.planAmount)} / ${formatNumber(room.planDiscount)}` : '-'}</td>
-                            </tr>`).join('') : `<tr><td colspan="6" class="p-4 text-center text-slate-500">No room tariff data yet</td></tr>`}
-                        </tbody>
-                    </table>
+                    <div class="p-3">
+                        ${activeTab === 'guests' ? renderCheckinGuestsSummary(data) : activeTab === 'full' ? renderCheckinFullDetailSummary(data) : renderCheckinCalculationSummary(data, discountRows)}
+                    </div>
                 </div>
             </div>
         </div>`
