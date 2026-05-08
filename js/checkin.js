@@ -528,8 +528,172 @@ function datedifference() {
             } 
         }
 
+function getCheckinSummarySelectText(id = '') {
+    const el = did(id)
+    if(!el || !el.value || el.value === 'ADD COMPANY' || el.value === 'ADD TRAVEL AGENCY' || el.value === 'ADD GROUP') return ''
+    if(el.tagName === 'SELECT') return String(el.options?.[el.selectedIndex]?.textContent || el.value || '').trim()
+    return String(el.value || '').trim()
+}
+
+function collectCheckinTariffSummaryData(){
+    const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
+    const otherDiscountPerc = Math.max(Math.min(Number(did('otherdiscount')?.value || 0), 100), 0)
+    const rooms = Array.from(document.getElementsByClassName('roomcategory')).map((categoryEl) => {
+        const id = String(categoryEl.id || '').replace('roomcategory-', '').trim()
+        if(!id) return null
+        const categoryName = String(categoryEl.options?.[categoryEl.selectedIndex]?.textContent || categoryEl.value || '').trim()
+        const roomNumber = String(did('roomnumber-'+id)?.value || '').trim()
+        const rateCodeName = String(did('ratecodename-'+id)?.value || '').trim()
+        const roomRate = Number(did('roomrate-'+id)?.value || 0)
+        const roomDiscount = Number(did('discountamount-'+id)?.value || 0)
+        const planAmount = Number(did('planamount-'+id)?.value || 0)
+        const planDiscount = Number(did('plandiscountamount-'+id)?.value || 0)
+        const oneDayTariff = roomRate / nights
+        const oneDayRoomDiscount = roomDiscount / nights
+        const oneDayPlanDiscount = planDiscount / nights
+        if(!categoryEl.value && !roomNumber && !rateCodeName && !roomRate && !planAmount) return null
+        return {
+            id,
+            categoryName,
+            roomNumber,
+            rateCodeName,
+            roomRate,
+            roomDiscount,
+            planAmount,
+            planDiscount,
+            oneDayTariff,
+            oneDayRoomDiscount,
+            oneDayPlanDiscount
+        }
+    }).filter(Boolean)
+    const totalRoomRate = rooms.reduce((sum, room) => sum + room.roomRate, 0)
+    const totalRoomDiscount = rooms.reduce((sum, room) => sum + room.roomDiscount, 0)
+    const totalPlanAmount = rooms.reduce((sum, room) => sum + room.planAmount, 0)
+    const totalPlanDiscount = rooms.reduce((sum, room) => sum + room.planDiscount, 0)
+    const otherDiscountTotal = (otherDiscountPerc / 100) * totalRoomRate
+    const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscountTotal
+    const totalDue = Number(did('totalamount')?.value || Math.max(totalRoomRate - totalDiscount, 0))
+    const formDetails = [
+        ['Arrival', String(did('arrivaldate')?.value || '').replace('T', ' ')],
+        ['Departure', String(did('departuredate')?.value || '').replace('T', ' ')],
+        ['Nights', Number(did('numberofnights')?.value || 0) > 0 ? String(did('numberofnights').value) : ''],
+        ['Company', getCheckinSummarySelectText('company')],
+        ['Travel Agency', getCheckinSummarySelectText('travelagent')],
+        ['Group', getCheckinSummarySelectText('group_id')],
+        ['Source', getCheckinSummarySelectText('source')],
+        ['Billing Info', getCheckinSummarySelectText('billinginfo')]
+    ].filter((detail) => String(detail[1] || '').trim())
+
+    return {
+        nights,
+        rooms,
+        formDetails,
+        netTariff: totalRoomRate / nights,
+        netTariffAfterDiscount: Math.max((totalRoomRate - totalDiscount) / nights, 0),
+        totalNetTariffForNights: totalDue,
+        totalRoomRate,
+        totalRoomDiscount,
+        totalPlanAmount,
+        totalPlanDiscount,
+        otherDiscountPerc,
+        otherDiscountTotal,
+        totalDiscount
+    }
+}
+
+function renderSummaryMetric(label, value, tone='text-slate-900') {
+    return `<div class="rounded border border-slate-200 bg-white p-3">
+        <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">${label}</div>
+        <div class="mt-1 text-lg font-bold ${tone}">${formatNumber(value)}</div>
+    </div>`
+}
+
+function renderCheckinTariffSummary(){
+    const container = did('checkinTariffSummary')
+    if(!container) return
+    const data = collectCheckinTariffSummaryData()
+    const isOpen = container.dataset.open === 'true'
+    const discountRows = [
+        ['Room Discount', data.totalRoomDiscount / data.nights, data.totalRoomDiscount],
+        ['Plan Discount', data.totalPlanDiscount / data.nights, data.totalPlanDiscount],
+        [`Other Discount${data.otherDiscountPerc ? ` (${formatNumber(data.otherDiscountPerc)}%)` : ''}`, data.otherDiscountTotal / data.nights, data.otherDiscountTotal]
+    ].filter((row) => Number(row[2] || 0) > 0)
+    container.innerHTML = `
+        <div class="rounded border border-slate-200 bg-slate-50 shadow-sm overflow-hidden">
+            <button type="button" onclick="toggleCheckinTariffSummary()" class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-white hover:bg-slate-50 transition">
+                <span class="flex items-center gap-2 font-semibold text-slate-800">
+                    <span class="material-symbols-outlined text-blue-500 text-lg">summarize</span>
+                    Tariff Summary
+                </span>
+                <span class="material-symbols-outlined text-slate-500 transition ${isOpen ? 'rotate-180' : ''}">expand_more</span>
+            </button>
+            <div class="${isOpen ? '' : 'hidden'} border-t border-slate-200 p-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    ${renderSummaryMetric('Net Tariff', data.netTariff)}
+                    ${renderSummaryMetric('Net Tariff After Discount', data.netTariffAfterDiscount, 'text-emerald-700')}
+                    ${renderSummaryMetric('Total Net Tariff For Nights', data.totalNetTariffForNights, 'text-blue-700')}
+                </div>
+                ${data.formDetails.length ? `<div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
+                    ${data.formDetails.map(([label, value]) => `<div class="rounded bg-white border border-slate-200 px-3 py-2">
+                        <div class="text-[11px] uppercase text-slate-500 font-semibold">${label}</div>
+                        <div class="text-sm font-semibold text-slate-800 truncate" title="${value}">${value}</div>
+                    </div>`).join('')}
+                </div>` : ''}
+                ${discountRows.length ? `<div class="rounded border border-slate-200 bg-white overflow-hidden mb-4">
+                    <div class="grid grid-cols-3 bg-slate-100 text-xs font-bold text-slate-600 uppercase">
+                        <div class="p-2">Discount</div>
+                        <div class="p-2 text-right">Per Day</div>
+                        <div class="p-2 text-right">Total</div>
+                    </div>
+                    ${discountRows.map(([label, perDay, total]) => `<div class="grid grid-cols-3 border-t border-slate-100 text-sm">
+                        <div class="p-2 text-slate-700">${label}</div>
+                        <div class="p-2 text-right font-semibold">${formatNumber(perDay)}</div>
+                        <div class="p-2 text-right font-semibold">${formatNumber(total)}</div>
+                    </div>`).join('')}
+                </div>` : ''}
+                ${data.totalPlanAmount > 0 ? `<div class="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                    Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (informational, not added to payable tariff)
+                </div>` : ''}
+                <div class="rounded border border-slate-200 bg-white overflow-auto">
+                    <table class="w-full text-sm min-w-[780px]">
+                        <thead class="bg-[#64748b] text-white">
+                            <tr>
+                                <th class="p-2 text-left">Room</th>
+                                <th class="p-2 text-left">Rate Code</th>
+                                <th class="p-2 text-right">One-Day Tariff</th>
+                                <th class="p-2 text-right">Room Rate Total</th>
+                                <th class="p-2 text-right">Discounts</th>
+                                <th class="p-2 text-right">Plan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.rooms.length ? data.rooms.map((room) => `<tr class="border-t border-slate-100">
+                                <td class="p-2">
+                                    <div class="font-semibold text-slate-800">${room.categoryName || '-'}</div>
+                                    ${room.roomNumber ? `<div class="text-xs text-slate-500">Room ${room.roomNumber}</div>` : ''}
+                                </td>
+                                <td class="p-2 text-slate-700">${room.rateCodeName || '-'}</td>
+                                <td class="p-2 text-right font-semibold">${formatNumber(room.oneDayTariff)}</td>
+                                <td class="p-2 text-right font-semibold">${formatNumber(room.roomRate)}</td>
+                                <td class="p-2 text-right">${formatNumber(room.roomDiscount + room.planDiscount)}</td>
+                                <td class="p-2 text-right">${room.planAmount || room.planDiscount ? `${formatNumber(room.planAmount)} / ${formatNumber(room.planDiscount)}` : '-'}</td>
+                            </tr>`).join('') : `<tr><td colspan="6" class="p-4 text-center text-slate-500">No room tariff data yet</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`
+}
+
+function toggleCheckinTariffSummary(){
+    const container = did('checkinTariffSummary')
+    if(!container) return
+    container.dataset.open = container.dataset.open === 'true' ? 'false' : 'true'
+    renderCheckinTariffSummary()
+}
+
 function calculatetotals(){
-    did('totalrate').previousElementSibling.textContent = 'Total Amount'
+    did('totalrate').previousElementSibling.textContent = 'Room Rate Total'
     did('totalplan').previousElementSibling.textContent = 'Total Due'
     let tr = 0;
     let trd = 0;
@@ -554,6 +718,7 @@ function calculatetotals(){
     did('totaldiscount').textContent = formatNumber(totalDiscountAmount)
     did('totalplan').textContent = formatNumber(totalamount)
     if(document.getElementById('totalamount'))document.getElementById('totalamount').value = totalamount
+    renderCheckinTariffSummary()
 }
 
 // this is the function that adds new card

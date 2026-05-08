@@ -591,6 +591,7 @@
                                             
                                             
                                         <!--</div>-->
+                                          <div id="checkinTariffSummary" class="mt-4"></div>
                                           <div class="flex justify-end mt-5 gap-4 h-fit">
                                                   <div class="flex w-full justify-start items-end"> 
                                         <div class="flex items-center gap-5 text-md border  p-4 ">
