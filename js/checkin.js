@@ -2872,7 +2872,6 @@ function checkDuplicateRoomNumbers() {
 }
 
 async function checkinnFormSubmitHandler(guest){
-    if(guest == 'reassignroomsform')checkinid = '';
     if(!guest)return notification('Wrong call point', 0)
     if(did('checkinform')){
         if(!validateForm('checkinform', getIdFromCls('comp', 'checkinform')))return notification('some data are not provided...', 0)
@@ -2956,6 +2955,7 @@ async function checkinnFormSubmitHandler(guest){
     function payload(){
         let param =  new FormData(document.querySelector(`#${guest}`))
         if(checkinid)param.append('id', checkinid)
+        if(guest == 'reassignroomsform' && typeof reassignid !== 'undefined' && reassignid)param.set('id', reassignid)
         param.append('photofilename', showFileName('imageurl'))
         param.append('userphotoname', getFile('imageurl'))
         param.set('arrivaldate', document.getElementById('arrivaldate').value.replace('T', ' '))
