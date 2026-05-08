@@ -890,7 +890,8 @@ function toggleCheckinTariffSummary(){
 }
 
 function calculatetotals(){
-    did('totalrate').previousElementSibling.textContent = 'Net Rate Total'
+    did('totalrate').previousElementSibling.textContent = 'Net Tariff'
+    did('totalrate').previousElementSibling.setAttribute('title', 'Total rate code amount for one day')
     did('totalplan').previousElementSibling.textContent = 'Total Due'
     let tr = 0;
     let trd = 0;
@@ -908,10 +909,12 @@ function calculatetotals(){
     }
     // ANI payable total is now rate-only; plan amount remains informational.
     const grossTotalAmount = tr
+    const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
+    const oneDayNetTariff = grossTotalAmount / nights
     const otherDiscountAmount = (otherdiscount / 100) * grossTotalAmount
     const totalDiscountAmount = trd + tpd + otherDiscountAmount
     let totalamount = Math.max(grossTotalAmount - totalDiscountAmount, 0)
-    did('totalrate').textContent = formatNumber(grossTotalAmount)
+    did('totalrate').textContent = formatNumber(oneDayNetTariff)
     did('totaldiscount').textContent = formatNumber(totalDiscountAmount)
     did('totalplan').textContent = formatNumber(totalamount)
     if(document.getElementById('totalamount'))document.getElementById('totalamount').value = totalamount
