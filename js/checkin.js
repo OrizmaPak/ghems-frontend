@@ -1384,7 +1384,13 @@ const handleRoomClick = (isAvailable, roomNumber, actionId) => {
   if (isAvailable) {
     document.getElementById(`roomnumber-${actionId}`).value = roomNumber;
     actionid = actionId;
+    // Re-run card pricing when room number changes so card values stay in sync.
     runratcod();
+    setTimeout(() => {
+      try {
+        handlecheckinrate(String(actionId), false);
+      } catch (e) {}
+    }, 0);
     notification(`Room ${roomNumber} Selected`, 1);
     document.getElementById('roommodal').classList.add('hidden');
   } else {
