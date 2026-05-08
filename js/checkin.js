@@ -672,7 +672,7 @@ function renderCheckinCalculationSummary(data, discountRows) {
             </div>`).join('')}
         </div>` : ''}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            ${renderSummaryMetric('Net Tariff', data.netTariff)}
+            ${renderSummaryMetric('Net Rate (One Day)', data.netTariff)}
             ${renderSummaryMetric(`Net Tariff for ${nightLabel}`, data.totalNetTariffForNights, 'text-blue-700')}
             ${renderSummaryMetric('Net Tariff After Discount Per Day', data.netTariffAfterDiscount, 'text-emerald-700')}
         </div>
@@ -698,8 +698,8 @@ function renderCheckinCalculationSummary(data, discountRows) {
                         <th class="p-2 text-left">Room</th>
                         <th class="p-2 text-left">Rate Code</th>
                         <th class="p-2 text-left">Plan / Coupon</th>
-                        <th class="p-2 text-right">Per Day</th>
-                        <th class="p-2 text-right">Room Total</th>
+                        <th class="p-2 text-right">Net Rate (One Day)</th>
+                        <th class="p-2 text-right">Net Rate Total</th>
                         <th class="p-2 text-right">Discount Total</th>
                         <th class="p-2 text-right">Net Total</th>
                     </tr>
@@ -793,8 +793,8 @@ function renderCheckinFullDetailSummary(data) {
                             ['Rate Code', room.rateCodeName],
                             ['Plan', room.planName],
                             ['Discount Coupon', room.discountCoupon && !/select/i.test(room.discountCoupon) ? room.discountCoupon : ''],
-                            ['One-Day Tariff', formatNumber(room.oneDayTariff)],
-                            ['Room Rate Total', formatNumber(room.roomRate)],
+                            ['Net Rate (One Day)', formatNumber(room.oneDayTariff)],
+                            ['Net Rate Total', formatNumber(room.roomRate)],
                             ['Room Discount', formatNumber(room.roomDiscount)],
                             ['Plan Amount', room.planAmount ? formatNumber(room.planAmount) : ''],
                             ['Plan Discount', room.planDiscount ? formatNumber(room.planDiscount) : ''],
@@ -890,7 +890,7 @@ function toggleCheckinTariffSummary(){
 }
 
 function calculatetotals(){
-    did('totalrate').previousElementSibling.textContent = 'Room Rate Total'
+    did('totalrate').previousElementSibling.textContent = 'Net Rate Total'
     did('totalplan').previousElementSibling.textContent = 'Total Due'
     let tr = 0;
     let trd = 0;
