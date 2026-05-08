@@ -691,7 +691,47 @@ function renderCheckinCalculationSummary(data, discountRows) {
         ${data.totalPlanAmount > 0 ? `<div class="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
             Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (information is already in ratecode)
         </div>` : ''}
-        <div class="rounded border border-slate-200 bg-white overflow-auto">
+        <div class="md:hidden space-y-3">
+            ${data.rooms.length ? data.rooms.map((room) => {
+                const roomDiscountTotal = room.roomDiscount + room.planDiscount
+                const roomNetTotal = Math.max(room.roomRate - roomDiscountTotal, 0)
+                return `<div class="rounded border border-slate-200 bg-white p-3">
+                    <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 mb-2">
+                        <div>
+                            <div class="font-bold text-slate-800">${escapeCheckinSummaryText(room.categoryName || '-')}</div>
+                            ${room.roomNumber ? `<div class="text-xs text-slate-500">Room ${escapeCheckinSummaryText(room.roomNumber)}</div>` : ''}
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Net Total</div>
+                            <div class="font-bold text-blue-700">${formatNumber(roomNetTotal)}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="rounded bg-slate-50 p-2">
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Rate Code</div>
+                            <div class="font-semibold text-slate-800 truncate" title="${escapeCheckinSummaryText(room.rateCodeName || '-')}">${escapeCheckinSummaryText(room.rateCodeName || '-')}</div>
+                        </div>
+                        <div class="rounded bg-slate-50 p-2">
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Plan / Coupon</div>
+                            <div class="font-semibold text-slate-800 truncate">${escapeCheckinSummaryText(room.planName || room.discountCoupon || '-')}</div>
+                        </div>
+                        <div class="rounded bg-slate-50 p-2">
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Net Rate (One Day)</div>
+                            <div class="font-semibold">${formatNumber(room.oneDayTariff)}</div>
+                        </div>
+                        <div class="rounded bg-slate-50 p-2">
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Net Rate Total</div>
+                            <div class="font-semibold">${formatNumber(room.roomRate)}</div>
+                        </div>
+                        <div class="rounded bg-slate-50 p-2">
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Discount Total</div>
+                            <div class="font-semibold">${formatNumber(roomDiscountTotal)}</div>
+                        </div>
+                    </div>
+                </div>`
+            }).join('') : `<div class="rounded border border-dashed border-slate-200 bg-white p-4 text-center text-slate-500">No room tariff data yet</div>`}
+        </div>
+        <div class="hidden md:block rounded border border-slate-200 bg-white overflow-auto">
             <table class="w-full text-sm min-w-[900px]">
                 <thead class="bg-[#64748b] text-white">
                     <tr>
@@ -896,6 +936,22 @@ function updateNetTariffFooterLabel(){
     label.setAttribute('title', 'Total rate code amount for one day')
 }
 
+function refreshCheckinSummaryAndTotals(reason = ''){
+    calculatetotals()
+}
+
+function removeCheckinRoomCard(button){
+    const card = button?.parentElement
+    if(card) card.remove()
+    refreshCheckinSummaryAndTotals('room-card-delete')
+}
+
+function removeCheckinGuestRow(button){
+    const row = button?.parentElement?.parentElement
+    if(row) row.remove()
+    refreshCheckinSummaryAndTotals('guest-row-delete')
+}
+
 function calculatetotals(){
     updateNetTariffFooterLabel()
     did('totalplan').previousElementSibling.textContent = 'Total Due'
@@ -933,7 +989,7 @@ async function checkinaddroom(){
     let el = document.createElement('div')
     el.classList.add('relative', 'border', 'rounded', 'py-3', 'px-4', 'mt-6', '!mb-2.5', 'bg-[#f5f5f5]', 'shadow-lg')
     el.setAttribute('onclick', `if(actionid != ${id}){actionid = ${id};runratcod()}`)
-    el.innerHTML = `                            <button onclick="this.parentElement.remove()" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
+    el.innerHTML = `                            <button onclick="event.stopPropagation(); removeCheckinRoomCard(this)" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
                                                 <button onclick="checkinaddroom()" type="button" class="absolute top-[-25px] shadow right-14 flex justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
     
                                         
@@ -1221,7 +1277,7 @@ function handlecheckinrate(idd, state=false, options={}){
                                         <div class="btnloader" style="display: none;"></div>
                                         <span>Add&nbsp;New&nbsp;Guest</span> 
                                 </button>
-                                <button onclick="this.parentElement.parentElement.remove()" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                <button onclick="removeCheckinGuestRow(this)" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                         <div class="btnloader" style="display: none;"></div>
                                         <span>Delete</span> 
                                 </button>
@@ -1914,7 +1970,7 @@ function populaterestcheckindata(x){
     console.log('data', data)
     did('roomfullcontainer').innerHTML = data.roomguestrow.map((item, id)=>`
         <div class="relative border rounded py-3 px-4 mt-6 !mb-2.5 bg-[#f5f5f5] shadow-lg" onclick="if(actionid != ${id}){actionid = ${id};runratcod()}">
-         <button onclick="this.parentElement.remove()" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
+         <button onclick="event.stopPropagation(); removeCheckinRoomCard(this)" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
             <button onclick="checkinaddroom()" type="button" class="absolute top-[-25px] shadow right-14 flex justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
 
     
@@ -2031,7 +2087,7 @@ function populaterestcheckindata(x){
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Add&nbsp;New&nbsp;Guest</span> 
                         </button>
-                        <button onclick="this.parentElement.parentElement.remove()" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                        <button onclick="removeCheckinGuestRow(this)" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Delete</span> 
                         </button>
@@ -2048,7 +2104,7 @@ function populaterestcheckindata(x){
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Add&nbsp;New&nbsp;Guest</span> 
                         </button>
-                        <button onclick="this.parentElement.parentElement.remove()" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                        <button onclick="removeCheckinGuestRow(this)" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Delete</span> 
                         </button>
@@ -2065,7 +2121,7 @@ function populaterestcheckindata(x){
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Add&nbsp;New&nbsp;Guest</span> 
                         </button>
-                        <button onclick="this.parentElement.parentElement.remove()" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                        <button onclick="removeCheckinGuestRow(this)" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                 <div class="btnloader" style="display: none;"></div>
                                 <span>Delete</span> 
                         </button>
