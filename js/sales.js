@@ -814,7 +814,7 @@ async function loadSalesBillIntoForm(bill) {
                 </td>
                 <td>
                     <label for="logoname" class="control-label hidden">Price</label>
-                    <input autocomplete="off" type="number" id="price-${firstRowId}" class="form-control comp pprice" placeholder="">
+                    <input autocomplete="off" type="number" id="price-${firstRowId}" class="form-control comp pprice" onchange="calsaleqty('${firstRowId}')" placeholder="">
                 </td>
                 <td>
                     <label for="logoname" class="control-label hidden">Quantity</label>
@@ -912,7 +912,7 @@ async function handlesalesdepartment(store) {
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Price</label>
-                                                    <input autocomplete="off" type="number"  name="" id="price-1" class="form-control comp pprice" placeholder="">
+                                                    <input autocomplete="off" type="number"  name="" id="price-1" class="form-control comp pprice" onchange="calsaleqty('1')" placeholder="">
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Quantity</label>
@@ -1101,7 +1101,7 @@ function addsalesrow(ii=''){
         </td>
         <td>
             <label for="logoname" class="control-label hidden">Price</label>
-            <input autocomplete="off" type="number"  name="" id="price-${id}" class="form-control comp pprice" placeholder="">
+            <input autocomplete="off" type="number"  name="" id="price-${id}" class="form-control comp pprice" onchange="calsaleqty('${id}')" placeholder="">
         </td>
         <td>
             <label for="logoname" class="control-label hidden">Quantity</label>
@@ -1731,7 +1731,7 @@ async function loadOrderIntoForm(orderEntry = null) {
                     </td>
                     <td>
                         <label for="logoname" class="control-label hidden">Price</label>
-                        <input autocomplete="off" type="number" id="price-${rowId}" class="form-control comp pprice" placeholder="">
+                    <input autocomplete="off" type="number" id="price-${rowId}" class="form-control comp pprice" onchange="calsaleqty('${rowId}')" placeholder="">
                     </td>
                     <td>
                         <label for="logoname" class="control-label hidden">Quantity</label>
@@ -2054,7 +2054,7 @@ function emptysales(){
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Price</label>
-                                                    <input autocomplete="off" type="number"  name="" id="price-1" class="form-control comp pprice" placeholder="">
+                                                    <input autocomplete="off" type="number"  name="" id="price-1" class="form-control comp pprice" onchange="calsaleqty('1')" placeholder="">
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Quantity</label>

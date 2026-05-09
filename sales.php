@@ -186,7 +186,7 @@
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Price</label>
-                                                    <input autocomplete="off" type="number"  name="" id="price-1" class="form-control comp pprice" placeholder="">
+                                                    <input autocomplete="off" type="number"  name="" id="price-1" class="form-control comp pprice" onchange="calsaleqty('1')" placeholder="">
                                                 </td>
                                                 <td>
                                                     <label for="logoname" class="control-label hidden">Quantity</label>
