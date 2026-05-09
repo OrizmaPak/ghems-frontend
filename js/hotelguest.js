@@ -2,8 +2,241 @@ let fullguestdata
 async function hotelguestActive() {
     if(document.querySelector('#submitguestmodal')) document.querySelector('#submitguestmodal').addEventListener('click', e=>submitguestform('true'));
     await appendguestform()
+    prepareGuestRegistrationCardBrand()
     await fetallhotelguest()
     // await fetchhotelguest()
+}
+
+function getGuestRegistrationOrgValue(id, fallback = '') {
+    const value = String(did(id)?.value || '').trim()
+    return value || fallback
+}
+
+function prepareGuestRegistrationCardBrand() {
+    const logoValue = getGuestRegistrationOrgValue('your_companylogo')
+    const logo = did('guestregistrationcardlogo')
+    if(logo){
+        if(logoValue){
+            logo.src = new URL(`../images/${logoValue}`, window.location.href).href
+            logo.style.display = ''
+            logo.classList.remove('hidden')
+        }else{
+            logo.removeAttribute('src')
+            logo.style.display = 'none'
+            logo.classList.add('hidden')
+        }
+    }
+
+    const name = did('guestregistrationcardhotelname')
+    const address = did('guestregistrationcardaddress')
+    const phone = did('guestregistrationcardphone')
+    const email = did('guestregistrationcardemail')
+    if(name) name.textContent = getGuestRegistrationOrgValue('your_companyname', 'Gravity Hotel Owerri')
+    if(address) address.textContent = getGuestRegistrationOrgValue('your_companyaddress', '50000 Action Commercial Area, New Owerri Behind CBN Bank, New Owerri, Imo State, Nigeria')
+    if(phone) phone.textContent = getGuestRegistrationOrgValue('your_companyphone', '07053718721, 09135228959')
+    if(email) email.textContent = getGuestRegistrationOrgValue('your_companyemail', 'reception@gravityhotels.ng')
+}
+
+function guestRegistrationPrintStyles() {
+    return `
+        @page { size: A4 portrait; margin: 6mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; background: #ffffff; color: #0f172a; }
+        body { font-family: Arial, Helvetica, sans-serif; }
+        .grc-card {
+            width: 198mm;
+            min-height: 285mm;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #d8e2ef;
+            padding: 5mm;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #0f172a;
+        }
+        .grc-header {
+            display: grid;
+            grid-template-columns: 22mm 1fr 32mm;
+            gap: 4mm;
+            align-items: center;
+            border-bottom: 2px solid #0f766e;
+            padding-bottom: 3mm;
+            margin-bottom: 2mm;
+        }
+        .grc-logo-box {
+            width: 20mm;
+            height: 20mm;
+            border: 1px solid #d8e2ef;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #fff;
+        }
+        .grc-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .grc-hotel-name {
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+        .grc-tagline {
+            color: #0f766e;
+            font-size: 9px;
+            font-weight: 700;
+            margin-top: 1.4mm;
+        }
+        .grc-address {
+            color: #64748b;
+            font-size: 7.8px;
+            line-height: 1.3;
+            margin-top: 1mm;
+        }
+        .grc-title-box {
+            border: 1px solid #0f766e;
+            border-radius: 4px;
+            padding: 2mm;
+            text-align: center;
+            background: #f8fafc;
+        }
+        .grc-title-box h2 {
+            font-size: 10.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .grc-section {
+            border: 1px solid #d8e2ef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1.5mm;
+            break-inside: avoid;
+        }
+        .grc-section-title {
+            background: #17456a;
+            color: #ffffff;
+            font-size: 7.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            padding: 1.2mm 2mm;
+        }
+        .grc-grid {
+            display: grid;
+            gap: 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        .grc-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grc-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grc-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .grc-split {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.5mm;
+        }
+        .grc-span-2 { grid-column: span 2; }
+        .grc-field {
+            min-height: 8.5mm;
+            padding: 1.1mm 1.5mm;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            background: #ffffff;
+        }
+        .grc-field label {
+            display: block;
+            font-size: 6.6px;
+            color: #475569;
+            font-weight: 800;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 1.1mm;
+        }
+        .grc-line {
+            min-height: 3.2mm;
+            border-bottom: 1px solid #0f172a;
+        }
+        .grc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7px;
+        }
+        .grc-table th {
+            background: #edf4f8;
+            color: #0f172a;
+            font-weight: 800;
+            text-transform: uppercase;
+            border: 1px solid #d8e2ef;
+            padding: 1mm .7mm;
+            text-align: left;
+        }
+        .grc-table td {
+            height: 6.8mm;
+            border: 1px solid #d8e2ef;
+            padding: .7mm;
+        }
+        .grc-terms {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .7mm 4mm;
+            padding: 1.5mm 2mm;
+            font-size: 6.8px;
+            line-height: 1.22;
+        }
+        .grc-terms p { margin: 0; }
+        .grc-signatures {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8mm;
+            margin-top: 4mm;
+            font-size: 7.2px;
+            font-weight: 800;
+            text-align: center;
+            break-inside: avoid;
+        }
+        .grc-signature-line {
+            border-top: 1px solid #0f172a;
+            padding-top: 1.4mm;
+        }
+    `
+}
+
+function printGuestRegistrationCard() {
+    prepareGuestRegistrationCardBrand()
+    const source = did('guestregistrationcardprint')
+    if(!source) return notification('Guest registration card is not available', 0)
+
+    const printWindow = window.open('', '', 'width=1000,height=900')
+    if(!printWindow) return notification('Unable to open print window', 0)
+
+    const content = source.cloneNode(true)
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Guest Registration Card</title>
+                <style>${guestRegistrationPrintStyles()}</style>
+            </head>
+            <body>${content.outerHTML}</body>
+        </html>
+    `)
+    printWindow.document.close()
+    printWindow.focus()
+
+    const runPrint = () => {
+        printWindow.print()
+        printWindow.close()
+    }
+    const logo = printWindow.document.getElementById('guestregistrationcardlogo')
+    if(logo?.src && !logo.complete){
+        logo.onload = () => setTimeout(runPrint, 150)
+        logo.onerror = () => setTimeout(runPrint, 150)
+        return
+    }
+    setTimeout(runPrint, 250)
 }
 
 async function fetallhotelguest() {
