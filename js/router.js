@@ -292,6 +292,11 @@ const routerTree = {
         startingFunction: 'splitbillActive',
         scriptName: './js/splitbill.js'
     },
+    mergebill: {
+        template: 'sales',
+        startingFunction: 'salesActive',
+        scriptName: './js/mergebill.js'
+    },
     order: {
         template: 'sales',
         startingFunction: 'salesActive',

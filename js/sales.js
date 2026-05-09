@@ -193,10 +193,17 @@ function configureBillsWorkspaceUi() {
         splitBillTab.classList.remove('!text-blue-600', 'active')
     }
 
+    const mergeBillTab = document.querySelector("li[name='mergebillview']")
+    if(mergeBillTab){
+        mergeBillTab.classList.remove('hidden')
+        mergeBillTab.classList.remove('!text-blue-600', 'active')
+    }
+
     if(did('salesform')) did('salesform').classList.remove('hidden')
     if(did('salesview')) did('salesview').classList.add('hidden')
     if(did('salesbillsview')) did('salesbillsview').classList.add('hidden')
     if(did('splitbillview')) did('splitbillview').classList.add('hidden')
+    if(did('mergebillview')) did('mergebillview').classList.add('hidden')
 
     const paymentMethod = did('paymentmethod')
     if(paymentMethod?.closest('.form-group')) paymentMethod.closest('.form-group').classList.add('hidden')
@@ -238,6 +245,7 @@ async function salesActive() {
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
     if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') await splitbillActive()
+    if(isBillsWorkspaceMode() && typeof mergebillActive === 'function') await mergebillActive()
     if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
     if(did('ordervieworder')) did('ordervieworder').addEventListener('click', () => setOrderViewStatusFilter('ORDER'))
     if(did('orderviewcanceled')) did('orderviewcanceled').addEventListener('click', () => setOrderViewStatusFilter('CANCELED'))

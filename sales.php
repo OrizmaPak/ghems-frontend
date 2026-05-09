@@ -34,6 +34,9 @@
                                 <li id="" class="me-2 cp viewer optioner" name="splitbillview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">Split Bill</p>
                                 </li>
+                                <li id="" class="me-2 cp viewer optioner" name="mergebillview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">Merge Bill</p>
+                                </li>
                                 <?php endif; ?>
                             </ul>
                             
@@ -407,6 +410,9 @@
                             <?php if($isBillsRoute): ?>
                             <div id="splitbillview" class="hidden">
                                 <?php $splitBillEmbedded = true; include __DIR__ . '/splitbill.php'; ?>
+                            </div>
+                            <div id="mergebillview" class="hidden">
+                                <?php include __DIR__ . '/mergebill.php'; ?>
                             </div>
                             <?php endif; ?>
                              
