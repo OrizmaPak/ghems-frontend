@@ -13,7 +13,7 @@
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Manage guest</p>
                                 </li>
                                 <li id="" class="me-2 cp viewer optioner " name="guestregistrationcard" onclick="prepareGuestRegistrationCardBrand();runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Guest Registration Card</p>
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Print Registration Form</p>
                                 </li>
                             </ul>
 
