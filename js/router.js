@@ -268,7 +268,7 @@ const routerTree = {
         scriptName: './js/receivables.js'
     },
     guestfolio: {
-        template: 'receivables',
+        template: 'guestfolio',
         startingFunction: 'receivablesActive',
         scriptName: './js/receivables.js'
     },
