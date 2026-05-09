@@ -6,6 +6,7 @@ let permissionRedirectTriggered = false
 const permissionAliasesByRouteId = {
     receiveables: 'RECEIVABLES',
     receivables: 'RECEIVABLES',
+    guestfolio: 'RECEIVABLES',
     reassignrooms: 'RE-ASSIGN ROOMS',
     expectedcheckouts: 'EXPECTED CHECK OUT',
     noshow: 'NO SHOW',

@@ -267,6 +267,11 @@ const routerTree = {
         startingFunction: 'receivablesActive',
         scriptName: './js/receivables.js'
     },
+    guestfolio: {
+        template: 'receivables',
+        startingFunction: 'receivablesActive',
+        scriptName: './js/receivables.js'
+    },
     paypendingcheckoutbills: {
         template: 'paypendingcheckoutbills',
         startingFunction: 'paypendingcheckoutbillsActive',
