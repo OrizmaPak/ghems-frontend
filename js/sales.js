@@ -9,6 +9,7 @@ let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
 let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
+let orderEditBatchId = ''
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -719,6 +720,16 @@ function openSalesFormTab() {
     if(salesTabTrigger) runoptioner(salesTabTrigger)
 }
 
+function findOrderEntryByBatchOrReference(key = '') {
+    const cleaned = String(key || '').trim()
+    if(!cleaned) return null
+    return datasource.find((entry) => {
+        const saleEntry = entry?.saleentry || {}
+        return String(saleEntry.batchid || '').trim() === cleaned
+            || String(saleEntry.reference || '').trim() === cleaned
+    }) || null
+}
+
 async function retrieveSalesBillToForm(reference, fromEdit = false) {
     const cleanedReference = String(reference || '').trim()
     if(!cleanedReference) return notification('Bill reference is required', 0)
@@ -1162,8 +1173,10 @@ async function onsalesTableDataSignal() {
     if(orderMode) orderRowsIndex = new Map()
     let rows = getSignaledDatasource().map((item, index) => {
         const safeRef = String(item.saleentry.reference).replace(/'/g, "\\'")
+        const safeBatch = String(item.saleentry.batchid || '').replace(/'/g, "\\'")
         if(orderMode){
             orderRowsIndex.set(String(item.saleentry.reference || '').trim(), item)
+            if(item.saleentry.batchid) orderRowsIndex.set(String(item.saleentry.batchid || '').trim(), item)
         }
         const ownerValue = (item.saleentry.ownerid !== undefined && item.saleentry.ownerid !== null && String(item.saleentry.ownerid).trim() !== '' && String(item.saleentry.ownerid) !== '-1')
             ? item.saleentry.ownerid
@@ -1232,6 +1245,7 @@ async function onsalesTableDataSignal() {
                     </td>
                     <td class="flex items-center gap-3">
                         <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
+                        <button title="Edit Order" onclick="editOrderByBatch('${safeBatch}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                         <button title="Generate Bill" onclick="composeOrderToBillByReference('${safeRef}')" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">receipt_long</button>
                         <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
                     </td>
@@ -1632,6 +1646,120 @@ function preparesalesvalues(){
     givenamebyclass('pprice', 'cost')
 }
 
+async function loadOrderIntoForm(orderEntry = null) {
+    if(!orderEntry?.saleentry || !Array.isArray(orderEntry?.saledetail)) {
+        notification('Invalid order data', 0)
+        return false
+    }
+    const batchid = String(orderEntry.saleentry.batchid || '').trim()
+    if(!batchid) {
+        notification('Order batch id is missing', 0)
+        return false
+    }
+
+    const salespoint = String(orderEntry.saleentry.salespoint || orderEntry.saledetail?.find((item) => item?.salespoint)?.salespoint || '').trim()
+    if(!salespoint) {
+        notification('Order salespoint is missing', 0)
+        return false
+    }
+
+    openSalesFormTab()
+    clearMissingOrderItemsNotice()
+    salesid = ''
+
+    if(did('salespointname')) {
+        did('salespointname').value = salespoint
+        try{
+            await handlesalesdepartment()
+        }catch(error){
+            console.error('Unable to load salespoint inventory before editing order:', error)
+        }
+    }
+    hidesalesterminal(false)
+    if(!did('item-1')) emptysales()
+    orderEditBatchId = batchid
+
+    if(did('applyto')) {
+        const applyto = String(orderEntry.saleentry.applyto || 'OTHERS').toUpperCase()
+        if(applyto.includes('ROOM')) did('applyto').value = 'ROOMS'
+        else if(applyto.includes('COST')) did('applyto').value = 'COST CENTER'
+        else did('applyto').value = 'OTHERS'
+        handlesalesapplyto()
+    }
+
+    const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
+    if(did('owner1')) did('owner1').value = ownerValue
+    if(did('owner')) did('owner').value = ownerValue
+    if(did('description')) did('description').value = String(orderEntry.saleentry.description || '').trim()
+    if(did('transactiondate')) did('transactiondate').value = String(orderEntry.saleentry.transactiondate || '').slice(0, 10) || new Date().toISOString().split('T')[0]
+    if(did('moredata')) did('moredata').value = normalizeOrderStatusValue(orderEntry.saleentry.moredata, true) || 'ORDER'
+    if(did('billreferencecode')) did('billreferencecode').value = ''
+
+    const details = orderEntry.saledetail.filter((item) => Number(item?.qty || 0) > 0)
+    did('thetabledata').innerHTML = ''
+    details.forEach((source, index) => {
+        const rowId = index === 0 ? '1' : `ordedit${index + 1}`
+        if(index === 0) {
+            did('thetabledata').innerHTML = `
+                <tr id="row-${rowId}">
+                    <td class="s/n">1</td>
+                    <td>
+                        <label for="logoname" class="control-label hidden">Item</label>
+                        <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${rowId}')" onblur="salesitempop(this,'${rowId}')" list="hems_itemslist" name="item" id="item-${rowId}" class="form-control iitem comp">
+                        <input autocomplete="off" class="itemmerid hidden" id="itemer-${rowId}">
+                    </td>
+                    <td>
+                        <div>
+                            <p class="font-bold">Type:&nbsp;<span class="font-normal" id="type-${rowId}"></span></p>
+                            <p class="font-bold">Unit:&nbsp;<span class="font-normal" id="unit-${rowId}"></span></p>
+                            <p class="font-bold ${isOrderWorkspaceMode() ? 'hidden' : ''}">Stock&nbsp;Balance:&nbsp;<span class="font-normal" id="balance-${rowId}"></span></p>
+                        </div>
+                    </td>
+                    <td>
+                        <label for="logoname" class="control-label hidden">Price</label>
+                        <input autocomplete="off" type="number" id="price-${rowId}" class="form-control comp pprice" placeholder="">
+                    </td>
+                    <td>
+                        <label for="logoname" class="control-label hidden">Quantity</label>
+                        <input autocomplete="off" type="number" id="qty-${rowId}" class="form-control comp qqty" onchange="calsaleqty('${rowId}')" placeholder="">
+                    </td>
+                    <td>
+                        <label for="logoname" class="control-label hidden">Amount</label>
+                        <input autocomplete="off" type="number" disabled id="amount-${rowId}" class="form-control ammount" placeholder="">
+                    </td>
+                    <td>
+                        <button onclick="event.preventDefault();removesalesrow('${rowId}')" class="material-symbols-outlined rounded-full bg-red-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>
+                    </td>
+                </tr>
+            `
+        } else {
+            addsalesrow(rowId)
+        }
+
+        const inventoryItem = (Array.isArray(datasource) ? datasource : []).find((inv) => {
+            if(String(inv?.itemid || '') && String(source?.itemid || '')) return String(inv.itemid) === String(source.itemid)
+            return String(inv?.itemname || '').trim().toLowerCase() === String(source?.itemname || '').trim().toLowerCase()
+        }) || {}
+
+        const qty = Number(source.qty || 0)
+        const cost = Number(source.cost || inventoryItem.price || 0)
+        if(did(`item-${rowId}`)) did(`item-${rowId}`).value = String(source.itemname || inventoryItem.itemname || '').trim()
+        if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = String(source.itemid || inventoryItem.itemid || '').trim()
+        if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = source.itemtype || source.type || inventoryItem.itemtype || ''
+        if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = source.units || source.unit || inventoryItem.units || ''
+        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = inventoryItem.balance ?? source.balance ?? ''
+        if(did(`price-${rowId}`)) did(`price-${rowId}`).value = cost
+        if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = qty
+        if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = cost * qty
+        calsaleqty(rowId)
+    })
+
+    if(!details.length) emptysales()
+    runCount()
+    notification('Order loaded for editing', 1)
+    return true
+}
+
 async function composeOrderToBill(orderEntry = null) {
     if(!orderEntry?.saleentry || !Array.isArray(orderEntry?.saledetail)) {
         notification('Invalid order data', 0)
@@ -1788,6 +1916,14 @@ function composeOrderToBillByReference(reference = '') {
     window.location.href = 'index.php?r=bills'
 }
 
+async function editOrderByBatch(batchid = '') {
+    const cleanedBatchId = String(batchid || '').trim()
+    if(!cleanedBatchId) return notification('Order batch id is required for edit', 0)
+    const orderEntry = orderRowsIndex.get(cleanedBatchId) || findOrderEntryByBatchOrReference(cleanedBatchId)
+    if(!orderEntry) return notification('Order not found in current list', 0)
+    await loadOrderIntoForm(orderEntry)
+}
+
 function buildReceiptRowsFromForm(reference = '', ttype = '') {
     const rows = []
     const tableRows = did('thetabledata')?.querySelectorAll('tr') || []
@@ -1850,6 +1986,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
         if(ttype)payload.set('ttype', ttype)
+        if((isOrderWorkspaceMode() || ttype === 'ORDER') && orderEditBatchId) payload.set('batchid', orderEditBatchId)
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
             payload.delete('amountpaid')
             payload.delete('paymentmethod')
@@ -1865,6 +2002,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
             }
             else printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
             if(!isOrderWorkspaceMode()) fetchsalesbills()
+            if(isOrderWorkspaceMode()) {
+                orderEditBatchId = ''
+                fetchsales()
+            }
             return
         }
         fetchsales();
@@ -1876,6 +2017,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
 }
 
 function emptysales(){
+    orderEditBatchId = ''
     const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `
                                             <tr id="row-919">
