@@ -1,6 +1,8 @@
 let mergeBillDatasource = []
 let mergeBillSelectedRefs = []
 let mergeBillPreviewItems = []
+let mergeBillStockByItemId = {}
+let mergeBillStockByName = {}
 
 function mergeBillMoney(value = 0) {
     return typeof formatCurrency === 'function' ? formatCurrency(value || 0) : formatNumber(value || 0)
@@ -16,6 +18,18 @@ function mergeBillTotal(items = []) {
 
 function normalizeMergeBillName(value = '') {
     return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function getMergeBillStockValue(item = {}) {
+    const availableRaw = Number(
+        item?.balance ??
+        item?.quantity ??
+        item?.qty ??
+        item?.stockbalance ??
+        item?.instock ??
+        0
+    )
+    return Number.isFinite(availableRaw) ? Math.max(availableRaw, 0) : 0
 }
 
 function normalizeMergeBillItem(item = {}, index = 0, reference = '') {
@@ -122,6 +136,27 @@ async function mergebillActive() {
     await fetchMergeBills()
 }
 
+async function fetchMergeBillStockMap() {
+    const salespoint = String(did('mergebill_salespoint')?.value || '').trim()
+    mergeBillStockByItemId = {}
+    mergeBillStockByName = {}
+    if (!salespoint) return false
+
+    const payload = new FormData()
+    payload.append('salespoint', salespoint)
+    const request = await httpRequest2('../controllers/fetchinventorybysalespoint', payload, null, 'json')
+    if (!request.status || !Array.isArray(request.data)) return false
+
+    request.data.forEach((entry) => {
+        const itemid = String(entry?.itemid || '').trim()
+        const itemname = normalizeMergeBillName(entry?.itemname || '')
+        const stock = getMergeBillStockValue(entry)
+        if (itemid) mergeBillStockByItemId[itemid] = stock
+        if (itemname) mergeBillStockByName[itemname] = stock
+    })
+    return true
+}
+
 async function fetchMergeBills() {
     const payload = new FormData()
     const reference = String(did('mergebill_reference')?.value || '').trim()
@@ -140,6 +175,7 @@ async function fetchMergeBills() {
     if (startdate) payload.append('startdate', startdate)
     if (enddate) payload.append('enddate', enddate)
     if (salespoint) payload.append('salespoint', salespoint)
+    await fetchMergeBillStockMap()
 
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, did('mergebill_fetch'), 'json')
     if (!request.status) {
@@ -164,6 +200,8 @@ function clearMergeBillFilters() {
     mergeBillDatasource = []
     mergeBillSelectedRefs = []
     mergeBillPreviewItems = []
+    mergeBillStockByItemId = {}
+    mergeBillStockByName = {}
     renderMergeBillTable()
     renderMergeBillWorkspace()
 }
@@ -225,6 +263,7 @@ function rebuildMergeBillPreview(showWarning = true) {
     selectedBills.forEach((bill) => {
         ;(bill.items || []).forEach((item) => mergeBillItemIntoPreview(item, bill.reference))
     })
+    applyMergeBillStockStatus()
     if (showWarning && selectedBills.length < 2) notification('Select at least two bills to merge', 0)
     renderMergeBillWorkspace()
 }
@@ -252,8 +291,43 @@ function mergeBillItemIntoPreview(sourceItem = {}, reference = '') {
         uid: `${String(sourceItem.itemid || sourceItem.itemname || 'item')}_${mergeBillPreviewItems.length}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         qty,
         cost: sourceCost,
-        sources: reference ? [reference] : []
+        sources: reference ? [reference] : [],
+        stockavailable: null,
+        stockstatus: 'unknown'
     })
+}
+
+function resolveMergeBillItemStock(item = {}) {
+    const itemid = String(item.itemid || '').trim()
+    const itemname = normalizeMergeBillName(item.itemname || '')
+    if (itemid && Object.prototype.hasOwnProperty.call(mergeBillStockByItemId, itemid)) {
+        return { stockavailable: Number(mergeBillStockByItemId[itemid]), stockstatus: 'ok' }
+    }
+    if (itemname && Object.prototype.hasOwnProperty.call(mergeBillStockByName, itemname)) {
+        return { stockavailable: Number(mergeBillStockByName[itemname]), stockstatus: 'ok' }
+    }
+    return { stockavailable: null, stockstatus: 'unknown' }
+}
+
+function applyMergeBillStockStatus() {
+    mergeBillPreviewItems = mergeBillPreviewItems.map((item) => {
+        const resolved = resolveMergeBillItemStock(item)
+        const qty = Number(item.qty || 0)
+        const status = resolved.stockstatus === 'unknown'
+            ? 'unknown'
+            : (qty > Number(resolved.stockavailable || 0) ? 'exceeds' : 'ok')
+        return {
+            ...item,
+            stockavailable: resolved.stockavailable,
+            stockstatus: status
+        }
+    })
+}
+
+function getMergeBillStockViolations() {
+    const exceeds = mergeBillPreviewItems.filter((item) => item.stockstatus === 'exceeds')
+    const unknown = mergeBillPreviewItems.filter((item) => item.stockstatus === 'unknown')
+    return { exceeds, unknown, hasViolations: exceeds.length > 0 || unknown.length > 0 }
 }
 
 function renderMergeBillWorkspace() {
@@ -273,7 +347,25 @@ function renderMergeBillWorkspace() {
     did('mergebill_description').textContent = buildMergeBillDescription(selectedBills)
     did('mergebill_total').textContent = mergeBillMoney(mergeBillTotal(mergeBillPreviewItems))
     did('mergebill_item_count').textContent = `${mergeBillPreviewItems.length} line item${mergeBillPreviewItems.length === 1 ? '' : 's'}`
+    renderMergeBillStockAlert()
     did('mergebill_items').innerHTML = renderMergeBillPreviewRows()
+}
+
+function renderMergeBillStockAlert() {
+    const holder = did('mergebill_stock_alert')
+    if (!holder) return
+    const violations = getMergeBillStockViolations()
+    if (!violations.hasViolations) {
+        holder.classList.add('hidden')
+        holder.innerHTML = ''
+        return
+    }
+
+    const messages = []
+    if (violations.exceeds.length) messages.push(`${violations.exceeds.length} item(s) exceed stock available`)
+    if (violations.unknown.length) messages.push(`${violations.unknown.length} item(s) have unknown stock`)
+    holder.innerHTML = `<span class="font-semibold">Submit blocked:</span> ${messages.join(' and ')}. Adjust quantities so each line is equal to or below available stock and resolve unknown stock rows.`
+    holder.classList.remove('hidden')
 }
 
 function renderMergeBillSelectedTray(selectedBills = []) {
@@ -296,8 +388,15 @@ function renderMergeBillPreviewRows() {
     if (!mergeBillPreviewItems.length) return `<tr><td colspan="100%" class="text-center opacity-70">No merged items</td></tr>`
     return mergeBillPreviewItems.map((item) => {
         const safeUid = String(item.uid || '').replace(/'/g, "\\'")
+        const isInvalid = item.stockstatus === 'exceeds' || item.stockstatus === 'unknown'
+        const stockValue = item.stockstatus === 'unknown' ? 'Unknown' : formatNumber(Number(item.stockavailable || 0))
+        const stockHint = item.stockstatus === 'exceeds'
+            ? '<p class="text-[10px] text-red-700 font-semibold">Quantity exceeds stock available</p>'
+            : item.stockstatus === 'unknown'
+                ? '<p class="text-[10px] text-red-700 font-semibold">Stock record not found for this item</p>'
+                : ''
         return `
-            <tr>
+            <tr class="${isInvalid ? 'mergebill-row-invalid' : ''}">
                 <td>
                     <div>
                         <p class="font-semibold">${item.itemname || '-'}</p>
@@ -307,6 +406,12 @@ function renderMergeBillPreviewRows() {
                 <td>
                     <div class="flex flex-wrap gap-1">
                         ${(item.sources || []).map((source) => `<span class="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">${source}</span>`).join('')}
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <p class="font-semibold">${stockValue}</p>
+                        ${stockHint}
                     </div>
                 </td>
                 <td>${mergeBillMoney(item.cost || 0)}</td>
@@ -322,11 +427,13 @@ function updateMergeBillItemQty(uid = '', value = 0) {
     const item = mergeBillPreviewItems.find((entry) => String(entry.uid) === String(uid))
     if (!item) return
     item.qty = Math.max(1, Number(value || 1))
+    applyMergeBillStockStatus()
     renderMergeBillWorkspace()
 }
 
 function removeMergeBillItem(uid = '') {
     mergeBillPreviewItems = mergeBillPreviewItems.filter((item) => String(item.uid) !== String(uid))
+    applyMergeBillStockStatus()
     renderMergeBillWorkspace()
 }
 
@@ -367,6 +474,9 @@ function validateMergeBillBeforeSubmit(selectedBills = []) {
     if (!mergeBillPreviewItems.length) return 'Merged bill must contain at least one item'
     const invalidItem = mergeBillPreviewItems.find((item) => !item.itemname || Number(item.qty || 0) <= 0 || Number(item.cost || 0) < 0)
     if (invalidItem) return 'Every merged item requires a valid item, quantity, and price'
+    const stockViolations = getMergeBillStockViolations()
+    if (stockViolations.exceeds.length) return 'You cannot submit until all quantities are equal to or below stock available'
+    if (stockViolations.unknown.length) return 'You cannot submit while some merged items have unknown stock records'
     const missingSourceBatch = selectedBills.slice(1).find((bill) => !bill.batchid)
     if (missingSourceBatch) return `Source bill ${missingSourceBatch.reference || ''} is missing batch id`
     return ''

@@ -87,6 +87,7 @@
                     <p id="mergebill_description" class="font-medium"></p>
                 </div>
             </div>
+            <div id="mergebill_stock_alert" class="hidden border-b border-red-200 bg-red-50 p-3 text-sm text-red-700"></div>
 
             <div class="p-4">
                 <div class="flex justify-between items-center mb-3">
@@ -99,6 +100,7 @@
                             <tr>
                                 <th>item</th>
                                 <th>source</th>
+                                <th>stock available</th>
                                 <th>price</th>
                                 <th>qty</th>
                                 <th>amount</th>
@@ -128,6 +130,12 @@
 <style>
     .mergebill-chip {
         animation: mergebillFadeIn .16s ease-out;
+    }
+    .mergebill-row-invalid {
+        background-color: #fef2f2;
+    }
+    .mergebill-row-invalid td {
+        color: #991b1b;
     }
     @keyframes mergebillFadeIn {
         from { opacity: 0; transform: translateY(4px); }
