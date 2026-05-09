@@ -280,6 +280,7 @@
                                         <thead>
                                             <tr>
                                                 <th>data</th>
+                                                <th>sales point</th>
                                                 <?php if($isOrderRoute): ?>
                                                 <th>items</th>
                                                 <th>comments</th>

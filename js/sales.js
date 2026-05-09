@@ -1230,6 +1230,7 @@ async function onsalesTableDataSignal() {
             return `
                 <tr>
                     <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
+                    <td>${item.saleentry.salespoint || '-'}</td>
                     <td>${nestedItemsTable}</td>
                     <td>
                         <div class="text-xs leading-5">
@@ -1260,6 +1261,7 @@ async function onsalesTableDataSignal() {
         return `
             <tr>
                 <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
+                <td>${item.saleentry.salespoint || '-'}</td>
                 <td>${item.saleentry.reference}</td>
                 <td>${salesItemsPreview}</td>
                 <td>
