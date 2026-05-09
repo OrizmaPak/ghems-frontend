@@ -1,8 +1,11 @@
+<?php $splitBillEmbedded = isset($splitBillEmbedded) && $splitBillEmbedded; ?>
+<?php if(!$splitBillEmbedded): ?>
 <section class="animate__animated animate__fadeIn">
     <p class="page-title">
         <span>SPLIT BILL</span>
     </p>
     <select id="salespointname" class="hidden"></select>
+<?php endif; ?>
 
     <div class="bg-white/90 p-5 xl:p-6 rounded-sm mb-4">
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -113,4 +116,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+<?php if(!$splitBillEmbedded): ?>
 </section>
+<?php endif; ?>

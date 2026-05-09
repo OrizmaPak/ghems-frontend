@@ -31,6 +31,9 @@
                                 <li id="" class="me-2 cp viewer optioner" name="salesbillsview" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Bills</p>
                                 </li>
+                                <li id="" class="me-2 cp viewer optioner" name="splitbillview" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">Split Bill</p>
+                                </li>
                                 <?php endif; ?>
                             </ul>
                             
@@ -397,6 +400,12 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if($isBillsRoute): ?>
+                            <div id="splitbillview" class="hidden">
+                                <?php $splitBillEmbedded = true; include __DIR__ . '/splitbill.php'; ?>
                             </div>
                             <?php endif; ?>
                              
