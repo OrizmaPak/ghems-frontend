@@ -365,6 +365,40 @@ function syncSalesBillFilterSalespointOptions() {
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
 }
 
+function normalizeSalesTextValue(value) {
+    const text = String(value ?? '').trim()
+    return text && text !== '-1' ? text : ''
+}
+
+function resolveOrderDetailsValue(entry = {}, details = []) {
+    const candidates = [
+        entry.ownerid,
+        entry.owner,
+        entry.orderdetails,
+        entry.orderdetail,
+        entry.order_details,
+        entry.order_detail,
+        entry.ordernumber,
+        entry.order_number,
+        entry.invoiceto,
+        entry.billto
+    ]
+    const sourceDetails = Array.isArray(details) ? details : []
+    sourceDetails.forEach((detail) => {
+        candidates.push(
+            detail?.ownerid,
+            detail?.owner,
+            detail?.orderdetails,
+            detail?.orderdetail,
+            detail?.order_details,
+            detail?.order_detail,
+            detail?.ordernumber,
+            detail?.order_number
+        )
+    })
+    return candidates.map(normalizeSalesTextValue).find(Boolean) || ''
+}
+
 function normalizeSalesRowsForTable(data = []) {
     if(!Array.isArray(data) || !data.length) return []
     if(data[0]?.saleentry) return data
@@ -402,7 +436,13 @@ function normalizeSalesRowsForTable(data = []) {
 
 function normalizeOrdersForSalesTable(data = []) {
     if(!Array.isArray(data) || !data.length) return []
-    if(data[0]?.saleentry) return normalizeSalesRowsForTable(data)
+    if(data[0]?.saleentry) {
+        return normalizeSalesRowsForTable(data).map((entry) => {
+            const orderDetails = resolveOrderDetailsValue(entry.saleentry || {}, entry.saledetail || [])
+            if(orderDetails) entry.saleentry.ownerid = orderDetails
+            return entry
+        })
+    }
 
     const grouped = new Map()
     data.forEach((row) => {
@@ -414,7 +454,7 @@ function normalizeOrdersForSalesTable(data = []) {
         const batchid = String(row.batchid || row.reference || row.id || '').trim()
         if(!batchid) return
         if(!grouped.has(batchid)){
-            const owner = row.ownerid ?? row.owner ?? row.ordernumber ?? -1
+            const owner = resolveOrderDetailsValue(row) || -1
             const normalizedOwner = (owner === '' || owner === null || owner === undefined) ? -1 : owner
             grouped.set(batchid, {
                 saleentry: {
@@ -438,6 +478,10 @@ function normalizeOrdersForSalesTable(data = []) {
         }
 
         const group = grouped.get(batchid)
+        const rowOrderDetails = resolveOrderDetailsValue(row)
+        if(rowOrderDetails && !normalizeSalesTextValue(group.saleentry.ownerid)){
+            group.saleentry.ownerid = rowOrderDetails
+        }
         group.saledetail.push({
             itemid: row.itemid || '',
             itemname: row.itemname || '',
@@ -1623,9 +1667,7 @@ async function composeOrderToBill(orderEntry = null) {
         handlesalesapplyto()
     }
 
-    const ownerValue = (orderEntry.saleentry.ownerid !== undefined && orderEntry.saleentry.ownerid !== null && String(orderEntry.saleentry.ownerid) !== '-1')
-        ? String(orderEntry.saleentry.ownerid)
-        : ''
+    const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
     if(did('owner1')) did('owner1').value = ownerValue
     if(did('owner')) did('owner').value = ownerValue
     if(did('description')) {
