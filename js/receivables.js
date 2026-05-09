@@ -12,14 +12,18 @@ function isPayPendingCheckoutBillsRoute(){
     return receiveablesPageMode === 'paypendingcheckoutbills' || getCurrentRouteName() === 'paypendingcheckoutbills'
 }
 
+function isGuestFolioRoute(){
+    return receiveablesPageMode === 'guestfolio' || getCurrentRouteName() === 'guestfolio'
+}
+
 function renderReceiveablesEmptyState(message='No records retrieved'){
     const tabledata = document.getElementById('tabledata')
     if(!tabledata)return
     tabledata.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
 }
 
-async function receivablesActive(mode='receivables') {
-    receiveablesPageMode = mode
+async function receivablesActive(mode='') {
+    receiveablesPageMode = mode || getCurrentRouteName() || 'receivables'
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
     if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => fetchreceiveables('', did('receiveablesroomnumber').value))
@@ -155,10 +159,14 @@ async function fetchreceiveables(id='', roomnumber='') {
     function getparamm(){
         let paramstr = new FormData()
         if(id)paramstr.append('id', id)
-        if(normalizedRoomNumber)paramstr.append('roomnumber', normalizedRoomNumber)
+        if(normalizedRoomNumber){
+            if(isGuestFolioRoute()) paramstr.append('ghestid', normalizedRoomNumber)
+            else paramstr.append('roomnumber', normalizedRoomNumber)
+        }
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchreceivablesbyrooms', (id || normalizedRoomNumber) ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
+    const fetchController = isGuestFolioRoute() ? '../controllers/fetchguestfolio' : '../controllers/fetchreceivablesbyrooms'
+    let request = await httpRequest2(fetchController, (id || normalizedRoomNumber) ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
     if(!id)renderReceiveablesEmptyState()
     if(request.status) {
         if(!id){
