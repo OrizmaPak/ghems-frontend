@@ -88,7 +88,14 @@ function syncMergeBillSalespointOptions() {
     const source = did('salespointname')
     const target = did('mergebill_salespoint')
     if (!source || !target) return
-    target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+    const options = Array.from(source.options || []).map((opt) => {
+        const value = String(opt.value || '').trim()
+        if (!value) return ''
+        return `<option value="${value.replace(/"/g, '&quot;')}">${opt.textContent || value}</option>`
+    }).filter(Boolean).join('')
+    target.innerHTML = `<option value="">-- SELECT SALESPOINT --</option>${options}`
+    const preferredSalespoint = String(source.value || '').trim()
+    if (preferredSalespoint) target.value = preferredSalespoint
 }
 
 function bindMergeBillControl(id, eventName, handler) {
@@ -121,13 +128,20 @@ async function fetchMergeBills() {
     const startdate = String(did('mergebill_startdate')?.value || '').trim()
     const enddate = String(did('mergebill_enddate')?.value || '').trim()
     const salespoint = String(did('mergebill_salespoint')?.value || '').trim()
+    if (!salespoint) {
+        mergeBillDatasource = []
+        mergeBillSelectedRefs = []
+        mergeBillPreviewItems = []
+        renderMergeBillTable()
+        renderMergeBillWorkspace()
+        return notification('Select a department/salespoint to fetch merge bills', 0)
+    }
     if (reference) payload.append('reference', reference)
     if (startdate) payload.append('startdate', startdate)
     if (enddate) payload.append('enddate', enddate)
     if (salespoint) payload.append('salespoint', salespoint)
 
-    const requestPayload = reference || startdate || enddate || salespoint ? payload : null
-    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', requestPayload, did('mergebill_fetch'), 'json')
+    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, did('mergebill_fetch'), 'json')
     if (!request.status) {
         mergeBillDatasource = []
         mergeBillSelectedRefs = []
@@ -147,7 +161,11 @@ function clearMergeBillFilters() {
     if (did('mergebill_startdate')) did('mergebill_startdate').value = ''
     if (did('mergebill_enddate')) did('mergebill_enddate').value = ''
     if (did('mergebill_salespoint')) did('mergebill_salespoint').value = ''
-    fetchMergeBills()
+    mergeBillDatasource = []
+    mergeBillSelectedRefs = []
+    mergeBillPreviewItems = []
+    renderMergeBillTable()
+    renderMergeBillWorkspace()
 }
 
 function getSelectedMergeBills() {

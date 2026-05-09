@@ -7,7 +7,7 @@
         <div class="form-group">
             <label class="control-label">Department / Salespoint</label>
             <select id="mergebill_salespoint" class="form-control !text-black !bg-white">
-                <option value="">-- ALL --</option>
+                <option value="">-- SELECT SALESPOINT --</option>
             </select>
         </div>
         <div class="form-group">
