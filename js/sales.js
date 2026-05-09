@@ -381,6 +381,7 @@ function normalizeSalesTextValue(value) {
 
 function resolveOrderDetailsValue(entry = {}, details = []) {
     const candidates = [
+        entry.ownerdetail,
         entry.ownerid,
         entry.owner,
         entry.orderdetails,
@@ -395,6 +396,7 @@ function resolveOrderDetailsValue(entry = {}, details = []) {
     const sourceDetails = Array.isArray(details) ? details : []
     sourceDetails.forEach((detail) => {
         candidates.push(
+            detail?.ownerdetail,
             detail?.ownerid,
             detail?.owner,
             detail?.orderdetails,
@@ -426,7 +428,7 @@ function normalizeSalesRowsForTable(data = []) {
                     servicecharge: Number(row.totalamount || row.servicecharge || 0),
                     paymentmethod: row.paymentmethod || '',
                     applyto: row.applyto || '',
-                    ownerid: row.ownerid ?? row.owner ?? -1
+                    ownerid: row.ownerdetail ?? row.ownerid ?? row.owner ?? -1
                 },
                 amountreceived: Number(row.amountpaid || row.amountreceived || 0),
                 saledetail: []
@@ -542,7 +544,7 @@ function normalizeSalesBillRows(data = []) {
                 paymentmethod: saleEntry.paymentmethod || '',
                 totalamount: Number(saleEntry.totalamount || saleEntry.servicecharge || detailTotal || 0),
                 amountpaid: Number(entry.amountreceived || saleEntry.amountpaid || 0),
-                owner: saleEntry.ownerid ?? saleEntry.owner ?? '',
+                owner: saleEntry.ownerdetail ?? saleEntry.ownerid ?? saleEntry.owner ?? '',
                 ttype: saleEntry.ttype || '',
                 items: details.map((item) => ({...item}))
             }
@@ -564,7 +566,7 @@ function normalizeSalesBillRows(data = []) {
             paymentmethod: first.paymentmethod || '',
             totalamount: Number(first.totalamount || first.servicecharge || lineTotal || 0),
             amountpaid: Number(first.amountpaid || first.amountreceived || 0),
-            owner: first.owner ?? first.ownerid ?? '',
+            owner: first.ownerdetail ?? first.owner ?? first.ownerid ?? '',
             ttype: first.ttype || '',
             items: rows.map((row) => ({...row}))
         }
@@ -659,10 +661,11 @@ function retrieveBillToSalesByBatch(batchKey = '') {
 
 function buildReceiptRowsFromBillEntry(bill = {}) {
     const details = Array.isArray(bill.items) ? bill.items : []
-    const ownerValue = String(bill.owner ?? bill.ownerid ?? '').trim()
+    const ownerValue = String(bill.ownerdetail ?? bill.owner ?? bill.ownerid ?? '').trim()
     const commentValue = String(bill.description || details.find((item) => String(item.description || '').trim())?.description || '').trim()
     const common = {
         reference: bill.reference || '',
+        ownerdetail: ownerValue || '-1',
         owner: ownerValue || '-1',
         ownerid: ownerValue || '-1',
         totalamount: Number(bill.totalamount || 0),
@@ -782,7 +785,7 @@ async function loadSalesBillIntoForm(bill) {
             handlesalesapplyto()
         }
 
-        const ownerValue = bill.owner !== null && bill.owner !== undefined ? String(bill.owner) : ''
+        const ownerValue = String(bill.ownerdetail ?? bill.owner ?? bill.ownerid ?? '')
         if(did('owner1')) did('owner1').value = ownerValue
         if(did('owner')) did('owner').value = ownerValue
 
@@ -1186,8 +1189,9 @@ async function onsalesTableDataSignal() {
             orderRowsIndex.set(String(item.saleentry.reference || '').trim(), item)
             if(item.saleentry.batchid) orderRowsIndex.set(String(item.saleentry.batchid || '').trim(), item)
         }
-        const ownerValue = (item.saleentry.ownerid !== undefined && item.saleentry.ownerid !== null && String(item.saleentry.ownerid).trim() !== '' && String(item.saleentry.ownerid) !== '-1')
-            ? item.saleentry.ownerid
+        const ownerDetailValue = resolveOrderDetailsValue(item.saleentry, item.saledetail)
+        const ownerValue = ownerDetailValue
+            ? ownerDetailValue
             : item.saleentry.reference
         const itemSummary = (item.saledetail || []).map((detail) => `${detail.itemname || '-'} (${formatNumber(detail.qty || 0)})`).join(', ') || '-'
         const itemRows = (item.saledetail || [])
@@ -1209,7 +1213,7 @@ async function onsalesTableDataSignal() {
             const statusOptions = getOrderStatusOptions(currentStatus)
             const safeComment = item.saleentry.description || item.saledetail?.[0]?.description || ''
             const safeOrderDetails = (() => {
-                const raw = String(item.saleentry.ownerid ?? '').trim()
+                const raw = String(resolveOrderDetailsValue(item.saleentry, item.saledetail) ?? '').trim()
                 return raw && raw !== '-1' ? raw : '-'
             })()
             const renderItemLabel = (label) => {
@@ -1262,10 +1266,10 @@ async function onsalesTableDataSignal() {
             `
         }
         const safeDetails = (() => {
-            const raw = String(item.saleentry.ownerid ?? '').trim()
+            const raw = String(resolveOrderDetailsValue(item.saleentry, item.saledetail) ?? '').trim()
             return raw && raw !== '-1' ? raw : '-'
         })()
-        const safeComment = String(item.saleentry.ownerid < 0 ? (item.saledetail?.[0]?.description || item.saleentry.description || '') : item.saleentry.description || '').trim()
+        const safeComment = String(item.saleentry.description || item.saledetail?.[0]?.description || '').trim()
         return `
             <tr>
                 <td>${specialformatDateTime(item.saleentry.transactiondate)}</td>
@@ -1281,7 +1285,7 @@ async function onsalesTableDataSignal() {
                 <td>${formatNumber(item.saleentry.servicecharge)}</td>
                 <td>${formatNumber(item.amountreceived)}</td>
                 <td>${item.saleentry.paymentmethod}</td>
-                <td>${item.saleentry.ownerid < 0 ? '-' : item.saleentry.ownerid}</td>
+                <td>${safeDetails}</td>
                 <td class="flex items-center gap-3">
                     <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
                     <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchsalesbyreference', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
@@ -1297,7 +1301,7 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
     const orderMode = isOrderWorkspaceMode()
     const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || null
     if(preferLocal && !room && localData){
-        const localOrderDetailsRaw = String(localData.saleentry.ownerid ?? '').trim()
+        const localOrderDetailsRaw = String(resolveOrderDetailsValue(localData.saleentry, localData.saledetail) ?? '').trim()
         const localOrderDetails = localOrderDetailsRaw && localOrderDetailsRaw !== '-1' ? localOrderDetailsRaw : '-'
         const localOrderComment = String(localData.saleentry.description || '').trim()
         did('tableheader').innerHTML = `
@@ -1345,7 +1349,7 @@ async function openSalesReportModal(ref, room='', preferLocal=false){
     let request = await httpRequest2(`../controllers/${controller}`, getparamm(), null, 'json');
     let data1 = localData || {saleentry:{}, amountreceived:0}
     if(!request.status) return notification('No records retrieved')
-    const fallbackOrderDetailsRaw = String(data1.saleentry.ownerid ?? '').trim()
+        const fallbackOrderDetailsRaw = String(resolveOrderDetailsValue(data1.saleentry, data1.saledetail) ?? '').trim()
     const fallbackOrderDetails = fallbackOrderDetailsRaw && fallbackOrderDetailsRaw !== '-1' ? fallbackOrderDetailsRaw : '-'
     const fallbackOrderComment = String(data1.saleentry.description || '').trim()
 
@@ -1453,7 +1457,7 @@ function viewsaleinvoice(batchid, view){
                         		<div class="flex flex-wrap justify-between mb-8">
                         			<div class="w-full md:w-1/3 mb-2 md:mb-0">
                         				<label class="text-gray-800 block mb-1 font-bold text-sm uppercase tracking-wide">Bill To:</label>
-                        				<input autocomplete="off" id="rbillto" value="${batchdata.data[0].owner.toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
+                        				<input autocomplete="off" id="rbillto" value="${String(batchdata.data[0].ownerdetail || batchdata.data[0].owner || '-').toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
                         				<input autocomplete="off" id="rroomnumber" value="${String(batchdata.data[0].description).toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company address" >
                         				<input autocomplete="off" id="rpaymentmenthod" value="${String(batchdata.data[0].paymentmethod).toUpperCase()}" readonly class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Additional info" >
                         			</div>
@@ -1574,7 +1578,7 @@ function viewsaleinvoice(batchid, view){
                             <h3> Invoice / Reciept To:</h3>
                              <ul>
                                 <li style="display: flex;justify-content:space-between;width: 150%"><p>Sales Person:</p> <p>${batchdata.data[0].user.toUpperCase()}</p> </li>
-                                <li style="display: flex;justify-content:space-between;width: 150%"><p>Invoice / Reciept To</p> <p>${batchdata.data[0].owner.toUpperCase()}</p> </li>
+                                <li style="display: flex;justify-content:space-between;width: 150%"><p>Invoice / Reciept To</p> <p>${String(batchdata.data[0].ownerdetail || batchdata.data[0].owner || '-').toUpperCase()}</p> </li>
                                 <li style="display: flex;justify-content:space-between;width: 150%"><p>Payment Method:</p> <p>${String(batchdata.data[0].paymentmethod).toUpperCase()}</p> </li>
                                 <li style="display: flex;justify-content:space-between;width: 150%"><p>Description:</p> <p>${String(batchdata.data[0].description).toUpperCase()}</p> </li>
                                 <li style="display: flex;justify-content:space-between;width: 150%"><p>Reference Number:</p> <p>${String(batchdata.data[0].reference).toUpperCase()}</p> </li>
@@ -1956,6 +1960,7 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
         if(!itemName || qty <= 0) return
         rows.push({
             reference: String(reference || '').trim(),
+            ownerdetail: ownerValue || '-1',
             owner: ownerValue || '-1',
             ownerid: ownerValue || '-1',
             totalamount: Number.isFinite(totalAmountValue) ? totalAmountValue : 0,
@@ -1993,8 +1998,11 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         
         preparesalesvalues()
         
+        if(did('owner')) did('owner').value = String(did('owner1')?.value || did('owner')?.value || '').trim()
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
+        payload.set('ownerdetail', String(did('owner')?.value || '').trim() || '-1')
+        payload.set('owner', String(did('owner')?.value || '').trim() || '-1')
         if(ttype)payload.set('ttype', ttype)
         if((isOrderWorkspaceMode() || ttype === 'ORDER') && orderEditBatchId) payload.set('batchid', orderEditBatchId)
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
@@ -2222,6 +2230,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
         if(localData){
             rows = (localData.saledetail || []).map((detail) => ({
                 reference: localData.saleentry.reference || ref,
+                ownerdetail: localData.saleentry.ownerdetail ?? localData.saleentry.ownerid,
                 owner: localData.saleentry.ownerid,
                 ownerid: localData.saleentry.ownerid,
                 totalamount: localData.saleentry.servicecharge || 0,
@@ -2243,6 +2252,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             if(!rows.length){
                 rows = [{
                     reference: localData.saleentry.reference || ref,
+                    ownerdetail: localData.saleentry.ownerdetail ?? localData.saleentry.ownerid,
                     owner: localData.saleentry.ownerid,
                     ownerid: localData.saleentry.ownerid,
                     totalamount: localData.saleentry.servicecharge || 0,
@@ -2275,7 +2285,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
-            const ownerTextRaw = String(firstRow.owner ?? firstRow.ownerid ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.owner ?? rows.find((row) => String(row.owner ?? row.ownerid ?? '').trim())?.ownerid ?? '').trim()
+            const ownerTextRaw = String(firstRow.ownerdetail ?? firstRow.owner ?? firstRow.ownerid ?? rows.find((row) => String(row.ownerdetail ?? row.owner ?? row.ownerid ?? '').trim())?.ownerdetail ?? rows.find((row) => String(row.ownerdetail ?? row.owner ?? row.ownerid ?? '').trim())?.owner ?? rows.find((row) => String(row.ownerdetail ?? row.owner ?? row.ownerid ?? '').trim())?.ownerid ?? '').trim()
             const ownerText = ownerTextRaw && ownerTextRaw !== '-1' ? ownerTextRaw : '-'
             const shouldShowOwner = true
             const receiptDescription = String(

@@ -37,7 +37,7 @@ function normalizeSplitBillRows(data = []) {
                 transactiondate: saleEntry.transactiondate || '',
                 salespoint: saleEntry.salespoint || '',
                 description: saleEntry.description || (details[0]?.description || ''),
-                owner: saleEntry.ownerid ?? saleEntry.owner ?? '',
+                owner: saleEntry.ownerdetail ?? saleEntry.ownerid ?? saleEntry.owner ?? '',
                 applyto: saleEntry.applyto || '',
                 ttype: saleEntry.ttype || 'BILL',
                 totalamount: Number(saleEntry.totalamount || saleEntry.servicecharge || total || 0),
@@ -58,7 +58,7 @@ function normalizeSplitBillRows(data = []) {
                 transactiondate: row.transactiondate || '',
                 salespoint: row.salespoint || '',
                 description: row.description || '',
-                owner: row.owner ?? row.ownerid ?? '',
+                owner: row.ownerdetail ?? row.owner ?? row.ownerid ?? '',
                 applyto: row.applyto || '',
                 ttype: row.ttype || 'BILL',
                 totalamount: Number(row.totalamount || row.servicecharge || 0),
@@ -260,6 +260,7 @@ function buildSplitBillPayload(bill, items, options = {}) {
     if (options.batchid) payload.append('batchid', options.batchid)
     payload.append('salespoint', bill.salespoint || '')
     payload.append('applyto', bill.applyto || 'OTHERS')
+    payload.append('ownerdetail', bill.owner || '-1')
     payload.append('owner', bill.owner || '-1')
     payload.append('transactiondate', options.transactiondate || String(bill.transactiondate || new Date().toISOString().slice(0, 10)).slice(0, 10))
     payload.append('description', options.description || bill.description || '')

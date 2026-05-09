@@ -61,7 +61,7 @@ function normalizeMergeBillRows(data = []) {
                 transactiondate: saleEntry.transactiondate || '',
                 salespoint: saleEntry.salespoint || '',
                 description: saleEntry.description || (details[0]?.description || ''),
-                owner: saleEntry.ownerid ?? saleEntry.owner ?? '',
+                owner: saleEntry.ownerdetail ?? saleEntry.ownerid ?? saleEntry.owner ?? '',
                 applyto: saleEntry.applyto || 'OTHERS',
                 ttype: saleEntry.ttype || 'BILL',
                 totalamount: Number(saleEntry.totalamount || saleEntry.servicecharge || total || 0),
@@ -82,7 +82,7 @@ function normalizeMergeBillRows(data = []) {
                 transactiondate: row.transactiondate || '',
                 salespoint: row.salespoint || '',
                 description: row.description || '',
-                owner: row.owner ?? row.ownerid ?? '',
+                owner: row.ownerdetail ?? row.owner ?? row.ownerid ?? '',
                 applyto: row.applyto || 'OTHERS',
                 ttype: row.ttype || 'BILL',
                 totalamount: Number(row.totalamount || row.servicecharge || 0),
@@ -451,6 +451,7 @@ function buildMergeBillPayload(baseBill, selectedBills) {
     payload.append('billreferencecode', baseBill.reference || '')
     payload.append('salespoint', baseBill.salespoint || '')
     payload.append('applyto', baseBill.applyto || 'OTHERS')
+    payload.append('ownerdetail', baseBill.owner || '-1')
     payload.append('owner', baseBill.owner || '-1')
     payload.append('transactiondate', String(baseBill.transactiondate || new Date().toISOString().slice(0, 10)).slice(0, 10))
     payload.append('description', buildMergeBillDescription(selectedBills))
