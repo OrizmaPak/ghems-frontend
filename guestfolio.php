@@ -45,20 +45,6 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div id="guestFolioNameFilters" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div class="form-group">
-                                            <label for="receiveablesfirstname" class="control-label">First Name</label>
-                                            <input type="text" name="firstname" id="receiveablesfirstname" class="form-control" placeholder="Optional">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="receiveableslastname" class="control-label">Last Name</label>
-                                            <input type="text" name="lastname" id="receiveableslastname" class="form-control" placeholder="Optional">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="receiveablesothernames" class="control-label">Other Names</label>
-                                            <input type="text" name="othernames" id="receiveablesothernames" class="form-control" placeholder="Optional">
-                                        </div>
-                                    </div>
                                 </div>
                             </form>
                             <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 my-4">

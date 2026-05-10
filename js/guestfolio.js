@@ -430,7 +430,6 @@ function normalizeGuestDisplayName(item = {}) {
 function configureReceivablesFilterMode() {
     const roomWrap = did('receivablesRoomFilterWrap')
     const guestWrap = did('guestFolioGuestFilterWrap')
-    const guestExtraFilters = did('guestFolioNameFilters')
     const pageTitleSpan = document.querySelector('.page-title span')
     const viewTabLabel = document.querySelector('li[name="checkinview"] p')
     const showGuestMode = isGuestFolioRoute()
@@ -439,7 +438,6 @@ function configureReceivablesFilterMode() {
     if(viewTabLabel) viewTabLabel.textContent = showGuestMode ? 'View Guest Folio' : 'View Receivables'
     if(roomWrap) roomWrap.classList.toggle('hidden', showGuestMode)
     if(guestWrap) guestWrap.classList.toggle('hidden', !showGuestMode)
-    if(guestExtraFilters) guestExtraFilters.classList.toggle('hidden', !showGuestMode)
 }
 
 function receivablesEnsureTomSelectAssets() {
@@ -610,9 +608,6 @@ function useReceivablesRoomPicker(rowIndex){
 
 async function fetchreceiveables(id='', roomnumber='') {
     const normalizedRoomNumber = String(roomnumber || '').trim()
-    const firstNameFilter = String(did('receiveablesfirstname')?.value || '').trim()
-    const lastNameFilter = String(did('receiveableslastname')?.value || '').trim()
-    const otherNamesFilter = String(did('receiveablesothernames')?.value || '').trim()
     if(isPayPendingCheckoutBillsRoute() && !id && !normalizedRoomNumber){
         guestfolioReceiveablesFiltered = false
         setreceiveablesTableHeader()
@@ -630,18 +625,12 @@ async function fetchreceiveables(id='', roomnumber='') {
             if(isGuestFolioRoute()) paramstr.append('guestid', normalizedRoomNumber)
             else paramstr.append('roomnumber', normalizedRoomNumber)
         }
-        if(isGuestFolioRoute()){
-            if(firstNameFilter) paramstr.append('firstname', firstNameFilter)
-            if(lastNameFilter) paramstr.append('lastname', lastNameFilter)
-            if(otherNamesFilter) paramstr.append('othernames', otherNamesFilter)
-        }
         return paramstr
     }
     const fetchController = isGuestFolioRoute() ? '../controllers/fetchguestfolio' : '../controllers/fetchreceivablesbyrooms'
     const shouldSendParams = Boolean(
         id ||
-        normalizedRoomNumber ||
-        (isGuestFolioRoute() && (firstNameFilter || lastNameFilter || otherNamesFilter))
+        normalizedRoomNumber
     )
     let request = await httpRequest2(fetchController, shouldSendParams ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
     if(!id)renderReceiveablesEmptyState()
@@ -667,9 +656,6 @@ async function fetchreceiveables(id='', roomnumber='') {
 
 function resetreceiveablesfilter(){
     if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = ''
-    if(did('receiveablesfirstname'))did('receiveablesfirstname').value = ''
-    if(did('receiveableslastname'))did('receiveableslastname').value = ''
-    if(did('receiveablesothernames'))did('receiveablesothernames').value = ''
     if(guestfolioGuestTomSelect && typeof guestfolioGuestTomSelect.clear === 'function') guestfolioGuestTomSelect.clear(true)
     if(did('receiveablesguestid'))did('receiveablesguestid').value = ''
     if(isPayPendingCheckoutBillsRoute()){
