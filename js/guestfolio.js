@@ -257,29 +257,29 @@ function openGuestFolioPrint(guestId = '') {
     const roomNo = model.transactions.map(tx => String(tx.ownerid || '').trim()).filter(v => v && v !== '-2').join(', ') || '-'
     const summaryRows = model.billSummary.map(([label, amount]) => `
         <tr>
-            <td style="padding:2px 0;">${label}</td>
-            <td style="padding:2px 0; text-align:right;">${formatFolioAmount(amount)}</td>
+            <td style="padding:2px 0;border:1px solid #ccc;">${label}</td>
+            <td style="padding:2px 0; text-align:right;border:1px solid #ccc;">${formatFolioAmount(amount)}</td>
         </tr>
     `).join('')
 
     const dayRows = model.groupedDays.map((day) => {
         const txRows = day.rows.map((tx) => `
             <tr>
-                <td>${specialformatDateTime(tx.transactiondate || '')}</td>
-                <td>${normalizeFolioText(tx.reference)}</td>
-                <td>${normalizeFolioText(tx.description)}</td>
-                <td style="text-align:right;">${formatFolioAmount(tx.debit)}</td>
-                <td style="text-align:right;">${formatFolioAmount(tx.credit)}</td>
-                <td style="text-align:right;">${formatFolioAmount(tx.runningBalance)}</td>
+                <td style="border:1px solid #ccc;padding:4px 6px;">${specialformatDateTime(tx.transactiondate || '')}</td>
+                <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(tx.reference)}</td>
+                <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(tx.description)}</td>
+                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.debit)}</td>
+                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.credit)}</td>
+                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.runningBalance)}</td>
             </tr>
         `).join('')
         return `
             ${txRows}
             <tr class="day-total-row">
-                <td colspan="3" style="text-align:right; font-weight:700;">Day Total</td>
-                <td style="text-align:right; font-weight:700;">${formatFolioAmount(day.dayDebit)}</td>
-                <td style="text-align:right; font-weight:700;">${formatFolioAmount(day.dayCredit)}</td>
-                <td style="text-align:right; font-weight:700;">${formatFolioAmount(day.dayClosingBalance)}</td>
+                <td colspan="3" style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">Day Total</td>
+                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayDebit)}</td>
+                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayCredit)}</td>
+                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayClosingBalance)}</td>
             </tr>
         `
     }).join('')
@@ -302,11 +302,15 @@ function openGuestFolioPrint(guestId = '') {
                 #guestfolioprintcontainer .footer-note{margin-top:12px;border-top:1px solid #bbb;padding-top:6px;display:flex;justify-content:space-between;font-size:11px;}
                 #guestfolioprintcontainer .signatures{margin-top:24px;display:flex;justify-content:space-between;font-size:12px;}
                 @media print{
+                    #guestfolioprintcontainer{max-width:900px !important;width:900px !important;}
                     #guestfolioprintcontainer .logo{width:52px !important;height:52px !important;max-width:52px !important;max-height:52px !important;}
+                    #guestfolioprintcontainer table,
+                    #guestfolioprintcontainer td,
+                    #guestfolioprintcontainer th{border-color:#ccc !important;border-style:solid !important;}
                 }
             </style>
             <div class="header">
-                ${model.profile.logoUrl ? `<img src="${model.profile.logoUrl}" alt="logo" class="logo">` : ''}
+                ${model.profile.logoUrl ? `<img src="${model.profile.logoUrl}" alt="logo" class="logo" width="52" height="52" style="width:52px !important;height:52px !important;max-width:52px !important;max-height:52px !important;object-fit:contain;display:block;margin:0 auto 4px;">` : ''}
                 <div style="font-size:20px;font-weight:700;">${normalizeFolioText(model.profile.companyName)}</div>
                 <div>${normalizeFolioText(model.profile.companyAddress)}</div>
                 <div>${normalizeFolioText(model.profile.companyPhone)} ${model.profile.companyEmail ? ' | ' + model.profile.companyEmail : ''}</div>
@@ -315,13 +319,13 @@ function openGuestFolioPrint(guestId = '') {
 
             <table class="meta">
                 <tr>
-                    <td style="width:58%;">
+                    <td style="width:58%;border:1px solid #ccc;padding:2px 6px;vertical-align:top;">
                         <div><strong>Guest:</strong> ${normalizeFolioText(model.guestname)}</div>
                         <div><strong>Travel Agent:</strong> ${normalizeFolioText(model.travelagency?.agencyname || model.travelagency?.name || '')}</div>
                         <div><strong>Company:</strong> ${normalizeFolioText(model.company?.companyname || model.guest?.companyname || '')}</div>
                         <div><strong>Bill Instruction:</strong> ${normalizeFolioText(model.guest?.moredata?.billinstruction || '')}</div>
                     </td>
-                    <td>
+                    <td style="border:1px solid #ccc;padding:2px 6px;vertical-align:top;">
                         <div><strong>Invoice No:</strong> ${normalizeFolioText(lastTransaction.reference)}</div>
                         <div><strong>Invoice Date:</strong> ${normalizeFolioText(lastTransaction.transactiondate ? specialformatDateTime(lastTransaction.transactiondate) : '')}</div>
                         <div><strong>Arrival Date:</strong> -</div>
@@ -338,12 +342,12 @@ function openGuestFolioPrint(guestId = '') {
             <table class="ledger" style="margin-top:8px;">
                 <thead>
                     <tr>
-                        <th style="width:18%;">Date</th>
-                        <th style="width:17%;">Voucher</th>
-                        <th>Description</th>
-                        <th style="width:14%;text-align:right;">Debit</th>
-                        <th style="width:14%;text-align:right;">Credit</th>
-                        <th style="width:14%;text-align:right;">Balance</th>
+                        <th style="width:18%;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Date</th>
+                        <th style="width:17%;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Voucher</th>
+                        <th style="border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Description</th>
+                        <th style="width:14%;text-align:right;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Debit</th>
+                        <th style="width:14%;text-align:right;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Credit</th>
+                        <th style="width:14%;text-align:right;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Balance</th>
                     </tr>
                 </thead>
                 <tbody>
