@@ -5,6 +5,7 @@ const receivablesPaymentController = '../controllers/receipts'
 let receivablesGuestTomSelect = null
 let receivablesTomSelectAssetsPromise = null
 let receivablesGuestOptions = []
+let guestFolioBuckets = new Map()
 
 // Backward compatibility for old route/function spelling.
 async function receiveablesActive(mode='receiveables') {
@@ -41,6 +42,10 @@ function normalizeGuestFolioRows(payload = []) {
                 guestid: guestId,
                 guestname: guestName,
                 createdAt: guest?.created_at || guest?.tlog || '',
+                guest,
+                company: null,
+                travelagency: null,
+                groups: null,
                 transactions: []
             })
         }
@@ -50,6 +55,9 @@ function normalizeGuestFolioRows(payload = []) {
     payload.forEach((entry) => {
         const guest = entry?.guest || {}
         const bucket = ensureGuestBucket(guest)
+        bucket.company = entry?.company || null
+        bucket.travelagency = entry?.travelagency || null
+        bucket.groups = entry?.groups || null
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
 
         if(transactions.length) {
@@ -100,7 +108,243 @@ function normalizeGuestFolioRows(payload = []) {
         return dateB - dateA
     })
 
+    guestFolioBuckets = guestBuckets
     return deduped
+}
+
+function formatFolioAmount(value = 0) {
+    const numeric = Number(value || 0)
+    return numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function normalizeFolioText(value = '') {
+    const text = String(value ?? '').trim()
+    if(!text || text === '-' || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return '-'
+    return text
+}
+
+function getGuestFolioOrganisationProfile() {
+    const companyName = did('your_companyname')?.value || 'HEMS'
+    const companyAddress = did('your_companyaddress')?.value || ''
+    const companyPhone = did('your_companyphone')?.value || ''
+    const companyEmail = did('your_companyemail')?.value || ''
+    const logoValue = did('your_companylogo')?.value || ''
+    const logoUrl = logoValue && logoValue !== '-' ? `../images/${logoValue}` : ''
+    return { companyName, companyAddress, companyPhone, companyEmail, logoUrl }
+}
+
+function classifyGuestFolioSummary(description = '') {
+    const text = String(description || '').toLowerCase()
+    if(text.includes('accommodation') || text.includes('booking')) return 'Accommodation'
+    if(text.includes('discount')) return 'Tariff Discount'
+    if(text.includes('restaurant') || text.includes('meal') || text.includes('food')) return 'Restaurant Bill'
+    if(text.includes('laundry')) return 'Laundry'
+    if(text.includes('advance') || text.includes('credit card') || text.includes('transfer') || text.includes('deposit')) return 'Advance Credit Card'
+    return 'Others'
+}
+
+function getGuestFolioPrintModel(guestId = '') {
+    const bucket = guestFolioBuckets.get(String(guestId || '').trim())
+    if(!bucket) return null
+    const profile = getGuestFolioOrganisationProfile()
+    const transactions = (Array.isArray(bucket.transactions) ? [...bucket.transactions] : []).sort((a, b) => {
+        const dateA = new Date(String(a?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        const dateB = new Date(String(b?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        return dateA - dateB
+    })
+
+    const groupedDays = []
+    const dayMap = new Map()
+    let runningBalance = 0
+    let totalDebit = 0
+    let totalCredit = 0
+    const billSummary = new Map()
+
+    transactions.forEach((tx) => {
+        const date = String(tx.transactiondate || '').slice(0, 10)
+        const dayKey = date || 'Unknown Date'
+        if(!dayMap.has(dayKey)) {
+            const row = { dayKey, rows: [], dayDebit: 0, dayCredit: 0, dayClosingBalance: 0 }
+            dayMap.set(dayKey, row)
+            groupedDays.push(row)
+        }
+        const row = dayMap.get(dayKey)
+        const debit = Number(tx.debit || 0)
+        const credit = Number(tx.credit || 0)
+        totalDebit += debit
+        totalCredit += credit
+        runningBalance += debit - credit
+        row.dayDebit += debit
+        row.dayCredit += credit
+        row.dayClosingBalance = runningBalance
+        row.rows.push({
+            ...tx,
+            debit,
+            credit,
+            runningBalance
+        })
+
+        const summaryKey = classifyGuestFolioSummary(tx.description)
+        const prev = Number(billSummary.get(summaryKey) || 0)
+        billSummary.set(summaryKey, prev + (debit - credit))
+    })
+
+    return {
+        profile,
+        guest: bucket.guest || {},
+        company: bucket.company,
+        travelagency: bucket.travelagency,
+        groups: bucket.groups,
+        guestname: bucket.guestname,
+        groupedDays,
+        totalDebit,
+        totalCredit,
+        finalBalance: runningBalance,
+        billSummary: Array.from(billSummary.entries()),
+        transactions
+    }
+}
+
+function openGuestFolioPrint(guestId = '') {
+    const model = getGuestFolioPrintModel(guestId)
+    if(!model) return notification('Unable to load guest folio print data', 0)
+    did('modalreceipt').classList.remove('hidden')
+
+    const firstTransaction = model.transactions[0] || {}
+    const lastTransaction = model.transactions[model.transactions.length - 1] || {}
+    const roomNo = model.transactions.map(tx => String(tx.ownerid || '').trim()).filter(v => v && v !== '-2').join(', ') || '-'
+    const summaryRows = model.billSummary.map(([label, amount]) => `
+        <tr>
+            <td style="padding:2px 0;">${label}</td>
+            <td style="padding:2px 0; text-align:right;">${formatFolioAmount(amount)}</td>
+        </tr>
+    `).join('')
+
+    const dayRows = model.groupedDays.map((day) => {
+        const txRows = day.rows.map((tx) => `
+            <tr>
+                <td>${specialformatDateTime(tx.transactiondate || '')}</td>
+                <td>${normalizeFolioText(tx.reference)}</td>
+                <td>${normalizeFolioText(tx.description)}</td>
+                <td style="text-align:right;">${formatFolioAmount(tx.debit)}</td>
+                <td style="text-align:right;">${formatFolioAmount(tx.credit)}</td>
+                <td style="text-align:right;">${formatFolioAmount(tx.runningBalance)}</td>
+            </tr>
+        `).join('')
+        return `
+            ${txRows}
+            <tr class="day-total-row">
+                <td colspan="3" style="text-align:right; font-weight:700;">Day Total</td>
+                <td style="text-align:right; font-weight:700;">${formatFolioAmount(day.dayDebit)}</td>
+                <td style="text-align:right; font-weight:700;">${formatFolioAmount(day.dayCredit)}</td>
+                <td style="text-align:right; font-weight:700;">${formatFolioAmount(day.dayClosingBalance)}</td>
+            </tr>
+        `
+    }).join('')
+
+    did('invoicecontainer').innerHTML = `
+        <div id="guestfolioprintcontainer" class="bg-white p-4 md:p-8" style="max-width:900px;margin:0 auto;">
+            <style>
+                #guestfolioprintcontainer{font-family:Arial,sans-serif;color:#222;font-size:12px;line-height:1.25;}
+                #guestfolioprintcontainer .header{text-align:center;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:8px;}
+                #guestfolioprintcontainer .logo{width:65px;height:65px;object-fit:contain;margin:0 auto 4px;}
+                #guestfolioprintcontainer .title{font-size:18px;font-weight:700;letter-spacing:.5px;margin-top:4px;}
+                #guestfolioprintcontainer table{width:100%;border-collapse:collapse;}
+                #guestfolioprintcontainer .meta td{vertical-align:top;padding:2px 6px;border:1px solid #ccc;}
+                #guestfolioprintcontainer .ledger th,#guestfolioprintcontainer .ledger td{border:1px solid #ccc;padding:4px 6px;}
+                #guestfolioprintcontainer .ledger th{background:#f3f4f6;text-transform:uppercase;font-size:11px;}
+                #guestfolioprintcontainer .day-total-row{background:#f8fafc;}
+                #guestfolioprintcontainer .grand{margin-top:6px;font-weight:700;}
+                #guestfolioprintcontainer .summary{margin-top:10px;max-width:360px;margin-left:auto;}
+                #guestfolioprintcontainer .summary-title{text-align:center;font-weight:700;margin-bottom:4px;}
+                #guestfolioprintcontainer .footer-note{margin-top:12px;border-top:1px solid #bbb;padding-top:6px;display:flex;justify-content:space-between;font-size:11px;}
+                #guestfolioprintcontainer .signatures{margin-top:24px;display:flex;justify-content:space-between;font-size:12px;}
+            </style>
+            <div class="header">
+                ${model.profile.logoUrl ? `<img src="${model.profile.logoUrl}" alt="logo" class="logo">` : ''}
+                <div style="font-size:20px;font-weight:700;">${normalizeFolioText(model.profile.companyName)}</div>
+                <div>${normalizeFolioText(model.profile.companyAddress)}</div>
+                <div>${normalizeFolioText(model.profile.companyPhone)} ${model.profile.companyEmail ? ' | ' + model.profile.companyEmail : ''}</div>
+                <div class="title">GUEST INVOICE</div>
+            </div>
+
+            <table class="meta">
+                <tr>
+                    <td style="width:58%;">
+                        <div><strong>Guest:</strong> ${normalizeFolioText(model.guestname)}</div>
+                        <div><strong>Travel Agent:</strong> ${normalizeFolioText(model.travelagency?.agencyname || model.travelagency?.name || '')}</div>
+                        <div><strong>Company:</strong> ${normalizeFolioText(model.company?.companyname || model.guest?.companyname || '')}</div>
+                        <div><strong>Bill Instruction:</strong> ${normalizeFolioText(model.guest?.moredata?.billinstruction || '')}</div>
+                    </td>
+                    <td>
+                        <div><strong>Invoice No:</strong> ${normalizeFolioText(lastTransaction.reference)}</div>
+                        <div><strong>Invoice Date:</strong> ${normalizeFolioText(lastTransaction.transactiondate ? specialformatDateTime(lastTransaction.transactiondate) : '')}</div>
+                        <div><strong>Arrival Date:</strong> -</div>
+                        <div><strong>Departure Date:</strong> -</div>
+                        <div><strong>Pax:</strong> -</div>
+                        <div><strong>Room No:</strong> ${normalizeFolioText(roomNo)}</div>
+                        <div><strong>Reg No:</strong> ${normalizeFolioText(model.guest?.id)}</div>
+                        <div><strong>Reservation No:</strong> ${normalizeFolioText(firstTransaction.reference)}</div>
+                        <div><strong>Rack Rate:</strong> -</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="ledger" style="margin-top:8px;">
+                <thead>
+                    <tr>
+                        <th style="width:18%;">Date</th>
+                        <th style="width:17%;">Voucher</th>
+                        <th>Description</th>
+                        <th style="width:14%;text-align:right;">Debit</th>
+                        <th style="width:14%;text-align:right;">Credit</th>
+                        <th style="width:14%;text-align:right;">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${dayRows || '<tr><td colspan="6" style="text-align:center;">No transactions</td></tr>'}
+                </tbody>
+            </table>
+
+            <table class="grand">
+                <tr>
+                    <td style="text-align:right;padding-top:6px;"><strong>Grand Total:</strong></td>
+                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalDebit)}</strong></td>
+                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalCredit)}</strong></td>
+                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.finalBalance)}</strong></td>
+                </tr>
+            </table>
+
+            <div class="summary">
+                <div class="summary-title">--- Bill Summary ---</div>
+                <table>
+                    <tbody>
+                        ${summaryRows || '<tr><td>Others</td><td style="text-align:right;">0.00</td></tr>'}
+                        <tr>
+                            <td style="padding-top:4px;font-weight:700;">Total</td>
+                            <td style="padding-top:4px;text-align:right;font-weight:700;">${formatFolioAmount(model.finalBalance)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="footer-note">
+                <span>WE HOPE YOU ENJOYED YOUR STAY AND WOULD LIKE TO WELCOME YOU BACK</span>
+                <span>Please Deposit Your Room Key</span>
+            </div>
+
+            <div class="signatures">
+                <span>Cashier Signature</span>
+                <span>Reprint Bill (1)</span>
+                <span>Guest Signature</span>
+            </div>
+        </div>
+
+        <div class="flex justify-end mt-3 gap-2">
+            <button type="button" class="btn" onclick="printContent('HEMS GUEST FOLIO', null, 'guestfolioprintcontainer', true)">Print</button>
+            <button type="button" class="btn" onclick="did('modalreceipt').classList.add('hidden')">Close</button>
+        </div>
+    `
 }
 
 async function receivablesActive(mode='') {
@@ -425,7 +669,10 @@ async function onreceiveablesTableDataSignal() {
                 <td>${formatNumber(item.debit || 0)}</td>
                 <td>${formatNumber(item.credit || 0)}</td>
                 <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
-                <td>${item._emptyTransaction ? '-' : `<button onclick="openreceiveablemodalbyindex('${item.index ?? 0}')" class="btn btn-sm btn-primary ${(Number(item.debit || 0) - Number(item.credit || 0)) > 0 ? '' : '!hidden'}">Pay Now</button>`}</td>
+                <td class="flex gap-1 items-center">
+                    <button onclick="openGuestFolioPrint('${item.guestid || ''}')" class="btn btn-sm bg-slate-700 text-white">View/Print Folio</button>
+                    ${item._emptyTransaction ? '' : `<button onclick="openreceiveablemodalbyindex('${item.index ?? 0}')" class="btn btn-sm btn-primary ${(Number(item.debit || 0) - Number(item.credit || 0)) > 0 ? '' : '!hidden'}">Pay Now</button>`}
+                </td>
             </tr>`)
         }).join('')
         injectPaginatatedTable(rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`)
@@ -663,7 +910,8 @@ async function submitReceivablePayment(){
     if(request.status){
         notification('Payment received successfully', 1)
         did('modalreceipt').classList.add('hidden')
-        fetchreceiveables('', did('receiveablesroomnumber')?.value || '')
+        if(isGuestFolioRoute()) fetchreceiveables('', getSelectedReceivablesGuestId())
+        else fetchreceiveables('', did('receiveablesroomnumber')?.value || '')
         return
     }
 
