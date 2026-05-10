@@ -1,7 +1,7 @@
 let guestfolioReceiveablesId
 let guestfolioReceiveablesFiltered = false
 let guestfolioPageMode = 'guestfolio'
-const receivablesPaymentController = '../controllers/receipts'
+const guestfolioPaymentController = '../controllers/receipts'
 let guestfolioGuestTomSelect = null
 let guestfolioTomSelectAssetsPromise = null
 let guestfolioGuestOptions = []
@@ -453,9 +453,9 @@ function getSelectedReceivablesGuestId() {
     return String(did('receiveablesguestid')?.value || '').trim()
 }
 
-let receivablesPickerData = { checkedin: [], reservations: [] }
-let receivablesPickerTab = 'checkedin'
-let receivablesPickerViewRows = []
+let guestfolioPickerData = { checkedin: [], reservations: [] }
+let guestfolioPickerTab = 'checkedin'
+let guestfolioPickerViewRows = []
 
 function setupReceivablesRoomPicker(){
     const submitBtn = did('submitreceiveablesfilter')
@@ -500,7 +500,7 @@ async function openReceivablesRoomPicker(){
 }
 
 function switchReceivablesPickerTab(tab){
-    receivablesPickerTab = tab
+    guestfolioPickerTab = tab
     did('receivablesPickerTabCheckedin').className = `inline-block p-3 border-b-2 font-semibold ${tab=='checkedin' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
     did('receivablesPickerTabReservations').className = `inline-block p-3 border-b-2 font-semibold ${tab=='reservations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
     reloadReceivablesPickerTabData()
@@ -512,12 +512,12 @@ async function reloadReceivablesPickerTabData(){
     const payload = new FormData()
     payload.append('startdate', startdate)
     payload.append('enddate', enddate)
-    if(receivablesPickerTab == 'checkedin'){
+    if(guestfolioPickerTab == 'checkedin'){
         const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
-        receivablesPickerData.checkedin = reqCheckin.status ? normalizeReceivablesPickerRows(reqCheckin.data || []) : []
+        guestfolioPickerData.checkedin = reqCheckin.status ? normalizeReceivablesPickerRows(reqCheckin.data || []) : []
     }else{
         const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
-        receivablesPickerData.reservations = reqRes.status ? normalizeReceivablesPickerRows(reqRes.data || []) : []
+        guestfolioPickerData.reservations = reqRes.status ? normalizeReceivablesPickerRows(reqRes.data || []) : []
     }
     renderReceivablesPickerRows()
 }
@@ -536,9 +536,9 @@ function normalizeReceivablesPickerRows(data){
 
 function renderReceivablesPickerRows(){
     const search = (did('receivablesPickerSearch')?.value || '').toLowerCase().trim()
-    const source = receivablesPickerTab == 'checkedin' ? receivablesPickerData.checkedin : receivablesPickerData.reservations
+    const source = guestfolioPickerTab == 'checkedin' ? guestfolioPickerData.checkedin : guestfolioPickerData.reservations
     const rows = source.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone}`.toLowerCase().includes(search))
-    receivablesPickerViewRows = rows
+    guestfolioPickerViewRows = rows
     did('receivablesPickerRows').innerHTML = rows.map((item, idx) => `
         <tr>
             <td>${item.reference || '-'}</td><td>${item.roomnumber || '-'}</td><td>${item.guestname || '-'}</td><td>${item.phone || '-'}</td>
@@ -550,7 +550,7 @@ function renderReceivablesPickerRows(){
 }
 
 function useReceivablesRoomPicker(rowIndex){
-    const item = receivablesPickerViewRows[rowIndex]
+    const item = guestfolioPickerViewRows[rowIndex]
     if(!item)return
     const room = (item.roomnumber || '').split(',')[0].trim()
     if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = room
@@ -906,7 +906,7 @@ async function submitReceivablePayment(){
     payload.append('otherdetail', otherdetail)
 
     const submitBtn = did('receivable-pay-submit')
-    const request = await httpRequest2(receivablesPaymentController, payload, submitBtn)
+    const request = await httpRequest2(guestfolioPaymentController, payload, submitBtn)
     if(request.status){
         notification('Payment received successfully', 1)
         did('modalreceipt').classList.add('hidden')
@@ -952,4 +952,5 @@ async function receiveablesFormSubmitHandler() {
 //     return mapValidationErrors(errorElements, controls)   
 
 // }
+
 
