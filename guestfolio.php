@@ -18,14 +18,6 @@
                             
                             <hr class="my-3">
                                     <div id="checkinview" class="">
-                            <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 mb-4">
-                                <li class="me-2 cp">
-                                    <button id="guestFolioTabReceivable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-blue-500 text-blue-600 font-semibold">View Receivable Table</button>
-                                </li>
-                                <li class="me-2 cp">
-                                    <button id="guestFolioTabPrintable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-transparent text-gray-500 font-semibold">View Receivable Print Table</button>
-                                </li>
-                            </ul>
                             <form id="receiveablesfilterform">
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-3 gap-10">
@@ -69,25 +61,23 @@
                                     </div>
                                 </div>
                             </form>
-                            <div class="flex justify-end w-full my-4">
-                                                <!-- <button onclick="printContent('HEMS CHECKIN VIEW', null, 'checkinview', true)" type="button" class="w-full h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-green-400 via-green-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div>-->
-                                                <!--    <span>print</span> -->
-                                                <!--</button>-->
-                                                <!-- <button onclick="exportToPDF('tableer')" type="button" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div> -->
-                                                <!--    <span>Export PDF</span> -->
-                                                <!--</button>-->
-                                                 <button onclick="exportToExcel('checkinview', 'HEMS CHECKIN VIEW')" type="button" cclass="btn"
-                                                    <div class="btnloader" style="display: none;"></div>
-                                                    <span>Export Excel</span> 
-                                                </button> 
-                                                <!-- <button onclick="exportToExcel('checkinview', 'HEMS CHECKIN VIEW')" type="button" class="w-full mx-3 h-[35px] md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-400 via-blue-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">-->
-                                                <!--    <div class="btnloader" style="display: none;"></div>-->
-                                                <!--    <span>Export Excel</span> -->
-                                                <!--</button> -->
-                                            </div> 
+                            <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 my-4">
+                                <li class="me-2 cp">
+                                    <button id="guestFolioTabReceivable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-blue-500 text-blue-600 font-semibold">View Folio Table</button>
+                                </li>
+                                <li class="me-2 cp">
+                                    <button id="guestFolioTabPrintable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-transparent text-gray-500 font-semibold">View Folio Print Table</button>
+                                </li>
+                            </ul>
                                 <div id="guestFolioReceivableTableWrap">
+                                    <div class="flex justify-end w-full my-4 gap-2">
+                                        <button onclick="printContent('HEMS GUEST FOLIO VIEW TABLE', null, 'guestFolioReceivableTableWrap', true)" type="button" class="btn">
+                                            <span>Print</span>
+                                        </button>
+                                        <button onclick="exportToExcel('tableer', 'HEMS GUEST FOLIO VIEW TABLE')" type="button" class="btn">
+                                            <span>Export Excel</span>
+                                        </button>
+                                    </div>
                                     <div class="table-content">
                                         <table id="tableer">
                                             <thead>
