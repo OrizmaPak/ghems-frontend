@@ -2,6 +2,7 @@ async function reducestayActive() {
     notification('Loading...')
     const form = document.querySelector('#extendstayform')
     await checkinpopulatedl()
+    buildReduceStayRefPickerModal()
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
         if(!validateReduceStayDates())return
         checkinnFormSubmitHandler('extendstayform')
@@ -14,6 +15,7 @@ async function reducestayActive() {
     if(document.querySelector('#travelagent'))document.querySelector('#travelagent').addEventListener('change', e=>grouptravelagentres())  
     if(document.querySelector('#group_id'))document.querySelector('#group_id').addEventListener('change', e=>groupres()) 
     if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', fetchdataforreducestay)
+    if(document.querySelector('#openReduceStayRefPicker')) document.querySelector('#openReduceStayRefPicker').addEventListener('click', openReduceStayRefPicker)
     if(document.querySelector('#room-type'))document.querySelector('#room-type').addEventListener('change', e=>{
         if(!actionid)return
         did('roomcategory-'+actionid).value = did('room-type').value 
@@ -33,6 +35,98 @@ async function reducestayActive() {
     await fetchcompanyres()
     await fetchgroupsres()
     did('initialroombtn').click()
+}
+
+let reduceStayPickerRows = []
+
+function buildReduceStayRefPickerModal() {
+    if (did('reduceStayRefPickerModal')) return
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="reduceStayRefPickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center">
+        <div class="max-w-5xl w-full bg-white rounded shadow p-4 max-h-[90vh] overflow-auto">
+          <div class="flex justify-between items-center mb-3">
+            <p class="font-semibold">Find Checked-In Reservation</p>
+            <span class="material-symbols-outlined cp text-red-500" onclick="did('reduceStayRefPickerModal').classList.add('hidden')">close</span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-3 items-end">
+            <input id="reduceStayRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderReduceStayRefPickerRows()">
+          </div>
+          <div class="table-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>reference</th>
+                  <th>room</th>
+                  <th>guest</th>
+                  <th>phone</th>
+                  <th>arrival</th>
+                  <th>departure</th>
+                  <th>action</th>
+                </tr>
+              </thead>
+              <tbody id="reduceStayRefPickerRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `)
+    did('reduceStayRefPickerModal').onclick = function(event){ if(event.target.id=='reduceStayRefPickerModal')this.classList.add('hidden') }
+}
+
+async function openReduceStayRefPicker() {
+    did('reduceStayRefPickerModal').classList.remove('hidden')
+    did('reduceStayRefPickerRows').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading checked-ins...</td></tr>`
+    const request = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
+    reduceStayPickerRows = request.status ? normalizeReduceStayPickerRows(request.data || []) : []
+    renderReduceStayRefPickerRows()
+}
+
+function normalizeReduceStayPickerRows(data = []) {
+    return data.map(item => {
+        const reservation = item.reservations || {}
+        const roomRows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = roomRows.map(row => row.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = roomRows.flatMap(row => [ ...(row.guest1 || []), ...(row.guest2 || []), ...(row.guest3 || []), ...(row.guest4 || []) ])
+        const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''} ${g.othernames || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return {
+            reference: reservation.reference || '',
+            roomnumber: rooms,
+            guestname,
+            phone,
+            arrivaldate: reservation.arrivaldate || '',
+            departuredate: reservation.departuredate || ''
+        }
+    }).filter(row => row.reference)
+}
+
+function renderReduceStayRefPickerRows() {
+    if(!did('reduceStayRefPickerRows')) return
+    const search = (did('reduceStayRefPickerSearch')?.value || '').toLowerCase().trim()
+    const rows = reduceStayPickerRows.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase().includes(search))
+    did('reduceStayRefPickerRows').innerHTML = rows.map((item, index) => `
+      <tr>
+        <td>${item.reference || '-'}</td>
+        <td>${item.roomnumber || '-'}</td>
+        <td>${item.guestname || '-'}</td>
+        <td>${item.phone || '-'}</td>
+        <td>${item.arrivaldate ? specialformatDateTime(item.arrivaldate) : '-'}</td>
+        <td>${item.departuredate ? specialformatDateTime(item.departuredate) : '-'}</td>
+        <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick="useReduceStayRefPicker(${index})">Use</button></td>
+      </tr>
+    `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No checked-ins found</td></tr>`
+}
+
+async function useReduceStayRefPicker(index) {
+    const filteredRows = reduceStayPickerRows.filter(item => {
+        const search = (did('reduceStayRefPickerSearch')?.value || '').toLowerCase().trim()
+        return `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase().includes(search)
+    })
+    const selected = filteredRows[index]
+    if(!selected || !selected.reference)return notification('Could not load selected record', 0)
+    if(did('reference')) did('reference').value = selected.reference
+    did('reduceStayRefPickerModal').classList.add('hidden')
+    await fetchdataforreducestay()
 }
 
 function normalizeDateTimeLocalValue(value = '') {

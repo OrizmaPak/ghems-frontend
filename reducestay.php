@@ -61,7 +61,10 @@
                                                     <label for="logoname" class="control-label">Reservation Ref</label>
                                                     <input type="text" name="" id="reference" class="form-control" >
                                                 </div>
-                                            <div class="flex justify-start mt-5">
+                                            <div class="flex justify-start mt-5 gap-2">
+                                                <button id="openReduceStayRefPicker" type="button" class="w-full h-[40px] md:w-max text-blue-500 text-sm capitalize bg-white border border-blue-400 px-4 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                    <span>Find</span>
+                                                </button>
                                                 <button id="submitref" type="button" class="w-full h-[40px] md:w-max text-white text-sm capitalize bg-blue-400 px-4  shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                     <div class="btnloader" style="display: none;"></div>
                                                     <span class="material-symbols-outlined">send</span>
