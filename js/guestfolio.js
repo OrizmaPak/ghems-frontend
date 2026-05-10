@@ -6,6 +6,7 @@ let guestfolioGuestTomSelect = null
 let guestfolioTomSelectAssetsPromise = null
 let guestfolioGuestOptions = []
 let guestFolioBuckets = new Map()
+let guestfolioViewTab = 'receivable'
 
 // Backward compatibility for old route/function spelling.
 async function receiveablesActive(mode='receiveables') {
@@ -14,6 +15,27 @@ async function receiveablesActive(mode='receiveables') {
 
 async function guestfolioActive() {
     return receivablesActive('guestfolio')
+}
+
+function initGuestFolioViewTabs() {
+    const receivableBtn = did('guestFolioTabReceivable')
+    const printableBtn = did('guestFolioTabPrintable')
+    if(!receivableBtn || !printableBtn) return
+    receivableBtn.onclick = () => switchGuestFolioViewTab('receivable')
+    printableBtn.onclick = () => switchGuestFolioViewTab('printable')
+    switchGuestFolioViewTab(guestfolioViewTab)
+}
+
+function switchGuestFolioViewTab(tab = 'receivable') {
+    guestfolioViewTab = tab === 'printable' ? 'printable' : 'receivable'
+    const receivableBtn = did('guestFolioTabReceivable')
+    const printableBtn = did('guestFolioTabPrintable')
+    const receivableWrap = did('guestFolioReceivableTableWrap')
+    const printableWrap = did('guestFolioPrintTableWrap')
+    if(receivableBtn) receivableBtn.className = `inline-block p-3 rounded-t-lg border-b-2 font-semibold ${guestfolioViewTab === 'receivable' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    if(printableBtn) printableBtn.className = `inline-block p-3 rounded-t-lg border-b-2 font-semibold ${guestfolioViewTab === 'printable' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
+    if(receivableWrap) receivableWrap.classList.toggle('hidden', guestfolioViewTab !== 'receivable')
+    if(printableWrap) printableWrap.classList.toggle('hidden', guestfolioViewTab !== 'printable')
 }
 
 function isPayPendingCheckoutBillsRoute(){
@@ -205,6 +227,26 @@ function getGuestFolioPrintModel(guestId = '') {
     }
 }
 
+function renderGuestFolioPrintTable() {
+    const tableBody = did('guestFolioPrintTableBody')
+    if(!tableBody) return
+    const rows = Array.from(guestFolioBuckets.values()).map((bucket, index) => {
+        const model = getGuestFolioPrintModel(bucket.guestid)
+        if(!model) return ''
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${normalizeFolioText(model.guestname)}</td>
+                <td>${formatFolioAmount(model.totalDebit)}</td>
+                <td>${formatFolioAmount(model.totalCredit)}</td>
+                <td>${formatFolioAmount(model.finalBalance)}</td>
+                <td><button onclick="openGuestFolioPrint('${bucket.guestid}')" class="btn btn-sm bg-slate-700 text-white">View/Print Folio</button></td>
+            </tr>
+        `
+    }).filter(Boolean).join('')
+    tableBody.innerHTML = rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+}
+
 function openGuestFolioPrint(guestId = '') {
     const model = getGuestFolioPrintModel(guestId)
     if(!model) return notification('Unable to load guest folio print data', 0)
@@ -358,6 +400,7 @@ async function receivablesActive(mode='') {
     if(!isGuestFolioRoute()) setupReceivablesRoomPicker()
     else if(did('openReceivablesRoomPicker')) did('openReceivablesRoomPicker').classList.add('hidden')
     if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
+    initGuestFolioViewTabs()
     configureReceivablesFilterMode()
     if(isGuestFolioRoute()) await initializeGuestFolioGuestPicker()
     datasource = []
@@ -600,8 +643,12 @@ async function fetchreceiveables(id='', roomnumber='') {
             if(request.data.length) {
                 datasource = isGuestFolioRoute() ? normalizeGuestFolioRows(request.data) : request.data
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
+                if(isGuestFolioRoute()) renderGuestFolioPrintTable()
             }else{
                 renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
+                if(isGuestFolioRoute() && did('guestFolioPrintTableBody')) {
+                    did('guestFolioPrintTableBody').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+                }
             }
         }else{
              guestfolioReceiveablesId = request.data[0].id
@@ -670,7 +717,6 @@ async function onreceiveablesTableDataSignal() {
                 <td>${formatNumber(item.credit || 0)}</td>
                 <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
                 <td class="flex gap-1 items-center">
-                    <button onclick="openGuestFolioPrint('${item.guestid || ''}')" class="btn btn-sm bg-slate-700 text-white">View/Print Folio</button>
                     ${item._emptyTransaction ? '' : `<button onclick="openreceiveablemodalbyindex('${item.index ?? 0}')" class="btn btn-sm btn-primary ${(Number(item.debit || 0) - Number(item.credit || 0)) > 0 ? '' : '!hidden'}">Pay Now</button>`}
                 </td>
             </tr>`)

@@ -18,6 +18,14 @@
                             
                             <hr class="my-3">
                                     <div id="checkinview" class="">
+                            <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 mb-4">
+                                <li class="me-2 cp">
+                                    <button id="guestFolioTabReceivable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-blue-500 text-blue-600 font-semibold">View Receivable Table</button>
+                                </li>
+                                <li class="me-2 cp">
+                                    <button id="guestFolioTabPrintable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-transparent text-gray-500 font-semibold">View Receivable Print Table</button>
+                                </li>
+                            </ul>
                             <form id="receiveablesfilterform">
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-3 gap-10">
@@ -78,27 +86,51 @@
                                                 <!--    <div class="btnloader" style="display: none;"></div>-->
                                                 <!--    <span>Export Excel</span> -->
                                                 <!--</button> -->
-                                            </div>
-                                <div class="table-content">
-                                    <table id="tableer">
-                                        <thead>
-                                            <tr id="receiveables-table-head">
-                                                 <th style="width: 20px">s/n</th>
-                                                <th>room&nbsp;number</th>
-                                                <th>debit</th>
-                                                <th>credit</th>
-                                                <th>balance</th>
-                                                <th>ACTION</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tabledata">
-                                            <tr>
-                                                <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                            </div> 
+                                <div id="guestFolioReceivableTableWrap">
+                                    <div class="table-content">
+                                        <table id="tableer">
+                                            <thead>
+                                                <tr id="receiveables-table-head">
+                                                     <th style="width: 20px">s/n</th>
+                                                    <th>room&nbsp;number</th>
+                                                    <th>debit</th>
+                                                    <th>credit</th>
+                                                    <th>balance</th>
+                                                    <th>ACTION</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tabledata">
+                                                <tr>
+                                                    <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="table-status"></div>
                                 </div>
-                                <div class="table-status"></div>
+
+                                <div id="guestFolioPrintTableWrap" class="hidden">
+                                    <div class="table-content">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Guest Name</th>
+                                                    <th>Total Debit</th>
+                                                    <th>Total Credit</th>
+                                                    <th>Balance</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="guestFolioPrintTableBody">
+                                                <tr>
+                                                    <td colspan="100%" class="text-center opacity-70">Table is empty</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div> 
                             
                             <div id="modalreceipt" onclick="event.target.id == 'modalreceipt' ? this.classList.add('hidden') : ''" class="hidden fixed w-screen h-screen  top-0 z-[200] left-0 flex justify-center items-center overflow-auto">
