@@ -25,6 +25,52 @@ function renderReceiveablesEmptyState(message='No records retrieved'){
     tabledata.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
 }
 
+function normalizeGuestFolioRows(payload = []) {
+    if(!Array.isArray(payload)) return []
+    const normalized = []
+    payload.forEach((entry) => {
+        const guest = entry?.guest || {}
+        const guestId = String(guest?.id || '').trim()
+        const guestName = [guest?.lastname, guest?.firstname, guest?.othernames].map(value => String(value || '').trim()).filter(Boolean).join(' ')
+        const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
+
+        if(transactions.length) {
+            transactions.forEach((tx) => {
+                normalized.push({
+                    ...tx,
+                    ownerid: tx?.ownerid || tx?.roomnumber || '',
+                    guestid: guestId,
+                    guestname: guestName || '-',
+                    debit: Number(tx?.debit || 0),
+                    credit: Number(tx?.credit || 0),
+                    transactiondate: tx?.transactiondate || tx?.tlog || ''
+                })
+            })
+            return
+        }
+
+        normalized.push({
+            id: `guest-${guestId || genID()}`,
+            ownerid: '',
+            guestid: guestId,
+            guestname: guestName || '-',
+            description: 'No transactions available yet',
+            debit: 0,
+            credit: 0,
+            transactiondate: guest?.created_at || guest?.tlog || '',
+            _emptyTransaction: true
+        })
+    })
+
+    const seen = new Set()
+    return normalized.filter((row) => {
+        const dedupeKey = `${row.id || ''}|${row.guestid || ''}|${row.transactiondate || ''}|${row.debit || 0}|${row.credit || 0}|${row.description || ''}`
+        if(seen.has(dedupeKey)) return false
+        seen.add(dedupeKey)
+        return true
+    })
+}
+
 async function receivablesActive(mode='') {
     receiveablesPageMode = mode || getCurrentRouteName() || 'receivables'
     // const form = document.querySelector('#receiveablesform')
@@ -276,7 +322,7 @@ async function fetchreceiveables(id='', roomnumber='') {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = request.data
+                datasource = isGuestFolioRoute() ? normalizeGuestFolioRows(request.data) : request.data
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
             }else{
                 renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
@@ -336,6 +382,23 @@ async function removereceiveables(id) {
 
 async function onreceiveablesTableDataSignal() {
     setreceiveablesTableHeader()
+    if(isGuestFolioRoute()){
+        const rows = getSignaledDatasource().map((item) =>{
+            const runningBalance = getReceivableRunningBalance(item.index)
+            return(`
+            <tr>
+                <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
+                <td>${item.guestname || '-'}</td>
+                <td>${formatReceivableDescription(item.description || (item._emptyTransaction ? 'No transactions available yet' : ''))}</td>
+                <td>${formatNumber(item.debit || 0)}</td>
+                <td>${formatNumber(item.credit || 0)}</td>
+                <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
+                <td>${item._emptyTransaction ? '-' : `<button onclick="openreceiveablemodalbyindex('${item.index ?? 0}')" class="btn btn-sm btn-primary ${(Number(item.debit || 0) - Number(item.credit || 0)) > 0 ? '' : '!hidden'}">Pay Now</button>`}</td>
+            </tr>`)
+        }).join('')
+        injectPaginatatedTable(rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`)
+        return
+    }
     if(receiveablesFiltered || isPayPendingCheckoutBillsRoute()){
         let rows = getSignaledDatasource().map((item, index) =>{
         const result = Number(item.debit) - Number(item.credit);
@@ -378,6 +441,19 @@ async function onreceiveablesTableDataSignal() {
 function setreceiveablesTableHeader(){
     const tableHead = document.getElementById('receiveables-table-head')
     if(!tableHead)return
+    if(isGuestFolioRoute()){
+        tableHead.innerHTML = `
+            <th>transaction&nbsp;date</th>
+            <th>guest&nbsp;name</th>
+            <th>description</th>
+            <th>debit</th>
+            <th>credit</th>
+            <th>balance</th>
+            <th>ACTION</th>
+        `
+        return
+    }
+
     const useDetailedHeader = receiveablesFiltered || isPayPendingCheckoutBillsRoute()
 
     tableHead.innerHTML = useDetailedHeader ? `
