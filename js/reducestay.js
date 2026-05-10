@@ -134,6 +134,15 @@ function normalizeDateTimeLocalValue(value = '') {
     return String(value).replace(' ', 'T').slice(0, 16)
 }
 
+function applyReduceStayDateBounds(arrivalValue = '', departureValue = '') {
+    const departureInput = did('departuredate')
+    if(!departureInput)return
+    const normalizedArrival = normalizeDateTimeLocalValue(arrivalValue || '')
+    const normalizedDeparture = normalizeDateTimeLocalValue(departureValue || '')
+    departureInput.min = normalizedArrival || ''
+    departureInput.max = normalizedDeparture || ''
+}
+
 function validateReduceStayDates() {
     const originalDeparture = did('originaldeparturedate')?.value || ''
     const arrivalValue = did('arrivaldate')?.value || ''
@@ -170,7 +179,7 @@ async function fetchdataforreducestay(id) {
         const originalDeparture = normalizeDateTimeLocalValue(reservation.departuredate || did('departuredate').value)
         did('originaldeparturedate').value = originalDeparture
         if(did('departuredate')){
-            did('departuredate').max = originalDeparture
+            applyReduceStayDateBounds(did('arrivaldate')?.value, originalDeparture)
             did('departuredate').addEventListener('change', validateReduceStayDates)
         }
         notification('Reservation loaded. Select an earlier departure date to reduce the stay.', 1)
