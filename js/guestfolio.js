@@ -289,7 +289,7 @@ function openGuestFolioPrint(guestId = '') {
             <style>
                 #guestfolioprintcontainer{font-family:Arial,sans-serif;color:#222;font-size:12px;line-height:1.25;}
                 #guestfolioprintcontainer .header{text-align:center;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:8px;}
-                #guestfolioprintcontainer .logo{width:65px;height:65px;object-fit:contain;margin:0 auto 4px;}
+                #guestfolioprintcontainer .logo{width:52px;height:52px;max-width:52px;max-height:52px;object-fit:contain;margin:0 auto 4px;display:block;}
                 #guestfolioprintcontainer .title{font-size:18px;font-weight:700;letter-spacing:.5px;margin-top:4px;}
                 #guestfolioprintcontainer table{width:100%;border-collapse:collapse;}
                 #guestfolioprintcontainer .meta td{vertical-align:top;padding:2px 6px;border:1px solid #ccc;}
@@ -301,6 +301,9 @@ function openGuestFolioPrint(guestId = '') {
                 #guestfolioprintcontainer .summary-title{text-align:center;font-weight:700;margin-bottom:4px;}
                 #guestfolioprintcontainer .footer-note{margin-top:12px;border-top:1px solid #bbb;padding-top:6px;display:flex;justify-content:space-between;font-size:11px;}
                 #guestfolioprintcontainer .signatures{margin-top:24px;display:flex;justify-content:space-between;font-size:12px;}
+                @media print{
+                    #guestfolioprintcontainer .logo{width:52px !important;height:52px !important;max-width:52px !important;max-height:52px !important;}
+                }
             </style>
             <div class="header">
                 ${model.profile.logoUrl ? `<img src="${model.profile.logoUrl}" alt="logo" class="logo">` : ''}
