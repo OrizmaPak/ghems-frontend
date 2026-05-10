@@ -27,48 +27,76 @@ function renderReceiveablesEmptyState(message='No records retrieved'){
 
 function normalizeGuestFolioRows(payload = []) {
     if(!Array.isArray(payload)) return []
-    const normalized = []
+    const guestBuckets = new Map()
+
+    const ensureGuestBucket = (guest = {}) => {
+        const guestId = String(guest?.id || '').trim() || `guest-${genID()}`
+        const guestName = [guest?.lastname, guest?.firstname, guest?.othernames].map(value => String(value || '').trim()).filter(Boolean).join(' ') || '-'
+        if(!guestBuckets.has(guestId)) {
+            guestBuckets.set(guestId, {
+                guestid: guestId,
+                guestname: guestName,
+                createdAt: guest?.created_at || guest?.tlog || '',
+                transactions: []
+            })
+        }
+        return guestBuckets.get(guestId)
+    }
+
     payload.forEach((entry) => {
         const guest = entry?.guest || {}
-        const guestId = String(guest?.id || '').trim()
-        const guestName = [guest?.lastname, guest?.firstname, guest?.othernames].map(value => String(value || '').trim()).filter(Boolean).join(' ')
+        const bucket = ensureGuestBucket(guest)
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
 
         if(transactions.length) {
             transactions.forEach((tx) => {
-                normalized.push({
+                bucket.transactions.push({
                     ...tx,
                     ownerid: tx?.ownerid || tx?.roomnumber || '',
-                    guestid: guestId,
-                    guestname: guestName || '-',
+                    guestid: bucket.guestid,
+                    guestname: bucket.guestname,
                     debit: Number(tx?.debit || 0),
                     credit: Number(tx?.credit || 0),
                     transactiondate: tx?.transactiondate || tx?.tlog || ''
                 })
             })
+        }
+    })
+
+    const normalized = []
+    guestBuckets.forEach((bucket) => {
+        if(!bucket.transactions.length) {
+            normalized.push({
+                id: `guest-${bucket.guestid}`,
+                ownerid: '',
+                guestid: bucket.guestid,
+                guestname: bucket.guestname,
+                description: 'No transactions available yet',
+                debit: 0,
+                credit: 0,
+                transactiondate: bucket.createdAt || '',
+                _emptyTransaction: true
+            })
             return
         }
-
-        normalized.push({
-            id: `guest-${guestId || genID()}`,
-            ownerid: '',
-            guestid: guestId,
-            guestname: guestName || '-',
-            description: 'No transactions available yet',
-            debit: 0,
-            credit: 0,
-            transactiondate: guest?.created_at || guest?.tlog || '',
-            _emptyTransaction: true
-        })
+        normalized.push(...bucket.transactions)
     })
 
     const seen = new Set()
-    return normalized.filter((row) => {
+    const deduped = normalized.filter((row) => {
         const dedupeKey = `${row.id || ''}|${row.guestid || ''}|${row.transactiondate || ''}|${row.debit || 0}|${row.credit || 0}|${row.description || ''}`
         if(seen.has(dedupeKey)) return false
         seen.add(dedupeKey)
         return true
     })
+
+    deduped.sort((a, b) => {
+        const dateA = new Date(String(a?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        const dateB = new Date(String(b?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        return dateB - dateA
+    })
+
+    return deduped
 }
 
 async function receivablesActive(mode='') {
