@@ -432,6 +432,11 @@ const routerTree = {
         startingFunction: 'extendstayActive',
         scriptName: './js/extendstay.js'
     },
+    reducestay: {
+        template: 'reducestay',
+        startingFunction: 'reducestayActive',
+        scriptName: './js/reducestay.js'
+    },
     expectedarrivals: {
         template: 'expectedarrivals',
         startingFunction: 'expectedarrivalsActive',

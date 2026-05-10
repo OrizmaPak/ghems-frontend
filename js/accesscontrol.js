@@ -100,6 +100,7 @@ const accessctrl_frontdesk = [
     'EXPECTED ARRIVALS',
     'EXPECTED CHECK OUT',
     'EXTEND STAY',
+    'REDUCE STAY',
     'CHECK OUT',
     'LATE CHECKOUT',
     'CANCEL RESERVATION',

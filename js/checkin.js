@@ -3169,7 +3169,7 @@ async function checkinnFormSubmitHandler(guest){
         if(guest == 'guestreservationform')document.querySelector('#guestsreservations').click();
         if(guest == 'reservationcheckinform')document.querySelector('#reservationcheckin').click();
         if(guest == 'groupcheckinform')document.querySelector('#groupcheckin').click();
-        if(guest == 'extendstayform')document.querySelector('#extendstay').click();
+        if(guest == 'extendstayform')document.querySelector(did('reducestaymode') ? '#reducestay' : '#extendstay').click();
         if(guest == 'cancelreservationform')document.querySelector('#cancelreservation').click();
         if(guest != 'cancelreservationform' || guest == 'extendstayform')fetchcheckinn();
         if (guest == 'cancelreservationform') {
