@@ -269,8 +269,8 @@ const routerTree = {
     },
     guestfolio: {
         template: 'guestfolio',
-        startingFunction: 'receivablesActive',
-        scriptName: './js/receivables.js'
+        startingFunction: 'guestfolioActive',
+        scriptName: './js/guestfolio.js'
     },
     paypendingcheckoutbills: {
         template: 'paypendingcheckoutbills',

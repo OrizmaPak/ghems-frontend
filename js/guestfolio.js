@@ -1,11 +1,18 @@
 let receiveablesid
 let receiveablesFiltered = false
-let receiveablesPageMode = 'receiveables'
+let receiveablesPageMode = 'guestfolio'
 const receivablesPaymentController = '../controllers/receipts'
+let receivablesGuestTomSelect = null
+let receivablesTomSelectAssetsPromise = null
+let receivablesGuestOptions = []
 
 // Backward compatibility for old route/function spelling.
 async function receiveablesActive(mode='receiveables') {
     return receivablesActive(mode)
+}
+
+async function guestfolioActive() {
+    return receivablesActive('guestfolio')
 }
 
 function isPayPendingCheckoutBillsRoute(){
@@ -22,13 +29,93 @@ function renderReceiveablesEmptyState(message='No records retrieved'){
     tabledata.innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
 }
 
+function normalizeGuestFolioRows(payload = []) {
+    if(!Array.isArray(payload)) return []
+    const guestBuckets = new Map()
+
+    const ensureGuestBucket = (guest = {}) => {
+        const guestId = String(guest?.id || '').trim() || `guest-${genID()}`
+        const guestName = [guest?.lastname, guest?.firstname, guest?.othernames].map(value => String(value || '').trim()).filter(Boolean).join(' ') || '-'
+        if(!guestBuckets.has(guestId)) {
+            guestBuckets.set(guestId, {
+                guestid: guestId,
+                guestname: guestName,
+                createdAt: guest?.created_at || guest?.tlog || '',
+                transactions: []
+            })
+        }
+        return guestBuckets.get(guestId)
+    }
+
+    payload.forEach((entry) => {
+        const guest = entry?.guest || {}
+        const bucket = ensureGuestBucket(guest)
+        const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
+
+        if(transactions.length) {
+            transactions.forEach((tx) => {
+                bucket.transactions.push({
+                    ...tx,
+                    ownerid: tx?.ownerid || tx?.roomnumber || '',
+                    guestid: bucket.guestid,
+                    guestname: bucket.guestname,
+                    debit: Number(tx?.debit || 0),
+                    credit: Number(tx?.credit || 0),
+                    transactiondate: tx?.transactiondate || tx?.tlog || ''
+                })
+            })
+        }
+    })
+
+    const normalized = []
+    guestBuckets.forEach((bucket) => {
+        if(!bucket.transactions.length) {
+            normalized.push({
+                id: `guest-${bucket.guestid}`,
+                ownerid: '',
+                guestid: bucket.guestid,
+                guestname: bucket.guestname,
+                description: 'No transactions available yet',
+                debit: 0,
+                credit: 0,
+                transactiondate: bucket.createdAt || '',
+                _emptyTransaction: true
+            })
+            return
+        }
+        normalized.push(...bucket.transactions)
+    })
+
+    const seen = new Set()
+    const deduped = normalized.filter((row) => {
+        const dedupeKey = `${row.id || ''}|${row.guestid || ''}|${row.transactiondate || ''}|${row.debit || 0}|${row.credit || 0}|${row.description || ''}`
+        if(seen.has(dedupeKey)) return false
+        seen.add(dedupeKey)
+        return true
+    })
+
+    deduped.sort((a, b) => {
+        const dateA = new Date(String(a?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        const dateB = new Date(String(b?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        return dateB - dateA
+    })
+
+    return deduped
+}
+
 async function receivablesActive(mode='') {
     receiveablesPageMode = mode || getCurrentRouteName() || 'receivables'
     // const form = document.querySelector('#receiveablesform')
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
-    if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => fetchreceiveables('', did('receiveablesroomnumber').value))
-    setupReceivablesRoomPicker()
+    if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => {
+        if(isGuestFolioRoute()) fetchreceiveables('', getSelectedReceivablesGuestId())
+        else fetchreceiveables('', did('receiveablesroomnumber').value)
+    })
+    if(!isGuestFolioRoute()) setupReceivablesRoomPicker()
+    else if(did('openReceivablesRoomPicker')) did('openReceivablesRoomPicker').classList.add('hidden')
     if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
+    configureReceivablesFilterMode()
+    if(isGuestFolioRoute()) await initializeGuestFolioGuestPicker()
     datasource = []
     receiveablesFiltered = false
     setreceiveablesTableHeader()
@@ -37,6 +124,89 @@ async function receivablesActive(mode='') {
         return
     }
     await fetchreceiveables()
+}
+
+function normalizeGuestDisplayName(item = {}) {
+    const lastName = String(item.lastname || '').trim()
+    const firstName = String(item.firstname || '').trim()
+    const otherNames = String(item.othernames || '').trim()
+    return [lastName, firstName, otherNames].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
+}
+
+function configureReceivablesFilterMode() {
+    const roomWrap = did('receivablesRoomFilterWrap')
+    const guestWrap = did('guestFolioGuestFilterWrap')
+    const guestExtraFilters = did('guestFolioNameFilters')
+    const pageTitleSpan = document.querySelector('.page-title span')
+    const viewTabLabel = document.querySelector('li[name="checkinview"] p')
+    const showGuestMode = isGuestFolioRoute()
+
+    if(pageTitleSpan) pageTitleSpan.textContent = showGuestMode ? 'GUEST FOLIO' : 'RECEIVABLES'
+    if(viewTabLabel) viewTabLabel.textContent = showGuestMode ? 'View Guest Folio' : 'View Receivables'
+    if(roomWrap) roomWrap.classList.toggle('hidden', showGuestMode)
+    if(guestWrap) guestWrap.classList.toggle('hidden', !showGuestMode)
+    if(guestExtraFilters) guestExtraFilters.classList.toggle('hidden', !showGuestMode)
+}
+
+function receivablesEnsureTomSelectAssets() {
+    if (window.TomSelect) return Promise.resolve()
+    if (receivablesTomSelectAssetsPromise) return receivablesTomSelectAssetsPromise
+    receivablesTomSelectAssetsPromise = new Promise((resolve, reject) => {
+        if (!document.querySelector('link[data-receivables-tom-select]')) {
+            const css = document.createElement('link')
+            css.rel = 'stylesheet'
+            css.href = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css'
+            css.dataset.receivablesTomSelect = '1'
+            document.head.appendChild(css)
+        }
+        const existingScript = document.querySelector('script[data-receivables-tom-select]')
+        if (existingScript) {
+            if (window.TomSelect) resolve()
+            else existingScript.addEventListener('load', () => resolve(), { once: true })
+            return
+        }
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js'
+        script.dataset.receivablesTomSelect = '1'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Unable to load Tom Select'))
+        document.head.appendChild(script)
+    })
+    return receivablesTomSelectAssetsPromise
+}
+
+async function initializeGuestFolioGuestPicker() {
+    const guestControl = did('receiveablesguestid')
+    if(!guestControl) return
+    await receivablesEnsureTomSelectAssets()
+    const request = await httpRequest2('../controllers/fetchguestbyfilter', null, null, 'json')
+    receivablesGuestOptions = request?.status && Array.isArray(request.data) ? request.data : []
+    guestControl.innerHTML = '<option value="">Select guest name</option>'
+    receivablesGuestOptions.forEach(item => {
+        const id = String(item.id || '').trim()
+        if(!id) return
+        const name = normalizeGuestDisplayName(item) || `Guest ${id}`
+        guestControl.insertAdjacentHTML('beforeend', `<option value="${id}">${name}</option>`)
+    })
+    if(receivablesGuestTomSelect) {
+        receivablesGuestTomSelect.destroy()
+        receivablesGuestTomSelect = null
+    }
+    if(window.TomSelect) {
+        receivablesGuestTomSelect = new window.TomSelect(guestControl, {
+            create: false,
+            persist: false,
+            placeholder: 'Select guest name',
+            maxOptions: 1000
+        })
+    }
+}
+
+function getSelectedReceivablesGuestId() {
+    if(receivablesGuestTomSelect && typeof receivablesGuestTomSelect.getValue === 'function') {
+        return String(receivablesGuestTomSelect.getValue() || '').trim()
+    }
+    return String(did('receiveablesguestid')?.value || '').trim()
 }
 
 let receivablesPickerData = { checkedin: [], reservations: [] }
@@ -146,6 +316,9 @@ function useReceivablesRoomPicker(rowIndex){
 
 async function fetchreceiveables(id='', roomnumber='') {
     const normalizedRoomNumber = String(roomnumber || '').trim()
+    const firstNameFilter = String(did('receiveablesfirstname')?.value || '').trim()
+    const lastNameFilter = String(did('receiveableslastname')?.value || '').trim()
+    const otherNamesFilter = String(did('receiveablesothernames')?.value || '').trim()
     if(isPayPendingCheckoutBillsRoute() && !id && !normalizedRoomNumber){
         receiveablesFiltered = false
         setreceiveablesTableHeader()
@@ -160,18 +333,28 @@ async function fetchreceiveables(id='', roomnumber='') {
         let paramstr = new FormData()
         if(id)paramstr.append('id', id)
         if(normalizedRoomNumber){
-            if(isGuestFolioRoute()) paramstr.append('ghestid', normalizedRoomNumber)
+            if(isGuestFolioRoute()) paramstr.append('guestid', normalizedRoomNumber)
             else paramstr.append('roomnumber', normalizedRoomNumber)
+        }
+        if(isGuestFolioRoute()){
+            if(firstNameFilter) paramstr.append('firstname', firstNameFilter)
+            if(lastNameFilter) paramstr.append('lastname', lastNameFilter)
+            if(otherNamesFilter) paramstr.append('othernames', otherNamesFilter)
         }
         return paramstr
     }
     const fetchController = isGuestFolioRoute() ? '../controllers/fetchguestfolio' : '../controllers/fetchreceivablesbyrooms'
-    let request = await httpRequest2(fetchController, (id || normalizedRoomNumber) ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
+    const shouldSendParams = Boolean(
+        id ||
+        normalizedRoomNumber ||
+        (isGuestFolioRoute() && (firstNameFilter || lastNameFilter || otherNamesFilter))
+    )
+    let request = await httpRequest2(fetchController, shouldSendParams ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
     if(!id)renderReceiveablesEmptyState()
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = request.data
+                datasource = isGuestFolioRoute() ? normalizeGuestFolioRows(request.data) : request.data
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
             }else{
                 renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
@@ -186,6 +369,11 @@ async function fetchreceiveables(id='', roomnumber='') {
 
 function resetreceiveablesfilter(){
     if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = ''
+    if(did('receiveablesfirstname'))did('receiveablesfirstname').value = ''
+    if(did('receiveableslastname'))did('receiveableslastname').value = ''
+    if(did('receiveablesothernames'))did('receiveablesothernames').value = ''
+    if(receivablesGuestTomSelect && typeof receivablesGuestTomSelect.clear === 'function') receivablesGuestTomSelect.clear(true)
+    if(did('receiveablesguestid'))did('receiveablesguestid').value = ''
     if(isPayPendingCheckoutBillsRoute()){
         datasource = []
         receiveablesFiltered = false
@@ -226,6 +414,23 @@ async function removereceiveables(id) {
 
 async function onreceiveablesTableDataSignal() {
     setreceiveablesTableHeader()
+    if(isGuestFolioRoute()){
+        const rows = getSignaledDatasource().map((item) =>{
+            const runningBalance = getReceivableRunningBalance(item.index)
+            return(`
+            <tr>
+                <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
+                <td>${item.guestname || '-'}</td>
+                <td>${formatReceivableDescription(item.description || (item._emptyTransaction ? 'No transactions available yet' : ''))}</td>
+                <td>${formatNumber(item.debit || 0)}</td>
+                <td>${formatNumber(item.credit || 0)}</td>
+                <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
+                <td>${item._emptyTransaction ? '-' : `<button onclick="openreceiveablemodalbyindex('${item.index ?? 0}')" class="btn btn-sm btn-primary ${(Number(item.debit || 0) - Number(item.credit || 0)) > 0 ? '' : '!hidden'}">Pay Now</button>`}</td>
+            </tr>`)
+        }).join('')
+        injectPaginatatedTable(rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`)
+        return
+    }
     if(receiveablesFiltered || isPayPendingCheckoutBillsRoute()){
         let rows = getSignaledDatasource().map((item, index) =>{
         const result = Number(item.debit) - Number(item.credit);
@@ -268,6 +473,19 @@ async function onreceiveablesTableDataSignal() {
 function setreceiveablesTableHeader(){
     const tableHead = document.getElementById('receiveables-table-head')
     if(!tableHead)return
+    if(isGuestFolioRoute()){
+        tableHead.innerHTML = `
+            <th>transaction&nbsp;date</th>
+            <th>guest&nbsp;name</th>
+            <th>description</th>
+            <th>debit</th>
+            <th>credit</th>
+            <th>balance</th>
+            <th>ACTION</th>
+        `
+        return
+    }
+
     const useDetailedHeader = receiveablesFiltered || isPayPendingCheckoutBillsRoute()
 
     tableHead.innerHTML = useDetailedHeader ? `

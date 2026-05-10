@@ -21,11 +21,11 @@
                             <form id="receiveablesfilterform">
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-3 gap-10">
-                                        <div id="receivablesRoomFilterWrap" class="form-group lg:col-span-2">
+                                        <div id="receivablesRoomFilterWrap" class="form-group lg:col-span-2 hidden">
                                             <label for="receiveablesroomnumber" class="control-label">Room Number</label>
                                             <input type="text" name="roomnumber" id="receiveablesroomnumber" list="hems_roomnumber_id" class="form-control" placeholder="Enter room number">
                                         </div>
-                                        <div id="guestFolioGuestFilterWrap" class="form-group lg:col-span-2 hidden">
+                                        <div id="guestFolioGuestFilterWrap" class="form-group lg:col-span-2">
                                             <label for="receiveablesguestid" class="control-label">Guest Name</label>
                                             <select name="guestid" id="receiveablesguestid" class="form-control">
                                                 <option value="">Select guest name</option>
@@ -36,7 +36,7 @@
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Submit</span>
                                             </button>
-                                            <button id="openReceivablesRoomPicker" type="button" class="btn">
+                                            <button id="openReceivablesRoomPicker" type="button" class="btn hidden">
                                                 <span>Find</span>
                                             </button>
                                             <button id="resetreceiveablesfilter" type="button" class="btn">
@@ -45,7 +45,7 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div id="guestFolioNameFilters" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+                                    <div id="guestFolioNameFilters" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div class="form-group">
                                             <label for="receiveablesfirstname" class="control-label">First Name</label>
                                             <input type="text" name="firstname" id="receiveablesfirstname" class="form-control" placeholder="Optional">
