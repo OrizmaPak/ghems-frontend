@@ -3369,6 +3369,7 @@ async function checkinnFormSubmitHandler(guest){
             return notification(getCheckinResponseMessage(request, 'Submit failed. Please check your connection/session and try again.'), 0)
         }
 
+        let pendingPaymentReceiptContext = null
         if((isCheckinPaymentForm(guest) || guest == 'groupcheckinform') && guest != 'cancelreservationform' && guest != 'extendstayform'){
             const amountPaidValue = getCheckinAmountPaidValue()
             const previousAmountPaid = populateddata && checkinid ? getCheckinNumericValue(populateddata.amountpaid || 0) : 0
@@ -3387,10 +3388,7 @@ async function checkinnFormSubmitHandler(guest){
                     if(requestinvoice?.status) {
                         notification(invoiceMessage, 1)
                         successNotified = true
-                        const paymentReceiptContext = await buildSubmittedCheckinReceiptContext(guest, request, requestinvoice)
-                        if(paymentReceiptContext) {
-                            openSubmittedCheckinPaymentReceipt(paymentReceiptContext)
-                        }
+                        pendingPaymentReceiptContext = await buildSubmittedCheckinReceiptContext(guest, request, requestinvoice)
                         if(window.Swal) {
                             Swal.fire({
                                 title: 'Successful booking and payment',
@@ -3447,6 +3445,9 @@ async function checkinnFormSubmitHandler(guest){
         }
 
         console.log('returned response', request)
+        if(pendingPaymentReceiptContext){
+            setTimeout(() => openSubmittedCheckinPaymentReceipt(pendingPaymentReceiptContext), 120)
+        }
         if(!successNotified)notification(getCheckinResponseMessage(request, 'Saved successfully.'), 1)
     } catch(error) {
         console.error(error)
