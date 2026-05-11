@@ -38,9 +38,10 @@
                                     <table id="tableer">
                                         <thead>
                                             <tr>
-                                                 <th style="width: 20px">s/n</th> 
+                                                <th style="width: 20px">s/n</th> 
                                                 <th>action</th>
                                                 <th>Rooms</th>
+                                                <th>Initial&nbsp;Deposit</th>
                                                 <th>guest</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
