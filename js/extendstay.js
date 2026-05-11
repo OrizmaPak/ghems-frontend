@@ -3,6 +3,7 @@ async function extendstayActive() {
     // markallcomp()
     const form = document.querySelector('#extendstayform')
     await checkinpopulatedl()
+    buildExtendStayRefPickerModal()
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('extendstayform'))
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone')) 
     if(document.querySelector('#submitguestmodal')) document.querySelector('#submitguestmodal').addEventListener('click', e=>submitguestform())
@@ -14,6 +15,7 @@ async function extendstayActive() {
     if(document.querySelector('#group_id'))document.querySelector('#group_id').addEventListener('change', e=>groupres()) 
     // if(document.querySelector('#roomcategory'))document.querySelector('#roomcategory').addEventListener('change', e=>controlroomlist('roomcategory')) 
     if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', fetchdataforextendstay)
+    if(document.querySelector('#openExtendStayRefPicker')) document.querySelector('#openExtendStayRefPicker').addEventListener('click', openExtendStayRefPicker)
     if(document.querySelector('#room-type'))document.querySelector('#room-type').addEventListener('change', e=>{
         if(!actionid)return
         did('roomcategory-'+actionid).value = did('room-type').value 
@@ -38,6 +40,98 @@ async function extendstayActive() {
     did('initialroombtn').click()
 }
 // every functions can be found in the index.js checkin.js and oreutil.js
+
+let extendStayPickerRows = []
+
+function buildExtendStayRefPickerModal() {
+    if (did('extendStayRefPickerModal')) return
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="extendStayRefPickerModal" class="hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center">
+        <div class="max-w-5xl w-full bg-white rounded shadow p-4 max-h-[90vh] overflow-auto">
+          <div class="flex justify-between items-center mb-3">
+            <p class="font-semibold">Find Checked-In Reservation</p>
+            <span class="material-symbols-outlined cp text-red-500" onclick="did('extendStayRefPickerModal').classList.add('hidden')">close</span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-3 items-end">
+            <input id="extendStayRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderExtendStayRefPickerRows()">
+          </div>
+          <div class="table-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>reference</th>
+                  <th>room</th>
+                  <th>guest</th>
+                  <th>phone</th>
+                  <th>arrival</th>
+                  <th>departure</th>
+                  <th>action</th>
+                </tr>
+              </thead>
+              <tbody id="extendStayRefPickerRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `)
+    did('extendStayRefPickerModal').onclick = function(event){ if(event.target.id=='extendStayRefPickerModal')this.classList.add('hidden') }
+}
+
+async function openExtendStayRefPicker() {
+    did('extendStayRefPickerModal').classList.remove('hidden')
+    did('extendStayRefPickerRows').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading checked-ins...</td></tr>`
+    const request = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
+    extendStayPickerRows = request.status ? normalizeExtendStayPickerRows(request.data || []) : []
+    renderExtendStayRefPickerRows()
+}
+
+function normalizeExtendStayPickerRows(data = []) {
+    return data.map(item => {
+        const reservation = item.reservations || {}
+        const roomRows = item.roomguestrow || item.roomgeustrow || []
+        const rooms = roomRows.map(row => row.roomdata?.roomnumber).filter(Boolean).join(', ')
+        const guests = roomRows.flatMap(row => [ ...(row.guest1 || []), ...(row.guest2 || []), ...(row.guest3 || []), ...(row.guest4 || []) ])
+        const guestname = guests.map(g => `${g.firstname || ''} ${g.lastname || ''} ${g.othernames || ''}`.trim()).filter(Boolean).join(', ')
+        const phone = guests.map(g => g.phone || '').filter(Boolean).join(', ')
+        return {
+            reference: reservation.reference || '',
+            roomnumber: rooms,
+            guestname,
+            phone,
+            arrivaldate: reservation.arrivaldate || '',
+            departuredate: reservation.departuredate || ''
+        }
+    }).filter(row => row.reference)
+}
+
+function renderExtendStayRefPickerRows() {
+    if(!did('extendStayRefPickerRows')) return
+    const search = (did('extendStayRefPickerSearch')?.value || '').toLowerCase().trim()
+    const rows = extendStayPickerRows.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase().includes(search))
+    did('extendStayRefPickerRows').innerHTML = rows.map((item, index) => `
+      <tr>
+        <td>${item.reference || '-'}</td>
+        <td>${item.roomnumber || '-'}</td>
+        <td>${item.guestname || '-'}</td>
+        <td>${item.phone || '-'}</td>
+        <td>${item.arrivaldate ? specialformatDateTime(item.arrivaldate) : '-'}</td>
+        <td>${item.departuredate ? specialformatDateTime(item.departuredate) : '-'}</td>
+        <td><button type="button" class="btn btn-sm bg-blue-500 text-white" onclick="useExtendStayRefPicker(${index})">Use</button></td>
+      </tr>
+    `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No checked-ins found</td></tr>`
+}
+
+async function useExtendStayRefPicker(index) {
+    const filteredRows = extendStayPickerRows.filter(item => {
+        const search = (did('extendStayRefPickerSearch')?.value || '').toLowerCase().trim()
+        return `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase().includes(search)
+    })
+    const selected = filteredRows[index]
+    if(!selected || !selected.reference)return notification('Could not load selected record', 0)
+    if(did('reference')) did('reference').value = selected.reference
+    did('extendStayRefPickerModal').classList.add('hidden')
+    await fetchdataforextendstay()
+}
 
 async function fetchdataforextendstay(id) {
         did('mainform').classList.add('hidden')
