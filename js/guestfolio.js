@@ -709,9 +709,6 @@ async function onreceiveablesTableDataSignal() {
                 <td>${formatNumber(item.debit || 0)}</td>
                 <td>${formatNumber(item.credit || 0)}</td>
                 <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
-                <td class="flex gap-1 items-center">
-                    ${item._emptyTransaction ? '' : `<button onclick="openreceiveablemodalbyindex('${item.index ?? 0}')" class="btn btn-sm btn-primary ${(Number(item.debit || 0) - Number(item.credit || 0)) > 0 ? '' : '!hidden'}">Pay Now</button>`}
-                </td>
             </tr>`)
         }).join('')
         injectPaginatatedTable(rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`)
@@ -767,7 +764,6 @@ function setreceiveablesTableHeader(){
             <th>debit</th>
             <th>credit</th>
             <th>balance</th>
-            <th>ACTION</th>
         `
         return
     }

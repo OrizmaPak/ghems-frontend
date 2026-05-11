@@ -73,7 +73,6 @@
                                                     <th>debit</th>
                                                     <th>credit</th>
                                                     <th>balance</th>
-                                                    <th>ACTION</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tabledata">
