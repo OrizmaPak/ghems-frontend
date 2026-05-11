@@ -10,6 +10,7 @@ let distribute = "YES"
 const checkinOtherDetailsPromptState = {}
 const checkinRateDataByCard = {}
 const checkinRateSourceByCard = {}
+const checkinSubmitLocks = {}
 let checkinOrgContextChangeLock = false
 
 function normalizeCheckinOrgType(value = '') {
@@ -320,11 +321,107 @@ function setCheckinPaymentMethodDefaultCash() {
     }
 }
 
+function getCheckinNumericValue(value = '') {
+    const parsed = Number(String(value ?? '').replace(/,/g, '').trim())
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
+function getCheckinAmountPaidValue() {
+    return getCheckinNumericValue(did('amountpaid')?.value || '')
+}
+
+function getCheckinResponseMessage(response, fallback = 'Unable to complete request. Please try again.') {
+    if(typeof response === 'string' && response.trim()) return response
+    return response?.message || response?.result || fallback
+}
+
+function isCheckinPaymentForm(formId = '') {
+    return ['checkinform', 'guestreservationform', 'reservationcheckinform'].includes(formId)
+}
+
+function getCheckinFormRoot(formId = '') {
+    return did(formId) || document
+}
+
+function getCheckinScopedElements(formId = '', className = '') {
+    return Array.from(getCheckinFormRoot(formId).getElementsByClassName(className))
+}
+
+function getCheckinRequiredIds(formId = '') {
+    let ids = []
+    if(formId === 'guestreservationform') {
+        ids = getGuestReservationRequiredIds()
+    } else if(formId === 'cancelreservationform') {
+        ids = getIdFromCls('comp22', formId)
+    } else if(formId === 'extendstayform') {
+        ids = getIdFromCls('comp33', formId)
+    } else {
+        ids = getIdFromCls('comp', formId)
+    }
+
+    const optionalPaymentIds = ['amountpaid', 'paymentmethod', 'bankname', 'otherdetails']
+    return ids.filter(id => id && !optionalPaymentIds.includes(id))
+}
+
+function showCheckinValidationFeedback(formId = '') {
+    const form = did(formId)
+    if(!form) return
+    const errors = Array.from(form.querySelectorAll('.control-error'))
+    if(!errors.length) return
+    const messages = errors.map(error => String(error.textContent || '').trim()).filter(Boolean)
+    const firstControl = errors[0].previousElementSibling
+    const summary = messages.slice(0, 3).join(', ')
+    notification(`Please complete: ${summary}${messages.length > 3 ? '...' : ''}`, 0, 7000)
+    if(firstControl && typeof firstControl.scrollIntoView === 'function') {
+        firstControl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => {
+            try { firstControl.focus({ preventScroll: true }) } catch(_) {}
+        }, 250)
+    }
+}
+
+function validateSubmittedCheckinForm(formId = '') {
+    const valid = validateForm(formId, getCheckinRequiredIds(formId))
+    if(!valid) showCheckinValidationFeedback(formId)
+    return valid
+}
+
+async function confirmCheckinNoPaymentSubmit() {
+    const message = 'No amount paid entered. Continue without posting payment?'
+    if(window.Swal) {
+        const result = await Swal.fire({
+            title: 'Continue Without Payment?',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Continue',
+            cancelButtonText: 'Make Payment',
+            customClass: {
+                confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
+                cancelButton: 'btn btn-md !bg-green-600 !text-white mx-2'
+            },
+            buttonsStyling: false
+        })
+        return !!result.isConfirmed
+    }
+    return window.confirm ? window.confirm(message) : true
+}
+
 async function runCheckinOtherDetailsSubmitGuard(formId) {
-    setCheckinPaymentMethodDefaultCash()
+    const amountPaid = getCheckinAmountPaidValue()
+    if(amountPaid <= 0) {
+        return confirmCheckinNoPaymentSubmit()
+    }
+
     const paymentMethod = String((did('paymentmethod') && did('paymentmethod').value) || '').trim().toUpperCase()
     const bankName = String((did('bankname') && did('bankname').value) || '').trim()
     const otherDetails = String((did('otherdetails') && did('otherdetails').value) || '').trim()
+
+    if(!paymentMethod) {
+        notification('Please select a payment method for the amount paid.', 0)
+        did('modalformone')?.classList.remove('hidden')
+        return false
+    }
 
     // If transfer is selected, bank details remain mandatory.
     if (paymentMethod === 'TRANSFER') {
@@ -356,6 +453,16 @@ async function runCheckinOtherDetailsSubmitGuard(formId) {
     return true
 }
 
+function bindCheckinSubmitButton(formId = '') {
+    const form = did(formId)
+    const submitButton = form?.querySelector('#submit')
+    if(!form || !submitButton) return
+    submitButton.onclick = async (event) => {
+        event?.preventDefault?.()
+        return checkinnFormSubmitHandler(formId)
+    }
+}
+
 async function checkinActive() {
     notification('Loading...')
     checkinid = ''
@@ -363,15 +470,7 @@ async function checkinActive() {
     // markallcomp() 
     const form = document.querySelector('#checkinform')  
     await checkinpopulatedl() 
-    setCheckinPaymentMethodDefaultCash()
-    // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('checkinform'))
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', async e=>{
-        if(!await runCheckinOtherDetailsSubmitGuard('checkinform')) return
-        if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            return checkinnFormSubmitHandler('checkinform')
-        }
-        return checkinnFormSubmitHandler('checkinform')
-    })
+    bindCheckinSubmitButton('checkinform')
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone'))
     // if(document.querySelector('#submitguestmodal')) document.querySelector('#submitguestmodal').addEventListener('click', e=>submitguestform())
     if(document.querySelector('#submitcompany'))document.querySelector('#submitcompany').addEventListener('click', companysubmithandler)
@@ -2340,14 +2439,6 @@ function removeguestsreservations(ref){
 
 function applyReservationTypePaymentRequirement(showNotice = false) {
     if(!did('reservationtype') || !did('paymentmethod')) return
-    const reservationType = String(did('reservationtype').value || '').trim().toUpperCase()
-    if(reservationType === 'GUARANTEED'){
-        if(showNotice){
-            notification('Please note that since the reservation is guaranteed the payment method must be entered. Click on the ~More Details~ button to select the payment method')
-        }
-        did('paymentmethod').classList.add('comp')
-        return
-    }
     did('paymentmethod').classList.remove('comp')
 }
 
@@ -2873,8 +2964,8 @@ function getGuestReservationRequiredIds() {
     return getIdFromCls('comp', 'guestreservationform').filter(id => !String(id || '').startsWith('roomnumber-'));
 }
 
-function checkDuplicateRoomNumbers() {
-    const roomNumberElements = document.getElementsByClassName('roomnumber');
+function checkDuplicateRoomNumbers(root = document) {
+    const roomNumberElements = root.getElementsByClassName('roomnumber');
     const roomNumbers = new Set();
 
     for (let i = 0; i < roomNumberElements.length; i++) {
@@ -2892,328 +2983,249 @@ function checkDuplicateRoomNumbers() {
 
 async function checkinnFormSubmitHandler(guest){
     if(!guest)return notification('Wrong call point', 0)
-    if(did('checkinform')){
-        if(!validateForm('checkinform', getIdFromCls('comp', 'checkinform')))return notification('some data are not provided...', 0)
-    }
-    if(did('reassignroomsform')){
-        if(!validateForm('reassignroomsform', getIdFromCls('comp', 'reassignroomsform')))return notification('some data are not provided...', 0)
-    }
-    if(did('guestreservationform')){
-        if(!validateForm('guestreservationform', getGuestReservationRequiredIds()))return notification('some data are not provided...', 0)
-    }
-    if(did('reservationcheckinform')){
-        if(!validateForm('reservationcheckinform', getIdFromCls('comp', 'reservationcheckinform')))return notification('some data are not provided...', 0)
-    }
-    if(did('groupcheckinform')){
-        if(!validateForm('groupcheckinform', getIdFromCls('comp', 'groupcheckinform')))return notification('some data are not provided...', 0)
-    }
-    if(did('cancelreservationform')){
-        Swal.fire({
-          title: "Are you sure?",
-          text: "You won't be able to revert this!",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
-          confirmButtonText: "Yes, delete it!"
-        }).then((result) => {
-          if (!result.isConfirmed) {
-            return
-          }
-        });
-        if(!validateForm('cancelreservationform', getIdFromCls('comp22', 'cancelreservationform')))return notification('some data are not provided...', 0)
-    }
-    if(did('extendstayform')){
-        if(!validateForm('extendstayform', getIdFromCls('comp33', 'extendstayform')))return notification('some data are not provided...', 0)
-    }
-    calculatetotals()
-    // if(checkinid)return alert()
-    // if(Number(did('amountpaid').value) < Number(did('mindeposit').value)) return notification('Minimum deposit is required to be paid', 0)
-    // if(Number(did('amountpaid').value) < 1) return notification('Minimum deposit is required to be paid', 0)
-    // return alert(checkinid)
-    
-    // Check if any two rooms have the same room number
-    if(checkDuplicateRoomNumbers())return;
-    
-    let rn = document.getElementsByClassName('roomnumber')
-    let err = false
-    for (let i = 0; i < rn.length; i++) {
-        const adultCount = document.getElementsByClassName('adult')[i].value;
-        const guestCount = document.getElementsByClassName('moreguestcontainer')[i].children.length;
+    const form = did(guest)
+    if(!form)return notification('Unable to submit. The active form was not found.', 0)
+    const submitButton = form.querySelector('#submit')
+    if(checkinSubmitLocks[guest])return notification('Submission already in progress. Please wait.', 0)
 
-        if (adultCount !== guestCount.toString()) {
-            const roomLabel = document.getElementsByClassName('roomnumber')[i].value || `row ${i + 1}`;
-            notification(`The number of adults in room ${roomLabel} does not match with the number of guest provided.`, 0);
-            err = true
-            break;
+    checkinSubmitLocks[guest] = true
+    if(submitButton)submitButton.disabled = true
+
+    let request
+    let successNotified = false
+
+    try {
+        if(!validateSubmittedCheckinForm(guest))return
+
+        if(isCheckinPaymentForm(guest)){
+            const canSubmitPaymentState = await runCheckinOtherDetailsSubmitGuard(guest)
+            if(!canSubmitPaymentState)return
         }
-    }
-    
-    if(err)return
-    
 
-    
-    // give appropriate name to all dynamic element
-    givenamebyclass('roomcategory')
-    givenamebyclass('roomnumber')
-    givenamebyclass('adult')
-    givenamebyclass('child')
-    givenamebyclass('infant')
-    givenamebyclass('ratecode')
-    givenamebyclass('ratecodename')
-    givenamebyclass('plan')
-    givenamebyclass('planamount')
-    givenamebyclass('roomrate')
-    givenamebyclass('discountcoupon')
-    givenamebyclass('discountamount')
-    givenamebyclass('plandiscountperc')
-    givenamebyclass('plandiscountamount')
-    givenamebyclass('guestid')
-    
-    
-    function payload(){
-        let param =  new FormData(document.querySelector(`#${guest}`))
-        if(checkinid)param.append('id', checkinid)
-        if(guest == 'reassignroomsform' && typeof reassignid !== 'undefined' && reassignid)param.set('id', reassignid)
-        param.append('photofilename', showFileName('imageurl'))
-        param.append('userphotoname', getFile('imageurl'))
-        param.set('arrivaldate', document.getElementById('arrivaldate').value.replace('T', ' '))
-        param.set('departuredate', document.getElementById('departuredate').value.replace('T', ' '))
-        param.set('rowsize', document.getElementsByClassName('roomnumber').length)
-        if(document.getElementById('otherdiscount'))param.set('otherdiscount', document.getElementById('otherdiscount').value || 0)
-        if(document.getElementById('totalamount'))param.set('totalamount', document.getElementById('totalamount').value || 0)
-        
-        for(let i=0;i<rn.length;i++){
-           if(document.getElementsByClassName('moreguestcontainer')[i].children.length > 1){
-               for(let j=1;j<document.getElementsByClassName('moreguestcontainer')[i].children.length;j++){
-                   param.append(`guestid${i+1}_${j}`, document.getElementsByClassName('moreguestcontainer')[i].children[j].children[0].children[2].value)
+        if(guest == 'cancelreservationform' && window.Swal){
+            const cancelResult = await Swal.fire({
+              title: "Are you sure?",
+              text: "You won't be able to revert this!",
+              icon: "warning",
+              showCancelButton: true,
+              confirmButtonColor: "#3085d6",
+              cancelButtonColor: "#d33",
+              confirmButtonText: "Yes, delete it!"
+            })
+            if(!cancelResult.isConfirmed)return
+        }
+
+        calculatetotals()
+        if(checkDuplicateRoomNumbers(form))return
+
+        const rn = getCheckinScopedElements(guest, 'roomnumber')
+        const adultControls = getCheckinScopedElements(guest, 'adult')
+        const guestContainers = getCheckinScopedElements(guest, 'moreguestcontainer')
+
+        for (let i = 0; i < rn.length; i++) {
+            const adultCount = String(adultControls[i]?.value || '').trim()
+            const guestCount = String(guestContainers[i]?.children?.length || 0)
+
+            if (adultCount !== guestCount) {
+                const roomLabel = rn[i]?.value || `row ${i + 1}`
+                notification(`The number of adults in room ${roomLabel} does not match with the number of guest provided.`, 0)
+                adultControls[i]?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+                return
+            }
+        }
+
+        ;[
+            'roomcategory',
+            'roomnumber',
+            'adult',
+            'child',
+            'infant',
+            'ratecode',
+            'ratecodename',
+            'plan',
+            'planamount',
+            'roomrate',
+            'discountcoupon',
+            'discountamount',
+            'plandiscountperc',
+            'plandiscountamount',
+            'guestid'
+        ].forEach(cls => givenamebyclass(cls, cls, form))
+
+        function payload(){
+            let param =  new FormData(form)
+            if(checkinid)param.append('id', checkinid)
+            if(guest == 'reassignroomsform' && typeof reassignid !== 'undefined' && reassignid)param.set('id', reassignid)
+            param.append('photofilename', showFileName('imageurl'))
+            param.append('userphotoname', getFile('imageurl'))
+            if(did('arrivaldate'))param.set('arrivaldate', did('arrivaldate').value.replace('T', ' '))
+            if(did('departuredate'))param.set('departuredate', did('departuredate').value.replace('T', ' '))
+            param.set('rowsize', rn.length)
+            if(did('otherdiscount'))param.set('otherdiscount', did('otherdiscount').value || 0)
+            if(did('totalamount'))param.set('totalamount', did('totalamount').value || 0)
+
+            for(let i=0;i<rn.length;i++){
+               const container = guestContainers[i]
+               if(container?.children?.length > 1){
+                   for(let j=1;j<container.children.length;j++){
+                       const extraGuestId = container.children[j]?.children?.[0]?.children?.[2]?.value || ''
+                       param.append(`guestid${i+1}_${j}`, extraGuestId)
+                   }
                }
-           }
+            }
+
+            return param
         }
-        
-        return param
-    }
-    function payloadcancel(){
-        let param =  new FormData()
-        param.set('refund', document.getElementById('refund').value)
-        param.set('paymentmethod', document.getElementById('paymentmethod').value)
-        param.set('reasonforcancellation', document.getElementById('reasonforcancellation').value)
-        param.set('reference', document.getElementById('referencer').value)
-        if(did('bankname'))param.set('bankname', did('bankname').value)
-        if(did('otherdetails'))param.set('otherdetails', did('otherdetails').value)
-        
-        return param
-    }
-    function payloadstay(){
-        let param =  new FormData()
-        param.set('reference', document.getElementById('referencer').value)
-        param.set('numberofnights', document.getElementById('numberofnights').value)
-        param.set('departuredate', document.getElementById('departuredate').value.replace('T', ' ')+':00')
-        
-        return param
-    }
+        function payloadcancel(){
+            let param =  new FormData()
+            param.set('refund', did('refund')?.value || '')
+            param.set('paymentmethod', did('paymentmethod')?.value || '')
+            param.set('reasonforcancellation', did('reasonforcancellation')?.value || '')
+            param.set('reference', did('referencer')?.value || '')
+            if(did('bankname'))param.set('bankname', did('bankname').value)
+            if(did('otherdetails'))param.set('otherdetails', did('otherdetails').value)
 
-    let request 
-    if(guest == 'checkinform')request = await httpRequest2(`../controllers/checkindirectmodified`, payload(), document.querySelector(`#${guest} #submit`))
-    if(guest == 'reassignroomsform')request = await httpRequest2(`../controllers/transferroom`, payload(), document.querySelector(`#${guest} #submit`))
-    if(guest == 'guestreservationform')request = await httpRequest2(`../controllers/reservations`, payload(), document.querySelector(`#${guest} #submit`))
-    if(guest == 'reservationcheckinform')request = await httpRequest2(`../controllers/reservationcheckin`, payload(), document.querySelector(`#${guest} #submit`))
-    if(guest == 'cancelreservationform')request = await httpRequest2(`../controllers/cancelreservation`, payloadcancel(), document.querySelector(`#${guest} #submit`))
-    if(guest == 'extendstayform'){
-        const isReduceStayMode = !!did('reducestaymode')
-        const stayController = isReduceStayMode ? '../controllers/reducestay.php' : '../controllers/extendstay'
-        request = await httpRequest2(stayController, payloadstay(), document.querySelector(`#${guest} #submit`))
-    }
-    if(request.status) {
-        
-        if(guest != 'cancelreservationform' && guest != 'extendstayform'){
-            // if amount its from a reservation and direct then an invoice must be called
-            if(guest){
-                async function payloadinvoice() {
-                    const roomCardsCount = rn.length;
-                    const amountPaidValue = Number((did('amountpaid')?.value || 0));
-                    const isReservationFlow = guest == 'guestreservationform' || guest == 'reservationcheckinform';
-                    const shouldAskDistribution = roomCardsCount > 1 && amountPaidValue > 0 && !isReservationFlow;
+            return param
+        }
+        function payloadstay(){
+            let param =  new FormData()
+            param.set('reference', did('referencer')?.value || '')
+            param.set('numberofnights', did('numberofnights')?.value || '')
+            param.set('departuredate', `${String(did('departuredate')?.value || '').replace('T', ' ')}:00`)
 
-                    let distribute = 'NO';
-                    if (shouldAskDistribution) {
-                        const result = await Swal.fire({
-                            title: 'Distribute Payment',
-                            text: 'Do you want to distribute the payment?',
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonText: 'Yes',
-                            cancelButtonText: 'No',
-                            customClass: {
-                                confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                                cancelButton: 'btn btn-md !bg-red-500 !text-white mx-2'
-                            },
-                            buttonsStyling: false
-                        });
-                        distribute = result.isConfirmed ? 'YES' : 'NO';
-                    }
+            return param
+        }
+        async function payloadinvoice() {
+            const roomCardsCount = rn.length
+            const amountPaidValue = getCheckinAmountPaidValue()
+            const isReservationFlow = guest == 'guestreservationform' || guest == 'reservationcheckinform'
+            const shouldAskDistribution = roomCardsCount > 1 && amountPaidValue > 0 && !isReservationFlow
 
-                    let p = new FormData();
-                    p.append('reference', request.reference);
-                    p.append('paymentmethod', did('paymentmethod')?.value || '');
-                    p.append('totaldue', did('totalamount')?.value || 0);
-                    p.append('amountpaid', did('amountpaid')?.value || 0);
-                    p.append('distribute', distribute);
-                    p.append('bankname', did('bankname')?.value || '');
-                    p.append('otherdetails', did('otherdetails')?.value || '');
+            let distribute = 'NO'
+            if (shouldAskDistribution && window.Swal) {
+                const result = await Swal.fire({
+                    title: 'Distribute Payment',
+                    text: 'Do you want to distribute the payment?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes',
+                    cancelButtonText: 'No',
+                    customClass: {
+                        confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
+                        cancelButton: 'btn btn-md !bg-red-500 !text-white mx-2'
+                    },
+                    buttonsStyling: false
+                })
+                distribute = result.isConfirmed ? 'YES' : 'NO'
+            }
 
-                    return p;
-                }
-                if(populateddata && checkinid && populateddata.amountpaid && populateddata.ampuntpaid != document.getElementById('amountpaid').value){
-                    let requestinvoice = await httpRequest2('../controllers/invoicing', await payloadinvoice(), document.querySelector(`#${guest} #submit`))
-                    if(requestinvoice.status) {
-                        notification(requestinvoice.message, 1);
-                        Swal.fire({
-                        title: 'Successful booking and payment',
-                        text: 'Thank you',
-                        icon: 'success',
-                        confirmButtonText: 'Okay',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                        },
-                        buttonsStyling: false
-                      });
-                    }else{
-                       notification(request.message, 0);
-                        Swal.fire({
-                        title: 'Failed payment',
-                        text: 'Please reach out for support',
-                        icon: 'error',
-                        confirmButtonText: 'Okay',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                        },
-                        buttonsStyling: false
-                      });
-                    }
-                }else if(populateddata && checkinid && !populateddata.amountpaid){
-                    let requestinvoice = await httpRequest2('../controllers/invoicing', await payloadinvoice(), document.querySelector(`#${guest} #submit`))
-                    if(requestinvoice.status) {
-                        notification(requestinvoice.message, 1);
-                        Swal.fire({
-                        title: 'Successful booking and payment',
-                        text: 'Thank you',
-                        icon: 'success',
-                        confirmButtonText: 'Okay',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                        },
-                        buttonsStyling: false
-                      });
-                    }else{
-                       notification(request.message, 0);
-                        Swal.fire({
-                        title: 'Failed payment',
-                        text: 'Please reach out for support',
-                        icon: 'error',
-                        confirmButtonText: 'Okay',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                        },
-                        buttonsStyling: false
-                      });
-                    }
-                }else{
-                    let requestinvoice = await httpRequest2('../controllers/invoicing', await payloadinvoice(), document.querySelector(`#${guest} #submit`))
-                    if(requestinvoice.status) {
-                        notification(requestinvoice.message, 1);
-                    Swal.fire({
-                        title: 'Successful booking and payment',
-                        text: 'Thanks you',
-                        icon: 'success',
-                        confirmButtonText: 'Okay',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                        },
-                        buttonsStyling: false
-                      });
-                    }else{
-                       notification(request.message, 0);
-                        Swal.fire({
-                        title: 'Failed payment',
-                        text: 'Please reach out for support',
-                        icon: 'error',
-                        confirmButtonText: 'Okay',
-                        customClass: {
-                          confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                        },
-                        buttonsStyling: false
-                      });
-                       notification(request.message, 0);
+            let p = new FormData()
+            p.append('reference', request?.reference || '')
+            p.append('paymentmethod', did('paymentmethod')?.value || '')
+            p.append('totaldue', did('totalamount')?.value || 0)
+            p.append('amountpaid', did('amountpaid')?.value || '')
+            p.append('distribute', distribute)
+            p.append('bankname', did('bankname')?.value || '')
+            p.append('otherdetails', did('otherdetails')?.value || '')
+
+            return p
+        }
+
+        if(guest == 'checkinform')request = await httpRequest2(`../controllers/checkindirectmodified`, payload(), submitButton)
+        if(guest == 'reassignroomsform')request = await httpRequest2(`../controllers/transferroom`, payload(), submitButton)
+        if(guest == 'guestreservationform')request = await httpRequest2(`../controllers/reservations`, payload(), submitButton)
+        if(guest == 'reservationcheckinform')request = await httpRequest2(`../controllers/reservationcheckin`, payload(), submitButton)
+        if(guest == 'cancelreservationform')request = await httpRequest2(`../controllers/cancelreservation`, payloadcancel(), submitButton)
+        if(guest == 'extendstayform'){
+            const isReduceStayMode = !!did('reducestaymode')
+            const stayController = isReduceStayMode ? '../controllers/reducestay.php' : '../controllers/extendstay'
+            request = await httpRequest2(stayController, payloadstay(), submitButton)
+        }
+
+        if(!request || request.status !== true) {
+            return notification(getCheckinResponseMessage(request, 'Submit failed. Please check your connection/session and try again.'), 0)
+        }
+
+        if((isCheckinPaymentForm(guest) || guest == 'groupcheckinform') && guest != 'cancelreservationform' && guest != 'extendstayform'){
+            const amountPaidValue = getCheckinAmountPaidValue()
+            const previousAmountPaid = populateddata && checkinid ? getCheckinNumericValue(populateddata.amountpaid || 0) : 0
+            const shouldPostPayment = amountPaidValue > 0 && (!populateddata || !checkinid || previousAmountPaid !== amountPaidValue)
+
+            if(amountPaidValue <= 0) {
+                notification('Saved successfully without payment posting.', 1)
+                successNotified = true
+            } else if(shouldPostPayment) {
+                if(!request.reference) {
+                    notification('Saved, but payment could not be posted because no reference was returned.', 0)
+                    successNotified = true
+                } else {
+                    const requestinvoice = await httpRequest2('../controllers/invoicing', await payloadinvoice(), submitButton)
+                    const invoiceMessage = getCheckinResponseMessage(requestinvoice, 'Payment posting failed. Please reach out for support.')
+                    if(requestinvoice?.status) {
+                        notification(invoiceMessage, 1)
+                        successNotified = true
+                        if(window.Swal) {
+                            Swal.fire({
+                                title: 'Successful booking and payment',
+                                text: 'Thank you',
+                                icon: 'success',
+                                confirmButtonText: 'Okay',
+                                customClass: {
+                                  confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
+                                },
+                                buttonsStyling: false
+                            })
+                        }
+                    } else {
+                        notification(invoiceMessage, 0)
+                        successNotified = true
+                        if(window.Swal) {
+                            Swal.fire({
+                                title: 'Failed payment',
+                                text: invoiceMessage,
+                                icon: 'error',
+                                confirmButtonText: 'Okay',
+                                customClass: {
+                                  confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
+                                },
+                                buttonsStyling: false
+                            })
+                        }
                     }
                 }
             }
-            
-            
-            // if(did('amountpaid').value && guest){
-            //     // we have to check if the user
-            //     let amt = Number(did('totalamount').value??0) - Number(did('amountpaid').value??0)
-            //     if(populateddata && !populateddata.amountpaid){
-            //         if(guest == 'reservationcheckinform' || guest == 'groupcheckinform'){
-            //             if(request.reference && document.getElementById('reservationtype').value == 'GUARANTEED'){
-            //             function payloadinvoice(){
-            //                 let p = new FormData();
-            //                 p.append('reference', request.reference)
-            //                 p.append('paymentmethod', did('paymentmethod').value)
-            //                 p.append('totaldue', did('totalamount').value)
-            //                 p.append('amountpaid', did('amountpaid').value)
-            //                 p.append('distribute', 'YES')
-            //                 p.append('bankname', did('bankname').value)
-            //                 p.append('otherdetails', did('otherdetails').value)
-            //                 return p
-            //             }
-            //             let requestinvoice = await httpRequest2('../controllers/invoicing', payloadinvoice(), document.querySelector(`#${guest} #submit`))
-            //             if(requestinvoice.status) {
-            //                 notification(requestinvoice.message, 1);
-            //             }
-            //                 notification(request.message, 0);
-            // }
-            //         }
-            //     }
-            // }
-        }else if(guest == 'cancelreservationform'){
+        } else if(guest == 'cancelreservationform' && window.Swal){
             Swal.fire({
               title: "Cancelled!",
               text: "Reservation Cancelled",
               icon: "success"
-            });
+            })
         }
-    
-        populateddata = '';
-        
-        checkinid = '';
-        if(guest == 'checkinform')document.querySelector('#checkin').click();
-        if(guest == 'reassignroomsform')document.querySelector('#reassignrooms').click();
-        if(guest == 'guestreservationform')document.querySelector('#guestsreservations').click();
-        if(guest == 'reservationcheckinform')document.querySelector('#reservationcheckin').click();
-        if(guest == 'groupcheckinform')document.querySelector('#groupcheckin').click();
-        if(guest == 'extendstayform')document.querySelector(did('reducestaymode') ? '#reducestay' : '#extendstay').click();
-        if(guest == 'cancelreservationform')document.querySelector('#cancelreservation').click();
-        if(guest != 'cancelreservationform' || guest == 'extendstayform')fetchcheckinn();
-        if (guest == 'cancelreservationform') {
-        // Query all input, select, and textarea elements within the form with id 'cancelreservationform'
-        const elements = document.querySelectorAll('#cancelreservationform input, #cancelreservationform select, #cancelreservationform textarea');
-        
-        // Loop through each element and disable if it does not have the class 'sss'
-        if(elements)elements.forEach(element => {
-                                if (!element.classList.contains('sss')) {
-                                    element.disabled = true;
-                                }
-                            });
-                        }
-                    
-        console.log('returned response', request)
 
-        return notification(request.message, 1)
-    } 
-    
-    
-    // document.querySelector('#guestsform').reset();
-    // fetchguestsreservations();
-    return notification(request.message, 0);
+        populateddata = ''
+        checkinid = ''
+        if(guest == 'checkinform')document.querySelector('#checkin')?.click()
+        if(guest == 'reassignroomsform')document.querySelector('#reassignrooms')?.click()
+        if(guest == 'guestreservationform')document.querySelector('#guestsreservations')?.click()
+        if(guest == 'reservationcheckinform')document.querySelector('#reservationcheckin')?.click()
+        if(guest == 'groupcheckinform')document.querySelector('#groupcheckin')?.click()
+        if(guest == 'extendstayform')document.querySelector(did('reducestaymode') ? '#reducestay' : '#extendstay')?.click()
+        if(guest == 'cancelreservationform')document.querySelector('#cancelreservation')?.click()
+        if(guest != 'cancelreservationform' || guest == 'extendstayform')fetchcheckinn()
+        if (guest == 'cancelreservationform') {
+            const elements = document.querySelectorAll('#cancelreservationform input, #cancelreservationform select, #cancelreservationform textarea')
+            if(elements)elements.forEach(element => {
+                if (!element.classList.contains('sss')) element.disabled = true
+            })
+        }
+
+        console.log('returned response', request)
+        if(!successNotified)notification(getCheckinResponseMessage(request, 'Saved successfully.'), 1)
+    } catch(error) {
+        console.error(error)
+        notification(error?.message || 'Unable to submit. Please try again.', 0)
+    } finally {
+        checkinSubmitLocks[guest] = false
+        if(submitButton)submitButton.disabled = false
+    }
 }

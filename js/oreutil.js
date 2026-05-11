@@ -5,9 +5,7 @@ function validateForm(formm, ids=null) {
     let controls = [] 
     
     if(ids){
-        console.log(ids)
         for(let i=0;i<ids.length;i++){
-            console.log('validation',ids[i])
             if(ids[i] && form.querySelector(`#${ids[i]}`)){
                 const element = form.querySelector(`#${ids[i]}`)
                 // Skip disabled fields or hidden fields (offsetParent is null when element or parent is hidden)
@@ -513,11 +511,12 @@ function formatDate(inputDate) {
   return formattedDate;
 }
 
-function givenamebyclass(cls, name){
+function givenamebyclass(cls, name, root=null){
     if(!name)name = cls
-    if(document.getElementsByClassName(cls).length < 1)return
-    for(let i=0; i<document.getElementsByClassName(cls).length; i++){
-        document.getElementsByClassName(cls)[i].setAttribute('name', `${name}${i+1}`)
+    const scope = root || document
+    if(scope.getElementsByClassName(cls).length < 1)return
+    for(let i=0; i<scope.getElementsByClassName(cls).length; i++){
+        scope.getElementsByClassName(cls)[i].setAttribute('name', `${name}${i+1}`)
     }
 }
 

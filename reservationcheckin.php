@@ -516,6 +516,7 @@
                                                                                                                 }else{
                                                                                                                     document.getElementById('bankside').classList.add('invisible')
                                                                                                                 }" class="bg-white form-control !p-2 comp2">
+                                                            <option value="">-- Select Payment Method --</option>
                                                             <option>TRANSFER</option>
                                                             <option>CASH</option>
                                                             <option>POS</option>

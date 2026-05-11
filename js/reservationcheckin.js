@@ -5,14 +5,7 @@ async function reservationcheckinActive() {
     // markallcomp() 
     const form = document.querySelector('#reservationcheckinform')  
     await checkinpopulatedl() 
-    setCheckinPaymentMethodDefaultCash()
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', async e=>{
-        if(!await runCheckinOtherDetailsSubmitGuard('reservationcheckinform')) return
-        if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            return checkinnFormSubmitHandler('reservationcheckinform')
-        }
-        return checkinnFormSubmitHandler('reservationcheckinform')
-    })
+    bindCheckinSubmitButton('reservationcheckinform')
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone'))
     // if(document.querySelector('#submitguestmodal')) document.querySelector('#submitguestmodal').addEventListener('click', e=>submitguestform())
     if(document.querySelector('#submitcompany'))document.querySelector('#submitcompany').addEventListener('click', companysubmithandler)
