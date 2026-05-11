@@ -270,6 +270,28 @@ function clearCalculatedRoomCardValues(idd = '') {
     delete checkinRateDataByCard[idd]
     delete checkinRateSourceByCard[idd]
     setRateSourceMessage(idd, null)
+    updateRoomRatePerDayLabel(idd)
+}
+
+function updateRoomRatePerDayLabel(idd = '') {
+    const id = String(idd || '').trim()
+    if(!id) return
+    const label = did('roomrate-label-'+id) || document.querySelector(`[data-roomrate-label="${id}"]`)
+    if(!label) return
+    const roomRate = Number(did('roomrate-'+id)?.value || 0)
+    const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
+    const perDayRate = roomRate > 0 ? roomRate / nights : 0
+    label.innerHTML = perDayRate
+        ? `rate <span class="text-[10px] font-semibold text-slate-600 whitespace-nowrap">(${formatNumber(perDayRate)} Per Day)</span>`
+        : 'rate'
+    label.setAttribute('title', perDayRate ? `Rate per day based on ${nights} night${nights === 1 ? '' : 's'}` : 'Rate')
+}
+
+function updateAllRoomRatePerDayLabels() {
+    Array.from(document.getElementsByClassName('roomrate')).forEach((input) => {
+        const id = String(input?.id || '').replace('roomrate-', '').trim()
+        if(id) updateRoomRatePerDayLabel(id)
+    })
 }
 
 async function recalculateRoomCardAfterRoomSelection(cardId = '') {
@@ -1124,6 +1146,7 @@ function calculatetotals(){
         tp = Number(document.getElementsByClassName('planamount')[i].value)+tp
         tpd = Number(document.getElementsByClassName('plandiscountamount')[i].value)+tpd
     }
+    updateAllRoomRatePerDayLabels()
     // ANI payable total is now rate-only; plan amount remains informational.
     const grossTotalAmount = tr
     const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
@@ -1200,8 +1223,8 @@ async function checkinaddroom(){
                                                                 <input type="text" name="planamount" readonly id="planamount-${id}" class="bg-transparent planamount !p-1 comp2 border" placeholder="">
                                                             </div>
                                                             <div class="form-group">
-                                                                <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate</label>
-                                                                <input type="number" readonly name="roomrate" id="roomrate-${id}" class="bg-transparent roomrate !p-1 comp2 border" >
+                                                                <label for="roomrate-${id}" id="roomrate-label-${id}" data-roomrate-label="${id}" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate</label>
+                                                                <input type="number" readonly name="roomrate" id="roomrate-${id}" oninput="calculatetotals()" onchange="calculatetotals()" class="bg-transparent roomrate !p-1 comp2 border" >
                                                                 <!--<select name="roomrate" onchange="getcategoryrateguest(document.getElementById('roomcategory'))" id="roomrate" class="bg-white  form-control !p-2 comp2" >-->
                                                                 <!--</select>-->
                                                             </div>
@@ -2172,8 +2195,8 @@ function populaterestcheckindata(x){
                             <input type="text" name="planamount" value="${item.roomdata.planamount}" readonly id="planamount-${id}" class="bg-transparent planamount !p-1 comp2 border" placeholder="">
                         </div>
                         <div class="form-group">
-                            <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate</label>
-                            <input type="number" name="roomrate" value="${item.roomdata.roomrate}" id="roomrate-${id}" class="bg-transparent roomrate !p-1 comp2 border" >
+                            <label for="roomrate-${id}" id="roomrate-label-${id}" data-roomrate-label="${id}" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate</label>
+                            <input type="number" name="roomrate" value="${item.roomdata.roomrate}" id="roomrate-${id}" oninput="calculatetotals()" onchange="calculatetotals()" class="bg-transparent roomrate !p-1 comp2 border" >
                             <!--<select name="roomrate" onchange="getcategoryrateguest(document.getElementById('roomcategory'))" id="roomrate" class="bg-white  form-control !p-2 comp2" >-->
                             <!--</select>-->
                         </div>
