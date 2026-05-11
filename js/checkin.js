@@ -336,6 +336,21 @@ function getCheckinResponseMessage(response, fallback = 'Unable to complete requ
     return response?.message || response?.result || fallback
 }
 
+function getCheckinResponseReference(response = {}) {
+    if(!response || typeof response !== 'object') return ''
+    const data = response.data
+    return String(
+        response.reference ||
+        response.ref ||
+        data?.reference ||
+        data?.ref ||
+        (Array.isArray(data) ? data[0]?.reference || data[0]?.ref : '') ||
+        did('referencer')?.value ||
+        did('reference')?.value ||
+        ''
+    ).trim()
+}
+
 function isCheckinPaymentForm(formId = '') {
     return ['checkinform', 'guestreservationform', 'reservationcheckinform'].includes(formId)
 }
@@ -3000,8 +3015,8 @@ async function buildSubmittedCheckinReceiptContext(formId = '', saveResponse = {
     const form = did(formId)
     if(!form) return null
 
-    const bookingReference = String(saveResponse?.reference || did('referencer')?.value || did('reference')?.value || '').trim()
-    const paymentReference = String(invoiceResponse?.ref || '').trim()
+    const bookingReference = getCheckinResponseReference(saveResponse)
+    const paymentReference = getCheckinResponseReference(invoiceResponse)
     const reservationDate = String(did('reservationdate')?.value || '').trim()
     const arrivalDate = String(did('arrivaldate')?.value || '').trim()
     const departureDate = String(did('departuredate')?.value || '').trim()
@@ -3367,7 +3382,7 @@ async function checkinnFormSubmitHandler(guest){
             }
 
             let p = new FormData()
-            p.append('reference', request?.reference || '')
+            p.append('reference', getCheckinResponseReference(request))
             p.append('paymentmethod', did('paymentmethod')?.value || '')
             p.append('totaldue', did('totalamount')?.value || 0)
             p.append('amountpaid', did('amountpaid')?.value || '')
@@ -3393,7 +3408,6 @@ async function checkinnFormSubmitHandler(guest){
             return notification(getCheckinResponseMessage(request, 'Submit failed. Please check your connection/session and try again.'), 0)
         }
 
-        let pendingPaymentReceiptContext = null
         if((isCheckinPaymentForm(guest) || guest == 'groupcheckinform') && guest != 'cancelreservationform' && guest != 'extendstayform'){
             const amountPaidValue = getCheckinAmountPaidValue()
             const previousAmountPaid = populateddata && checkinid ? getCheckinNumericValue(populateddata.amountpaid || 0) : 0
@@ -3403,7 +3417,8 @@ async function checkinnFormSubmitHandler(guest){
                 notification('Saved successfully without payment posting.', 1)
                 successNotified = true
             } else if(shouldPostPayment) {
-                if(!request.reference) {
+                const bookingReference = getCheckinResponseReference(request)
+                if(!bookingReference) {
                     notification('Saved, but payment could not be posted because no reference was returned.', 0)
                     successNotified = true
                 } else {
@@ -3412,19 +3427,8 @@ async function checkinnFormSubmitHandler(guest){
                     if(requestinvoice?.status) {
                         notification(invoiceMessage, 1)
                         successNotified = true
-                        pendingPaymentReceiptContext = await buildSubmittedCheckinReceiptContext(guest, request, requestinvoice)
-                        if(window.Swal) {
-                            Swal.fire({
-                                title: 'Successful booking and payment',
-                                text: 'Thank you',
-                                icon: 'success',
-                                confirmButtonText: 'Okay',
-                                customClass: {
-                                  confirmButton: 'btn btn-md !bg-blue-500 !text-white mx-2',
-                                },
-                                buttonsStyling: false
-                            })
-                        }
+                        const paymentReceiptContext = await buildSubmittedCheckinReceiptContext(guest, request, requestinvoice)
+                        queueSubmittedCheckinPaymentReceipt(paymentReceiptContext)
                     } else {
                         notification(invoiceMessage, 0)
                         successNotified = true
@@ -3469,10 +3473,6 @@ async function checkinnFormSubmitHandler(guest){
         }
 
         console.log('returned response', request)
-        if(pendingPaymentReceiptContext){
-            queueSubmittedCheckinPaymentReceipt(pendingPaymentReceiptContext)
-            setTimeout(() => flushSubmittedCheckinPaymentReceipt(), 180)
-        }
         if(!successNotified)notification(getCheckinResponseMessage(request, 'Saved successfully.'), 1)
     } catch(error) {
         console.error(error)
