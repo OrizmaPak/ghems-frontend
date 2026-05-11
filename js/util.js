@@ -448,6 +448,32 @@ async function httpRequest(url, payload=null, button=null) {
 async function httpRequest2(url, payload=null, button=null, type="text") {
     runpermissioncheck()
     
+    const buildHttpFailure = (message = 'Unable to perform request.', extra = {}) => ({
+        status: false,
+        message,
+        data: [],
+        ...extra
+    })
+
+    const parseLooseJson = (text = '') => {
+        const cleaned = String(text || '').trim()
+        if(!cleaned) return null
+        try { return JSON.parse(cleaned) } catch(_) {}
+        const firstObj = cleaned.indexOf('{')
+        const lastObj = cleaned.lastIndexOf('}')
+        if(firstObj >= 0 && lastObj > firstObj) {
+            const objSlice = cleaned.slice(firstObj, lastObj + 1)
+            try { return JSON.parse(objSlice) } catch(_) {}
+        }
+        const firstArr = cleaned.indexOf('[')
+        const lastArr = cleaned.lastIndexOf(']')
+        if(firstArr >= 0 && lastArr > firstArr) {
+            const arrSlice = cleaned.slice(firstArr, lastArr + 1)
+            try { return JSON.parse(arrSlice) } catch(_) {}
+        }
+        return null
+    }
+    
     
     try {
 
@@ -466,31 +492,47 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
             result = await fetch(url, {method:'POST', body: payload, headers: new Headers()})
             if(result) {
                 // console.log('result', result)
-                try{
-                    res = await result.json()
-                }catch(_){
-                    res = await result.text()
+                if(type == "json"){
+                    const rawText = await result.text()
+                    res = parseLooseJson(rawText)
+                    if(!res)res = buildHttpFailure('Unexpected server response format.', { raw: rawText, httpStatus: result.status, url })
+                } else {
+                    try{
+                        res = await result.json()
+                    }catch(_){
+                        res = await result.text()
+                    }
                 }
                 markallcomp()
                 if(redirectToLoginOnInvalidSession(res, result))return
+                if(type == "json" && result.ok === false && (!res || typeof res !== 'object')) {
+                    res = buildHttpFailure(`Request failed with status ${result.status}.`, { httpStatus: result.status, url })
+                }
                 // payload.forEach(function(value, key) {
                 //     console.log(key + ": " + value);
                 // });
                 // console.log('response', res)
             } 
-            else return notification('Unable to perform request.', 0)
+            else return buildHttpFailure('Unable to perform request.', { url })
         }
         else {
            result = await fetch(url)
            if(result) {
              if(type != "json")res = await result.text() 
-             if(type == "json")res = await result.json() 
+             if(type == "json"){
+                const rawText = await result.text()
+                res = parseLooseJson(rawText)
+                if(!res)res = buildHttpFailure('Unexpected server response format.', { raw: rawText, httpStatus: result.status, url })
+             }
             //  let rest = await result.json()
             markallcomp()
             if(redirectToLoginOnInvalidSession(res, result))return
+            if(type == "json" && result.ok === false && (!res || typeof res !== 'object')) {
+                res = buildHttpFailure(`Request failed with status ${result.status}.`, { httpStatus: result.status, url })
+            }
                 // console.log('response', res)
            }
-           else return notification('Unable to perform request.', 0)
+           else return buildHttpFailure('Unable to perform request.', { url })
            
         }
         var inputs = document.getElementsByTagName('input');
@@ -508,6 +550,7 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
     }
     catch(e) { 
         console.log(e)
+        return buildHttpFailure(e?.message || 'Request failed.', { error: String(e), url })
     }
     finally {
         if(button) { 
