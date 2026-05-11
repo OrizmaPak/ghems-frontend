@@ -918,6 +918,23 @@ function applySalesOwnerToInputs(ownerValue = '') {
     }
 }
 
+function resolveRoomOwnerFromOrderEntry(orderEntry = null) {
+    if(!orderEntry) return ''
+    const saleentry = orderEntry.saleentry || {}
+    const details = Array.isArray(orderEntry.saledetail) ? orderEntry.saledetail : []
+    const roomCandidates = [
+        saleentry.roomnumber,
+        saleentry.room,
+        saleentry.ownerdetail,
+        saleentry.ownerid,
+        saleentry.owner
+    ]
+    details.forEach((detail) => {
+        roomCandidates.push(detail?.roomnumber, detail?.room, detail?.ownerdetail, detail?.ownerid, detail?.owner)
+    })
+    return roomCandidates.map((value) => String(value ?? '').trim()).find((value) => value && value !== '-1') || ''
+}
+
 function hidesalesterminal(hide=true){
     for(let i=0;i<document.getElementsByClassName('load').length;i++){
         if(hide)document.getElementsByClassName('load')[i].classList.add('hidden')
@@ -1848,6 +1865,10 @@ async function composeOrderToBill(orderEntry = null) {
 
     const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
     applySalesOwnerToInputs(ownerValue)
+    if(String(did('applyto')?.value || '').toUpperCase().includes('ROOM') && !String(did('owner')?.value || '').trim()) {
+        const roomOwner = resolveRoomOwnerFromOrderEntry(orderEntry)
+        if(roomOwner) applySalesOwnerToInputs(roomOwner)
+    }
     if(did('description')) {
         const existingDescription = String(orderEntry.saleentry.description || '').trim()
         const orderRef = String(orderEntry.saleentry.reference || '').trim()
