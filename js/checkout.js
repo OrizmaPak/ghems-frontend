@@ -40,7 +40,7 @@ async function fetchcheckout(id) {
     if(request.status) {
         datasource = request.data;
         const checkoutRoomTransactions = request.data.transactions || []
-        const checkoutPosTransactions = request.data.posdata || []
+        const checkoutPosTransactions = getCheckoutPostTransactions(request.data)
         const checkoutTransactions = [
             ...checkoutRoomTransactions,
             ...checkoutPosTransactions
@@ -50,15 +50,15 @@ async function fetchcheckout(id) {
         let tt = 0
             yy = 0
         did('tabledata2').innerHTML = checkoutTransactions.map((item, index)=>{
-            tt=tt+(Number(item.debit)-Number(item.credit))
+            tt = tt + (toCheckoutNumber(item.debit) - toCheckoutNumber(item.credit))
             // S/N	ITEM	DEBIT	CREDIT	BALANCE
             return `
                 <tr>
                     <td>${index + 1 }</td>
                     <td>${specialformatDateTime(item.transactiondate)}</td>
                     <td>${formatCheckoutDescription(item.description)}</td>
-                    <td>${formatNumber(item.debit)}</td>
-                    <td>${formatNumber(item.credit)}</td>
+                    <td>${formatNumber(toCheckoutNumber(item.debit))}</td>
+                    <td>${formatNumber(toCheckoutNumber(item.credit))}</td>
                     <td>${formatNumber(tt)}</td>
                 </tr>
             `
@@ -142,7 +142,18 @@ function formatCheckoutDescription(value){
 }
 
 function getCheckoutLedgerBalance(items){
-    return items.reduce((total, item) => total + (Number(item.debit || 0) - Number(item.credit || 0)), 0)
+    return (items || []).reduce((total, item) => total + (toCheckoutNumber(item?.debit) - toCheckoutNumber(item?.credit)), 0)
+}
+
+function toCheckoutNumber(value){
+    const numericValue = Number(value)
+    return Number.isFinite(numericValue) ? numericValue : 0
+}
+
+function getCheckoutPostTransactions(data){
+    if(Array.isArray(data?.postdata)) return data.postdata
+    if(Array.isArray(data?.posdata)) return data.posdata
+    return []
 }
 
 async function loadCheckoutOccupancyList(){
@@ -261,7 +272,7 @@ function syncAllCheckoutPaymentInputs(){
 function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){
     const reservation = data.reservation || {}
     const guestrows = data.guestrows || []
-    const posdata = data.posdata || []
+    const postEntries = getCheckoutPostTransactions(data)
     const rooms = guestrows.length ? guestrows.map(row => row.roomnumber).filter(Boolean).join(', ') : '-'
     const totalRoomRate = guestrows.reduce((total, row) => total + Number(row.roomrate || 0), 0)
     const roomTypes = guestrows.length ? [...new Set(guestrows.map(row => row.roomcategoryname).filter(Boolean))].join(', ') : '-'
@@ -292,7 +303,7 @@ function buildCheckoutSummary(data, roomBalance, otherBills, totalBalance){
                                   ${checkoutSummaryRow('total room rate', formatNumber(totalRoomRate))}
                                   ${checkoutSummaryRow('room balance', formatNumber(roomBalance))}
                                   ${checkoutSummaryRow('other bills', formatNumber(otherBills))}
-                                  ${checkoutSummaryRow('POS entries', posdata.length)}
+                                  ${checkoutSummaryRow('POS entries', postEntries.length)}
                                   ${checkoutSummaryRow('total balance', formatNumber(totalBalance), true)}
                                 </div>
                                 <div class="flex flex-col gap-3 pb-6 pt-4 text-xs">
