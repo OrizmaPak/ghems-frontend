@@ -902,6 +902,18 @@ function resolveSalesOwnerPayloadValue() {
     return ownerVisible || ownerHidden || '-1'
 }
 
+function applySalesOwnerToInputs(ownerValue = '') {
+    const normalizedOwner = String(ownerValue || '').trim()
+    if(did('owner1')) did('owner1').value = normalizedOwner
+    if(did('owner')) {
+        if(String(did('applyto')?.value || '').trim().toUpperCase().includes('ROOM')) {
+            did('owner').value = extractRoomNumberFromOwnerInput(normalizedOwner)
+        } else {
+            did('owner').value = normalizedOwner
+        }
+    }
+}
+
 function hidesalesterminal(hide=true){
     for(let i=0;i<document.getElementsByClassName('load').length;i++){
         if(hide)document.getElementsByClassName('load')[i].classList.add('hidden')
@@ -1724,8 +1736,7 @@ async function loadOrderIntoForm(orderEntry = null) {
     }
 
     const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
-    if(did('owner1')) did('owner1').value = ownerValue
-    if(did('owner')) did('owner').value = ownerValue
+    applySalesOwnerToInputs(ownerValue)
     if(did('description')) did('description').value = String(orderEntry.saleentry.description || '').trim()
     if(did('transactiondate')) did('transactiondate').value = String(orderEntry.saleentry.transactiondate || '').slice(0, 10) || new Date().toISOString().split('T')[0]
     if(did('moredata')) did('moredata').value = normalizeOrderStatusValue(orderEntry.saleentry.moredata, true) || 'ORDER'
@@ -1832,8 +1843,7 @@ async function composeOrderToBill(orderEntry = null) {
     }
 
     const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
-    if(did('owner1')) did('owner1').value = ownerValue
-    if(did('owner')) did('owner').value = ownerValue
+    applySalesOwnerToInputs(ownerValue)
     if(did('description')) {
         const existingDescription = String(orderEntry.saleentry.description || '').trim()
         const orderRef = String(orderEntry.saleentry.reference || '').trim()
