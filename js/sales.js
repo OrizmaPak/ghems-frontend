@@ -376,7 +376,7 @@ function syncSalesBillFilterSalespointOptions() {
 
 function normalizeSalesTextValue(value) {
     const text = String(value ?? '').trim()
-    return text && text !== '-1' ? text : ''
+    return text && text !== '-1' && text !== '-' && text.toLowerCase() !== 'null' && text.toLowerCase() !== 'undefined' ? text : ''
 }
 
 function resolveOrderDetailsValue(entry = {}, details = []) {
