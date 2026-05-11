@@ -1564,14 +1564,7 @@ async function fetchcompanyres(id='', name) {
     else return notification('No records retrieved')
 }
 async function fetchgroupsres(id='', name) {
-    did('reservationtype').addEventListener('blur', e=>{
-        if(did('reservationtype').value == 'GUARANTEED'){
-            notification('Please note that since the reservation is guaranteed the payment method must be entered. Click on the ~More Details~ button to select the payment method')
-            did('paymentmethod').classList.add('comp')
-        }else{
-            did('paymentmethod').classList.remove('comp')
-        }
-    })
+    setupReservationTypePaymentRequirement()
     let request = await httpRequest2('../controllers/fetchguestgroup', null, null, 'json')
         if(request.status) {
                 did('group_id').innerHTML = `<option value="">-- Select Group --</option><option class="bg-[green] text-white font-semibold">ADD GROUP</option>`;
@@ -2343,6 +2336,32 @@ async function performAsyncTask() {
 function removeguestsreservations(ref){
     sessionStorage.setItem('cancelreservation', ref)
     document.getElementById('cancelreservation').click()
+}
+
+function applyReservationTypePaymentRequirement(showNotice = false) {
+    if(!did('reservationtype') || !did('paymentmethod')) return
+    const reservationType = String(did('reservationtype').value || '').trim().toUpperCase()
+    if(reservationType === 'GUARANTEED'){
+        if(showNotice){
+            notification('Please note that since the reservation is guaranteed the payment method must be entered. Click on the ~More Details~ button to select the payment method')
+        }
+        did('paymentmethod').classList.add('comp')
+        return
+    }
+    did('paymentmethod').classList.remove('comp')
+}
+
+function setupReservationTypePaymentRequirement() {
+    if(!did('reservationtype')) return
+    const reservationTypeEl = did('reservationtype')
+    if(reservationTypeEl.dataset.paymentRequirementBound === '1'){
+        applyReservationTypePaymentRequirement(false)
+        return
+    }
+    reservationTypeEl.dataset.paymentRequirementBound = '1'
+    reservationTypeEl.addEventListener('change', () => applyReservationTypePaymentRequirement(true))
+    reservationTypeEl.addEventListener('blur', () => applyReservationTypePaymentRequirement(false))
+    applyReservationTypePaymentRequirement(false)
 }
 
 

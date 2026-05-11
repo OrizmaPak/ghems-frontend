@@ -77,10 +77,11 @@
                                                 </div>
                                             </div>
                                             <div class="grid grid-cols-1 !mb-2 lg:grid-cols-2 gap-10">
-                                            <div class="form-group">
+                                                <div class="form-group">
                                                     <label for="logoname" class="control-label text-md">reservation type</label>
                                                     <select onchange="reservationtyper(this)" name="reservationtype" id="reservationtype" class="bg-white form-control !p-2">
-                                                        <option selected>GUARANTEED</option>
+                                                        <option value="GUARANTEED" selected>GUARANTEED</option>
+                                                        <option value="NOT GUARANTEED">NOT GUARANTEED</option>
                                                     </select>
                                                 </div>
                                                 <div class="form-group">
