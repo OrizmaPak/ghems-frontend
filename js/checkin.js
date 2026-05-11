@@ -3019,7 +3019,11 @@ async function checkinnFormSubmitHandler(guest){
     if(guest == 'guestreservationform')request = await httpRequest2(`../controllers/reservations`, payload(), document.querySelector(`#${guest} #submit`))
     if(guest == 'reservationcheckinform')request = await httpRequest2(`../controllers/reservationcheckin`, payload(), document.querySelector(`#${guest} #submit`))
     if(guest == 'cancelreservationform')request = await httpRequest2(`../controllers/cancelreservation`, payloadcancel(), document.querySelector(`#${guest} #submit`))
-    if(guest == 'extendstayform')request = await httpRequest2(`../controllers/reducestay.php`, payloadstay(), document.querySelector(`#${guest} #submit`))
+    if(guest == 'extendstayform'){
+        const isReduceStayMode = !!did('reducestaymode')
+        const stayController = isReduceStayMode ? '../controllers/reducestay.php' : '../controllers/extendstay'
+        request = await httpRequest2(stayController, payloadstay(), document.querySelector(`#${guest} #submit`))
+    }
     if(request.status) {
         
         if(guest != 'cancelreservationform' && guest != 'extendstayform'){
