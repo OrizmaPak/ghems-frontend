@@ -3096,103 +3096,139 @@ async function buildSubmittedCheckinReceiptContext(formId = '', saveResponse = {
     }
 }
 
+function printSubmittedCheckinPaymentReceipt() {
+    const receiptPrintStyles = `
+        <style>
+            h1 { display: none !important; }
+            html, body { background: #fff !important; }
+            .submitted-payment-receipt-paper {
+                width: 80mm !important;
+                max-width: 80mm !important;
+                margin: 0 auto !important;
+                box-shadow: none !important;
+                border: 0 !important;
+            }
+            .submitted-payment-receipt-paper img {
+                max-width: 48px !important;
+                max-height: 48px !important;
+            }
+        </style>
+    `
+    printContent('HEMS PAYMENT RECEIPT', receiptPrintStyles, 'submittedpaymentreceiptcontainer', false)
+}
+
 function openSubmittedCheckinPaymentReceipt(context = null) {
     if(!context || !did('modalreceipt')) return
     const rows = Array.isArray(context.roomRows) ? context.roomRows : []
-    const rowMarkup = rows.length ? rows.map((row) => {
-        const guests = row.guests?.length ? row.guests.join(', ') : '-'
-        const lineTotal = Math.max(Number(row.roomrate || 0) - Number(row.discountamount || 0) - Number(row.plandiscountamount || 0), 0)
+    const logoValue = String(did('your_companylogo')?.value || '').trim()
+    const logoPath = logoValue && logoValue !== '-' ? `../images/${logoValue}` : ''
+    const companyName = String(did('your_companyname')?.value || 'HEMS').trim()
+    const companyAddress = String(did('your_companyaddress')?.value || '').trim()
+    const companyPhone = String(did('your_companyphone')?.value || '').trim()
+    const companyInitials = companyName.split(/\s+/).filter(Boolean).map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase() || 'HM'
+    const totalDiscount = Number(context.totalRoomDiscount || 0) + Number(context.totalPlanDiscount || 0)
+    const formatReceiptDate = (value = '') => {
+        const raw = String(value || '').trim()
+        if(!raw) return '-'
+        try {
+            return specialformatDateTime(raw.replace('T', ' ')) || raw
+        } catch(error) {
+            return raw
+        }
+    }
+    const renderMetaLine = (label = '', value = '', always = false) => {
+        const text = String(value ?? '').trim()
+        if(!text && !always) return ''
         return `
-            <tr class="border-b border-slate-200">
-                <td class="py-2 px-2">${row.serial}</td>
-                <td class="py-2 px-2">${escapeCheckinSummaryText(row.category || '-')}</td>
-                <td class="py-2 px-2">${escapeCheckinSummaryText(row.roomnumber || '-')}</td>
-                <td class="py-2 px-2">${escapeCheckinSummaryText(row.ratecode || '-')}</td>
-                <td class="py-2 px-2">${escapeCheckinSummaryText(guests)}</td>
-                <td class="py-2 px-2 text-right">${formatNumber(row.roomrate || 0)}</td>
-                <td class="py-2 px-2 text-right">${formatNumber(row.discountamount || 0)}</td>
-                <td class="py-2 px-2 text-right">${formatNumber(row.plandiscountamount || 0)}</td>
-                <td class="py-2 px-2 text-right">${formatNumber(lineTotal)}</td>
-            </tr>
+            <div style="display: flex; justify-content: space-between; gap: 10px; padding: 2px 0;">
+                <span style="color: #64748b;">${escapeCheckinSummaryText(label)}</span>
+                <span style="text-align: right; font-weight: 700; word-break: break-word;">${escapeCheckinSummaryText(text || '-')}</span>
+            </div>
         `
-    }).join('') : `<tr><td colspan="9" class="py-4 text-center text-slate-500">No room lines available</td></tr>`
+    }
+    const rowMarkup = rows.length ? rows.map((row, index) => {
+        const guests = row.guests?.length ? row.guests.join(', ') : '-'
+        const serial = row.serial || index + 1
+        const roomrate = Number(row.roomrate || 0)
+        const lineDiscount = Number(row.discountamount || 0) + Number(row.plandiscountamount || 0)
+        const lineTotal = Math.max(roomrate - lineDiscount, 0)
+        return `
+            <div style="padding: 9px 0; border-bottom: 1px dashed #cbd5e1;">
+                <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 800; color: #0f172a;">
+                    <span style="max-width: 62%; word-break: break-word;">${serial}. ${escapeCheckinSummaryText(row.category || 'Room')}</span>
+                    <span>${formatNumber(lineTotal)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 8px; color: #475569; font-size: 10px; margin-top: 2px;">
+                    <span>Room: ${escapeCheckinSummaryText(row.roomnumber || '-')}</span>
+                    <span>Rate: ${formatNumber(roomrate)}</span>
+                </div>
+                ${row.ratecode ? `<div style="color: #475569; font-size: 10px; margin-top: 2px;">Rate Code: ${escapeCheckinSummaryText(row.ratecode)}</div>` : ''}
+                ${guests && guests !== '-' ? `<div style="color: #475569; font-size: 10px; margin-top: 2px; word-break: break-word;">Guest: ${escapeCheckinSummaryText(guests)}</div>` : ''}
+                ${lineDiscount ? `<div style="display: flex; justify-content: space-between; gap: 8px; color: #b91c1c; font-size: 10px; margin-top: 2px;"><span>Discount</span><span>${formatNumber(lineDiscount)}</span></div>` : ''}
+            </div>
+        `
+    }).join('') : `<div style="padding: 14px 0; text-align: center; color: #64748b; border-bottom: 1px dashed #cbd5e1;">No room lines available</div>`
 
     did('modalreceipt').innerHTML = `
-        <div id="submittedpaymentreceiptcontainer" class="max-w-6xl mx-auto bg-white rounded-xl shadow-xl border border-slate-200 p-6 md:p-8">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-900">Payment Receipt</h2>
-                    <p class="text-slate-500 text-sm">Reservation / Check-In Payment Confirmation</p>
+        <div class="w-full flex justify-center">
+            <div class="w-[360px] max-w-full">
+                <div class="phide flex justify-end gap-2 mb-3">
+                    <button type="button" onclick="printSubmittedCheckinPaymentReceipt()" class="px-4 py-2 rounded-md bg-slate-900 text-white text-xs font-semibold shadow">Print</button>
+                    <button type="button" onclick="did('modalreceipt').classList.add('hidden')" class="px-4 py-2 rounded-md bg-white text-slate-700 text-xs font-semibold shadow">Close</button>
                 </div>
-                <div class="flex gap-3">
-                    <button type="button" onclick="printContent('HEMS PAYMENT RECEIPT', null, 'submittedpaymentreceiptcontainer', true)" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Print</button>
-                    <button type="button" onclick="did('modalreceipt').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">Close</button>
-                </div>
-            </div>
+                <div id="submittedpaymentreceiptcontainer">
+                    <div class="submitted-payment-receipt-paper" style="width: 80mm; max-width: 100%; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 12px 11px 14px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.35; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 18px 45px rgba(15,23,42,.20);">
+                        <div style="height: 5px; background: linear-gradient(90deg, #0f172a, #14b8a6, #0f172a); border-radius: 4px; margin-bottom: 10px;"></div>
+                        <div style="text-align: center; border-bottom: 1px dashed #0f172a; padding-bottom: 10px;">
+                            ${logoPath ? `<img src="${escapeCheckinSummaryText(logoPath)}" alt="Company logo" style="width: 48px; height: 48px; object-fit: contain; margin: 0 auto 6px; display: block;">` : `<div style="width: 46px; height: 46px; border: 1px solid #0f172a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-weight: 800; font-size: 14px;">${escapeCheckinSummaryText(companyInitials)}</div>`}
+                            <div style="font-size: 14px; font-weight: 800; text-transform: uppercase;">${escapeCheckinSummaryText(companyName)}</div>
+                            ${companyAddress ? `<div style="font-size: 10px; color: #475569; margin-top: 2px;">${escapeCheckinSummaryText(companyAddress)}</div>` : ''}
+                            ${companyPhone ? `<div style="font-size: 10px; color: #475569;">Tel: ${escapeCheckinSummaryText(companyPhone)}</div>` : ''}
+                            <div style="margin-top: 8px; font-weight: 800; font-size: 12px; color: #ffffff; background: #0f172a; border-radius: 4px; display: inline-block; padding: 3px 10px;">PAYMENT RECEIPT</div>
+                        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
-                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p class="text-xs text-slate-500 uppercase">Booking Ref</p>
-                    <p class="font-semibold text-slate-900">${escapeCheckinSummaryText(context.bookingReference || '-')}</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p class="text-xs text-slate-500 uppercase">Payment Ref</p>
-                    <p class="font-semibold text-slate-900">${escapeCheckinSummaryText(context.paymentReference || '-')}</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p class="text-xs text-slate-500 uppercase">Payment Method</p>
-                    <p class="font-semibold text-slate-900">${escapeCheckinSummaryText(context.paymentMethod || '-')}</p>
-                </div>
-            </div>
+                        <div style="padding: 9px 0; border-bottom: 1px dashed #cbd5e1;">
+                            ${renderMetaLine('Payment Ref', context.paymentReference, true)}
+                            ${renderMetaLine('Booking Ref', context.bookingReference, true)}
+                            ${renderMetaLine('Date', formatReceiptDate(context.reservationDate) !== '-' ? formatReceiptDate(context.reservationDate) : new Date().toLocaleString(), true)}
+                            ${renderMetaLine('Method', context.paymentMethod, true)}
+                            ${renderMetaLine('Bank', context.bankName)}
+                        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
-                <div class="rounded-lg border border-slate-200 p-3">
-                    <p><span class="text-slate-500">Reservation Date:</span> ${escapeCheckinSummaryText(context.reservationDate ? specialformatDateTime(context.reservationDate.replace('T', ' ')) : '-')}</p>
-                    <p><span class="text-slate-500">Arrival:</span> ${escapeCheckinSummaryText(context.arrivalDate ? specialformatDateTime(context.arrivalDate.replace('T', ' ')) : '-')}</p>
-                    <p><span class="text-slate-500">Departure:</span> ${escapeCheckinSummaryText(context.departureDate ? specialformatDateTime(context.departureDate.replace('T', ' ')) : '-')}</p>
-                    <p><span class="text-slate-500">Nights:</span> ${escapeCheckinSummaryText(context.numberOfNights || '-')}</p>
-                    <p><span class="text-slate-500">Reservation Type:</span> ${escapeCheckinSummaryText(context.reservationType || '-')}</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 p-3">
-                    <p><span class="text-slate-500">Billing Info:</span> ${escapeCheckinSummaryText(context.billingInfo || '-')}</p>
-                    <p><span class="text-slate-500">Source:</span> ${escapeCheckinSummaryText(context.source || '-')}</p>
-                    <p><span class="text-slate-500">Company:</span> ${escapeCheckinSummaryText(context.company || '-')}</p>
-                    <p><span class="text-slate-500">Travel Agent:</span> ${escapeCheckinSummaryText(context.travelAgent || '-')}</p>
-                    <p><span class="text-slate-500">Group:</span> ${escapeCheckinSummaryText(context.groupName || '-')}</p>
-                </div>
-            </div>
+                        <div style="padding: 9px 0; border-bottom: 1px dashed #cbd5e1;">
+                            <div style="font-weight: 800; margin-bottom: 5px; color: #0f172a;">STAY DETAILS</div>
+                            ${renderMetaLine('Arrival', formatReceiptDate(context.arrivalDate), true)}
+                            ${renderMetaLine('Departure', formatReceiptDate(context.departureDate), true)}
+                            ${renderMetaLine('Nights', context.numberOfNights || '-', true)}
+                            ${renderMetaLine('Company', context.company)}
+                            ${renderMetaLine('Agent', context.travelAgent)}
+                            ${renderMetaLine('Group', context.groupName)}
+                        </div>
 
-            <div class="mt-5 overflow-x-auto rounded-lg border border-slate-200">
-                <table class="min-w-full text-xs md:text-sm">
-                    <thead class="bg-slate-800 text-white">
-                        <tr>
-                            <th class="py-2 px-2 text-left">#</th>
-                            <th class="py-2 px-2 text-left">Room Category</th>
-                            <th class="py-2 px-2 text-left">Room No</th>
-                            <th class="py-2 px-2 text-left">Rate Code</th>
-                            <th class="py-2 px-2 text-left">Guests</th>
-                            <th class="py-2 px-2 text-right">Room Rate</th>
-                            <th class="py-2 px-2 text-right">Discount</th>
-                            <th class="py-2 px-2 text-right">Plan Discount</th>
-                            <th class="py-2 px-2 text-right">Line Total</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white text-slate-700">
-                        ${rowMarkup}
-                    </tbody>
-                </table>
-            </div>
+                        <div style="padding: 4px 0;">
+                            <div style="display: flex; justify-content: space-between; font-weight: 800; padding: 6px 0; border-bottom: 1px solid #0f172a;">
+                                <span>DESCRIPTION</span>
+                                <span>AMOUNT</span>
+                            </div>
+                            ${rowMarkup}
+                        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-                <div class="rounded-lg border border-slate-200 p-3 text-sm">
-                    <p><span class="text-slate-500">Bank Name:</span> ${escapeCheckinSummaryText(context.bankName || '-')}</p>
-                    <p><span class="text-slate-500">Other Details:</span> ${escapeCheckinSummaryText(context.otherDetails || '-')}</p>
-                    <p><span class="text-slate-500">Status:</span> ${escapeCheckinSummaryText(context.status || '-')}</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 p-3 text-sm">
-                    <p class="flex justify-between"><span class="text-slate-500">Total Due</span><span class="font-semibold">${formatNumber(context.totalDue || 0)}</span></p>
-                    <p class="flex justify-between"><span class="text-slate-500">Amount Paid</span><span class="font-semibold text-emerald-700">${formatNumber(context.amountPaid || 0)}</span></p>
-                    <p class="flex justify-between"><span class="text-slate-500">Balance</span><span class="font-semibold text-amber-700">${formatNumber(context.balance || 0)}</span></p>
+                        <div style="padding: 10px 0; border-top: 1px dashed #0f172a; border-bottom: 1px dashed #0f172a;">
+                            <div style="display: flex; justify-content: space-between; color: #334155;"><span>Room Rate</span><span>${formatNumber(context.totalRoomRate || 0)}</span></div>
+                            ${Number(context.totalPlanAmount || 0) ? `<div style="display: flex; justify-content: space-between; color: #334155;"><span>Plan Info (in rate)</span><span>${formatNumber(context.totalPlanAmount || 0)}</span></div>` : ''}
+                            ${totalDiscount ? `<div style="display: flex; justify-content: space-between; color: #b91c1c;"><span>Discount</span><span>${formatNumber(totalDiscount)}</span></div>` : ''}
+                            <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; margin-top: 7px;"><span>Total Due</span><span>${formatNumber(context.totalDue || 0)}</span></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #ecfeff; border: 1px solid #67e8f9; border-radius: 5px; padding: 5px 6px; margin-top: 6px; font-weight: 800; font-size: 14px;"><span>PAID</span><span>${formatNumber(context.amountPaid || 0)}</span></div>
+                            <div style="display: flex; justify-content: space-between; font-weight: 800; margin-top: 5px;"><span>Balance</span><span>${formatNumber(context.balance || 0)}</span></div>
+                        </div>
+
+                        ${context.otherDetails ? `<div style="padding: 9px 0; border-bottom: 1px dashed #cbd5e1;"><div style="font-weight: 800;">NOTE</div><div style="word-break: break-word; color: #475569;">${escapeCheckinSummaryText(context.otherDetails)}</div></div>` : ''}
+                        <div style="text-align: center; padding-top: 12px;">
+                            <div style="font-weight: 800;">Thank you for your payment</div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Please keep this receipt for your records.</div>
+                            <div style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 8px; font-size: 9px; color: #64748b;">Generated by HEMS</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
