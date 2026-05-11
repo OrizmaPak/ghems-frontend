@@ -11,6 +11,7 @@ const checkinOtherDetailsPromptState = {}
 const checkinRateDataByCard = {}
 const checkinRateSourceByCard = {}
 const checkinSubmitLocks = {}
+const CHECKIN_PENDING_PAYMENT_RECEIPT_KEY = 'checkin_pending_payment_receipt'
 let checkinOrgContextChangeLock = false
 
 function normalizeCheckinOrgType(value = '') {
@@ -507,6 +508,7 @@ async function checkinActive() {
         fetchcheckinn(id)
         sessionStorage.removeItem('checkinfromsomewhere')
     } 
+    flushSubmittedCheckinPaymentReceipt()
     
 } 
 
@@ -3183,6 +3185,28 @@ function openSubmittedCheckinPaymentReceipt(context = null) {
     did('modalreceipt').classList.remove('hidden')
 }
 
+function queueSubmittedCheckinPaymentReceipt(context = null) {
+    if(!context) return
+    try {
+        sessionStorage.setItem(CHECKIN_PENDING_PAYMENT_RECEIPT_KEY, JSON.stringify(context))
+    } catch(error) {
+        console.error(error)
+    }
+}
+
+function flushSubmittedCheckinPaymentReceipt() {
+    try {
+        const raw = sessionStorage.getItem(CHECKIN_PENDING_PAYMENT_RECEIPT_KEY)
+        if(!raw) return
+        sessionStorage.removeItem(CHECKIN_PENDING_PAYMENT_RECEIPT_KEY)
+        const context = JSON.parse(raw)
+        if(context) openSubmittedCheckinPaymentReceipt(context)
+    } catch(error) {
+        sessionStorage.removeItem(CHECKIN_PENDING_PAYMENT_RECEIPT_KEY)
+        console.error(error)
+    }
+}
+
 function getGuestReservationRequiredIds() {
     return getIdFromCls('comp', 'guestreservationform').filter(id => !String(id || '').startsWith('roomnumber-'));
 }
@@ -3446,7 +3470,8 @@ async function checkinnFormSubmitHandler(guest){
 
         console.log('returned response', request)
         if(pendingPaymentReceiptContext){
-            setTimeout(() => openSubmittedCheckinPaymentReceipt(pendingPaymentReceiptContext), 120)
+            queueSubmittedCheckinPaymentReceipt(pendingPaymentReceiptContext)
+            setTimeout(() => flushSubmittedCheckinPaymentReceipt(), 180)
         }
         if(!successNotified)notification(getCheckinResponseMessage(request, 'Saved successfully.'), 1)
     } catch(error) {

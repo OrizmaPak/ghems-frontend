@@ -47,4 +47,5 @@ if(document.querySelector('#company'))document.querySelector('#company').addEven
         fetchcheckinn(id)
         sessionStorage.removeItem('checkinfromsomewhere')
     }
+    flushSubmittedCheckinPaymentReceipt()
 }
