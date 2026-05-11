@@ -2960,6 +2960,229 @@ function opencheckinreceipt(id, ratee, rooms){
     did('modalreceipt').classList.remove('hidden')
 }
 
+function normalizeSubmittedRoomRowsFromRecord(record = null) {
+    if(!record) return []
+    const bookingRows = record.roomgeustrow || record.roomguestrow || []
+    if(!Array.isArray(bookingRows)) return []
+    return bookingRows.map((row, index) => ({
+        serial: index + 1,
+        category: String(row?.roomdata?.roomcategoryname || '').trim(),
+        roomnumber: String(row?.roomdata?.roomnumber || '').trim(),
+        ratecode: String(row?.roomdata?.ratecodename || '').trim(),
+        roomrate: Number(row?.roomdata?.roomrate || 0),
+        planamount: Number(row?.roomdata?.planamount || 0),
+        discountamount: Number(row?.roomdata?.discountamount || 0),
+        plandiscountamount: Number(row?.roomdata?.plandiscountamount || 0),
+        guests: [
+            ...(Array.isArray(row?.guest1) ? row.guest1 : []),
+            ...(Array.isArray(row?.guest2) ? row.guest2 : []),
+            ...(Array.isArray(row?.guest3) ? row.guest3 : []),
+            ...(Array.isArray(row?.guest4) ? row.guest4 : [])
+        ].map((guest) => `${String(guest?.firstname || '').trim()} ${String(guest?.lastname || '').trim()} ${String(guest?.othernames || '').trim()}`.replace(/\s+/g, ' ').trim()).filter(Boolean)
+    }))
+}
+
+async function fetchSubmittedCheckinFallbackByReference(reference = '') {
+    const ref = String(reference || '').trim()
+    if(!ref) return null
+    const payload = new FormData()
+    payload.append('reference', ref)
+    const request = await httpRequest2('../controllers/fetchreservationbyref', payload, null, 'json')
+    if(!request?.status) return null
+    if(Array.isArray(request?.data) && request.data.length) return request.data[0]
+    if(request?.data && typeof request.data === 'object') return request.data
+    return null
+}
+
+async function buildSubmittedCheckinReceiptContext(formId = '', saveResponse = {}, invoiceResponse = {}) {
+    const form = did(formId)
+    if(!form) return null
+
+    const bookingReference = String(saveResponse?.reference || did('referencer')?.value || did('reference')?.value || '').trim()
+    const paymentReference = String(invoiceResponse?.ref || '').trim()
+    const reservationDate = String(did('reservationdate')?.value || '').trim()
+    const arrivalDate = String(did('arrivaldate')?.value || '').trim()
+    const departureDate = String(did('departuredate')?.value || '').trim()
+    const numberOfNights = Number(did('numberofnights')?.value || 0) || 0
+    const reservationType = String(did('reservationtype')?.value || '').trim()
+    const paymentMethod = String(did('paymentmethod')?.value || '').trim()
+    const bankName = String(did('bankname')?.value || '').trim()
+    const otherDetails = String(did('otherdetails')?.value || '').trim()
+    const billingInfo = String(did('billinginfo')?.value || '').trim()
+    const source = String(did('source')?.value || '').trim()
+    const status = String(did('status')?.value || 'RESERVED').trim()
+    const amountPaid = getCheckinAmountPaidValue()
+    const totalDue = getCheckinNumericValue(did('totalamount')?.value || 0)
+    const balance = Math.max(totalDue - amountPaid, 0)
+    const company = getCheckinSummarySelectText('company')
+    const travelAgent = getCheckinSummarySelectText('travelagent')
+    const groupName = getCheckinSummarySelectText('group_id')
+
+    let roomRows = []
+    const roomCategories = getCheckinScopedElements(formId, 'roomcategory')
+    roomRows = roomCategories.map((categoryEl, index) => {
+        const id = String(categoryEl?.id || '').replace('roomcategory-', '').trim()
+        const guests = getCheckinSummaryGuests(id).map(guest => String(guest?.name || '').trim()).filter(Boolean)
+        return {
+            serial: index + 1,
+            category: String(categoryEl.options?.[categoryEl.selectedIndex]?.textContent || '').trim(),
+            roomnumber: String(did('roomnumber-'+id)?.value || '').trim(),
+            ratecode: String(did('ratecodename-'+id)?.value || '').trim(),
+            roomrate: getCheckinNumericValue(did('roomrate-'+id)?.value || 0),
+            planamount: getCheckinNumericValue(did('planamount-'+id)?.value || 0),
+            discountamount: getCheckinNumericValue(did('discountamount-'+id)?.value || 0),
+            plandiscountamount: getCheckinNumericValue(did('plandiscountamount-'+id)?.value || 0),
+            guests
+        }
+    }).filter(row => row.category || row.roomnumber || row.ratecode || row.roomrate || row.guests.length)
+
+    if(!roomRows.length && bookingReference) {
+        const inMemoryRecord = Array.isArray(datasource) ? datasource.find((record) => String(record?.reservations?.reference || '').trim() === bookingReference) : null
+        roomRows = normalizeSubmittedRoomRowsFromRecord(inMemoryRecord)
+    }
+
+    if(!roomRows.length && bookingReference) {
+        const fetchedRecord = await fetchSubmittedCheckinFallbackByReference(bookingReference)
+        roomRows = normalizeSubmittedRoomRowsFromRecord(fetchedRecord)
+    }
+
+    const totalRoomRate = roomRows.reduce((sum, row) => sum + Number(row.roomrate || 0), 0)
+    const totalPlanAmount = roomRows.reduce((sum, row) => sum + Number(row.planamount || 0), 0)
+    const totalRoomDiscount = roomRows.reduce((sum, row) => sum + Number(row.discountamount || 0), 0)
+    const totalPlanDiscount = roomRows.reduce((sum, row) => sum + Number(row.plandiscountamount || 0), 0)
+
+    return {
+        bookingReference,
+        paymentReference,
+        reservationDate,
+        arrivalDate,
+        departureDate,
+        numberOfNights,
+        reservationType,
+        paymentMethod,
+        bankName,
+        otherDetails,
+        billingInfo,
+        source,
+        status,
+        amountPaid,
+        totalDue,
+        balance,
+        company,
+        travelAgent,
+        groupName,
+        roomRows,
+        totalRoomRate,
+        totalPlanAmount,
+        totalRoomDiscount,
+        totalPlanDiscount
+    }
+}
+
+function openSubmittedCheckinPaymentReceipt(context = null) {
+    if(!context || !did('modalreceipt')) return
+    const rows = Array.isArray(context.roomRows) ? context.roomRows : []
+    const rowMarkup = rows.length ? rows.map((row) => {
+        const guests = row.guests?.length ? row.guests.join(', ') : '-'
+        const lineTotal = Math.max(Number(row.roomrate || 0) - Number(row.discountamount || 0) - Number(row.plandiscountamount || 0), 0)
+        return `
+            <tr class="border-b border-slate-200">
+                <td class="py-2 px-2">${row.serial}</td>
+                <td class="py-2 px-2">${escapeCheckinSummaryText(row.category || '-')}</td>
+                <td class="py-2 px-2">${escapeCheckinSummaryText(row.roomnumber || '-')}</td>
+                <td class="py-2 px-2">${escapeCheckinSummaryText(row.ratecode || '-')}</td>
+                <td class="py-2 px-2">${escapeCheckinSummaryText(guests)}</td>
+                <td class="py-2 px-2 text-right">${formatNumber(row.roomrate || 0)}</td>
+                <td class="py-2 px-2 text-right">${formatNumber(row.discountamount || 0)}</td>
+                <td class="py-2 px-2 text-right">${formatNumber(row.plandiscountamount || 0)}</td>
+                <td class="py-2 px-2 text-right">${formatNumber(lineTotal)}</td>
+            </tr>
+        `
+    }).join('') : `<tr><td colspan="9" class="py-4 text-center text-slate-500">No room lines available</td></tr>`
+
+    did('modalreceipt').innerHTML = `
+        <div id="submittedpaymentreceiptcontainer" class="max-w-6xl mx-auto bg-white rounded-xl shadow-xl border border-slate-200 p-6 md:p-8">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Payment Receipt</h2>
+                    <p class="text-slate-500 text-sm">Reservation / Check-In Payment Confirmation</p>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="printContent('HEMS PAYMENT RECEIPT', null, 'submittedpaymentreceiptcontainer', true)" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Print</button>
+                    <button type="button" onclick="did('modalreceipt').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">Close</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p class="text-xs text-slate-500 uppercase">Booking Ref</p>
+                    <p class="font-semibold text-slate-900">${escapeCheckinSummaryText(context.bookingReference || '-')}</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p class="text-xs text-slate-500 uppercase">Payment Ref</p>
+                    <p class="font-semibold text-slate-900">${escapeCheckinSummaryText(context.paymentReference || '-')}</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p class="text-xs text-slate-500 uppercase">Payment Method</p>
+                    <p class="font-semibold text-slate-900">${escapeCheckinSummaryText(context.paymentMethod || '-')}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p><span class="text-slate-500">Reservation Date:</span> ${escapeCheckinSummaryText(context.reservationDate ? specialformatDateTime(context.reservationDate.replace('T', ' ')) : '-')}</p>
+                    <p><span class="text-slate-500">Arrival:</span> ${escapeCheckinSummaryText(context.arrivalDate ? specialformatDateTime(context.arrivalDate.replace('T', ' ')) : '-')}</p>
+                    <p><span class="text-slate-500">Departure:</span> ${escapeCheckinSummaryText(context.departureDate ? specialformatDateTime(context.departureDate.replace('T', ' ')) : '-')}</p>
+                    <p><span class="text-slate-500">Nights:</span> ${escapeCheckinSummaryText(context.numberOfNights || '-')}</p>
+                    <p><span class="text-slate-500">Reservation Type:</span> ${escapeCheckinSummaryText(context.reservationType || '-')}</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p><span class="text-slate-500">Billing Info:</span> ${escapeCheckinSummaryText(context.billingInfo || '-')}</p>
+                    <p><span class="text-slate-500">Source:</span> ${escapeCheckinSummaryText(context.source || '-')}</p>
+                    <p><span class="text-slate-500">Company:</span> ${escapeCheckinSummaryText(context.company || '-')}</p>
+                    <p><span class="text-slate-500">Travel Agent:</span> ${escapeCheckinSummaryText(context.travelAgent || '-')}</p>
+                    <p><span class="text-slate-500">Group:</span> ${escapeCheckinSummaryText(context.groupName || '-')}</p>
+                </div>
+            </div>
+
+            <div class="mt-5 overflow-x-auto rounded-lg border border-slate-200">
+                <table class="min-w-full text-xs md:text-sm">
+                    <thead class="bg-slate-800 text-white">
+                        <tr>
+                            <th class="py-2 px-2 text-left">#</th>
+                            <th class="py-2 px-2 text-left">Room Category</th>
+                            <th class="py-2 px-2 text-left">Room No</th>
+                            <th class="py-2 px-2 text-left">Rate Code</th>
+                            <th class="py-2 px-2 text-left">Guests</th>
+                            <th class="py-2 px-2 text-right">Room Rate</th>
+                            <th class="py-2 px-2 text-right">Discount</th>
+                            <th class="py-2 px-2 text-right">Plan Discount</th>
+                            <th class="py-2 px-2 text-right">Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white text-slate-700">
+                        ${rowMarkup}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                <div class="rounded-lg border border-slate-200 p-3 text-sm">
+                    <p><span class="text-slate-500">Bank Name:</span> ${escapeCheckinSummaryText(context.bankName || '-')}</p>
+                    <p><span class="text-slate-500">Other Details:</span> ${escapeCheckinSummaryText(context.otherDetails || '-')}</p>
+                    <p><span class="text-slate-500">Status:</span> ${escapeCheckinSummaryText(context.status || '-')}</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3 text-sm">
+                    <p class="flex justify-between"><span class="text-slate-500">Total Due</span><span class="font-semibold">${formatNumber(context.totalDue || 0)}</span></p>
+                    <p class="flex justify-between"><span class="text-slate-500">Amount Paid</span><span class="font-semibold text-emerald-700">${formatNumber(context.amountPaid || 0)}</span></p>
+                    <p class="flex justify-between"><span class="text-slate-500">Balance</span><span class="font-semibold text-amber-700">${formatNumber(context.balance || 0)}</span></p>
+                </div>
+            </div>
+        </div>
+    `
+    did('modalreceipt').classList.remove('hidden')
+}
+
 function getGuestReservationRequiredIds() {
     return getIdFromCls('comp', 'guestreservationform').filter(id => !String(id || '').startsWith('roomnumber-'));
 }
@@ -3164,6 +3387,10 @@ async function checkinnFormSubmitHandler(guest){
                     if(requestinvoice?.status) {
                         notification(invoiceMessage, 1)
                         successNotified = true
+                        const paymentReceiptContext = await buildSubmittedCheckinReceiptContext(guest, request, requestinvoice)
+                        if(paymentReceiptContext) {
+                            openSubmittedCheckinPaymentReceipt(paymentReceiptContext)
+                        }
                         if(window.Swal) {
                             Swal.fire({
                                 title: 'Successful booking and payment',
