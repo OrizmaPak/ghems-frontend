@@ -880,6 +880,28 @@ function handlesalesapplyto (){
     // if(document.getElementById('applyto').value == 'OTHERS')document.getElementById('owner').value = document.getElementById('owner1').value
 }
 
+function extractRoomNumberFromOwnerInput(value = '') {
+    const text = String(value || '').trim()
+    if(!text) return ''
+    if(text.includes('||')) {
+        const parts = text.split('||')
+        const tail = String(parts[parts.length - 1] || '').trim()
+        if(tail) return tail
+    }
+    return text
+}
+
+function resolveSalesOwnerPayloadValue() {
+    const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
+    const ownerHidden = String(did('owner')?.value || '').trim()
+    const ownerVisible = String(did('owner1')?.value || '').trim()
+    if(applyto.includes('ROOM')) {
+        const roomNumber = ownerHidden || extractRoomNumberFromOwnerInput(ownerVisible)
+        return roomNumber || '-1'
+    }
+    return ownerVisible || ownerHidden || '-1'
+}
+
 function hidesalesterminal(hide=true){
     for(let i=0;i<document.getElementsByClassName('load').length;i++){
         if(hide)document.getElementsByClassName('load')[i].classList.add('hidden')
@@ -1941,7 +1963,7 @@ async function editOrderByBatch(batchid = '') {
 function buildReceiptRowsFromForm(reference = '', ttype = '') {
     const rows = []
     const tableRows = did('thetabledata')?.querySelectorAll('tr') || []
-    const ownerValue = String(did('owner1')?.value || did('owner')?.value || '').trim()
+    const ownerValue = String(resolveSalesOwnerPayloadValue() || '').trim()
     const totalAmountValue = Number(did('totalamount')?.value || did('totalamountt')?.textContent || 0)
     const amountPaidValue = Number(did('amountpaid')?.value || 0)
     const paymentMethodValue = String(did('paymentmethod')?.value || '').trim()
@@ -1998,11 +2020,12 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         
         preparesalesvalues()
         
-        if(did('owner')) did('owner').value = String(did('owner1')?.value || did('owner')?.value || '').trim()
+        const ownerPayloadValue = resolveSalesOwnerPayloadValue()
+        if(did('owner')) did('owner').value = ownerPayloadValue
         let payload
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
-        payload.set('ownerdetail', String(did('owner')?.value || '').trim() || '-1')
-        payload.set('owner', String(did('owner')?.value || '').trim() || '-1')
+        payload.set('ownerdetail', ownerPayloadValue || '-1')
+        payload.set('owner', ownerPayloadValue || '-1')
         if(ttype)payload.set('ttype', ttype)
         if((isOrderWorkspaceMode() || ttype === 'ORDER') && orderEditBatchId) payload.set('batchid', orderEditBatchId)
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
