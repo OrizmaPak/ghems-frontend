@@ -172,7 +172,8 @@ for (let i = 0; i < request.data.length; i++) {
             let planDiscountAmount = Number(roomdata.plandiscountamount);
             let roomRate = Number(roomdata.roomrate);
             let discountAmount = Number(roomdata.discountamount);
-            let rowTotal = (roomRate + planAmount) - (discountAmount + planDiscountAmount);
+            // Track amount is rate-only (no plan addition).
+            let rowTotal = roomRate;
 
             tt += rowTotal;
 
@@ -209,7 +210,7 @@ runCount()
         `
         did('totaldue').value = tt
         did('tabledata2').innerHTML = datasource.map((item, i)=>{
-        pp = pp+((Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))+(Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount)))
+        pp = pp+Number(item.roomdata.roomrate)
         return`
             <tr>
                 <td>${i+1}</td>
@@ -220,7 +221,7 @@ runCount()
                 <td>${formatNumber(item.roomdata.planamount)}</td>
                 <td>${formatNumber(item.roomdata.plandiscountamount)}</td>
                 <td>${formatNumber(Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))}</td>
-                <td>${formatNumber((Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))+(Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount)))}</td>
+                <td>${formatNumber(Number(item.roomdata.roomrate))}</td>
             </tr>
         `}).join('')
         // did('tabledata2').innerHTML += `

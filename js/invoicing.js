@@ -132,7 +132,8 @@ async function fetchinvoicing() {
         let tt = 0
         let pp = 0
         did('tabledata').innerHTML = datasource.map((item, i)=>{
-        tt = tt+(Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))+(Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount))
+        // Invoicing total due is rate-only (no plan addition).
+        tt = tt+Number(item.roomdata.roomrate)
         return`
             <tr>
                 <td>${i+1}</td>
@@ -143,7 +144,7 @@ async function fetchinvoicing() {
                 <td>${formatNumber(item.roomdata.planamount)}</td>
                 <td>${formatNumber(item.roomdata.plandiscountamount)}</td>
                 <td>${formatNumber(Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))}</td>
-                <td>${formatNumber(Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount))}</td>
+                <td>${formatNumber(Number(item.roomdata.roomrate))}</td>
             </tr>
         `}).join('')
         did('tabledata').innerHTML += `
@@ -161,7 +162,7 @@ async function fetchinvoicing() {
         `
         did('totaldue').value = tt
         did('tabledata2').innerHTML = datasource.map((item, i)=>{
-        pp = pp+((Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount)))
+        pp = pp+Number(item.roomdata.roomrate)
         return`
             <tr>
                 <td>${i+1}</td>
@@ -172,7 +173,7 @@ async function fetchinvoicing() {
                 <td>${formatNumber(item.roomdata.planamount)}</td>
                 <td>${formatNumber(item.roomdata.plandiscountamount)}</td>
                 <td>${formatNumber(Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))}</td>
-                <td>${formatNumber((Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount)))}</td>
+                <td>${formatNumber(Number(item.roomdata.roomrate))}</td>
             </tr>
         `}).join('')
         did('tabledata2').innerHTML += `
