@@ -127,26 +127,53 @@ async function fetchinvoicing() {
     let request = await httpRequest2('../controllers/fetchreservationbyref', getparamm(), null, 'json')
     document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
-        datasource = request.data[0].roomguestrow
+        const payload = request.data?.[0] || {}
+        const roomRows = Array.isArray(payload.roomguestrow) ? payload.roomguestrow : []
+        const posRows = Array.isArray(payload.posdata) ? payload.posdata : []
+        datasource = roomRows
         // S/N	ROOM	RATE	DISCOUNT	TOTAL RATE	PLAN AMOUNT	PLAN DISCOUNT	PLAN TOTAL	AMOUNT
         let tt = 0
         let pp = 0
-        did('tabledata').innerHTML = datasource.map((item, i)=>{
+        const roomMarkup = roomRows.map((item, i)=>{
         // Invoicing total due is rate-only (no plan addition).
-        tt = tt+Number(item.roomdata.roomrate)
+        const roomRate = Number(item.roomdata.roomrate || 0)
+        const discountAmount = Number(item.roomdata.discountamount || 0)
+        const planAmount = Number(item.roomdata.planamount || 0)
+        const planDiscount = Number(item.roomdata.plandiscountamount || 0)
+        tt += roomRate
         return`
             <tr>
                 <td>${i+1}</td>
                 <td>${item.roomdata.roomnumber}</td>
-                <td>${formatNumber(item.roomdata.roomrate)}</td>
-                <td>${formatNumber(item.roomdata.discountamount)}</td>
-                <td>${Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount)}</td>
-                <td>${formatNumber(item.roomdata.planamount)}</td>
-                <td>${formatNumber(item.roomdata.plandiscountamount)}</td>
-                <td>${formatNumber(Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))}</td>
-                <td>${formatNumber(Number(item.roomdata.roomrate))}</td>
+                <td>${formatNumber(roomRate)}</td>
+                <td>${formatNumber(discountAmount)}</td>
+                <td>${formatNumber(roomRate-discountAmount)}</td>
+                <td>${formatNumber(planAmount)}</td>
+                <td>${formatNumber(planDiscount)}</td>
+                <td>${formatNumber(planAmount-planDiscount)}</td>
+                <td>${formatNumber(roomRate)}</td>
             </tr>
         `}).join('')
+        const posMarkup = posRows.map((item, i)=>{
+            const debit = Number(item.debit || 0)
+            const credit = Number(item.credit || 0)
+            const amount = debit - credit
+            tt += amount
+            return `
+            <tr>
+                <td>${roomRows.length + i + 1}</td>
+                <td>${item.ownerid || '-'}</td>
+                <td>${formatNumber(debit)}</td>
+                <td>${formatNumber(credit)}</td>
+                <td>${formatNumber(amount)}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>${formatNumber(amount)}</td>
+            </tr>
+            `
+        }).join('')
+        did('tabledata').innerHTML = roomMarkup + posMarkup
         did('tabledata').innerHTML += `
             <tr>
                 <td></td>
@@ -161,8 +188,8 @@ async function fetchinvoicing() {
             </tr>
         `
         did('totaldue').value = tt
-        did('tabledata2').innerHTML = datasource.map((item, i)=>{
-        pp = pp+Number(item.roomdata.roomrate)
+        did('tabledata2').innerHTML = roomRows.map((item, i)=>{
+        pp = pp+Number(item.roomdata.roomrate || 0)
         return`
             <tr>
                 <td>${i+1}</td>
@@ -176,6 +203,25 @@ async function fetchinvoicing() {
                 <td>${formatNumber(Number(item.roomdata.roomrate))}</td>
             </tr>
         `}).join('')
+        did('tabledata2').innerHTML += posRows.map((item, i)=>{
+            const debit = Number(item.debit || 0)
+            const credit = Number(item.credit || 0)
+            const amount = debit - credit
+            pp += amount
+            return `
+            <tr>
+                <td>${roomRows.length + i + 1}</td>
+                <td>${item.ownerid || '-'}</td>
+                <td>${formatNumber(debit)}</td>
+                <td>${formatNumber(credit)}</td>
+                <td>${formatNumber(amount)}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>${formatNumber(amount)}</td>
+            </tr>
+            `
+        }).join('')
         did('tabledata2').innerHTML += `
             <tr>
                 <td></td>

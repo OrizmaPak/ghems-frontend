@@ -171,7 +171,7 @@ async function fetchreceiveables(id='', roomnumber='') {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = request.data
+                datasource = normalizeReceivablesDatasource(request.data)
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
             }else{
                 renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
@@ -312,6 +312,23 @@ function formatReceivableDescription(value){
     if(parts.length >= 3 && parts[1])return parts[1]
 
     return value
+}
+
+function normalizeReceivablesDatasource(rows = []){
+    if(!Array.isArray(rows) || !rows.length) return []
+
+    // Flat ledger rows: keep existing behavior.
+    if(rows[0]?.debit !== undefined || rows[0]?.credit !== undefined){
+        return rows.map((item, index) => ({ ...item, index }))
+    }
+
+    // Nested reservation payload with posdata.
+    const flattened = []
+    rows.forEach((entry) => {
+        const posRows = Array.isArray(entry?.posdata) ? entry.posdata : []
+        posRows.forEach((item) => flattened.push(item))
+    })
+    return flattened.map((item, index) => ({ ...item, index }))
 }
 
 function getReceivableRunningBalance(index){
