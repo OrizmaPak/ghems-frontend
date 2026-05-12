@@ -137,106 +137,93 @@ async function fetchtrack() {
         return paramstr
     }
     let request = await httpRequest2('../controllers/fetchreservationbyroomtrack', getparamm(), did('submit'), 'json')
-    document.getElementById('tabledata').innerHTML = ``
+    did('tabledata').innerHTML = ``
     if(request.status) {
         datasource = request.data
-        // S/N	REF	ROOMS	ARRIVAL DATE	RATE	DISCOUNT	PLAN AMOUNT	PLAN DISCOUNT	AMOUNT
-        let tt = 0
-        let pp = 0
-    //     did('tabledata').innerHTML = datasource.map((item, i)=>{
-    // if(item.roomguestrow.map(dat=>dat.roomdata.roomnumber) == did('roomnumber').value)tt = tt+(Number(item.roomguestrow.roomdata.planamount)-Number(item.roomguestrow.roomdata.plandiscountamount))+(Number(item.roomguestrow.roomdata.roomrate)-Number(item.roomguestrow.roomdata.discountamount))
-    //     if(item.roomguestrow.roomdata.roomnumber == did('roomnumber').value)return`
-            // <tr>
-            //     <td>${i+1}</td>
-            //     <td>${formatNumber(item.reservations.reference)}</td>
-            //     <td>${request.data.map(dat=>dat.roomguestrow.map(data=>data.roomdata.roomnumber)).join('')}</td>
-            //     <td>${specialformatDateTime(item.reservations.arrivaldate)}</td>
-            //     <td>${formatNumber(item.roomguestrow.roomdata.roomrate)}</td>
-            //     <td>${formatNumber(item.roomguestrow.roomdata.discountamount)}</td>
-            //     <td>${formatNumber(item.roomguestrow.roomdata.planamount)}</td>
-            //     <td>${formatNumber(item.roomguestrow.roomdata.plandiscountamount)}</td>
-            //     <td>${formatNumber((Number(item.roomguestrow.roomdata.planamount)-Number(item.roomguestrow.roomdata.plandiscountamount))+(Number(item.roomguestrow.roomdata.roomrate)-Number(item.roomguestrow.roomdata.discountamount)))}</td>
-            // </tr>
-    //     `}).join('')
-//   let tt = 0;
+        const roomNumber = String(did('roomnumber').value || '').trim()
+        const toNumber = (value) => {
+            const numeric = Number(value || 0)
+            return Number.isFinite(numeric) ? numeric : 0
+        }
 
-for (let i = 0; i < request.data.length; i++) {
-    let reservation = request.data[i].reservations;
-    let roomguestrow = request.data[i].roomguestrow;
+        let totalDue = 0
+        let rowsMarkup = ''
 
-    for (let j = 0; j < roomguestrow.length; j++) {
-        let roomdata = roomguestrow[j].roomdata;
+        for (let i = 0; i < request.data.length; i++) {
+            const reservation = request.data[i]?.reservations || {}
+            const roomguestrow = Array.isArray(request.data[i]?.roomguestrow) ? request.data[i].roomguestrow : []
+            const posdata = Array.isArray(request.data[i]?.posdata) ? request.data[i].posdata : []
+            const allRooms = roomguestrow.map(dat => dat?.roomdata?.roomnumber).filter(Boolean).join(", ")
 
-        if (roomdata.roomnumber == did('roomnumber').value) {
-            let planAmount = Number(roomdata.planamount);
-            let planDiscountAmount = Number(roomdata.plandiscountamount);
-            let roomRate = Number(roomdata.roomrate);
-            let discountAmount = Number(roomdata.discountamount);
-            // Track amount is rate-only (no plan addition).
-            let rowTotal = roomRate;
+            for (let j = 0; j < roomguestrow.length; j++) {
+                const roomdata = roomguestrow[j]?.roomdata || {}
+                if (String(roomdata.roomnumber || '').trim() !== roomNumber) continue
 
-            tt += rowTotal;
+                const planAmount = toNumber(roomdata.planamount)
+                const planDiscountAmount = toNumber(roomdata.plandiscountamount)
+                const roomRate = toNumber(roomdata.roomrate)
+                const discountAmount = toNumber(roomdata.discountamount)
+                const rowTotal = roomRate
 
+                totalDue += rowTotal
+                rowsMarkup += `
+                    <tr>
+                        <td class="s/n"></td>
+                        <td>${reservation.reference || '-'}</td>
+                        <td>${allRooms || '-'}</td>
+                        <td>${reservation.arrivaldate ? specialformatDateTime(reservation.arrivaldate) : '-'}</td>
+                        <td>${formatNumber(roomRate)}</td>
+                        <td>${formatNumber(discountAmount)}</td>
+                        <td>${formatNumber(planAmount)}</td>
+                        <td>${formatNumber(planDiscountAmount)}</td>
+                        <td>${formatNumber(rowTotal)}</td>
+                    </tr>
+                `
+            }
+
+            for (let k = 0; k < posdata.length; k++) {
+                const pos = posdata[k] || {}
+                if (String(pos.ownerid || '').trim() !== roomNumber) continue
+
+                const debit = toNumber(pos.debit)
+                const credit = toNumber(pos.credit)
+                const rowTotal = debit - credit
+                totalDue += rowTotal
+
+                rowsMarkup += `
+                    <tr>
+                        <td class="s/n"></td>
+                        <td>${pos.reference || reservation.reference || '-'}</td>
+                        <td>${roomNumber}</td>
+                        <td>${pos.transactiondate ? specialformatDateTime(pos.transactiondate) : '-'}</td>
+                        <td>${formatNumber(debit)}</td>
+                        <td>${formatNumber(credit)}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>${formatNumber(rowTotal)}</td>
+                    </tr>
+                `
+            }
+        }
+
+        did('tabledata').innerHTML = rowsMarkup || `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
+        if(rowsMarkup){
+            runCount()
             did('tabledata').innerHTML += `
                 <tr>
-                    <td class="s/n"></td>
-                    <td>${reservation.reference}</td>
-                    <td>${roomguestrow.map(dat => dat.roomdata.roomnumber).join(", ")}</td>
-                    <td>${specialformatDateTime(reservation.arrivaldate)}</td>
-                    <td>${formatNumber(roomRate)}</td>
-                    <td>${formatNumber(discountAmount)}</td>
-                    <td>${formatNumber(planAmount)}</td>
-                    <td>${formatNumber(planDiscountAmount)}</td>
-                    <td>${formatNumber(rowTotal)}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>Total</td>
+                    <td>${formatNumber(totalDue)}</td>
                 </tr>
-            `;
+            `
         }
-    }
-}
-runCount()
-    
-        did('tabledata').innerHTML += `
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td>Total</td>
-                <td>${formatNumber(tt)}</td>
-            </tr>
-        `
-        did('totaldue').value = tt
-        did('tabledata2').innerHTML = datasource.map((item, i)=>{
-        pp = pp+Number(item.roomdata.roomrate)
-        return`
-            <tr>
-                <td>${i+1}</td>
-                <td>${item.roomdata.roomnumber}</td>
-                <td>${formatNumber(item.roomdata.roomrate)}</td>
-                <td>${formatNumber(item.roomdata.discountamount)}</td>
-                <td>${Number(item.roomdata.roomrate)-Number(item.roomdata.discountamount)}</td>
-                <td>${formatNumber(item.roomdata.planamount)}</td>
-                <td>${formatNumber(item.roomdata.plandiscountamount)}</td>
-                <td>${formatNumber(Number(item.roomdata.planamount)-Number(item.roomdata.plandiscountamount))}</td>
-                <td>${formatNumber(Number(item.roomdata.roomrate))}</td>
-            </tr>
-        `}).join('')
-        // did('tabledata2').innerHTML += `
-        //     <tr>
-        //         <td></td>
-        //         <td></td>
-        //         <td></td>
-        //         <td></td>
-        //         <td></td>
-        //         <td></td>
-        //         <td></td>
-        //         <td>Total</td>
-        //         <td>${formatNumber(pp)}</td>
-        //     </tr>
-        // `
+        if(did('totaldue')) did('totaldue').value = totalDue
         // did('trackno').value = did('reference').value
         // did('resdate').setAttribute('value', specialformatDateTime(request.data[0].reservations.reservationdate))
         // did('arrdate').setAttribute('value', specialformatDateTime(request.data[0].reservations.arrivaldate))
@@ -249,7 +236,6 @@ runCount()
         //                                     <div class="text-gray-700 mb-2">${did('your_companyaddress').value}</div>
         //                                     <div class="text-gray-700 mb-2">${did('your_companyemail').value}</div>
         // `
-        
     }
     else return notification(request.message)
 }
