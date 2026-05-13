@@ -110,6 +110,7 @@ async function updateinventoryFormSubmitHandler(store) {
                 <tr>
                     <input value="${item.itemid ? Number(item.itemid) : ''}" type="hidden" name="itemid" id="itemid-${index}" class="form-control comp" placeholder="Enter Price">
                     <input value="${item.id ? Number(item.id) : ''}" type="hidden" name="id" id="id-${index}" class="form-control comp" placeholder="Enter Price">
+                    <input value="${item.itemname ? String(item.itemname).trim() : ''}" type="hidden" name="itemname" id="itemname-${index}" class="form-control comp" placeholder="Enter Item Name">
                     <td>${index + 1 }</td>
                     <td><input type="checkbox" id="${item.itemid}" name="itemer"/></td>
                     <td>${item.itemname}</td>
@@ -145,15 +146,18 @@ async function saveupdatedprices() {
         let price_two = ''
         let minbalance = ''
         let itemtype = ''
+        let itemname = ''
         for(let i=0;i<document.getElementsByName('itemid').length;i++){
             if(i == 0){
                 itemid = document.getElementsByName('itemid')[i].value;
+                itemname = document.getElementsByName('itemname')[i].value;
                 price = document.getElementsByName('price')[i].value;
                 price_two = document.getElementsByName('price_two')[i].value;
                 minbalance = document.getElementsByName('minbalance')[i].value;
                 itemtype = document.getElementsByName('itemtype')[i].value;
             }else{
                 itemid = itemid+'|'+document.getElementsByName('itemid')[i].value;
+                itemname = itemname+'|'+document.getElementsByName('itemname')[i].value;
                 price = price+'|'+document.getElementsByName('price')[i].value;
                 price_two = price_two+'|'+document.getElementsByName('price_two')[i].value;
                 minbalance = minbalance+'|'+document.getElementsByName('minbalance')[i].value;
@@ -161,6 +165,7 @@ async function saveupdatedprices() {
             }
         }
             param.append('itemid', itemid)
+            param.append('itemname', itemname)
             param.append('price', price)
             param.append('price_two', price_two)
             param.append('minbalance', minbalance)
