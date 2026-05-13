@@ -7,6 +7,7 @@ let payableslength
 let saleslength 
 let userpermission
 let allratecodes
+let availableRoomsRefreshInterval = null
 const default_department = 'Main Store'
 const personnelPayrollMainRouteMap = {
     pp_level_main: 'pp_level',
@@ -170,18 +171,11 @@ window.onload = function() {
     if (searchAvailableRoomInput && availableRoomContainer) {
         const filterAvailableRooms = () => {
             const query = searchAvailableRoomInput.value.toLowerCase()
-            const children = availableRoomContainer.children
-
-            for (let i = 0; i < children.length; i++) {
-                const label = children[i].querySelector('label')
-                const text = label ? label.textContent.trim().toLowerCase() : ''
-
-                if (!query || text.includes(query)) {
-                    children[i].style.display = 'block'
-                } else {
-                    children[i].style.display = 'none'
-                }
-            }
+            const roomTiles = availableRoomContainer.querySelectorAll('.ar-room-tile')
+            roomTiles.forEach(tile => {
+                const text = String(tile.dataset.roomSearch || '').toLowerCase()
+                tile.style.display = (!query || text.includes(query)) ? 'flex' : 'none'
+            })
         }
 
         searchAvailableRoomInput.addEventListener('keyup', filterAvailableRooms)
@@ -417,12 +411,20 @@ if (availableRoomOpener && availableRoomContainerOverlay) {
     availableRoomOpener.addEventListener('click', () => {
         availableRoomContainerOverlay.classList.add('!left-[0%]')
         runavailablerooms()
+        if (availableRoomsRefreshInterval) clearInterval(availableRoomsRefreshInterval)
+        availableRoomsRefreshInterval = setInterval(() => {
+            if (availableRoomContainerOverlay.classList.contains('!left-[0%]')) runavailablerooms()
+        }, 15000)
     })
 }
 
 if (availableRoomRemover && availableRoomContainerOverlay) {
     availableRoomRemover.addEventListener('click', () => {
         availableRoomContainerOverlay.classList.remove('!left-[0%]')
+        if (availableRoomsRefreshInterval) {
+            clearInterval(availableRoomsRefreshInterval)
+            availableRoomsRefreshInterval = null
+        }
     })
 }
 
@@ -431,6 +433,10 @@ if (availableRoomContainerOverlay) {
         e.stopPropagation()
         if (e.target.id === 'arcontainer') {
             availableRoomContainerOverlay.classList.remove('!left-[0%]')
+            if (availableRoomsRefreshInterval) {
+                clearInterval(availableRoomsRefreshInterval)
+                availableRoomsRefreshInterval = null
+            }
         }
     })
 }
@@ -453,57 +459,42 @@ async function runavailablerooms(){
         if(request.data.length) { 
             availableroomlength = request.data.length
             if(document.getElementById('dashavailablerooms'))document.getElementById('dashavailablerooms').textContent = request.data.length
-            did('availableroomcontainer').innerHTML = request.data.map((data, i)=>`
-                <div x-data="{ open: false }" class="my-1 min-h-fit flex flex-col bg-transparent items-center justify-center relative overflow-hidden ">
-                  <div  @click="open = ! open" class="p-2 !bg-[#64748b] cp w-full rounded rounded-b-none flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[white]">meeting_room</span>
-                        <h4 class="font-normal text-xs text-white">${data.roomnumber} ${data.roomname}</h4>
+            const statusClasses = (rawStatus = '') => {
+                const status = String(rawStatus || '').trim().toUpperCase()
+                if (status === 'OCCUPIED' || status === 'CHECKED IN') return 'bg-red-600 text-yellow-200'
+                if (status === 'RESERVED' || status === 'OPEN') return 'bg-orange-500 text-white'
+                if (status === 'AVAILABLE' || status === 'CHECKED OUT') return 'bg-green-400 text-slate-900'
+                return 'bg-violet-400 text-slate-900'
+            }
+
+            const sortedRooms = [...request.data].sort((a, b) => {
+                const ar = Number(String(a.roomnumber || '').replace(/\D/g, ''))
+                const br = Number(String(b.roomnumber || '').replace(/\D/g, ''))
+                if (!Number.isNaN(ar) && !Number.isNaN(br) && ar !== br) return ar - br
+                return String(a.roomnumber || '').localeCompare(String(b.roomnumber || ''))
+            })
+
+            did('availableroomcontainer').innerHTML = `
+                <div class="mb-2 rounded-lg border border-slate-300 bg-white p-2">
+                    <div class="grid grid-cols-3 gap-2 text-[10px] font-semibold">
+                        <div class="rounded px-2 py-1 bg-green-400 text-slate-900 text-center">AVAILABLE</div>
+                        <div class="rounded px-2 py-1 bg-orange-500 text-white text-center">RESERVED</div>
+                        <div class="rounded px-2 py-1 bg-red-600 text-yellow-200 text-center">OCCUPIED</div>
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                  <div x-show="open" @click.outside="open = false"  x-transition:enter="transition ease-out duration-300"
-                        x-transition:enter-start="opacity-0 translate-y-0"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-300"
-                        x-transition:leave-start="opacity-100 translate-y-10"
-                        x-transition:leave-end="opacity-0 translate-y-0" class="w-full">
-                    <h4 class="text-sm text-slate-400">
-                         <div class="table-content !w-full">
-                                    <label class="hidden">${data.roomname} ${data.roomnumber} ${data.roomcategory} ${data.roomstatus} ${data.building}</label>
-                                    <table class="flex">
-                                        <tbody id="">
-                                           <tr class="flex flex-col !bg-[#64748b] text-white items-start ">
-                                                <td class="opacity-90"> Room&nbsp;Name</td>
-                                                <td class="opacity-90"> Room&nbsp;Number</td>
-                                                <td class="opacity-90"> Building</td>
-                                                <td class="opacity-90"> Room&nbsp;Category</td>
-                                                <td class="opacity-90"> Room&nbsp;Status</td>
-                                                <td class="opacity-90"> Status&nbsp;Desc.</td>
-                                            </tr>
-                                        </tbody>
-                                        <tbody id="">
-                                           <tr class="flex flex-col bg-white text-black w-[135%]">
-                                                <td class="opacity-90"> ${data.roomname.toUpperCase()} </td>
-                                                <td class="opacity-90"> ${data.roomnumber} </td>
-                                                <td class="opacity-90"> ${data.building} </td>
-                                                <td class="opacity-90"> ${data.roomcategory} </td>
-                                                <td class="opacity-90"> ${data.roomstatus} </td>
-                                                <td class="opacity-90"> ${data.roomstatusdescription} </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <img class="w-full" src="../images/${data.imageurl1}" />
-                                    <img class="w-full" src="../images/${data.imageurl1}" />
-                                    <button class="!bg-[#64748b] p-1 text-xs text-white hidden rounded mt-4">More Info</button>
-                                </div>
-                    </h4>
-                    
-                  </div>
                 </div>
-            `).join('')
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-8">
+                    ${sortedRooms.map((data) => {
+                        const searchText = `${data.roomname || ''} ${data.roomnumber || ''} ${data.roomcategory || ''} ${data.roomstatus || ''} ${data.building || ''}`.toLowerCase()
+                        return `
+                            <div class="ar-room-tile ${statusClasses(data.roomstatus)} border-2 border-slate-300 rounded-md p-2 min-h-[66px] flex flex-col justify-center items-center shadow-sm"
+                                 data-room-search="${searchText}">
+                                <div class="text-[28px] leading-none font-extrabold tracking-wide">${data.roomnumber || '-'}</div>
+                                <div class="text-[10px] mt-1 font-semibold opacity-95">${String(data.roomstatus || '-').toUpperCase()}</div>
+                            </div>
+                        `
+                    }).join('')}
+                </div>
+            `
         }
     }
     else return notification('No records for available rooms retrieved')
