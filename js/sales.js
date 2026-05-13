@@ -957,6 +957,7 @@ async function handlesalesdepartment(store) {
                                                     <label for="logoname" class="control-label hidden">Item</label>
                                                     ${itemInputMarkup}
                                                     <input autocomplete="off" class="itemmerid hidden" id="itemer-1">
+                                                    <input autocomplete="off" class="hidden" id="itemclass-1">
                                                 </td>
                                                 <td style="">
                                                     <div class="">
@@ -1041,6 +1042,7 @@ async function populatesalesitems(id) {
 
 function clearrow(i){
      did(`type-${i}`).innerHTML = ''
+        if(did(`itemclass-${i}`)) did(`itemclass-${i}`).value = ''
         did(`unit-${i}`).innerHTML = ''
         did(`balance-${i}`).innerHTML = ''
         did(`price-${i}`).value = ''
@@ -1049,9 +1051,16 @@ function clearrow(i){
         did(`item-${i}`).value = ''
 }
 
+function isNonStockItemClass(itemClassValue = '') {
+    const normalized = String(itemClassValue || '').trim().toUpperCase().replace(/\s+/g, ' ')
+    return normalized === 'NON STOCK-ITEM' || normalized === 'NON STOCK ITEM'
+}
+
 function calsaleqty(i){
     if(Number(did(`qty-${i}`).value)<0)did(`qty-${i}`).value = 0
-    if(!isOrderWorkspaceMode() && Number(did(`balance-${i}`).textContent)<Number(did(`qty-${i}`).value)){
+    const itemClassValue = did(`itemclass-${i}`)?.value || ''
+    const shouldCheckStockBalance = !isOrderWorkspaceMode() && !isNonStockItemClass(itemClassValue)
+    if(shouldCheckStockBalance && Number(did(`balance-${i}`).textContent)<Number(did(`qty-${i}`).value)){
         let iniborder = did(`qty-${i}`).style.borderColor
         did(`qty-${i}`).value = Number(did(`balance-${i}`).textContent)
         did(`qty-${i}`).style.borderColor = 'red'
@@ -1123,8 +1132,10 @@ async function salesitempop(val,i,qty=0) {
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         did(`type-${i}`).innerHTML = request.itemdata[0].itemtype
+        if(did(`itemclass-${i}`)) did(`itemclass-${i}`).value = request.itemdata[0].itemclass || ''
         did(`unit-${i}`).innerHTML = request.itemdata[0].units
-        did(`balance-${i}`).innerHTML = request.balance
+        const rowItemClass = request.itemdata[0].itemclass || ''
+        did(`balance-${i}`).innerHTML = isNonStockItemClass(rowItemClass) ? '999999999' : request.balance
         did(`price-${i}`).value = request.itemdata[0].price
         did(`qty-${i}`).value = Number(qty)
         did(`amount-${i}`).value = Number(request.itemdata[0].price)*Number(did(`qty-${i}`).value)
@@ -1146,6 +1157,7 @@ function addsalesrow(ii=''){
             <label for="logoname" class="control-label hidden">Item</label>
             ${itemInputMarkup}
              <input autocomplete="off" class="itemmerid hidden" id="itemer-${id}">
+             <input autocomplete="off" class="hidden" id="itemclass-${id}">
         </td>
         <td style="">
             <div class="">
@@ -1913,6 +1925,7 @@ async function composeOrderToBill(orderEntry = null) {
         const resolvedName = String(inventoryItem?.itemname || source.itemname || 'Unknown Item').trim() || 'Unknown Item'
         const resolvedItemId = String(inventoryItem?.itemid || source.itemid || '').trim()
         const resolvedType = String(inventoryItem?.itemtype || source.itemtype || source.type || '').trim()
+        const resolvedItemClass = String(inventoryItem?.itemclass || source.itemclass || '').trim()
         const resolvedUnit = String(inventoryItem?.units || source.units || source.unit || '').trim()
         const resolvedPrice = Number(inventoryItem?.price || source.cost || 0)
         const availableQtyRaw = Number(
@@ -1924,13 +1937,15 @@ async function composeOrderToBill(orderEntry = null) {
             requestedQty
         )
         const availableQty = Math.max(availableQtyRaw, 0)
-        const finalQty = Math.min(requestedQty, availableQty)
+        const enforceStock = !isNonStockItemClass(resolvedItemClass)
+        const finalQty = enforceStock ? Math.min(requestedQty, availableQty) : requestedQty
 
         if(did(`item-${rowId}`)) did(`item-${rowId}`).value = resolvedName
         if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = resolvedItemId
+        if(did(`itemclass-${rowId}`)) did(`itemclass-${rowId}`).value = resolvedItemClass
         if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = resolvedType
         if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = resolvedUnit
-        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = availableQty
+        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = enforceStock ? availableQty : '999999999'
         if(did(`price-${rowId}`)) did(`price-${rowId}`).value = resolvedPrice
         if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = finalQty
         if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = Number(resolvedPrice || 0) * Number(finalQty || 0)
@@ -1948,7 +1963,7 @@ async function composeOrderToBill(orderEntry = null) {
             continue
         }
 
-        if(finalQty < requestedQty){
+        if(enforceStock && finalQty < requestedQty){
             missingItems.push({
                 itemname: resolvedName,
                 requested: requestedQty,
@@ -2102,6 +2117,7 @@ function emptysales(){
                                                     <label for="logoname" class="control-label hidden">Item</label>
                                                     ${itemInputMarkup}
                                                     <input autocomplete="off" class="itemmerid hidden" id="itemer-1">
+                                                    <input autocomplete="off" class="hidden" id="itemclass-1">
                                                 </td>
                                                 <td style="">
                                                     <div class="">
