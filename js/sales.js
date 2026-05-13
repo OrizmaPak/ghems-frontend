@@ -2394,7 +2394,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                       <table class="w-full text-left border-collapse" style="font-size: 10px;">
                                         <thead>
                                           ${!rm ? `<tr class="border-b">
-                                            <th class="py-1 px-1 text-left" style="min-width: 25px; max-width: 30px;">s/n</th>
+                                            <th class="py-1 px-1 text-center" style="min-width: 36px; max-width: 42px;">s/n</th>
                                             <th class="py-1 px-1 text-left" style="min-width: 80px; max-width: 120px;">Product</th>
                                             <th class="py-1 px-1 text-right" style="min-width: 35px; max-width: 45px;">QTY</th>
                                             <th class="py-1 px-1 text-right" style="min-width: 50px; max-width: 70px;">Price</th>
@@ -2410,7 +2410,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                             ${!rm && rows.length > 0 && rows[0].ttype != 'ROOMS' 
                                               ? rows.map((dat, i) => {tt=tt+(Number(dat.qty) * Number(dat.cost)); return`
                                                   <tr class="border-b">
-                                                      <td class="py-1 px-1" style="font-size: 10px;">${i+1}</td>
+                                                      <td class="py-1 px-1 text-center" style="font-size: 10px; min-width: 36px; max-width: 42px;">${i+1}</td>
                                                       <td class="py-1 px-1" style="font-size: 10px; word-break: break-word; max-width: 120px;">${dat.itemname || ''}</td> 
                                                       <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(dat.qty || 0)}</td>
                                                       <td class="py-1 px-1 text-right" style="font-size: 10px;">${formatNumber(dat.cost || 0)}</td>
