@@ -435,7 +435,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
 
             <div id="arcontainer" class="fixed w-screen h-screen bg-[#00000042] top-0 left-[100%] flex justify-end transition-all duration-[0.5s]">
                             <button type="button" id="aropener" class="absolute !text-xs top-20 left-[-75px] shadow text-white bg-gradient-to-r opacity-[0.7] from-cyan-400 via-cyan-500 to-green-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-lg text-sm pl-3 pr-5 py-2.5 text-center me-2 mb-2">Available <br/> Rooms</button>
-                        <div id="arshadow" class="w-full max-w-[300px] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative glass-flyout">
+                        <div id="arshadow" class="w-[50vw] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative glass-flyout">
                             <button type="button" id="arremover" class="absolute text-xs top-7 left-[-25px] shadow text-white opacity-[0.8] bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2"> X</button>
                             <p class="text-center text-[black] font-bold">AVAILABLE ROOMS GOES HERE</p>
                             
