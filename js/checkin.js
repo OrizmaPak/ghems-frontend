@@ -2495,6 +2495,37 @@ function setupReservationTypePaymentRequirement() {
     applyReservationTypePaymentRequirement(false)
 }
 
+async function waitForDirectCheckinTransferTarget(targetCheck, timeoutMs = 5000, intervalMs = 100) {
+    const startedAt = Date.now()
+    while ((Date.now() - startedAt) <= timeoutMs) {
+        if (targetCheck()) return true
+        await new Promise(resolve => setTimeout(resolve, intervalMs))
+    }
+    return false
+}
+
+async function openStayInterfaceFromDirectCheckin(routeId, loaderFunctionName, reference) {
+    const normalizedReference = String(reference || '').trim()
+    if (!normalizedReference) return notification('Reference is required to continue', 0)
+    const routeTrigger = did(routeId)
+    if (!routeTrigger) return notification('Could not open requested interface', 0)
+
+    routeTrigger.click()
+    const ready = await waitForDirectCheckinTransferTarget(() => did('reference') && typeof window[loaderFunctionName] === 'function')
+    if (!ready) return notification('Please wait for the form to finish loading and try again', 0)
+
+    did('reference').value = normalizedReference
+    await window[loaderFunctionName]()
+}
+
+async function openExtendStayFromDirectCheckin(reference) {
+    return openStayInterfaceFromDirectCheckin('extendstay', 'fetchdataforextendstay', reference)
+}
+
+async function openReduceStayFromDirectCheckin(reference) {
+    return openStayInterfaceFromDirectCheckin('reducestay', 'fetchdataforreducestay', reference)
+}
+
 
 
 async function oncheckinTableDataSignal() {
@@ -2583,6 +2614,8 @@ async function oncheckinTableDataSignal() {
                 <button title="Edit Reservation" onclick="openGuestReservationForEdit('${item.reservations.id}')" class="${did('guestreservationform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' || item.reservations.status == 'CHECKED OUT' ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Edit row entry" onclick="fetchcheckinn('${item.reservations.id}')" class="${item.reservations.status == 'CHECKED IN' ? 'hidden' : ''} ${did('cancelreservationformfilter') ? '' : 'hidden'} ${!did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Cancel Reservation" onclick="removeguestsreservations('${item.reservations.reference}')" class="${item.reservations.status != 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+                <button title="Extend Stay" onclick="openExtendStayFromDirectCheckin('${item.reservations.reference}')" class="${did('checkinform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} rounded px-2 py-1 text-[11px] font-semibold bg-blue-500 text-white drop-shadow-md">Extend</button>
+                <button title="Reduce Stay" onclick="openReduceStayFromDirectCheckin('${item.reservations.reference}')" class="${did('checkinform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} rounded px-2 py-1 text-[11px] font-semibold bg-orange-500 text-white drop-shadow-md">Reduce</button>
             </div>
         </td> 
         <td>${item.roomgeustrow.length}&nbsp;Room(s)</td>
