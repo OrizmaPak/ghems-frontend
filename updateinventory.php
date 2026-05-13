@@ -37,6 +37,7 @@
                                                 <th>s/n</th>
                                                 <th>Select</th>
                                                 <th>Item name</th>
+                                                <th>Item Type</th>
                                                 <th>Price</th>
                                                 <th>Price two</th>
                                                 <th>Min Balance</th>

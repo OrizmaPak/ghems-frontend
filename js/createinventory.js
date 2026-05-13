@@ -2,6 +2,7 @@ let createinventoryid
 let departmenthtml
 const inventoryImportHeaderMap = {
     'item name': 'itemname',
+    'item type': 'itemtype',
     'units': 'units',
     'cost': 'cost',
     'price': 'price',
@@ -68,6 +69,7 @@ async function downloadInventoryTemplate(){
     const sampleRows = [
         {
             'Item Name': 'Sample Item 1',
+            'Item Type': 'FOOD',
             'Units': 'PCS',
             'Cost': 10,
             'Price': 15,
@@ -84,6 +86,7 @@ async function downloadInventoryTemplate(){
         },
         {
             'Item Name': 'Sample Item 2',
+            'Item Type': 'MISCELLANEOUS',
             'Units': 'KG',
             'Cost': 20,
             'Price': 28,
@@ -154,6 +157,7 @@ function populateInventoryForm(rows){
     rows.forEach((row, idx)=>{
         const form = container.children[idx]
         setInventoryField(form, 'itemname', row.itemname)
+        setInventoryField(form, 'itemtype', row.itemtype)
         setInventoryField(form, 'units', row.units)
         setInventoryField(form, 'cost', row.cost)
         setInventoryField(form, 'price', row.price)
@@ -224,6 +228,7 @@ async function createinventoryFormSubmitHandler(){
             const n = idx + 1
             const get = name => (item.querySelector(`[name=\"${name}\"]`)?.value ?? '').toString()
             param.append(`itemname${n}`, get('itemname'))
+            param.append(`itemtype${n}`, get('itemtype'))
             param.append(`units${n}`, get('units'))
             param.append(`cost${n}`, get('cost'))
             param.append(`price${n}`, get('price'))
@@ -293,6 +298,16 @@ function addform (){
                                             <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm" style="border: none;">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                    <div class="form-group">
+                                                        <label for="logoname" class="control-label">Item Type</label>
+                                                        <select name="itemtype" class="form-control comp">
+                                                            <option value=''>-- Select Item Type --</option>
+                                                            <option>FOOD</option>
+                                                            <option>ALCOHOL</option>
+                                                            <option>NON-ALCOHOL</option>
+                                                            <option>MISCELLANEOUS</option>
+                                                        </select>
+                                                    </div>
                                                     <div class="form-group">
                                                         <label for="logoname" class="control-label">Units</label>
                                                         <select name="units" id="units" class="form-control comp">

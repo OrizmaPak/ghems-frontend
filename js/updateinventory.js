@@ -113,6 +113,15 @@ async function updateinventoryFormSubmitHandler(store) {
                     <td>${index + 1 }</td>
                     <td><input type="checkbox" id="${item.itemid}" name="itemer"/></td>
                     <td>${item.itemname}</td>
+                    <td>
+                        <select name="itemtype" id="itemtype-${index}" class="form-control comp">
+                            <option value=''>-- Select Item Type --</option>
+                            <option ${String(item.itemtype || '').toUpperCase() === 'FOOD' ? 'selected' : ''}>FOOD</option>
+                            <option ${String(item.itemtype || '').toUpperCase() === 'ALCOHOL' ? 'selected' : ''}>ALCOHOL</option>
+                            <option ${String(item.itemtype || '').toUpperCase() === 'NON-ALCOHOL' ? 'selected' : ''}>NON-ALCOHOL</option>
+                            <option ${String(item.itemtype || '').toUpperCase() === 'MISCELLANEOUS' ? 'selected' : ''}>MISCELLANEOUS</option>
+                        </select>
+                    </td>
                     <td><input value="${item.price ? Number(item.price) : ''}" type="number" name="price" id="price-${index}" class="form-control comp" placeholder="Enter Price"></td>
                     <td><input value="${item.price_two ? Number(item.price_two) : ''}" type="number" name="price_two" id="price_two-${index}" class="form-control comp" placeholder="Enter Price two"></td>
                     <td><input value="${item.minbalance ? Number(item.minbalance) : ''}" type="number" name="minbalance" id="minbalance-${index}" class="form-control comp" placeholder="Enter min balance"></td>
@@ -135,23 +144,27 @@ async function saveupdatedprices() {
         let price = ''
         let price_two = ''
         let minbalance = ''
+        let itemtype = ''
         for(let i=0;i<document.getElementsByName('itemid').length;i++){
             if(i == 0){
                 itemid = document.getElementsByName('itemid')[i].value;
                 price = document.getElementsByName('price')[i].value;
                 price_two = document.getElementsByName('price_two')[i].value;
                 minbalance = document.getElementsByName('minbalance')[i].value;
+                itemtype = document.getElementsByName('itemtype')[i].value;
             }else{
                 itemid = itemid+'|'+document.getElementsByName('itemid')[i].value;
                 price = price+'|'+document.getElementsByName('price')[i].value;
                 price_two = price_two+'|'+document.getElementsByName('price_two')[i].value;
                 minbalance = minbalance+'|'+document.getElementsByName('minbalance')[i].value;
+                itemtype = itemtype+'|'+document.getElementsByName('itemtype')[i].value;
             }
         }
             param.append('itemid', itemid)
             param.append('price', price)
             param.append('price_two', price_two)
             param.append('minbalance', minbalance)
+            param.append('itemtype', itemtype)
         return param
     }
     let request = await httpRequest2('../controllers/inventoryupdate', payload(),  document.querySelector('#updateinventoryform #save'))

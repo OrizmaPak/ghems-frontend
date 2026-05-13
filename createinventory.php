@@ -62,6 +62,16 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                     <div class="form-group">
+                                                        <label for="logoname" class="control-label">Item Type</label>
+                                                        <select name="itemtype" class="form-control comp">
+                                                            <option value=''>-- Select Item Type --</option>
+                                                            <option>FOOD</option>
+                                                            <option>ALCOHOL</option>
+                                                            <option>NON-ALCOHOL</option>
+                                                            <option>MISCELLANEOUS</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
                                                         <label for="logoname" class="control-label">Units</label>
                                                         <select name="units" id="units" class="form-control comp">
                                                             <option value=''>-- Select Unit --</option>
