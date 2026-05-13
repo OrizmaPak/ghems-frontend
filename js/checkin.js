@@ -2526,6 +2526,15 @@ async function openReduceStayFromDirectCheckin(reference) {
     return openStayInterfaceFromDirectCheckin('reducestay', 'fetchdataforreducestay', reference)
 }
 
+function openReceiveDepositFromDirectCheckin(reference = '') {
+    const cleanedReference = String(reference || '').trim()
+    if (!cleanedReference) return notification('Reference is required to make payment', 0)
+    sessionStorage.setItem('assignfromsomewhere', `0_${cleanedReference}_0_0`)
+    const receiptsRoute = did('receipts')
+    if (!receiptsRoute) return notification('Receive Deposits interface is unavailable', 0)
+    receiptsRoute.click()
+}
+
 
 
 async function oncheckinTableDataSignal() {
@@ -2614,6 +2623,7 @@ async function oncheckinTableDataSignal() {
                 <button title="Edit Reservation" onclick="openGuestReservationForEdit('${item.reservations.id}')" class="${did('guestreservationform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' || item.reservations.status == 'CHECKED OUT' ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Edit row entry" onclick="fetchcheckinn('${item.reservations.id}')" class="${item.reservations.status == 'CHECKED IN' ? 'hidden' : ''} ${did('cancelreservationformfilter') ? '' : 'hidden'} ${!did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Cancel Reservation" onclick="removeguestsreservations('${item.reservations.reference}')" class="${item.reservations.status != 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
+                <button title="Make Payment" onclick="openReceiveDepositFromDirectCheckin('${item.reservations.reference}')" class="${did('checkinform') ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">payments</button>
                 <button title="Extend Stay" onclick="openExtendStayFromDirectCheckin('${item.reservations.reference}')" class="${did('checkinform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">calendar_add_on</button>
                 <button title="Reduce Stay" onclick="openReduceStayFromDirectCheckin('${item.reservations.reference}')" class="${did('checkinform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-orange-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">event_busy</button>
             </div>
