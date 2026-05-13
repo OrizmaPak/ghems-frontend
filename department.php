@@ -52,9 +52,10 @@
                                 </div>
                             </form>
                             <hr class="my-10">
-                            
-                            
-                             <div >
+                            <div>
+                                <div class="mb-3 flex justify-end">
+                                    <input type="text" id="departmenttablesearch" class="form-control max-w-sm" placeholder="Search department table">
+                                </div>
                                 <div class="table-content">
                                     <!--<p class="text-md font-semibold">Balance Brought Forward(B/F): <span id="bbf"></span></p>-->
                                     <table>
@@ -77,4 +78,4 @@
                                 <div class="table-status"></div>
                             </div>
                             
-                           </section> 
+                           </section>

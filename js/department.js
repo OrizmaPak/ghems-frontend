@@ -1,8 +1,32 @@
 let departmentid
+let departmentSearchTerm = ''
+let departmentBaseDatasource = []
+
+function renderDepartmentTable(){
+    const search = String(departmentSearchTerm || '').toLowerCase().trim()
+    const filtered = !search ? departmentBaseDatasource : departmentBaseDatasource.filter((item) => {
+        const department = String(item?.department || '').toLowerCase()
+        const category = String(item?.category || '').toLowerCase()
+        const applyForSales = String(item?.applyforsales || '').toLowerCase()
+        return `${department} ${category} ${applyForSales}`.includes(search)
+    })
+
+    if(!filtered.length){
+        document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+        return
+    }
+    resolvePagination(filtered, ondepartmentTableDataSignal)
+}
+
 async function departmentActive() {
     const form = document.querySelector('#departmentform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', departmentFormSubmitHandler)
+    if(did('departmenttablesearch')) did('departmenttablesearch').addEventListener('input', (event) => {
+        departmentSearchTerm = event.target.value || ''
+        renderDepartmentTable()
+    })
     datasource = []
+    departmentBaseDatasource = []
     await fetchdepartment()
 }
 
@@ -19,7 +43,11 @@ async function fetchdepartment(id) {
         if(!id){
             if(request.data.length) {
                 datasource = request.data
-                resolvePagination(datasource, ondepartmentTableDataSignal)
+                departmentBaseDatasource = request.data
+                renderDepartmentTable()
+            }else{
+                departmentBaseDatasource = []
+                document.getElementById('tabledata').innerHTML = `No records retrieved`
             }
         }else{
              departmentid = request.data[0].id
