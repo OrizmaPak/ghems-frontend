@@ -1008,8 +1008,7 @@
                                                 <th>action</th>
                                                 <th>Rooms</th>
                                                 <th>balance</th>
-                                                <th>initial&nbsp;deposit</th>
-                                                <th>GUEST</th>
+                                                <th>guest</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
                                                 <th>reservation&nbsp;type</th>
@@ -1019,6 +1018,7 @@
                                                 <th>payment&nbsp;method</th>
                                                 <th>reservation&nbsp;date</th>
                                                 <th>reference</th>
+                                                <th>initial&nbsp;deposit</th>
                                                 <th>status</th>
                                             </tr>
                                         </thead>

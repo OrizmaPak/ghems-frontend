@@ -2661,7 +2661,6 @@ async function oncheckinTableDataSignal() {
         <td id="checkin-balance-cell-${item.reservations.id}" class="text-center">
             <button title="Click to load balance" onclick="fetchDirectCheckinBalance('${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined text-slate-500 hover:text-slate-700" style="font-size:18px;">visibility_off</button>
         </td>
-        <td>${normalizeAmountPaidDisplay(item.reservations.amountpaid)}</td>
         <td>${x}&nbsp;Person(s)
             <table  class="mx-auto">
                     <tbody>
@@ -2724,6 +2723,7 @@ async function oncheckinTableDataSignal() {
         <td>${item.reservations.paymentmethod}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td>${item.reservations.reference}</td>
+        <td>${normalizeAmountPaidDisplay(item.reservations.amountpaid)}</td>
         <td class="${did('guestreservationform') ? '' : 'hidden'}">${item.reservations.timeline ? item.reservations.timeline : '--'}</td>
         <td>${item.reservations.status == 'OPEN' ? 'RESERVED' : item.reservations.status}</td>
     </tr> `}
