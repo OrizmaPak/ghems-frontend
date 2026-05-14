@@ -450,10 +450,10 @@ function normalizeRoomStatus(rawStatus=''){
 
 function getAvailableRoomStatusClass(rawStatus=''){
     const status = normalizeRoomStatus(rawStatus)
-    if(status === 'OCCUPIED') return 'bg-red-600 text-yellow-200 border-red-700'
-    if(status === 'RESERVED') return 'bg-orange-500 text-white border-orange-600'
-    if(status === 'AVAILABLE') return 'bg-green-400 text-slate-900 border-green-500'
-    return 'bg-violet-400 text-slate-900 border-violet-500'
+    if(status === 'OCCUPIED') return 'bg-red-700 text-white border-red-900'
+    if(status === 'RESERVED') return 'bg-orange-600 text-white border-orange-800'
+    if(status === 'AVAILABLE') return 'bg-green-700 text-white border-green-900'
+    return 'bg-violet-700 text-white border-violet-900'
 }
 
 function getAvailableRoomStatusLabel(rawStatus=''){
@@ -706,14 +706,13 @@ function renderAvailableRoomsBoard(){
                                         <span class="absolute left-0 top-0 h-full w-1 bg-white/60"></span>
                                         <div class="relative flex h-full min-h-[76px] flex-col justify-between p-1.5">
                                             <div class="flex items-start justify-between gap-1">
-                                                <span class="max-w-[72%] truncate rounded bg-black/15 px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-normal text-current">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
-                                                <span class="material-symbols-outlined opacity-75" style="font-size:15px;">meeting_room</span>
+                                                <span class="max-w-[72%] truncate rounded bg-white px-1.5 py-[1px] text-[8px] font-black uppercase tracking-normal text-slate-950 shadow-sm">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
+                                                <span class="material-symbols-outlined text-white opacity-95" style="font-size:15px;">meeting_room</span>
                                             </div>
                                             <div class="text-left">
                                                 <div class="text-[24px] leading-none font-black tracking-normal">${data.roomnumber || '-'}</div>
-                                                <div class="text-[8px] font-semibold uppercase opacity-85">Room Census</div>
                                             </div>
-                                            <div class="w-full truncate rounded bg-white/25 px-1.5 py-[2px] text-center text-[8px] font-bold uppercase tracking-normal backdrop-blur-sm">${getAvailableRoomCategoryLabel(data)}</div>
+                                            <div class="w-full truncate rounded bg-slate-950/80 px-1.5 py-[2px] text-center text-[8px] font-black uppercase tracking-normal text-white shadow-sm">${getAvailableRoomCategoryLabel(data)}</div>
                                         </div>
                                     </button>
                                 `).join('')}
