@@ -1004,9 +1004,11 @@
                                     <table id="tableer">
                                         <thead>
                                             <tr>
-                                                 <th style="width: 20px">s/n</th> 
+                                                <th style="width: 20px">s/n</th> 
                                                 <th>action</th>
                                                 <th>Rooms</th>
+                                                <th>balance</th>
+                                                <th>initial&nbsp;deposit</th>
                                                 <th>GUEST</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
@@ -1017,7 +1019,6 @@
                                                 <th>payment&nbsp;method</th>
                                                 <th>reservation&nbsp;date</th>
                                                 <th>reference</th>
-                                                <th>balance</th>
                                                 <th>status</th>
                                             </tr>
                                         </thead>
