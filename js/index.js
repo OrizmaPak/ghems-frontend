@@ -460,6 +460,10 @@ function getAvailableRoomStatusLabel(rawStatus=''){
     return normalizeRoomStatus(rawStatus)
 }
 
+function getAvailableRoomCategoryLabel(room={}){
+    return String(room.roomcategory || room.category || 'UNCATEGORIZED').trim().toUpperCase()
+}
+
 function getAvailableRoomsRefreshText(){
     if(!availableRoomsLastUpdatedAt) return 'not updated yet'
     const elapsed = Math.max(Math.floor((Date.now() - availableRoomsLastUpdatedAt) / 1000), 0)
@@ -698,9 +702,19 @@ function renderAvailableRoomsBoard(){
                             </div>
                             <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
                                 ${floorRooms.map((data) => `
-                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} border rounded-md p-1 min-h-[52px] flex flex-col justify-center items-center shadow-sm transition-all hover:scale-[1.02]">
-                                        <div class="text-[18px] leading-none font-extrabold tracking-tight">${data.roomnumber || '-'}</div>
-                                        <div class="text-[8px] mt-[2px] font-semibold opacity-95">${getAvailableRoomStatusLabel(data.roomstatus)}</div>
+                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} group relative overflow-hidden border rounded-md min-h-[76px] p-0 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md">
+                                        <span class="absolute left-0 top-0 h-full w-1 bg-white/60"></span>
+                                        <div class="relative flex h-full min-h-[76px] flex-col justify-between p-1.5">
+                                            <div class="flex items-start justify-between gap-1">
+                                                <span class="max-w-[72%] truncate rounded bg-black/15 px-1.5 py-[1px] text-[8px] font-bold uppercase tracking-normal text-current">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
+                                                <span class="material-symbols-outlined opacity-75" style="font-size:15px;">meeting_room</span>
+                                            </div>
+                                            <div class="text-left">
+                                                <div class="text-[24px] leading-none font-black tracking-normal">${data.roomnumber || '-'}</div>
+                                                <div class="text-[8px] font-semibold uppercase opacity-85">Room Census</div>
+                                            </div>
+                                            <div class="w-full truncate rounded bg-white/25 px-1.5 py-[2px] text-center text-[8px] font-bold uppercase tracking-normal backdrop-blur-sm">${getAvailableRoomCategoryLabel(data)}</div>
+                                        </div>
                                     </button>
                                 `).join('')}
                             </div>
