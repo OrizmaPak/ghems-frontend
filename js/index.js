@@ -450,10 +450,32 @@ function normalizeRoomStatus(rawStatus=''){
 
 function getAvailableRoomStatusClass(rawStatus=''){
     const status = normalizeRoomStatus(rawStatus)
-    if(status === 'OCCUPIED') return 'bg-red-700 text-white border-red-900'
-    if(status === 'RESERVED') return 'bg-orange-600 text-white border-orange-800'
-    if(status === 'AVAILABLE') return 'bg-green-700 text-white border-green-900'
-    return 'bg-violet-700 text-white border-violet-900'
+    if(status === 'OCCUPIED') return 'bg-white text-slate-950 border-rose-200 hover:border-rose-400'
+    if(status === 'RESERVED') return 'bg-white text-slate-950 border-amber-200 hover:border-amber-400'
+    if(status === 'AVAILABLE') return 'bg-white text-slate-950 border-emerald-200 hover:border-emerald-400'
+    return 'bg-white text-slate-950 border-indigo-200 hover:border-indigo-400'
+}
+
+function getAvailableRoomAccentClass(rawStatus=''){
+    const status = normalizeRoomStatus(rawStatus)
+    if(status === 'OCCUPIED') return 'bg-rose-600'
+    if(status === 'RESERVED') return 'bg-amber-500'
+    if(status === 'AVAILABLE') return 'bg-emerald-500'
+    return 'bg-indigo-500'
+}
+
+function getAvailableRoomStatusPillClass(rawStatus=''){
+    const status = normalizeRoomStatus(rawStatus)
+    if(status === 'OCCUPIED') return 'bg-rose-50 text-rose-800 ring-rose-200'
+    if(status === 'RESERVED') return 'bg-amber-50 text-amber-800 ring-amber-200'
+    if(status === 'AVAILABLE') return 'bg-emerald-50 text-emerald-800 ring-emerald-200'
+    return 'bg-indigo-50 text-indigo-800 ring-indigo-200'
+}
+
+function getAvailableRoomStatusDescription(room={}){
+    const value = String(room.roomstatusdescription || '').trim()
+    if(!value || value === '-') return ''
+    return value
 }
 
 function getAvailableRoomStatusLabel(rawStatus=''){
@@ -700,19 +722,26 @@ function renderAvailableRoomsBoard(){
                                 Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}
                                 <span class="font-medium text-slate-500">(${floorRooms.length})</span>
                             </div>
-                            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+                            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                                 ${floorRooms.map((data) => `
-                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} group relative overflow-hidden border rounded-md min-h-[76px] p-0 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md">
-                                        <span class="absolute left-0 top-0 h-full w-1 bg-white/60"></span>
-                                        <div class="relative flex h-full min-h-[76px] flex-col justify-between p-1.5">
+                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} group relative overflow-hidden border rounded-xl min-h-[88px] p-0 shadow-[0_10px_24px_rgba(15,23,42,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(15,23,42,0.16)] focus:outline-none focus:ring-2 focus:ring-slate-900/10">
+                                        <span class="absolute inset-x-0 top-0 h-[3px] ${getAvailableRoomAccentClass(data.roomstatus)}"></span>
+                                        <span class="absolute -right-7 -top-8 h-16 w-16 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} opacity-10"></span>
+                                        <div class="relative flex h-full min-h-[88px] flex-col justify-between p-2">
                                             <div class="flex items-start justify-between gap-1">
-                                                <span class="max-w-[72%] truncate rounded bg-white px-1.5 py-[1px] text-[8px] font-black uppercase tracking-normal text-slate-950 shadow-sm">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
-                                                <span class="material-symbols-outlined text-white opacity-95" style="font-size:15px;">meeting_room</span>
+                                                <span class="max-w-[76%] truncate rounded-full px-2 py-[2px] text-[8px] font-black uppercase tracking-wide ring-1 ${getAvailableRoomStatusPillClass(data.roomstatus)}">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
+                                                <span class="mt-1 h-2.5 w-2.5 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} shadow-[0_0_0_3px_rgba(255,255,255,0.95)]"></span>
                                             </div>
                                             <div class="text-left">
-                                                <div class="text-[24px] leading-none font-black tracking-normal">${data.roomnumber || '-'}</div>
+                                                <div class="flex items-end gap-1">
+                                                    <span class="text-[26px] leading-none font-black tracking-[-0.04em] text-slate-950">${data.roomnumber || '-'}</span>
+                                                    <span class="material-symbols-outlined mb-0.5 text-slate-300 transition-colors group-hover:text-slate-500" style="font-size:15px;">door_front</span>
+                                                </div>
+                                                ${getAvailableRoomStatusDescription(data) ? `<div class="mt-1 max-w-full truncate text-[9px] font-semibold text-slate-500">${getAvailableRoomStatusDescription(data)}</div>` : ''}
                                             </div>
-                                            <div class="w-full truncate rounded bg-slate-950/80 px-1.5 py-[2px] text-center text-[8px] font-black uppercase tracking-normal text-white shadow-sm">${getAvailableRoomCategoryLabel(data)}</div>
+                                            <div class="border-t border-slate-100 pt-1">
+                                                <div class="w-full truncate text-left text-[8px] font-black uppercase tracking-wide text-slate-600">${getAvailableRoomCategoryLabel(data)}</div>
+                                            </div>
                                         </div>
                                     </button>
                                 `).join('')}
@@ -721,23 +750,66 @@ function renderAvailableRoomsBoard(){
                     `).join('') : `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`}
                 </div>
                 ${availableRoomsDetail ? `
-                    <div class="border border-slate-200 rounded-md p-2 bg-white overflow-y-auto">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-bold text-slate-800">Room ${availableRoomsDetail.roomnumber || '-'}</p>
-                            <button data-ar-action="close-details" class="material-symbols-outlined text-red-500" style="font-size:18px;">close</button>
-                        </div>
-                        <div class="mt-2 space-y-1 text-xs text-slate-700">
-                            <p><span class="font-semibold">Name:</span> ${availableRoomsDetail.roomname || '-'}</p>
-                            <p><span class="font-semibold">Category:</span> ${availableRoomsDetail.roomcategory || '-'}</p>
-                            <p><span class="font-semibold">Building:</span> ${availableRoomsDetail.building || '-'}</p>
-                            <p><span class="font-semibold">Floor:</span> ${availableRoomsDetail.floor || '-'}</p>
-                            <p><span class="font-semibold">Status:</span> ${String(availableRoomsDetail.roomstatus || '-').toUpperCase()}</p>
-                            <p><span class="font-semibold">Description:</span> ${availableRoomsDetail.roomstatusdescription || '-'}</p>
-                        </div>
-                        <div class="mt-3 grid grid-cols-1 gap-1.5">
-                            <button data-ar-action="open-checkin" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="text-xs rounded bg-blue-600 text-white px-2 py-1">Go to Check-In</button>
-                            <button data-ar-action="open-room-status" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="text-xs rounded bg-slate-700 text-white px-2 py-1">Open Room Status</button>
-                            <button data-ar-action="copy-room" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="text-xs rounded bg-emerald-600 text-white px-2 py-1">Copy Room Number</button>
+                    <div class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-[0_16px_36px_rgba(15,23,42,0.12)] overflow-y-auto">
+                        <span class="absolute inset-x-0 top-0 h-1 ${getAvailableRoomAccentClass(availableRoomsDetail.roomstatus)}"></span>
+                        <div class="p-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="inline-flex rounded-full px-2 py-[3px] text-[9px] font-black uppercase tracking-wide ring-1 ${getAvailableRoomStatusPillClass(availableRoomsDetail.roomstatus)}">${getAvailableRoomStatusLabel(availableRoomsDetail.roomstatus)}</span>
+                                    <p class="mt-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Room</p>
+                                    <p class="text-[34px] font-black leading-none tracking-[-0.05em] text-slate-950">${availableRoomsDetail.roomnumber || '-'}</p>
+                                </div>
+                                <button data-ar-action="close-details" class="grid h-8 w-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600" title="Close">
+                                    <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+                                </button>
+                            </div>
+
+                            <div class="mt-3 rounded-xl bg-slate-950 p-3 text-white shadow-inner">
+                                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Category</p>
+                                <p class="mt-1 truncate text-sm font-black">${availableRoomsDetail.roomcategory || '-'}</p>
+                            </div>
+
+                            ${getAvailableRoomStatusDescription(availableRoomsDetail) ? `
+                                <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs font-semibold text-slate-600">
+                                    <div class="flex gap-2">
+                                        <span class="material-symbols-outlined mt-[1px] text-slate-400" style="font-size:15px;">chat_bubble</span>
+                                        <span>${getAvailableRoomStatusDescription(availableRoomsDetail)}</span>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
+                                    <p class="font-black uppercase tracking-wide text-slate-400">Name</p>
+                                    <p class="mt-1 truncate font-bold text-slate-800">${availableRoomsDetail.roomname || '-'}</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
+                                    <p class="font-black uppercase tracking-wide text-slate-400">Building</p>
+                                    <p class="mt-1 truncate font-bold text-slate-800">${availableRoomsDetail.building || '-'}</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
+                                    <p class="font-black uppercase tracking-wide text-slate-400">Floor</p>
+                                    <p class="mt-1 truncate font-bold text-slate-800">${availableRoomsDetail.floor || '-'}</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
+                                    <p class="font-black uppercase tracking-wide text-slate-400">Status</p>
+                                    <p class="mt-1 truncate font-bold text-slate-800">${String(availableRoomsDetail.roomstatus || '-').toUpperCase()}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex items-center gap-2">
+                                <button data-ar-action="copy-room" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-black text-slate-700 transition hover:bg-slate-50">
+                                    <span class="material-symbols-outlined" style="font-size:15px;">content_copy</span>
+                                    Copy
+                                </button>
+                                <button data-ar-action="open-checkin" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-slate-950 px-2 py-2 text-[11px] font-black text-white transition hover:bg-slate-800">
+                                    <span class="material-symbols-outlined" style="font-size:15px;">login</span>
+                                    Check-In
+                                </button>
+                                <button data-ar-action="open-room-status" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50" title="Open Room Status">
+                                    <span class="material-symbols-outlined" style="font-size:17px;">fact_check</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ` : ''}
