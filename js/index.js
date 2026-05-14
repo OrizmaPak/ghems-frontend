@@ -475,21 +475,21 @@ async function runavailablerooms(){
             })
 
             did('availableroomcontainer').innerHTML = `
-                <div class="mb-2 rounded-lg border border-slate-300 bg-white p-2">
-                    <div class="grid grid-cols-3 gap-2 text-[10px] font-semibold">
-                        <div class="rounded px-2 py-1 bg-green-400 text-slate-900 text-center">AVAILABLE</div>
-                        <div class="rounded px-2 py-1 bg-orange-500 text-white text-center">RESERVED</div>
-                        <div class="rounded px-2 py-1 bg-red-600 text-yellow-200 text-center">OCCUPIED</div>
+                <div class="mb-2 rounded-md border border-slate-300 bg-white p-2">
+                    <div class="grid grid-cols-3 gap-1 text-[9px] font-semibold">
+                        <div class="rounded px-1 py-1 bg-green-400 text-slate-900 text-center">AVAILABLE</div>
+                        <div class="rounded px-1 py-1 bg-orange-500 text-white text-center">RESERVED</div>
+                        <div class="rounded px-1 py-1 bg-red-600 text-yellow-200 text-center">OCCUPIED</div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-8">
+                <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 pb-8">
                     ${sortedRooms.map((data) => {
                         const searchText = `${data.roomname || ''} ${data.roomnumber || ''} ${data.roomcategory || ''} ${data.roomstatus || ''} ${data.building || ''}`.toLowerCase()
                         return `
-                            <div class="ar-room-tile ${statusClasses(data.roomstatus)} border-2 border-slate-300 rounded-md p-2 min-h-[66px] flex flex-col justify-center items-center shadow-sm"
+                            <div class="ar-room-tile ${statusClasses(data.roomstatus)} border border-slate-300 rounded-md p-1 min-h-[48px] flex flex-col justify-center items-center shadow-sm transition-all hover:scale-[1.02]"
                                  data-room-search="${searchText}">
-                                <div class="text-[28px] leading-none font-extrabold tracking-wide">${data.roomnumber || '-'}</div>
-                                <div class="text-[10px] mt-1 font-semibold opacity-95">${String(data.roomstatus || '-').toUpperCase()}</div>
+                                <div class="text-[19px] leading-none font-extrabold tracking-tight">${data.roomnumber || '-'}</div>
+                                <div class="text-[8px] mt-[2px] font-semibold opacity-95">${String(data.roomstatus || '-').toUpperCase()}</div>
                             </div>
                         `
                     }).join('')}
