@@ -437,20 +437,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             <button type="button" id="aropener" class="absolute !text-xs top-20 left-[-75px] shadow text-white bg-gradient-to-r opacity-[0.7] from-cyan-400 via-cyan-500 to-green-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-lg text-sm pl-3 pr-5 py-2.5 text-center me-2 mb-2">Available <br/> Rooms</button>
                         <div id="arshadow" class="w-[50vw] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative glass-flyout">
                             <button type="button" id="arremover" class="absolute text-xs top-7 left-[-25px] shadow text-white opacity-[0.8] bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2"> X</button>
-                            <p class="text-center text-[black] font-bold">AVAILABLE ROOMS GOES HERE</p>
-                            
-                            <div class="search-box mx-auto scale-[0.7]">
-                                <button class="btn-search"><span class="material-symbols-outlined text-white">search</span></button>
-                                <input type="text" class="input-search text-black" id="searchavailableroom" placeholder="Type to Search...">
-                            </div> 
-                            
-                            <p class="relative text-xs text-center">You can search by room number, room name, room category, room status and building</p>
-                            
-                            <div id="availableroomcontainer" class="my-3 h-screen overflow-y-auto">
-                                
-                                
-
-                            </div>
+                            <div id="availableroomcontainer" class="my-1 h-full overflow-hidden"></div>
                         </div>
                     </div>
 

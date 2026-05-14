@@ -8,6 +8,19 @@ let saleslength
 let userpermission
 let allratecodes
 let availableRoomsRefreshInterval = null
+let availableRoomsLastUpdatedAt = null
+let availableRoomsRefreshClockInterval = null
+let availableRoomsLastHash = ''
+let availableRoomsDetail = null
+const availableRoomsState = {
+    search: '',
+    status: 'ALL',
+    building: 'ALL',
+    floor: 'ALL',
+    category: 'ALL',
+    autoRefresh: true
+}
+let availableRoomsDataset = []
 const default_department = 'Main Store'
 const personnelPayrollMainRouteMap = {
     pp_level_main: 'pp_level',
@@ -164,31 +177,6 @@ window.onload = function() {
     
     // NOTIFICATION FUNCTION
     // approverequisitionActive()
-
-    const searchAvailableRoomInput = document.getElementById('searchavailableroom')
-    const availableRoomContainer = document.getElementById('availableroomcontainer')
-
-    if (searchAvailableRoomInput && availableRoomContainer) {
-        const filterAvailableRooms = () => {
-            const query = searchAvailableRoomInput.value.toLowerCase()
-            const roomTiles = availableRoomContainer.querySelectorAll('.ar-room-tile')
-            roomTiles.forEach(tile => {
-                const text = String(tile.dataset.roomSearch || '').toLowerCase()
-                tile.style.display = (!query || text.includes(query)) ? 'flex' : 'none'
-            })
-        }
-
-        searchAvailableRoomInput.addEventListener('keyup', filterAvailableRooms)
-        searchAvailableRoomInput.addEventListener('change', filterAvailableRooms)
-
-        const searchButton = document.querySelector('.search-box .btn-search')
-        if (searchButton) {
-            searchButton.addEventListener('click', e => {
-                e.preventDefault()
-                filterAvailableRooms()
-            })
-        }
-    }
 
 }
 
@@ -410,11 +398,14 @@ const availableRoomContainerOverlay = document.getElementById('arcontainer')
 if (availableRoomOpener && availableRoomContainerOverlay) {
     availableRoomOpener.addEventListener('click', () => {
         availableRoomContainerOverlay.classList.add('!left-[0%]')
+        ensureAvailableRoomSliderEventsBound()
         runavailablerooms()
         if (availableRoomsRefreshInterval) clearInterval(availableRoomsRefreshInterval)
         availableRoomsRefreshInterval = setInterval(() => {
-            if (availableRoomContainerOverlay.classList.contains('!left-[0%]')) runavailablerooms()
+            if (availableRoomContainerOverlay.classList.contains('!left-[0%]') && availableRoomsState.autoRefresh) runavailablerooms()
         }, 15000)
+        if (availableRoomsRefreshClockInterval) clearInterval(availableRoomsRefreshClockInterval)
+        availableRoomsRefreshClockInterval = setInterval(updateAvailableRoomsRefreshAge, 1000)
     })
 }
 
@@ -424,6 +415,10 @@ if (availableRoomRemover && availableRoomContainerOverlay) {
         if (availableRoomsRefreshInterval) {
             clearInterval(availableRoomsRefreshInterval)
             availableRoomsRefreshInterval = null
+        }
+        if (availableRoomsRefreshClockInterval) {
+            clearInterval(availableRoomsRefreshClockInterval)
+            availableRoomsRefreshClockInterval = null
         }
     })
 }
@@ -437,8 +432,271 @@ if (availableRoomContainerOverlay) {
                 clearInterval(availableRoomsRefreshInterval)
                 availableRoomsRefreshInterval = null
             }
+            if (availableRoomsRefreshClockInterval) {
+                clearInterval(availableRoomsRefreshClockInterval)
+                availableRoomsRefreshClockInterval = null
+            }
         }
     })
+}
+
+function normalizeRoomStatus(rawStatus=''){
+    const status = String(rawStatus || '').trim().toUpperCase()
+    if (status === 'CHECKED IN' || status === 'OCCUPIED') return 'OCCUPIED'
+    if (status === 'OPEN' || status === 'RESERVED') return 'RESERVED'
+    if (status === 'AVAILABLE' || status === 'CHECKED OUT') return 'AVAILABLE'
+    return 'OTHER'
+}
+
+function getAvailableRoomStatusClass(rawStatus=''){
+    const status = normalizeRoomStatus(rawStatus)
+    if(status === 'OCCUPIED') return 'bg-red-600 text-yellow-200 border-red-700'
+    if(status === 'RESERVED') return 'bg-orange-500 text-white border-orange-600'
+    if(status === 'AVAILABLE') return 'bg-green-400 text-slate-900 border-green-500'
+    return 'bg-violet-400 text-slate-900 border-violet-500'
+}
+
+function getAvailableRoomStatusLabel(rawStatus=''){
+    return normalizeRoomStatus(rawStatus)
+}
+
+function getAvailableRoomsRefreshText(){
+    if(!availableRoomsLastUpdatedAt) return 'not updated yet'
+    const elapsed = Math.max(Math.floor((Date.now() - availableRoomsLastUpdatedAt) / 1000), 0)
+    if(elapsed < 5) return 'updated just now'
+    if(elapsed < 60) return `updated ${elapsed}s ago`
+    const mins = Math.floor(elapsed / 60)
+    return `updated ${mins}m ago`
+}
+
+function updateAvailableRoomsRefreshAge(){
+    if(did('ar-last-updated')) did('ar-last-updated').textContent = getAvailableRoomsRefreshText()
+}
+
+function buildAvailableRoomsHash(list=[]){
+    return list.map(item => `${item.roomnumber}|${item.roomstatus}|${item.roomstatusdescription}|${item.roomcategory}|${item.building}|${item.floor}`).join('::')
+}
+
+function getAvailableRoomsFilterOptions(){
+    const buildings = Array.from(new Set(availableRoomsDataset.map(item => String(item.building || '').trim()).filter(Boolean))).sort()
+    const floors = Array.from(new Set(availableRoomsDataset.map(item => String(item.floor || '').trim()).filter(Boolean))).sort((a, b) => Number(a) - Number(b))
+    const categories = Array.from(new Set(availableRoomsDataset.map(item => String(item.roomcategory || '').trim()).filter(Boolean))).sort()
+    return { buildings, floors, categories }
+}
+
+function filterAvailableRoomsData(){
+    return availableRoomsDataset.filter((room)=>{
+        const normalizedStatus = normalizeRoomStatus(room.roomstatus)
+        const statusOk = availableRoomsState.status === 'ALL' || normalizedStatus === availableRoomsState.status
+        const buildingOk = availableRoomsState.building === 'ALL' || String(room.building || '').trim() === availableRoomsState.building
+        const floorOk = availableRoomsState.floor === 'ALL' || String(room.floor || '').trim() === availableRoomsState.floor
+        const categoryOk = availableRoomsState.category === 'ALL' || String(room.roomcategory || '').trim() === availableRoomsState.category
+        const haystack = `${room.roomname || ''} ${room.roomnumber || ''} ${room.roomcategory || ''} ${room.roomstatus || ''} ${room.building || ''} ${room.floor || ''}`.toLowerCase()
+        const searchOk = !availableRoomsState.search || haystack.includes(availableRoomsState.search.toLowerCase())
+        return statusOk && buildingOk && floorOk && categoryOk && searchOk
+    })
+}
+
+function clearAvailableRoomFilters(){
+    availableRoomsState.search = ''
+    availableRoomsState.status = 'ALL'
+    availableRoomsState.building = 'ALL'
+    availableRoomsState.floor = 'ALL'
+    availableRoomsState.category = 'ALL'
+    renderAvailableRoomsBoard()
+}
+
+function openAvailableRoomDetails(roomNumber=''){
+    const selected = availableRoomsDataset.find(item => String(item.roomnumber || '').trim() === String(roomNumber || '').trim())
+    if(!selected) return
+    availableRoomsDetail = selected
+    renderAvailableRoomsBoard()
+}
+
+function closeAvailableRoomDetails(){
+    availableRoomsDetail = null
+    renderAvailableRoomsBoard()
+}
+
+function copyAvailableRoomNumber(roomNumber=''){
+    const value = String(roomNumber || '').trim()
+    if(!value) return notification('Room number unavailable', 0)
+    if(navigator.clipboard?.writeText){
+        navigator.clipboard.writeText(value)
+            .then(()=>notification(`Room ${value} copied`, 1))
+            .catch(()=>notification('Could not copy room number', 0))
+        return
+    }
+    notification('Clipboard access not available', 0)
+}
+
+function openRoomStatusFromAvailableRoom(){
+    did('roomstatus')?.click()
+}
+
+function openCheckinFromAvailableRoom(room){
+    if(!room) return
+    sessionStorage.setItem('roomsetting', `${room.categoryid || ''}_${room.roomnumber || ''}`)
+    did('checkin')?.click()
+}
+
+function setAvailableRoomsAutoRefresh(enabled){
+    availableRoomsState.autoRefresh = !!enabled
+    renderAvailableRoomsBoard()
+}
+
+function ensureAvailableRoomSliderEventsBound(){
+    if(!did('arshadow') || did('arshadow').dataset.boundSliderEvents === '1') return
+    did('arshadow').dataset.boundSliderEvents = '1'
+    did('arshadow').addEventListener('input', (event)=>{
+        if(event.target.id === 'searchavailableroom'){
+            availableRoomsState.search = event.target.value || ''
+            renderAvailableRoomsBoard()
+        }
+        if(event.target.id === 'ar-filter-building'){
+            availableRoomsState.building = event.target.value || 'ALL'
+            renderAvailableRoomsBoard()
+        }
+        if(event.target.id === 'ar-filter-floor'){
+            availableRoomsState.floor = event.target.value || 'ALL'
+            renderAvailableRoomsBoard()
+        }
+        if(event.target.id === 'ar-filter-category'){
+            availableRoomsState.category = event.target.value || 'ALL'
+            renderAvailableRoomsBoard()
+        }
+    })
+    did('arshadow').addEventListener('change', (event)=>{
+        if(event.target.id === 'ar-auto-refresh'){
+            setAvailableRoomsAutoRefresh(event.target.checked)
+        }
+    })
+    did('arshadow').addEventListener('click', (event)=>{
+        const statusButton = event.target.closest('[data-ar-status]')
+        if(statusButton){
+            availableRoomsState.status = statusButton.getAttribute('data-ar-status') || 'ALL'
+            renderAvailableRoomsBoard()
+            return
+        }
+        const actionButton = event.target.closest('[data-ar-action]')
+        if(!actionButton) return
+        const action = actionButton.getAttribute('data-ar-action')
+        const roomNo = actionButton.getAttribute('data-room-number') || ''
+        if(action === 'open-details') openAvailableRoomDetails(roomNo)
+        if(action === 'close-details') closeAvailableRoomDetails()
+        if(action === 'clear-filters') clearAvailableRoomFilters()
+        if(action === 'refresh-now') runavailablerooms()
+        if(action === 'copy-room') copyAvailableRoomNumber(roomNo)
+        if(action === 'open-room-status') openRoomStatusFromAvailableRoom()
+        if(action === 'open-checkin'){
+            const selected = availableRoomsDataset.find(item => String(item.roomnumber || '').trim() === String(roomNo).trim())
+            openCheckinFromAvailableRoom(selected)
+        }
+    })
+}
+
+function renderAvailableRoomsBoard(){
+    const host = did('availableroomcontainer')
+    if(!host) return
+    const { buildings, floors, categories } = getAvailableRoomsFilterOptions()
+    const filtered = filterAvailableRoomsData()
+    const summary = {
+        total: availableRoomsDataset.length,
+        available: availableRoomsDataset.filter(item => normalizeRoomStatus(item.roomstatus) === 'AVAILABLE').length,
+        reserved: availableRoomsDataset.filter(item => normalizeRoomStatus(item.roomstatus) === 'RESERVED').length,
+        occupied: availableRoomsDataset.filter(item => normalizeRoomStatus(item.roomstatus) === 'OCCUPIED').length
+    }
+    const pills = [
+        { key: 'ALL', label: 'All' },
+        { key: 'AVAILABLE', label: 'Available' },
+        { key: 'RESERVED', label: 'Reserved' },
+        { key: 'OCCUPIED', label: 'Occupied' },
+        { key: 'OTHER', label: 'Other' }
+    ]
+
+    const validDetail = availableRoomsDetail && availableRoomsDataset.find(item => String(item.roomnumber || '') === String(availableRoomsDetail.roomnumber || ''))
+    if(!validDetail) availableRoomsDetail = null
+
+    host.innerHTML = `
+        <div class="h-full overflow-hidden flex flex-col gap-2">
+            <div class="sticky top-0 z-20 bg-white/95 border border-slate-200 rounded-md p-2 shadow-sm">
+                <div class="flex items-center justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Room Operations Board</p>
+                        <p id="ar-last-updated" class="text-[11px] text-slate-500">${getAvailableRoomsRefreshText()}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button data-ar-action="refresh-now" class="material-symbols-outlined text-slate-600 hover:text-slate-900" style="font-size:18px;" title="Refresh now">refresh</button>
+                        <label class="text-[11px] flex items-center gap-1 text-slate-700">
+                            <input id="ar-auto-refresh" type="checkbox" ${availableRoomsState.autoRefresh ? 'checked' : ''}>
+                            Auto-refresh
+                        </label>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-1 mt-2 text-[10px] font-semibold">
+                    <div class="rounded bg-slate-100 p-1 text-center">Total<br>${summary.total}</div>
+                    <div class="rounded bg-green-100 text-green-700 p-1 text-center">Available<br>${summary.available}</div>
+                    <div class="rounded bg-orange-100 text-orange-700 p-1 text-center">Reserved<br>${summary.reserved}</div>
+                    <div class="rounded bg-red-100 text-red-700 p-1 text-center">Occupied<br>${summary.occupied}</div>
+                </div>
+            </div>
+            <div class="sticky top-[104px] z-20 bg-white/95 border border-slate-200 rounded-md p-2 shadow-sm">
+                <div class="flex flex-wrap gap-1 mb-2">
+                    ${pills.map(pill => `<button data-ar-status="${pill.key}" class="px-2 py-1 text-[10px] rounded border ${availableRoomsState.status === pill.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300'}">${pill.label}</button>`).join('')}
+                    <button data-ar-action="clear-filters" class="ml-auto px-2 py-1 text-[10px] rounded border border-slate-300 text-slate-600">Clear</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-1">
+                    <input id="searchavailableroom" value="${availableRoomsState.search}" class="form-control !p-2 text-xs" placeholder="Search room, category, building">
+                    <select id="ar-filter-building" class="form-control !p-2 text-xs">
+                        <option value="ALL">All buildings</option>
+                        ${buildings.map(value => `<option ${availableRoomsState.building === value ? 'selected' : ''} value="${value}">${value}</option>`).join('')}
+                    </select>
+                    <select id="ar-filter-floor" class="form-control !p-2 text-xs">
+                        <option value="ALL">All floors</option>
+                        ${floors.map(value => `<option ${availableRoomsState.floor === value ? 'selected' : ''} value="${value}">${value}</option>`).join('')}
+                    </select>
+                    <select id="ar-filter-category" class="form-control !p-2 text-xs">
+                        <option value="ALL">All categories</option>
+                        ${categories.map(value => `<option ${availableRoomsState.category === value ? 'selected' : ''} value="${value}">${value}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[1fr_230px]' : 'grid-cols-1'} gap-2 overflow-hidden">
+                <div class="border border-slate-200 rounded-md p-2 overflow-y-auto bg-white">
+                    ${filtered.length ? `<div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+                        ${filtered.map((data) => `
+                            <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} border rounded-md p-1 min-h-[52px] flex flex-col justify-center items-center shadow-sm transition-all hover:scale-[1.02]">
+                                <div class="text-[18px] leading-none font-extrabold tracking-tight">${data.roomnumber || '-'}</div>
+                                <div class="text-[8px] mt-[2px] font-semibold opacity-95">${getAvailableRoomStatusLabel(data.roomstatus)}</div>
+                            </button>
+                        `).join('')}
+                    </div>` : `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`}
+                </div>
+                ${availableRoomsDetail ? `
+                    <div class="border border-slate-200 rounded-md p-2 bg-white overflow-y-auto">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-bold text-slate-800">Room ${availableRoomsDetail.roomnumber || '-'}</p>
+                            <button data-ar-action="close-details" class="material-symbols-outlined text-red-500" style="font-size:18px;">close</button>
+                        </div>
+                        <div class="mt-2 space-y-1 text-xs text-slate-700">
+                            <p><span class="font-semibold">Name:</span> ${availableRoomsDetail.roomname || '-'}</p>
+                            <p><span class="font-semibold">Category:</span> ${availableRoomsDetail.roomcategory || '-'}</p>
+                            <p><span class="font-semibold">Building:</span> ${availableRoomsDetail.building || '-'}</p>
+                            <p><span class="font-semibold">Floor:</span> ${availableRoomsDetail.floor || '-'}</p>
+                            <p><span class="font-semibold">Status:</span> ${String(availableRoomsDetail.roomstatus || '-').toUpperCase()}</p>
+                            <p><span class="font-semibold">Description:</span> ${availableRoomsDetail.roomstatusdescription || '-'}</p>
+                        </div>
+                        <div class="mt-3 grid grid-cols-1 gap-1.5">
+                            <button data-ar-action="open-checkin" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="text-xs rounded bg-blue-600 text-white px-2 py-1">Go to Check-In</button>
+                            <button data-ar-action="open-room-status" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="text-xs rounded bg-slate-700 text-white px-2 py-1">Open Room Status</button>
+                            <button data-ar-action="copy-room" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="text-xs rounded bg-emerald-600 text-white px-2 py-1">Copy Room Number</button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `
+    updateAvailableRoomsRefreshAge()
 }
 
 function recalldatalist(stock=''){
@@ -453,51 +711,44 @@ function recalldatalist(stock=''){
 }
 
 async function runavailablerooms(){
-     let request = await httpRequest('../controllers/getallroomstatus')
-    request = JSON.parse(request)
-    if(request.status) {
-        if(request.data.length) { 
-            availableroomlength = request.data.length
-            if(document.getElementById('dashavailablerooms'))document.getElementById('dashavailablerooms').textContent = request.data.length
-            const statusClasses = (rawStatus = '') => {
-                const status = String(rawStatus || '').trim().toUpperCase()
-                if (status === 'OCCUPIED' || status === 'CHECKED IN') return 'bg-red-600 text-yellow-200'
-                if (status === 'RESERVED' || status === 'OPEN') return 'bg-orange-500 text-white'
-                if (status === 'AVAILABLE' || status === 'CHECKED OUT') return 'bg-green-400 text-slate-900'
-                return 'bg-violet-400 text-slate-900'
-            }
-
-            const sortedRooms = [...request.data].sort((a, b) => {
-                const ar = Number(String(a.roomnumber || '').replace(/\D/g, ''))
-                const br = Number(String(b.roomnumber || '').replace(/\D/g, ''))
-                if (!Number.isNaN(ar) && !Number.isNaN(br) && ar !== br) return ar - br
-                return String(a.roomnumber || '').localeCompare(String(b.roomnumber || ''))
-            })
-
-            did('availableroomcontainer').innerHTML = `
-                <div class="mb-2 rounded-md border border-slate-300 bg-white p-2">
-                    <div class="grid grid-cols-3 gap-1 text-[9px] font-semibold">
-                        <div class="rounded px-1 py-1 bg-green-400 text-slate-900 text-center">AVAILABLE</div>
-                        <div class="rounded px-1 py-1 bg-orange-500 text-white text-center">RESERVED</div>
-                        <div class="rounded px-1 py-1 bg-red-600 text-yellow-200 text-center">OCCUPIED</div>
-                    </div>
+    const host = did('availableroomcontainer')
+    if(host && !availableRoomsDataset.length){
+        host.innerHTML = `<div class="h-full rounded-md border border-slate-200 bg-white p-3">
+            <div class="animate-pulse space-y-2">
+                <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+                <div class="grid grid-cols-5 gap-2">
+                    ${Array.from({length: 20}).map(()=>`<div class="h-12 bg-slate-200 rounded"></div>`).join('')}
                 </div>
-                <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 pb-8">
-                    ${sortedRooms.map((data) => {
-                        const searchText = `${data.roomname || ''} ${data.roomnumber || ''} ${data.roomcategory || ''} ${data.roomstatus || ''} ${data.building || ''}`.toLowerCase()
-                        return `
-                            <div class="ar-room-tile ${statusClasses(data.roomstatus)} border border-slate-300 rounded-md p-1 min-h-[48px] flex flex-col justify-center items-center shadow-sm transition-all hover:scale-[1.02]"
-                                 data-room-search="${searchText}">
-                                <div class="text-[19px] leading-none font-extrabold tracking-tight">${data.roomnumber || '-'}</div>
-                                <div class="text-[8px] mt-[2px] font-semibold opacity-95">${String(data.roomstatus || '-').toUpperCase()}</div>
-                            </div>
-                        `
-                    }).join('')}
-                </div>
-            `
-        }
+            </div>
+        </div>`
     }
-    else return notification('No records for available rooms retrieved')
+    let request = await httpRequest('../controllers/getallroomstatus')
+    request = JSON.parse(request)
+    if(request.status && Array.isArray(request.data)) {
+        const sortedRooms = [...request.data].sort((a, b) => {
+            const ar = Number(String(a.roomnumber || '').replace(/\D/g, ''))
+            const br = Number(String(b.roomnumber || '').replace(/\D/g, ''))
+            if (!Number.isNaN(ar) && !Number.isNaN(br) && ar !== br) return ar - br
+            return String(a.roomnumber || '').localeCompare(String(b.roomnumber || ''))
+        })
+        availableroomlength = sortedRooms.length
+        if(document.getElementById('dashavailablerooms'))document.getElementById('dashavailablerooms').textContent = sortedRooms.length
+        const freshHash = buildAvailableRoomsHash(sortedRooms)
+        if(freshHash === availableRoomsLastHash && availableRoomsDataset.length){
+            availableRoomsLastUpdatedAt = Date.now()
+            updateAvailableRoomsRefreshAge()
+            return
+        }
+        availableRoomsLastHash = freshHash
+        availableRoomsDataset = sortedRooms
+        availableRoomsLastUpdatedAt = Date.now()
+        renderAvailableRoomsBoard()
+        return
+    }
+    if(host){
+        host.innerHTML = `<div class="h-full rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 flex items-center justify-center">Unable to load room status right now.</div>`
+    }
+    return notification('No records for available rooms retrieved')
 }
 
 function checkotherbankdetails(comp='comp'){
