@@ -714,7 +714,7 @@ function renderAvailableRoomsBoard(){
                     </select>
                 </div>
             </div>
-            <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[1fr_230px]' : 'grid-cols-1'} gap-2 overflow-hidden">
+            <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'} gap-2 overflow-hidden">
                 <div class="border border-slate-200 rounded-md p-2 overflow-y-auto bg-white">
                     ${filtered.length ? groupedByFloor.map(([floorLabel, floorRooms]) => `
                         <section class="mb-3">
@@ -766,7 +766,7 @@ function renderAvailableRoomsBoard(){
 
                             <div class="mt-3 rounded-xl bg-slate-950 p-3 text-white shadow-inner">
                                 <p class="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Category</p>
-                                <p class="mt-1 truncate text-sm font-black">${availableRoomsDetail.roomcategory || '-'}</p>
+                                <p class="mt-1 text-sm font-black leading-snug break-words">${availableRoomsDetail.roomcategory || '-'}</p>
                             </div>
 
                             ${getAvailableRoomStatusDescription(availableRoomsDetail) ? `
@@ -781,33 +781,34 @@ function renderAvailableRoomsBoard(){
                             <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                                 <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
                                     <p class="font-black uppercase tracking-wide text-slate-400">Name</p>
-                                    <p class="mt-1 truncate font-bold text-slate-800">${availableRoomsDetail.roomname || '-'}</p>
+                                    <p class="mt-1 font-bold leading-snug text-slate-800 break-words">${availableRoomsDetail.roomname || '-'}</p>
                                 </div>
                                 <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
                                     <p class="font-black uppercase tracking-wide text-slate-400">Building</p>
-                                    <p class="mt-1 truncate font-bold text-slate-800">${availableRoomsDetail.building || '-'}</p>
+                                    <p class="mt-1 font-bold leading-snug text-slate-800 break-words">${availableRoomsDetail.building || '-'}</p>
                                 </div>
                                 <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
                                     <p class="font-black uppercase tracking-wide text-slate-400">Floor</p>
-                                    <p class="mt-1 truncate font-bold text-slate-800">${availableRoomsDetail.floor || '-'}</p>
+                                    <p class="mt-1 font-bold leading-snug text-slate-800 break-words">${availableRoomsDetail.floor || '-'}</p>
                                 </div>
                                 <div class="rounded-xl border border-slate-100 bg-slate-50 p-2">
                                     <p class="font-black uppercase tracking-wide text-slate-400">Status</p>
-                                    <p class="mt-1 truncate font-bold text-slate-800">${String(availableRoomsDetail.roomstatus || '-').toUpperCase()}</p>
+                                    <p class="mt-1 font-bold leading-snug text-slate-800 break-words">${String(availableRoomsDetail.roomstatus || '-').toUpperCase()}</p>
                                 </div>
                             </div>
 
-                            <div class="mt-3 flex items-center gap-2">
-                                <button data-ar-action="copy-room" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-black text-slate-700 transition hover:bg-slate-50">
+                            <div class="mt-3 grid grid-cols-1 gap-2">
+                                <button data-ar-action="copy-room" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 transition hover:bg-slate-50">
                                     <span class="material-symbols-outlined" style="font-size:15px;">content_copy</span>
-                                    Copy
+                                    Copy Room Number
                                 </button>
-                                <button data-ar-action="open-checkin" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-slate-950 px-2 py-2 text-[11px] font-black text-white transition hover:bg-slate-800">
+                                <button data-ar-action="open-checkin" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-[11px] font-black text-white transition hover:bg-slate-800">
                                     <span class="material-symbols-outlined" style="font-size:15px;">login</span>
-                                    Check-In
+                                    Go To Check-In
                                 </button>
-                                <button data-ar-action="open-room-status" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50" title="Open Room Status">
+                                <button data-ar-action="open-room-status" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 transition hover:bg-slate-50" title="Open Room Status">
                                     <span class="material-symbols-outlined" style="font-size:17px;">fact_check</span>
+                                    Room Status
                                 </button>
                             </div>
                         </div>
