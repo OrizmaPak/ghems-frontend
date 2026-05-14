@@ -2526,6 +2526,8 @@ async function openReduceStayFromDirectCheckin(reference) {
     return openStayInterfaceFromDirectCheckin('reducestay', 'fetchdataforreducestay', reference)
 }
 
+const directCheckinBalanceCache = new Map()
+
 function openReceiveDepositFromDirectCheckin(reference = '') {
     const cleanedReference = String(reference || '').trim()
     if (!cleanedReference) return notification('Reference is required to make payment', 0)
@@ -2533,6 +2535,33 @@ function openReceiveDepositFromDirectCheckin(reference = '') {
     const receiptsRoute = did('receipts')
     if (!receiptsRoute) return notification('Receive Deposits interface is unavailable', 0)
     receiptsRoute.click()
+}
+
+async function fetchDirectCheckinBalance(reference = '', reservationId = '') {
+    const ref = String(reference || '').trim()
+    const rowKey = String(reservationId || '').trim()
+    if (!ref || !rowKey) return notification('Unable to fetch balance: missing reference', 0)
+
+    const cell = did(`checkin-balance-cell-${rowKey}`)
+    if (!cell) return
+
+    if (directCheckinBalanceCache.has(ref)) {
+        cell.innerHTML = `<span class="font-semibold">${formatNumber(directCheckinBalanceCache.get(ref))}</span>`
+        return
+    }
+
+    cell.innerHTML = `<span class="material-symbols-outlined animate-spin text-slate-500" style="font-size:18px;">progress_activity</span>`
+    const payload = new FormData()
+    payload.append('reference', ref)
+    const request = await httpRequest2('../controllers/getreservationrefbalance', payload, null, 'json')
+    if (!request || !request.status) {
+        cell.innerHTML = `<button title="Click to load balance" onclick="fetchDirectCheckinBalance('${ref}', '${rowKey}')" class="material-symbols-outlined text-slate-500 hover:text-slate-700" style="font-size:18px;">visibility_off</button>`
+        return notification(request?.message || 'Unable to fetch balance right now', 0)
+    }
+
+    const balanceValue = Number(request.balance || request.data?.balance || 0)
+    directCheckinBalanceCache.set(ref, balanceValue)
+    cell.innerHTML = `<span class="font-semibold">${formatNumber(balanceValue)}</span>`
 }
 
 
@@ -2692,6 +2721,9 @@ async function oncheckinTableDataSignal() {
         <td>${item.reservations.paymentmethod}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td>${item.reservations.reference}</td>
+        <td id="checkin-balance-cell-${item.reservations.id}" class="text-center">
+            <button title="Click to load balance" onclick="fetchDirectCheckinBalance('${item.reservations.reference}', '${item.reservations.id}')" class="material-symbols-outlined text-slate-500 hover:text-slate-700" style="font-size:18px;">visibility_off</button>
+        </td>
         <td class="${did('guestreservationform') ? '' : 'hidden'}">${item.reservations.timeline ? item.reservations.timeline : '--'}</td>
         <td>${item.reservations.status == 'OPEN' ? 'RESERVED' : item.reservations.status}</td>
     </tr> `}

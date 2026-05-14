@@ -1017,6 +1017,7 @@
                                                 <th>payment&nbsp;method</th>
                                                 <th>reservation&nbsp;date</th>
                                                 <th>reference</th>
+                                                <th>balance</th>
                                                 <th>status</th>
                                             </tr>
                                         </thead>
