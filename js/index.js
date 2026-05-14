@@ -497,6 +497,32 @@ function filterAvailableRoomsData(){
     })
 }
 
+function getFloorSortValue(floor=''){
+    const normalized = String(floor || '').trim()
+    if(!normalized) return Number.MAX_SAFE_INTEGER
+    const numeric = Number(normalized)
+    if(!Number.isNaN(numeric)) return numeric
+    const extracted = Number((normalized.match(/\d+/) || [''])[0])
+    if(!Number.isNaN(extracted)) return extracted
+    return Number.MAX_SAFE_INTEGER - 1
+}
+
+function groupAvailableRoomsByFloor(rooms=[]){
+    const grouped = new Map()
+    rooms.forEach((room)=>{
+        const floorKey = String(room.floor || '').trim() || 'UNSPECIFIED'
+        if(!grouped.has(floorKey)) grouped.set(floorKey, [])
+        grouped.get(floorKey).push(room)
+    })
+    return Array.from(grouped.entries())
+        .sort((a, b)=>{
+            const aSort = getFloorSortValue(a[0])
+            const bSort = getFloorSortValue(b[0])
+            if(aSort !== bSort) return aSort - bSort
+            return String(a[0]).localeCompare(String(b[0]))
+        })
+}
+
 function clearAvailableRoomFilters(){
     availableRoomsState.search = ''
     availableRoomsState.status = 'ALL'
@@ -600,6 +626,7 @@ function renderAvailableRoomsBoard(){
     if(!host) return
     const { buildings, floors, categories } = getAvailableRoomsFilterOptions()
     const filtered = filterAvailableRoomsData()
+    const groupedByFloor = groupAvailableRoomsByFloor(filtered)
     const summary = {
         total: availableRoomsDataset.length,
         available: availableRoomsDataset.filter(item => normalizeRoomStatus(item.roomstatus) === 'AVAILABLE').length,
@@ -663,14 +690,22 @@ function renderAvailableRoomsBoard(){
             </div>
             <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[1fr_230px]' : 'grid-cols-1'} gap-2 overflow-hidden">
                 <div class="border border-slate-200 rounded-md p-2 overflow-y-auto bg-white">
-                    ${filtered.length ? `<div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
-                        ${filtered.map((data) => `
-                            <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} border rounded-md p-1 min-h-[52px] flex flex-col justify-center items-center shadow-sm transition-all hover:scale-[1.02]">
-                                <div class="text-[18px] leading-none font-extrabold tracking-tight">${data.roomnumber || '-'}</div>
-                                <div class="text-[8px] mt-[2px] font-semibold opacity-95">${getAvailableRoomStatusLabel(data.roomstatus)}</div>
-                            </button>
-                        `).join('')}
-                    </div>` : `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`}
+                    ${filtered.length ? groupedByFloor.map(([floorLabel, floorRooms]) => `
+                        <section class="mb-3">
+                            <div class="sticky top-0 z-10 bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 mb-1">
+                                Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}
+                                <span class="font-medium text-slate-500">(${floorRooms.length})</span>
+                            </div>
+                            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+                                ${floorRooms.map((data) => `
+                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} border rounded-md p-1 min-h-[52px] flex flex-col justify-center items-center shadow-sm transition-all hover:scale-[1.02]">
+                                        <div class="text-[18px] leading-none font-extrabold tracking-tight">${data.roomnumber || '-'}</div>
+                                        <div class="text-[8px] mt-[2px] font-semibold opacity-95">${getAvailableRoomStatusLabel(data.roomstatus)}</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </section>
+                    `).join('') : `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`}
                 </div>
                 ${availableRoomsDetail ? `
                     <div class="border border-slate-200 rounded-md p-2 bg-white overflow-y-auto">
