@@ -2151,26 +2151,6 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
                 if(did('checkinform'))checkinViewTableSource = Array.isArray(datasource) ? [...datasource] : []
                 if(datasource.length > 0)document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
                 if(datasource.length == 0)return document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
-                // Select all <th> elements
-                const thElements = document.querySelectorAll('th');
-                
-                // Loop through the <th> elements to find the one with the text "Rooms"
-                thElements.forEach((th) => {
-                  if (th.textContent.trim() === 'Rooms') {
-                    // Check if the next sibling is the "Deposit" <th>
-                    const nextTh = th.nextElementSibling;
-                    
-                    if (!nextTh || nextTh.textContent.trim() !== 'Initial Deposit') {
-                      // Create the "Deposit" <th> element
-                      const depositTh = document.createElement('th');
-                      depositTh.textContent = 'Initial Deposit';
-                      
-                      // Insert the "Deposit" <th> after the "Rooms" <th>
-                      th.insertAdjacentElement('afterend', depositTh);
-                    }
-                  }
-                });
-                
                 if(did('checkinform')){
                     bindCheckinViewFrontendSearch()
                     applyCheckinViewFrontendSearch()
