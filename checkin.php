@@ -1000,6 +1000,9 @@
                                 
                                         </div>
                                     </form>
+                                <div class="mb-3 px-1">
+                                    <input type="text" id="checkinviewfrontsearch" class="form-control !p-2" placeholder="Search guest, reference, room, company/travel agency, status...">
+                                </div>
                                 <div class="table-content  lg:max-w-full">
                                     <table id="tableer">
                                         <thead>

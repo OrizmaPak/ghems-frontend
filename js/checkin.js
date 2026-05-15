@@ -13,6 +13,57 @@ const checkinRateSourceByCard = {}
 const checkinSubmitLocks = {}
 const CHECKIN_PENDING_PAYMENT_RECEIPT_KEY = 'checkin_pending_payment_receipt'
 let checkinOrgContextChangeLock = false
+let checkinViewTableSource = []
+
+function buildCheckinViewSearchText(item = {}) {
+    const reservation = item?.reservations || {}
+    const roomRows = item?.roomgeustrow || item?.roomguestrow || []
+    const roomText = roomRows.map((row) => {
+        const roomData = row?.roomdata || {}
+        const guests = []
+        ;['guest1', 'guest2', 'guest3', 'guest4'].forEach((key) => {
+            const guest = row?.[key]?.[0]
+            if(!guest) return
+            guests.push(`${guest.firstname || ''} ${guest.lastname || ''} ${guest.othernames || ''} ${guest.phone || ''}`.trim())
+        })
+        return [
+            roomData.roomnumber,
+            roomData.roomcategoryname,
+            roomData.ratecodename,
+            guests.join(' ')
+        ].filter(Boolean).join(' ')
+    }).join(' ')
+
+    return [
+        reservation.reference,
+        reservation.status,
+        reservation.arrivaldate,
+        reservation.departuredate,
+        reservation.reservationdate,
+        reservation.billinginfo,
+        reservation.companyname,
+        reservation.travelagentname,
+        reservation.groupname,
+        roomText
+    ].filter(Boolean).join(' ').toLowerCase()
+}
+
+function applyCheckinViewFrontendSearch() {
+    if(!did('checkinform') || !did('checkinviewfrontsearch')) return
+    const source = Array.isArray(checkinViewTableSource) ? checkinViewTableSource : []
+    const term = String(did('checkinviewfrontsearch').value || '').trim().toLowerCase()
+    const filtered = term
+        ? source.filter((item) => buildCheckinViewSearchText(item).includes(term))
+        : source
+    resolvePagination(filtered, oncheckinTableDataSignal)
+}
+
+function bindCheckinViewFrontendSearch() {
+    const input = did('checkinviewfrontsearch')
+    if(!input || input.dataset.boundCheckinSearch === '1') return
+    input.dataset.boundCheckinSearch = '1'
+    input.addEventListener('input', applyCheckinViewFrontendSearch)
+}
 
 function normalizeCheckinOrgType(value = '') {
     const normalized = String(value || '').trim().toUpperCase()
@@ -2097,6 +2148,7 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
                 // if(did('cancelreservationform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id != 0)
                 if(did('cancelreservationformfilter'))datasource = request.data
                 if(did('checkoutformfilter'))datasource = request.data
+                if(did('checkinform'))checkinViewTableSource = Array.isArray(datasource) ? [...datasource] : []
                 if(datasource.length > 0)document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
                 if(datasource.length == 0)return document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
                 // Select all <th> elements
@@ -2119,7 +2171,12 @@ async function fetchcheckinn(id='', oyn='', form="", btn=null) {
                   }
                 });
                 
-                resolvePagination(datasource, oncheckinTableDataSignal)
+                if(did('checkinform')){
+                    bindCheckinViewFrontendSearch()
+                    applyCheckinViewFrontendSearch()
+                }else{
+                    resolvePagination(datasource, oncheckinTableDataSignal)
+                }
             }  
         }else{
             if(Array.isArray(request.data) && request.data.length){
