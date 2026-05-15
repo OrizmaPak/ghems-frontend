@@ -1011,11 +1011,10 @@
                                                 <th>guest</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
-                                                <th>reservation&nbsp;type</th>
                                                 <th>arrival&nbsp;date</th>
                                                 <th>departure&nbsp;date</th>
                                                 <th>billing&nbsp;info</th>
-                                                <th>payment&nbsp;method</th>
+                                                <th>company/travel&nbsp;agency</th>
                                                 <th>reservation&nbsp;date</th>
                                                 <th>reference</th>
                                                 <th>initial&nbsp;deposit</th>

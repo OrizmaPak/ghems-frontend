@@ -2634,6 +2634,12 @@ async function oncheckinTableDataSignal() {
             if(item.roomgeustrow[i].roomdata.roomrate)r = Number(item.roomgeustrow[i].roomdata.roomrate)+r
         }
     }
+    const companyOrTravelAgency = String(
+        item?.reservations?.companyname ||
+        item?.reservations?.travelagentname ||
+        ''
+    ).trim()
+
     return ` 
     <tr> 
         <td>${index + 1 }</td> 
@@ -2716,11 +2722,10 @@ async function oncheckinTableDataSignal() {
         </td>
         <td>${formatNumber(item.reservations.numberofnights)}&nbsp;Night(s)</td> 
         <td>${formatNumber(r)}</td>
-        <td>${item.reservations.reservationtype}</td>  
         <td>${formatDate(item.reservations.arrivaldate)}</td>
         <td>${formatDate(item.reservations.departuredate)}</td>
         <td>${item.reservations.billinginfo}</td>
-        <td>${item.reservations.paymentmethod}</td>
+        <td>${companyOrTravelAgency}</td>
         <td>${formatDate(item.reservations.reservationdate)}</td>
         <td>${item.reservations.reference}</td>
         <td>${normalizeAmountPaidDisplay(item.reservations.amountpaid)}</td>
