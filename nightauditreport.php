@@ -27,15 +27,15 @@
         </div>
     </form>
 
-    <div class="my-4 flex justify-end">
-        <div class="mr-auto flex gap-2">
-            <button id="nightauditviewwidget" type="button" class="btn">
-                <span>Widget View</span>
-            </button>
-            <button id="nightauditviewtable" type="button" class="btn">
-                <span>Table View</span>
-            </button>
-        </div>
+    <div class="my-4 flex justify-end items-start gap-3">
+        <ul class="mr-auto flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200">
+            <li class="me-2 cp">
+                <button id="nightauditviewwidget" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-blue-500 text-blue-600 font-semibold">Widget View</button>
+            </li>
+            <li class="me-2 cp">
+                <button id="nightauditviewtable" type="button" class="inline-block p-3 rounded-t-lg border-b-2 border-transparent text-gray-500 font-semibold">Table View</button>
+            </li>
+        </ul>
         <button onclick="printContent('HEMS NIGHT AUDIT REPORT', null, 'nightauditreportcontainer', true)" type="button" class="btn">
             <span>Print</span>
         </button>

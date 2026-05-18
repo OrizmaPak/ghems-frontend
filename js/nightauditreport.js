@@ -147,43 +147,44 @@ function renderNightAuditWidget(model) {
 
 function renderNightAuditTable(model) {
     return `
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
-                <p class="font-semibold text-sm tracking-wide uppercase">Night Audit Table</p>
-                <p class="text-xs">Grand Total: <span class="font-bold">${formatNightAuditAmount(model.allTotals)}</span></p>
+        <div class="rounded-sm bg-white">
+            <div class="px-2 pb-2 flex justify-between items-center">
+                <p class="font-semibold text-sm text-slate-700">Night Audit Table</p>
+                <p class="text-sm text-slate-600">Grand Total: <span class="font-bold text-slate-900">${formatNightAuditAmount(model.allTotals)}</span></p>
             </div>
-            <div class="overflow-auto">
-                <table class="w-full text-sm nightaudit-table">
+            <div class="table-content">
+                <table class="nightaudit-table">
                     <thead>
-                        <tr class="text-slate-500 border-b bg-slate-50">
-                            <th class="text-left py-2 px-3">S/N</th>
-                            <th class="text-left py-2 px-3">Section</th>
-                            <th class="text-left py-2 px-3">Item</th>
-                            <th class="text-left py-2 px-3">Transaction Date</th>
-                            <th class="text-right py-2 px-3">Amount</th>
+                        <tr>
+                            <th>S/N</th>
+                            <th>Section</th>
+                            <th>Item</th>
+                            <th>Transaction Date</th>
+                            <th>Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${model.allRows.length ? model.allRows.map((row, index) => `
-                            <tr class="border-b">
-                                <td class="py-2 px-3">${index + 1}</td>
-                                <td class="py-2 px-3">${row.section}</td>
-                                <td class="py-2 px-3">${row.label}</td>
-                                <td class="py-2 px-3">${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</td>
-                                <td class="py-2 px-3 text-right font-semibold">${formatNightAuditAmount(row.amount)}</td>
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${row.section}</td>
+                                <td>${row.label}</td>
+                                <td>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</td>
+                                <td class="text-right font-semibold">${formatNightAuditAmount(row.amount)}</td>
                             </tr>
                         `).join('') : `
-                            <tr><td colspan="5" class="py-4 text-center text-slate-400">No data</td></tr>
+                            <tr><td colspan="5" class="text-center opacity-70">No data</td></tr>
                         `}
                     </tbody>
                     <tfoot>
-                        <tr class="bg-slate-50 font-semibold">
-                            <td colspan="4" class="py-2 px-3 text-right">Grand Total</td>
-                            <td class="py-2 px-3 text-right">${formatNightAuditAmount(model.allTotals)}</td>
+                        <tr>
+                            <td colspan="4" class="text-right font-semibold">Grand Total</td>
+                            <td class="text-right font-semibold">${formatNightAuditAmount(model.allTotals)}</td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
+            <div class="table-status"></div>
         </div>
     `
 }
@@ -241,12 +242,10 @@ function resetnightauditreportfilter() {
 function setNightAuditViewMode(mode = 'widget') {
     nightAuditReportViewMode = mode === 'table' ? 'table' : 'widget'
     if(did('nightauditviewwidget')) {
-        did('nightauditviewwidget').classList.toggle('!bg-slate-900', nightAuditReportViewMode === 'widget')
-        did('nightauditviewwidget').classList.toggle('!text-white', nightAuditReportViewMode === 'widget')
+        did('nightauditviewwidget').className = `inline-block p-3 rounded-t-lg border-b-2 font-semibold ${nightAuditReportViewMode === 'widget' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
     }
     if(did('nightauditviewtable')) {
-        did('nightauditviewtable').classList.toggle('!bg-slate-900', nightAuditReportViewMode === 'table')
-        did('nightauditviewtable').classList.toggle('!text-white', nightAuditReportViewMode === 'table')
+        did('nightauditviewtable').className = `inline-block p-3 rounded-t-lg border-b-2 font-semibold ${nightAuditReportViewMode === 'table' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
     }
     if(nightAuditReportData) renderNightAuditReport(nightAuditReportData)
 }
