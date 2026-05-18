@@ -272,6 +272,11 @@ const routerTree = {
         startingFunction: 'guestfolioActive',
         scriptName: './js/guestfolio.js'
     },
+    nightauditreport: {
+        template: 'nightauditreport',
+        startingFunction: 'nightauditreportActive',
+        scriptName: './js/nightauditreport.js'
+    },
     paypendingcheckoutbills: {
         template: 'paypendingcheckoutbills',
         startingFunction: 'paypendingcheckoutbillsActive',
