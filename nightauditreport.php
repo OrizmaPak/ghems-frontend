@@ -28,6 +28,14 @@
     </form>
 
     <div class="my-4 flex justify-end">
+        <div class="mr-auto flex gap-2">
+            <button id="nightauditviewwidget" type="button" class="btn">
+                <span>Widget View</span>
+            </button>
+            <button id="nightauditviewtable" type="button" class="btn">
+                <span>Table View</span>
+            </button>
+        </div>
         <button onclick="printContent('HEMS NIGHT AUDIT REPORT', null, 'nightauditreportcontainer', true)" type="button" class="btn">
             <span>Print</span>
         </button>
