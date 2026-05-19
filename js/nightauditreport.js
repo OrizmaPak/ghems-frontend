@@ -1,5 +1,4 @@
 let nightAuditReportData = null
-let nightAuditReportViewMode = 'widget'
 
 function normalizeNightAuditAmount(value = 0) {
     const amount = Number(value || 0)
@@ -10,295 +9,228 @@ function formatNightAuditAmount(value = 0) {
     return formatNumber(normalizeNightAuditAmount(value))
 }
 
-function pickNumericValue(source = {}, keys = []) {
-    for(let i = 0; i < keys.length; i++) {
-        const key = keys[i]
-        if(source?.[key] !== undefined && source?.[key] !== null && source?.[key] !== '') {
-            return normalizeNightAuditAmount(source[key])
-        }
-    }
-    return 0
+function toTitleCase(value = '') {
+    return String(value || '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-function getNightAuditRowMatrixValues(row = {}) {
-    const src = row?.raw || {}
-
-    const todayAmount = pickNumericValue(src, ['todayamount', 'today_amount', 'today', 'amount']) || normalizeNightAuditAmount(row.amount)
-    const todayAllowance = pickNumericValue(src, ['todayallowance', 'today_allowance', 'allowance'])
-    const todayNett = pickNumericValue(src, ['todaynett', 'today_net', 'nett', 'net']) || Math.max(todayAmount - todayAllowance, 0)
-
-    const monthAmount = pickNumericValue(src, ['monthamount', 'month_amount', 'monthlyamount', 'monthly_amount'])
-    const monthAllowance = pickNumericValue(src, ['monthallowance', 'month_allowance', 'monthlyallowance', 'monthly_allowance'])
-    const monthNett = pickNumericValue(src, ['monthnett', 'month_net', 'monthlynett', 'monthly_net']) || Math.max(monthAmount - monthAllowance, 0)
-
-    return {
-        todayAmount,
-        todayAllowance,
-        todayNett,
-        monthAmount,
-        monthAllowance,
-        monthNett
-    }
+function prettifyNightAuditLabel(raw = '') {
+    const normalized = String(raw || '').trim()
+    if(!normalized) return '-'
+    const monthStripped = normalized
+        .replace(/month$/i, '')
+        .replace(/^month/i, '')
+        .trim()
+    return toTitleCase(monthStripped)
 }
 
-function titleFromKey(key = '') {
-    const cleaned = String(key || '').replace(/[_-]+/g, ' ').trim()
-    if(!cleaned) return '-'
-    return cleaned.replace(/\b\w/g, (match) => match.toUpperCase())
-}
+function extractTodayMonthAmountFromEntry(entry = {}, key = '') {
+    const todayKeyDirect = key
+    const monthKeySuffix = `${key}month`
+    const monthKeyPrefix = `month${key}`
+    const keys = Object.keys(entry || {})
 
-function normalizeNightAuditRows(sectionData, fallbackTitle = '') {
-    const rows = []
-    const addRow = (label, amount, transactiondate = '') => {
-        const cleanLabel = String(label || '').trim()
-        if(!cleanLabel) return
-        rows.push({
-            label: cleanLabel,
-            amount: normalizeNightAuditAmount(amount),
-            transactiondate: String(transactiondate || '').trim(),
-            raw: {}
+    const todayAmount = normalizeNightAuditAmount(entry?.[todayKeyDirect] ?? 0)
+
+    let monthAmount = 0
+    if(Object.prototype.hasOwnProperty.call(entry, monthKeySuffix)) {
+        monthAmount = normalizeNightAuditAmount(entry[monthKeySuffix])
+    } else if(Object.prototype.hasOwnProperty.call(entry, monthKeyPrefix)) {
+        monthAmount = normalizeNightAuditAmount(entry[monthKeyPrefix])
+    } else {
+        const monthKeyFound = keys.find((candidate) => {
+            const c = String(candidate || '').toLowerCase()
+            return c === monthKeySuffix.toLowerCase() || c === monthKeyPrefix.toLowerCase()
         })
+        if(monthKeyFound) monthAmount = normalizeNightAuditAmount(entry[monthKeyFound])
     }
 
+    return { todayAmount, monthAmount }
+}
+
+function normalizeSectionRows(sectionData, fallbackSingleLabel = '') {
+    const rows = []
     if(Array.isArray(sectionData)) {
         sectionData.forEach((entry) => {
             if(!entry || typeof entry !== 'object') return
-            const txDate = entry.transactiondate || entry.date || entry.tlog || ''
             Object.keys(entry).forEach((key) => {
                 const lowered = String(key).toLowerCase()
-                if(['title', 'transactiondate', 'date', 'tlog'].includes(lowered)) return
-                addRow(titleFromKey(key), entry[key], txDate)
-                rows[rows.length - 1].raw = entry
+                if(lowered === 'title') return
+                if(lowered.endsWith('month') || lowered.startsWith('month')) return
+                const amounts = extractTodayMonthAmountFromEntry(entry, key)
+                rows.push({
+                    label: prettifyNightAuditLabel(key),
+                    todayAmount: amounts.todayAmount,
+                    todayAllowance: 0,
+                    todayNet: amounts.todayAmount,
+                    monthAmount: amounts.monthAmount,
+                    monthAllowance: 0,
+                    monthNet: amounts.monthAmount
+                })
             })
         })
         return rows
     }
 
     if(sectionData && typeof sectionData === 'object') {
-        const txDate = sectionData.transactiondate || sectionData.date || sectionData.tlog || ''
-        const directAmount = sectionData.roomrevenue ?? sectionData.amount
-        if(directAmount !== undefined && directAmount !== null) {
-            addRow(fallbackTitle || sectionData.title || 'Amount', directAmount, txDate)
-            rows[rows.length - 1].raw = sectionData
-        } else {
-            Object.keys(sectionData).forEach((key) => {
-                const lowered = String(key).toLowerCase()
-                if(['title', 'transactiondate', 'date', 'tlog'].includes(lowered)) return
-                addRow(titleFromKey(key), sectionData[key], txDate)
-                rows[rows.length - 1].raw = sectionData
-            })
-        }
-        return rows
-    }
+        const keys = Object.keys(sectionData)
+            .filter((key) => !['title'].includes(String(key).toLowerCase()))
+            .filter((key) => !String(key).toLowerCase().endsWith('month'))
 
-    if(sectionData !== undefined && sectionData !== null && sectionData !== '') {
-        addRow(fallbackTitle || 'Amount', sectionData, '')
+        keys.forEach((key) => {
+            const amounts = extractTodayMonthAmountFromEntry(sectionData, key)
+            rows.push({
+                label: fallbackSingleLabel || prettifyNightAuditLabel(key),
+                todayAmount: amounts.todayAmount,
+                todayAllowance: 0,
+                todayNet: amounts.todayAmount,
+                monthAmount: amounts.monthAmount,
+                monthAllowance: 0,
+                monthNet: amounts.monthAmount
+            })
+        })
+        return rows
     }
     return rows
 }
 
-function renderNightAuditSection(title, rows = []) {
-    const total = rows.reduce((sum, row) => sum + normalizeNightAuditAmount(row.amount), 0)
-    return `
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div class="px-4 py-3 bg-slate-900 text-white">
-                <p class="font-semibold text-sm tracking-wide uppercase">${title}</p>
-            </div>
-            <div class="p-3">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="text-slate-500 border-b">
-                            <th class="text-left py-2">Item</th>
-                            <th class="text-right py-2">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.length ? rows.map((row) => `
-                            <tr class="border-b last:border-b-0">
-                                <td class="py-2">${row.label}</td>
-                                <td class="py-2 text-right font-semibold">${formatNightAuditAmount(row.amount)}</td>
-                            </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="2" class="py-3 text-center text-slate-400">No data</td>
-                            </tr>
-                        `}
-                        <tr class="bg-slate-50 font-semibold">
-                            <td class="py-2">Section Total</td>
-                            <td class="py-2 text-right">${formatNightAuditAmount(total)}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `
-}
-
-function buildNightAuditModel(payload = {}) {
-    const roomRows = normalizeNightAuditRows(payload.roomrevenue, 'Room Revenue')
-    const foodRows = normalizeNightAuditRows(payload.foodandbeverages, 'Food & Beverages')
-    const otherRows = normalizeNightAuditRows(payload.othersectors, 'Other Sectors')
-    const miscRows = normalizeNightAuditRows(payload.miscellaneous, 'Miscellaneous')
-    const taxRows = normalizeNightAuditRows(payload.taxes, 'Taxes')
-
-    const sections = [
-        { key: 'roomrevenue', title: 'Room Revenue', rows: roomRows },
-        { key: 'foodandbeverages', title: 'Food & Beverages', rows: foodRows },
-        { key: 'othersectors', title: 'Other Sectors', rows: otherRows },
-        { key: 'miscellaneous', title: 'Miscellaneous', rows: miscRows },
-        { key: 'taxes', title: 'Taxes', rows: taxRows }
+function buildNightAuditSections(payload = {}) {
+    return [
+        { title: 'Room Revenue', rows: normalizeSectionRows(payload.roomrevenue, 'Room Revenue') },
+        { title: 'Food & Beverages', rows: normalizeSectionRows(payload.foodandbeverages) },
+        { title: 'Minor Operative Div', rows: normalizeSectionRows(payload.othersectors) },
+        { title: 'Miscellaneous', rows: normalizeSectionRows(payload.miscellaneous) },
+        { title: 'Taxes', rows: normalizeSectionRows(payload.taxes) }
     ]
-
-    const allRows = sections.flatMap((section) => section.rows.map((row) => ({
-        section: section.title,
-        label: row.label,
-        amount: row.amount,
-        transactiondate: row.transactiondate
-    })))
-
-    const allTotals = allRows
-        .reduce((sum, row) => sum + normalizeNightAuditAmount(row.amount), 0)
-    return { sections, allRows, allTotals }
 }
 
-function renderNightAuditWidget(model) {
-    const sectionsMarkup = model.sections.map((section) => renderNightAuditSection(section.title, section.rows)).join('')
-    return `
-        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-            <div>
-                <p class="text-xs uppercase tracking-wider text-slate-500">Generated On</p>
-                <p class="text-sm font-semibold text-slate-800">${specialformatDateTime(new Date().toISOString().slice(0, 19).replace('T', ' '))}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-xs uppercase tracking-wider text-slate-500">Grand Total</p>
-                <p class="text-2xl font-bold text-slate-900">${formatNightAuditAmount(allTotals)}</p>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            ${sectionsMarkup}
-        </div>
-    `
+function getSectionTotals(rows = []) {
+    return rows.reduce((acc, row) => {
+        acc.todayAmount += normalizeNightAuditAmount(row.todayAmount)
+        acc.todayAllowance += normalizeNightAuditAmount(row.todayAllowance)
+        acc.todayNet += normalizeNightAuditAmount(row.todayNet)
+        acc.monthAmount += normalizeNightAuditAmount(row.monthAmount)
+        acc.monthAllowance += normalizeNightAuditAmount(row.monthAllowance)
+        acc.monthNet += normalizeNightAuditAmount(row.monthNet)
+        return acc
+    }, { todayAmount: 0, todayAllowance: 0, todayNet: 0, monthAmount: 0, monthAllowance: 0, monthNet: 0 })
 }
 
-function renderNightAuditTable(model) {
-    const sectionRowsMarkup = model.sections.map((section) => {
-        const sectionLineRows = section.rows.map((row) => {
-            const matrix = getNightAuditRowMatrixValues(row)
-            return `
-                <tr>
-                    <td>${row.label}</td>
-                    <td class="text-right">${formatNightAuditAmount(matrix.todayAmount)}</td>
-                    <td class="text-right">${formatNightAuditAmount(matrix.todayAllowance)}</td>
-                    <td class="text-right">${formatNightAuditAmount(matrix.todayNett)}</td>
-                    <td class="text-right">${formatNightAuditAmount(matrix.monthAmount)}</td>
-                    <td class="text-right">${formatNightAuditAmount(matrix.monthAllowance)}</td>
-                    <td class="text-right">${formatNightAuditAmount(matrix.monthNett)}</td>
-                </tr>
-            `
-        }).join('')
+function renderNightAuditReport(payload = {}) {
+    const sections = buildNightAuditSections(payload)
+    const grandTotals = { todayAmount: 0, todayAllowance: 0, todayNet: 0, monthAmount: 0, monthAllowance: 0, monthNet: 0 }
 
-        const sectionTotals = section.rows.reduce((acc, row) => {
-            const matrix = getNightAuditRowMatrixValues(row)
-            acc.todayAmount += matrix.todayAmount
-            acc.todayAllowance += matrix.todayAllowance
-            acc.todayNett += matrix.todayNett
-            acc.monthAmount += matrix.monthAmount
-            acc.monthAllowance += matrix.monthAllowance
-            acc.monthNett += matrix.monthNett
-            return acc
-        }, { todayAmount: 0, todayAllowance: 0, todayNett: 0, monthAmount: 0, monthAllowance: 0, monthNett: 0 })
+    const bodyRows = sections.map((section) => {
+        const itemRows = section.rows.map((row) => `
+            <tr>
+                <td>${row.label}</td>
+                <td class="text-right">${formatNightAuditAmount(row.todayAmount)}</td>
+                <td class="text-right">${formatNightAuditAmount(row.todayAllowance)}</td>
+                <td class="text-right">${formatNightAuditAmount(row.todayNet)}</td>
+                <td class="text-right">${formatNightAuditAmount(row.monthAmount)}</td>
+                <td class="text-right">${formatNightAuditAmount(row.monthAllowance)}</td>
+                <td class="text-right">${formatNightAuditAmount(row.monthNet)}</td>
+            </tr>
+        `).join('')
+
+        const subtotals = getSectionTotals(section.rows)
+        grandTotals.todayAmount += subtotals.todayAmount
+        grandTotals.todayAllowance += subtotals.todayAllowance
+        grandTotals.todayNet += subtotals.todayNet
+        grandTotals.monthAmount += subtotals.monthAmount
+        grandTotals.monthAllowance += subtotals.monthAllowance
+        grandTotals.monthNet += subtotals.monthNet
 
         return `
             <tr class="bg-slate-100 font-semibold">
                 <td colspan="7">${section.title}</td>
             </tr>
-            ${sectionLineRows || `<tr><td colspan="7" class="text-center opacity-70">No data</td></tr>`}
+            ${itemRows || `<tr><td colspan="7" class="text-center opacity-70">No data</td></tr>`}
             <tr class="font-semibold">
                 <td>Sub Total</td>
-                <td class="text-right">${formatNightAuditAmount(sectionTotals.todayAmount)}</td>
-                <td class="text-right">${formatNightAuditAmount(sectionTotals.todayAllowance)}</td>
-                <td class="text-right">${formatNightAuditAmount(sectionTotals.todayNett)}</td>
-                <td class="text-right">${formatNightAuditAmount(sectionTotals.monthAmount)}</td>
-                <td class="text-right">${formatNightAuditAmount(sectionTotals.monthAllowance)}</td>
-                <td class="text-right">${formatNightAuditAmount(sectionTotals.monthNett)}</td>
+                <td class="text-right">${formatNightAuditAmount(subtotals.todayAmount)}</td>
+                <td class="text-right">${formatNightAuditAmount(subtotals.todayAllowance)}</td>
+                <td class="text-right">${formatNightAuditAmount(subtotals.todayNet)}</td>
+                <td class="text-right">${formatNightAuditAmount(subtotals.monthAmount)}</td>
+                <td class="text-right">${formatNightAuditAmount(subtotals.monthAllowance)}</td>
+                <td class="text-right">${formatNightAuditAmount(subtotals.monthNet)}</td>
             </tr>
         `
     }).join('')
 
-    const grandTotals = model.sections.reduce((acc, section) => {
-        section.rows.forEach((row) => {
-            const matrix = getNightAuditRowMatrixValues(row)
-            acc.todayAmount += matrix.todayAmount
-            acc.todayAllowance += matrix.todayAllowance
-            acc.todayNett += matrix.todayNett
-            acc.monthAmount += matrix.monthAmount
-            acc.monthAllowance += matrix.monthAllowance
-            acc.monthNett += matrix.monthNett
-        })
-        return acc
-    }, { todayAmount: 0, todayAllowance: 0, todayNett: 0, monthAmount: 0, monthAllowance: 0, monthNett: 0 })
-
-    return `
-        <div class="rounded-sm bg-white">
-            <div class="px-2 pb-2 flex justify-between items-center">
-                <p class="font-semibold text-sm text-slate-700">Night Audit Table</p>
-                <p class="text-sm text-slate-600">Grand Total: <span class="font-bold text-slate-900">${formatNightAuditAmount(grandTotals.todayNett)}</span></p>
-            </div>
-            <div class="table-content">
-                <table class="nightaudit-table">
-                    <thead>
-                        <tr>
-                            <th>Particulars</th>
-                            <th>Today Amount</th>
-                            <th>Today Allowance</th>
-                            <th>Today Nett</th>
-                            <th>Month Amount</th>
-                            <th>Month Allowance</th>
-                            <th>Month Nett</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sectionRowsMarkup || `<tr><td colspan="7" class="text-center opacity-70">No data</td></tr>`}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td class="text-right font-semibold">TOTAL REVENUE</td>
-                            <td class="text-right font-semibold">${formatNightAuditAmount(grandTotals.todayAmount)}</td>
-                            <td class="text-right font-semibold">${formatNightAuditAmount(grandTotals.todayAllowance)}</td>
-                            <td class="text-right font-semibold">${formatNightAuditAmount(grandTotals.todayNett)}</td>
-                            <td class="text-right font-semibold">${formatNightAuditAmount(grandTotals.monthAmount)}</td>
-                            <td class="text-right font-semibold">${formatNightAuditAmount(grandTotals.monthAllowance)}</td>
-                            <td class="text-right font-semibold">${formatNightAuditAmount(grandTotals.monthNett)}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-            <div class="table-status"></div>
-        </div>
-    `
-}
-
-function renderNightAuditReport(payload = {}) {
-    const model = buildNightAuditModel(payload)
-    const html = nightAuditReportViewMode === 'table'
-        ? renderNightAuditTable(model)
-        : renderNightAuditWidget(model)
-
     did('nightauditreportcontent').innerHTML = `
         <style>
+            #nightauditreportcontainer .nightaudit-table-wrapper{overflow:auto}
+            #nightauditreportcontainer .nightaudit-table{
+                width:100%;
+                border-collapse:collapse;
+                table-layout:fixed;
+            }
+            #nightauditreportcontainer .nightaudit-table th,
+            #nightauditreportcontainer .nightaudit-table td{
+                border:1px solid #cbd5e1;
+                padding:6px 8px;
+                font-size:13px;
+                line-height:1.2;
+            }
+            #nightauditreportcontainer .nightaudit-table th{
+                background:#f8fafc;
+                font-weight:700;
+                text-transform:uppercase;
+            }
+            #nightauditreportcontainer .nightaudit-table .group-head{
+                text-align:center;
+                font-size:16px;
+                text-transform:none;
+            }
             @media print {
-                @page { size: A4 landscape; margin: 10mm; }
-                #nightauditreportcontainer { padding: 0 !important; box-shadow: none !important; border: 0 !important; }
-                #nightauditreportcontainer .nightaudit-table { width: 100% !important; table-layout: fixed; }
+                @page { size: A4 landscape; margin: 8mm; }
+                #nightauditreportcontainer { padding: 0 !important; border: 0 !important; box-shadow: none !important; }
                 #nightauditreportcontainer .nightaudit-table th,
-                #nightauditreportcontainer .nightaudit-table td {
-                    border: 1px solid #d1d5db !important;
-                    font-size: 11px !important;
-                    word-wrap: break-word;
+                #nightauditreportcontainer .nightaudit-table td{
+                    font-size:11px !important;
+                    padding:4px 5px !important;
                 }
             }
         </style>
-        ${html}
+        <div class="nightaudit-table-wrapper">
+            <table class="nightaudit-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th colspan="3" class="group-head">Today</th>
+                        <th colspan="3" class="group-head">Month</th>
+                    </tr>
+                    <tr>
+                        <th>Particulars</th>
+                        <th>Amount</th>
+                        <th>Allowance</th>
+                        <th>Net</th>
+                        <th>Amount</th>
+                        <th>Allowance</th>
+                        <th>Net</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${bodyRows || `<tr><td colspan="7" class="text-center opacity-70">No data</td></tr>`}
+                </tbody>
+                <tfoot>
+                    <tr class="font-semibold">
+                        <td class="text-right">TOTAL REVENUE</td>
+                        <td class="text-right">${formatNightAuditAmount(grandTotals.todayAmount)}</td>
+                        <td class="text-right">${formatNightAuditAmount(grandTotals.todayAllowance)}</td>
+                        <td class="text-right">${formatNightAuditAmount(grandTotals.todayNet)}</td>
+                        <td class="text-right">${formatNightAuditAmount(grandTotals.monthAmount)}</td>
+                        <td class="text-right">${formatNightAuditAmount(grandTotals.monthAllowance)}</td>
+                        <td class="text-right">${formatNightAuditAmount(grandTotals.monthNet)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     `
 }
 
@@ -328,17 +260,6 @@ function resetnightauditreportfilter() {
     return fetchnightauditreport()
 }
 
-function setNightAuditViewMode(mode = 'widget') {
-    nightAuditReportViewMode = mode === 'table' ? 'table' : 'widget'
-    if(did('nightauditviewwidget')) {
-        did('nightauditviewwidget').className = `inline-block p-3 rounded-t-lg border-b-2 font-semibold ${nightAuditReportViewMode === 'widget' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
-    }
-    if(did('nightauditviewtable')) {
-        did('nightauditviewtable').className = `inline-block p-3 rounded-t-lg border-b-2 font-semibold ${nightAuditReportViewMode === 'table' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`
-    }
-    if(nightAuditReportData) renderNightAuditReport(nightAuditReportData)
-}
-
 async function nightauditreportActive() {
     const today = new Date().toISOString().split('T')[0]
     if(did('nightauditcurrentdate') && !did('nightauditcurrentdate').value) {
@@ -351,13 +272,6 @@ async function nightauditreportActive() {
     if(did('resetnightauditreportfilter')) {
         did('resetnightauditreportfilter').onclick = () => resetnightauditreportfilter()
     }
-    if(did('nightauditviewwidget')) {
-        did('nightauditviewwidget').onclick = () => setNightAuditViewMode('widget')
-    }
-    if(did('nightauditviewtable')) {
-        did('nightauditviewtable').onclick = () => setNightAuditViewMode('table')
-    }
-    setNightAuditViewMode('widget')
 
     await fetchnightauditreport()
 }
