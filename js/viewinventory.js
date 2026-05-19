@@ -1,6 +1,7 @@
 let viewinventoryid
 let viewinventoryItems = []
 let viewInventoryFilterTimer
+const viewInventoryAllowedItemTypes = ['FOOD', 'ALCOHOL', 'NON-ALCOHOL', 'MISCELLANEOUS']
 
 function safeText(value) {
     return String(value ?? '')
@@ -19,7 +20,8 @@ function updateInventorySummary(total) {
 function normalizeViewInventoryItems(items) {
     return items.map(item => ({
         ...item,
-        composite: item?.composite || 'NO'
+        composite: item?.composite || 'NO',
+        itemtype: item?.itemtype || ''
     }))
 }
 
@@ -36,6 +38,8 @@ function applyViewInventoryClientFilter() {
         item?.cost,
         item?.price,
         item?.units,
+        item?.itemtype,
+        item?.itemid,
         item?.groupname,
         item?.composite,
         item?.description
@@ -53,6 +57,10 @@ function bindViewInventoryEvents() {
     const searchInput = did('itemname1')
     const updateBtn = editForm?.querySelector('#submit')
     const tableBody = did('tabledata')
+    const exportPageBtn = did('viewinventory-export-page')
+    const exportAllBtn = did('viewinventory-export-all')
+    const uploadBtn = did('viewinventory-upload-excel-btn')
+    const uploadInput = did('viewinventory-upload-excel-input')
 
     if (submitBtn && !submitBtn.dataset.bound) {
         submitBtn.addEventListener('click', () => viewinventoryFormSubmitHandler())
@@ -92,6 +100,22 @@ function bindViewInventoryEvents() {
             if (actionButton.dataset.action === 'delete') return removeviewinventory(itemid)
         })
         tableBody.dataset.bound = '1'
+    }
+
+    if (exportPageBtn && !exportPageBtn.dataset.bound) {
+        exportPageBtn.addEventListener('click', () => exportViewInventoryCurrentPageExcel())
+        exportPageBtn.dataset.bound = '1'
+    }
+
+    if (exportAllBtn && !exportAllBtn.dataset.bound) {
+        exportAllBtn.addEventListener('click', () => exportViewInventoryAllExcel())
+        exportAllBtn.dataset.bound = '1'
+    }
+
+    if (uploadBtn && uploadInput && !uploadBtn.dataset.bound) {
+        uploadBtn.addEventListener('click', () => uploadInput.click())
+        uploadInput.addEventListener('change', handleViewInventoryExcelUpload)
+        uploadBtn.dataset.bound = '1'
     }
 
 }
@@ -226,4 +250,158 @@ async function viewinventoryFormEditHandler(id='') {
         return notification(request.message, 1)
     }
     return notification(request?.message || 'No records retrieved')
+}
+
+async function ensureXLSXLoadedViewInventory() {
+    if (window.XLSX) return true
+    return await new Promise(resolve => {
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+        script.onload = () => resolve(true)
+        script.onerror = () => resolve(false)
+        document.head.appendChild(script)
+    })
+}
+
+function buildViewInventoryExcelRows(items = []) {
+    return items.map(item => ({
+        'Item ID': item?.itemid || '',
+        'Item Name': item?.itemname || '',
+        'Item Type': item?.itemtype || '',
+        'Units': item?.units || '',
+        'Group Name': item?.groupname || '',
+        'Apply To': item?.applyto || '',
+        'Cost': item?.cost || '',
+        'Price': item?.price || '',
+        'Price Two': item?.price_two || '',
+        'Min Balance': item?.minbalance || '',
+        'Reorder Level': item?.reorderlevel || '',
+        'Composite': item?.composite || '',
+        'Description': item?.description || ''
+    }))
+}
+
+async function exportViewInventoryCurrentPageExcel() {
+    const currentPageRows = getSignaledDatasource() || []
+    if (!currentPageRows.length) return notification('No records on current page to export', 0)
+    const ok = await ensureXLSXLoadedViewInventory()
+    if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
+    const rows = buildViewInventoryExcelRows(currentPageRows)
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventory_Page')
+    XLSX.writeFile(wb, 'view_inventory_current_page.xlsx')
+}
+
+async function exportViewInventoryAllExcel() {
+    if (!viewinventoryItems.length) return notification('No records to export', 0)
+    const ok = await ensureXLSXLoadedViewInventory()
+    if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
+    const rows = buildViewInventoryExcelRows(viewinventoryItems)
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventory_All')
+    XLSX.writeFile(wb, 'view_inventory_all.xlsx')
+}
+
+function mapViewInventoryImportHeaders(rawRow = {}) {
+    const mapped = {}
+    Object.keys(rawRow || {}).forEach(key => {
+        const normalizedKey = String(key || '').trim().toLowerCase()
+        const value = rawRow[key]
+        if (normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
+        if (normalizedKey === 'item type' || normalizedKey === 'itemtype') mapped.itemtype = value
+    })
+    return mapped
+}
+
+function normalizeViewInventoryItemType(value) {
+    const normalized = String(value || '').trim().toUpperCase()
+    if (!normalized) return ''
+    return viewInventoryAllowedItemTypes.find(item => item === normalized) || ''
+}
+
+async function updateViewInventoryItemTypeByRow(sourceItem, newItemType) {
+    const payload = new FormData()
+    payload.append('itemid', sourceItem?.itemid || '')
+    payload.append('itemname', sourceItem?.itemname || '')
+    payload.append('units', sourceItem?.units || '')
+    payload.append('cost', sourceItem?.cost || '')
+    payload.append('price', sourceItem?.price || '')
+    payload.append('price_two', sourceItem?.price_two || '')
+    payload.append('beginbalance', sourceItem?.beginbalance || '')
+    payload.append('minbalance', sourceItem?.minbalance || '')
+    payload.append('groupname', sourceItem?.groupname || '')
+    payload.append('applyto', sourceItem?.applyto || '')
+    payload.append('reorderlevel', sourceItem?.reorderlevel || '')
+    payload.append('composite', sourceItem?.composite || 'NO')
+    payload.append('description', sourceItem?.description || '')
+    payload.append('itemtype', newItemType)
+    const request = await httpRequest2('../controllers/editinventory', payload, null, 'json')
+    return !!request?.status
+}
+
+async function handleViewInventoryExcelUpload(event) {
+    const input = event?.target
+    const uploadBtn = did('viewinventory-upload-excel-btn')
+    const file = input?.files?.[0]
+    if (!file) return
+    if (!viewinventoryItems.length) {
+        input.value = ''
+        return notification('Load inventory first before uploading Excel', 0)
+    }
+
+    const ok = await ensureXLSXLoadedViewInventory()
+    if (!ok) {
+        input.value = ''
+        return notification('Could not load Excel helper. Check your connection.', 0)
+    }
+
+    if (uploadBtn) uploadBtn.disabled = true
+    let updated = 0
+    let skipped = 0
+    let failed = 0
+
+    try {
+        const buffer = await file.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        if (!rawRows.length) {
+            return notification('No rows found in uploaded Excel', 0)
+        }
+
+        for (let i = 0; i < rawRows.length; i++) {
+            const row = mapViewInventoryImportHeaders(rawRows[i])
+            const itemid = String(row.itemid || '').trim()
+            const normalizedType = normalizeViewInventoryItemType(row.itemtype)
+            if (!itemid || !normalizedType) {
+                skipped++
+                continue
+            }
+
+            const item = viewinventoryItems.find(entry => String(entry?.itemid || '') === itemid)
+            if (!item) {
+                skipped++
+                continue
+            }
+
+            const successful = await updateViewInventoryItemTypeByRow(item, normalizedType)
+            if (successful) {
+                item.itemtype = normalizedType
+                updated++
+            } else {
+                failed++
+            }
+        }
+
+        await viewinventoryFormSubmitHandler()
+        return notification(`Item type upload completed. Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}`, failed ? 0 : 1)
+    } catch (error) {
+        console.log(error)
+        return notification('Unable to process uploaded Excel file', 0)
+    } finally {
+        if (uploadBtn) uploadBtn.disabled = false
+        if (input) input.value = ''
+    }
 }
