@@ -21,32 +21,57 @@ function normalizeViewInventoryItems(items) {
     return items.map(item => ({
         ...item,
         composite: item?.composite || 'NO',
-        itemtype: item?.itemtype || ''
+        itemtype: item?.itemtype || '',
+        itemclass: item?.itemclass || '',
+        salespoint: item?.salespoint || ''
     }))
 }
 
-function applyViewInventoryClientFilter() {
+function normalizeViewInventoryClass(value = '') {
+    return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
+
+function getFilteredViewInventoryItems() {
     const query = String(did('itemname1')?.value || '').trim().toLowerCase()
-    if (!query) {
-        resolvePagination(viewinventoryItems, onviewinventoryTableDataSignal)
-        updateInventorySummary(viewinventoryItems.length)
-        return
-    }
+    const salespoint = String(did('viewinventorysalespoint')?.value || '').trim().toLowerCase()
+    const itemclass = String(did('viewinventoryitemclass')?.value || 'ALL').trim().toUpperCase()
+    const itemclassKey = normalizeViewInventoryClass(itemclass)
 
-    const filtered = viewinventoryItems.filter(item => [
-        item?.itemname,
-        item?.cost,
-        item?.price,
-        item?.units,
-        item?.itemtype,
-        item?.itemid,
-        item?.itemclass,
-        item?.composite,
-        item?.description
-    ].some(field => String(field ?? '').toLowerCase().includes(query)))
+    return viewinventoryItems.filter(item => {
+        const queryPass = !query || [
+            item?.itemname,
+            item?.cost,
+            item?.price,
+            item?.units,
+            item?.itemtype,
+            item?.itemid,
+            item?.itemclass,
+            item?.composite,
+            item?.description
+        ].some(field => String(field ?? '').toLowerCase().includes(query))
+        const salespointPass = !salespoint || String(item?.salespoint || '').trim().toLowerCase() === salespoint
+        const itemclassPass = itemclassKey === 'ALL' || normalizeViewInventoryClass(item?.itemclass) === itemclassKey
+        return queryPass && salespointPass && itemclassPass
+    })
+}
 
+function applyViewInventoryClientFilter() {
+    const filtered = getFilteredViewInventoryItems()
     resolvePagination(filtered, onviewinventoryTableDataSignal)
     updateInventorySummary(filtered.length)
+}
+
+async function populateViewInventorySalespoints() {
+    const target = did('viewinventorysalespoint')
+    if (!target || target.dataset.loaded) return
+    const request = await httpRequest2('../controllers/fetchdepartments', null, null, 'json')
+    if (!request?.status || !Array.isArray(request.data)) return
+    const departments = request.data.filter(item => item?.applyforsales === 'NON STOCK' || item?.applyforsales === 'STOCK')
+    target.innerHTML = `<option value="">-- Select Sales Point --</option>${departments.map(item => {
+        const department = item.department === 'FRONT-DESK/BOOKING' ? 'Booking/Reservation' : item.department
+        return `<option>${safeText(department || '')}</option>`
+    }).join('')}`
+    target.dataset.loaded = '1'
 }
 
 function bindViewInventoryEvents() {
@@ -55,6 +80,8 @@ function bindViewInventoryEvents() {
     const submitBtn = form?.querySelector('#submit')
     const resetBtn = form?.querySelector('#reset-filter')
     const searchInput = did('itemname1')
+    const salespointFilter = did('viewinventorysalespoint')
+    const itemclassFilter = did('viewinventoryitemclass')
     const updateBtn = editForm?.querySelector('#submit')
     const tableBody = did('tabledata')
     const exportPageBtn = did('viewinventory-export-page')
@@ -70,7 +97,9 @@ function bindViewInventoryEvents() {
     if (resetBtn && !resetBtn.dataset.bound) {
         resetBtn.addEventListener('click', async () => {
             if (searchInput) searchInput.value = ''
-            await viewinventoryFormSubmitHandler()
+            if (salespointFilter) salespointFilter.value = ''
+            if (itemclassFilter) itemclassFilter.value = 'ALL'
+            applyViewInventoryClientFilter()
         })
         resetBtn.dataset.bound = '1'
     }
@@ -81,6 +110,16 @@ function bindViewInventoryEvents() {
             viewInventoryFilterTimer = setTimeout(() => applyViewInventoryClientFilter(), 220)
         })
         searchInput.dataset.bound = '1'
+    }
+
+    if (salespointFilter && !salespointFilter.dataset.bound) {
+        salespointFilter.addEventListener('change', () => applyViewInventoryClientFilter())
+        salespointFilter.dataset.bound = '1'
+    }
+
+    if (itemclassFilter && !itemclassFilter.dataset.bound) {
+        itemclassFilter.addEventListener('change', () => applyViewInventoryClientFilter())
+        itemclassFilter.dataset.bound = '1'
     }
 
     if (updateBtn && !updateBtn.dataset.bound) {
@@ -140,13 +179,13 @@ async function loadViewInventory() {
 
     viewinventoryItems = normalizeViewInventoryItems(normalizeInventoryItems(request.data))
     datasource = viewinventoryItems
-    resolvePagination(viewinventoryItems, onviewinventoryTableDataSignal)
-    updateInventorySummary(viewinventoryItems.length)
+    applyViewInventoryClientFilter()
     return request
 }
 
 async function viewinventoryActive() {
     bindViewInventoryEvents()
+    await populateViewInventorySalespoints()
     populateInventoryUnitSelects(document.querySelector('#viewinventoryeditform'))
     await viewinventoryFormSubmitHandler()
 }

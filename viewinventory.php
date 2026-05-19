@@ -5,11 +5,25 @@
                             <form id="viewinventoryform">
                                 <div class="flex flex-col space-y-4 bg-white/90 p-5 xl:p-8 rounded-sm">
                                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-                                        <div class="form-group lg:col-span-8">
+                                        <div class="form-group lg:col-span-4">
                                             <label for="itemname1" class="control-label">Item Name</label>
-                                            <input type="text" name="itemname1" id="itemname1" class="form-control" placeholder="Search by name, unit, group, composite, description">
+                                            <input type="text" name="itemname1" id="itemname1" class="form-control" placeholder="Search by name, unit, class, composite, description">
                                         </div>
-                                        <div class="flex gap-3 lg:col-span-4 justify-end">
+                                        <div class="form-group lg:col-span-3">
+                                            <label for="viewinventorysalespoint" class="control-label">Sales Point</label>
+                                            <select id="viewinventorysalespoint" class="form-control">
+                                                <option value="">-- Select Sales Point --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group lg:col-span-2">
+                                            <label for="viewinventoryitemclass" class="control-label">Item Class</label>
+                                            <select id="viewinventoryitemclass" class="form-control">
+                                                <option selected>ALL</option>
+                                                <option>STOCK-ITEM</option>
+                                                <option>NON STOCK-ITEM</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex gap-3 lg:col-span-3 justify-end">
                                             <button id="reset-filter" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-red-400 via-red-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <span>Reset</span>
                                             </button>
