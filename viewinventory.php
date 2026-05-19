@@ -123,6 +123,14 @@
                                                                 </select>
                                                             </div>
                                                             <div class="form-group">
+                                                                <label for="logoname" class="control-label">item class</label>
+                                                                <select name="itemclass" id="itemclass" class="form-control comp">
+                                                                    <option value=''>-- Select Item Class --</option>
+                                                                    <option>STOCK-ITEM</option>
+                                                                    <option>NON STOCK-ITEM</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group">
                                                                 <label for="logoname" class="control-label">Reorder Level</label>
                                                                 <input type="text" name="reorderlevel" class="form-control" placeholder="Enter reorder level">
                                                             </div>
