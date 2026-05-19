@@ -99,7 +99,7 @@ function bindViewInventoryEvents() {
             if (searchInput) searchInput.value = ''
             if (salespointFilter) salespointFilter.value = 'ALL'
             if (itemclassFilter) itemclassFilter.value = 'ALL'
-            applyViewInventoryClientFilter()
+            await viewinventoryFormSubmitHandler()
         })
         resetBtn.dataset.bound = '1'
     }
@@ -113,12 +113,12 @@ function bindViewInventoryEvents() {
     }
 
     if (salespointFilter && !salespointFilter.dataset.bound) {
-        salespointFilter.addEventListener('change', () => applyViewInventoryClientFilter())
+        salespointFilter.addEventListener('change', () => viewinventoryFormSubmitHandler())
         salespointFilter.dataset.bound = '1'
     }
 
     if (itemclassFilter && !itemclassFilter.dataset.bound) {
-        itemclassFilter.addEventListener('change', () => applyViewInventoryClientFilter())
+        itemclassFilter.addEventListener('change', () => viewinventoryFormSubmitHandler())
         itemclassFilter.dataset.bound = '1'
     }
 
@@ -162,6 +162,8 @@ function bindViewInventoryEvents() {
 async function loadViewInventory() {
     const payload = new FormData()
     payload.append('itemname', did('itemname1')?.value || '')
+    payload.append('salespoint', did('viewinventorysalespoint')?.value || 'ALL')
+    payload.append('itemclass', did('viewinventoryitemclass')?.value || 'ALL')
 
     const request = await httpRequest2(
         '../controllers/fetchinventorylist',
