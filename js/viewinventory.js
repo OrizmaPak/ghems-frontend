@@ -190,7 +190,7 @@ async function loadViewInventory() {
     payload.append('itemclass', did('viewinventoryitemclass')?.value || 'ALL')
 
     const request = await httpRequest2(
-        '../controllers/fetchinventorylist',
+        '../controllers/fetchinventoryview.php',
         payload,
         document.querySelector('#viewinventoryform #submit')
     )
@@ -225,7 +225,7 @@ async function fetchviewinventorys(id) {
         return paramstr
     }
 
-    let request = await httpRequest2('../controllers/fetchinventorylist', getparamm(), null, 'json')
+    let request = await httpRequest2('../controllers/fetchinventoryview.php', getparamm(), null, 'json')
     if(request.status) {
         const items = normalizeViewInventoryItems(normalizeInventoryItems(request.data))
         if(items[0]) populateData(items[0], ['imageurl'])
