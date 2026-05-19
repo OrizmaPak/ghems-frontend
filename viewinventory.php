@@ -170,7 +170,7 @@
                             
                              <div>
                                 <div class="flex flex-wrap gap-3 mb-4 justify-end">
-                                    <button id="viewinventory-export-page" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                    <button id="viewinventory-export-page" type="button" class="hidden w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                         <span>Export to Excel</span>
                                     </button>
                                     <button id="viewinventory-export-all" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-sky-500 via-sky-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
