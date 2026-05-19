@@ -362,29 +362,60 @@ function buildViewInventoryExcelRows(items = []) {
     }))
 }
 
+function buildViewInventoryUniqueExcelRows(items = []) {
+    const grouped = new Map()
+    ;(items || []).forEach((item) => {
+        const itemid = String(item?.itemid || '').trim()
+        if (!itemid) return
+        if (!grouped.has(itemid)) {
+            grouped.set(itemid, {
+                itemid,
+                itemname: String(item?.itemname || '').trim(),
+                itemtype: String(item?.itemtype || '').trim(),
+                departments: new Set()
+            })
+        }
+        const record = grouped.get(itemid)
+        if (!record.itemname && item?.itemname) record.itemname = String(item.itemname).trim()
+        if (!record.itemtype && item?.itemtype) record.itemtype = String(item.itemtype).trim()
+        const salespoint = String(item?.salespoint || '').trim()
+        if (salespoint) record.departments.add(salespoint)
+    })
+
+    return Array.from(grouped.values()).map((record) => ({
+        'Item ID': record.itemid,
+        'Item Name': record.itemname,
+        'Item Type': record.itemtype,
+        'Departments': Array.from(record.departments).join(', ')
+    }))
+}
+
 async function exportViewInventoryRowsWithDropdown(rows, sheetName, fileName) {
     const ok = await ensureExcelJsLoadedViewInventory()
     if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
 
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet(sheetName)
+    const hasDepartments = rows.some(row => row && Object.prototype.hasOwnProperty.call(row, 'Departments'))
     worksheet.columns = [
         { header: 'Item ID', key: 'itemid', width: 18 },
         { header: 'Item Name', key: 'itemname', width: 40 },
-        { header: 'Sales Point', key: 'salespoint', width: 30 },
-        { header: 'Item Type', key: 'itemtype', width: 22 }
+        { header: 'Item Type', key: 'itemtype', width: 22 },
+        ...(hasDepartments ? [{ header: 'Departments', key: 'departments', width: 40 }] : [])
     ]
 
     rows.forEach(row => worksheet.addRow({
         itemid: row['Item ID'] || '',
         itemname: row['Item Name'] || '',
-        salespoint: row['Sales Point'] || '',
-        itemtype: row['Item Type'] || ''
+        itemtype: row['Item Type'] || '',
+        departments: row['Departments'] || ''
     }))
 
     const maxRow = Math.max(rows.length + 1, 2)
+    const itemTypeColumnIndex = worksheet.columns.findIndex(col => col.key === 'itemtype') + 1
+    const itemTypeColumnLetter = String.fromCharCode(64 + itemTypeColumnIndex)
     for (let rowIndex = 2; rowIndex <= maxRow; rowIndex++) {
-        worksheet.getCell(`D${rowIndex}`).dataValidation = {
+        worksheet.getCell(`${itemTypeColumnLetter}${rowIndex}`).dataValidation = {
             type: 'list',
             allowBlank: true,
             showErrorMessage: true,
@@ -415,7 +446,7 @@ async function exportViewInventoryCurrentPageExcel() {
 
 async function exportViewInventoryAllExcel() {
     if (!viewinventoryItems.length) return notification('No records to export', 0)
-    const rows = buildViewInventoryExcelRows(viewinventoryItems)
+    const rows = buildViewInventoryUniqueExcelRows(viewinventoryItems)
     return exportViewInventoryRowsWithDropdown(rows, 'Inventory_All', 'view_inventory_all.xlsx')
 }
 
@@ -426,6 +457,7 @@ function mapViewInventoryImportHeaders(rawRow = {}) {
         const value = rawRow[key]
         if (normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
         if (normalizedKey === 'sales point' || normalizedKey === 'salespoint') mapped.salespoint = value
+        if (normalizedKey === 'departments' || normalizedKey === 'department') mapped.departments = value
         if (normalizedKey === 'item type' || normalizedKey === 'itemtype') mapped.itemtype = value
     })
     return mapped
@@ -439,6 +471,13 @@ function normalizeViewInventoryItemType(value) {
 
 function normalizeViewInventorySalesPoint(value) {
     return String(value || '').trim().toLowerCase()
+}
+
+function parseViewInventoryDepartments(value) {
+    return String(value || '')
+        .split(/[|,]/)
+        .map(part => normalizeViewInventorySalesPoint(part))
+        .filter(Boolean)
 }
 
 async function updateViewInventoryItemTypeByRow(sourceItem, newItemType, salesPoint = '') {
@@ -498,32 +537,48 @@ async function handleViewInventoryExcelUpload(event) {
             const itemid = String(row.itemid || '').trim()
             const normalizedType = normalizeViewInventoryItemType(row.itemtype)
             const salesPoint = String(row.salespoint || '').trim()
+            const departmentsRaw = String(row.departments || '').trim()
             const normalizedSalesPoint = normalizeViewInventorySalesPoint(salesPoint)
+            const normalizedDepartments = parseViewInventoryDepartments(departmentsRaw)
             if (!itemid || !normalizedSalesPoint) {
-                skipped++
-                continue
+                if (!itemid) {
+                    skipped++
+                    continue
+                }
             }
             if (!normalizedType) {
                 resubmit++
                 continue
             }
 
-            const item = viewinventoryItems.find(entry =>
-                String(entry?.itemid || '').trim() === itemid
-                && normalizeViewInventorySalesPoint(entry?.salespoint) === normalizedSalesPoint
-            )
-            if (!item) {
+            let matchedItems = []
+            if (normalizedSalesPoint) {
+                matchedItems = viewinventoryItems.filter(entry =>
+                    String(entry?.itemid || '').trim() === itemid
+                    && normalizeViewInventorySalesPoint(entry?.salespoint) === normalizedSalesPoint
+                )
+            } else if (normalizedDepartments.length) {
+                matchedItems = viewinventoryItems.filter(entry =>
+                    String(entry?.itemid || '').trim() === itemid
+                    && normalizedDepartments.includes(normalizeViewInventorySalesPoint(entry?.salespoint))
+                )
+            } else {
+                matchedItems = viewinventoryItems.filter(entry => String(entry?.itemid || '').trim() === itemid)
+            }
+
+            if (!matchedItems.length) {
                 skipped++
                 continue
             }
 
-            const successful = await updateViewInventoryItemTypeByRow(item, normalizedType, salesPoint)
-            if (successful) {
-                item.itemtype = normalizedType
-                if (salesPoint) item.salespoint = salesPoint
-                updated++
-            } else {
-                failed++
+            for (const item of matchedItems) {
+                const successful = await updateViewInventoryItemTypeByRow(item, normalizedType, item?.salespoint || salesPoint)
+                if (successful) {
+                    item.itemtype = normalizedType
+                    updated++
+                } else {
+                    failed++
+                }
             }
         }
 
