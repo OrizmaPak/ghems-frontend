@@ -10,16 +10,6 @@
                                             <input type="text" name="itemname1" id="itemname1" class="form-control" placeholder="Search by name, unit, group, composite, description">
                                         </div>
                                         <div class="flex gap-3 lg:col-span-4 justify-end">
-                                            <button id="viewinventory-export-page" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                                <span>Export to Excel</span>
-                                            </button>
-                                            <button id="viewinventory-export-all" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-sky-500 via-sky-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                                <span>Export All to Excel</span>
-                                            </button>
-                                            <button id="viewinventory-upload-excel-btn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                                <span>Upload Excel</span>
-                                            </button>
-                                            <input id="viewinventory-upload-excel-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
                                             <button id="reset-filter" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-red-400 via-red-500 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <span>Reset</span>
                                             </button>
@@ -179,6 +169,18 @@
                             </div>
                             
                              <div>
+                                <div class="flex flex-wrap gap-3 mb-4 justify-end">
+                                    <button id="viewinventory-export-page" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                        <span>Export to Excel</span>
+                                    </button>
+                                    <button id="viewinventory-export-all" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-sky-500 via-sky-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                        <span>Export All to Excel</span>
+                                    </button>
+                                    <button id="viewinventory-upload-excel-btn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                        <span>Upload Excel</span>
+                                    </button>
+                                    <input id="viewinventory-upload-excel-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+                                </div>
                                 <div class="table-content" style="overflow-x: auto;">
                                     <table style="min-width: 1120px;">
                                         <thead>
