@@ -281,15 +281,37 @@ function buildViewInventoryExcelRows(items = []) {
     }))
 }
 
+function createViewInventoryWorkbookWithItemTypeDropdown(rows, sheetName) {
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
+
+    // Apply Excel dropdown validation for Item Type column (column C, starting from row 2)
+    const maxRow = Math.max(rows.length + 1, 2)
+    ws['!dataValidation'] = ws['!dataValidation'] || []
+    ws['!dataValidation'].push({
+        sqref: `C2:C${maxRow}`,
+        type: 'list',
+        allowBlank: 1,
+        showInputMessage: 1,
+        showErrorMessage: 1,
+        errorTitle: 'Invalid Item Type',
+        error: 'Select one of: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS',
+        promptTitle: 'Item Type',
+        prompt: 'Choose from dropdown list',
+        formulas: [`"${viewInventoryAllowedItemTypes.join(',')}"`]
+    })
+
+    return wb
+}
+
 async function exportViewInventoryCurrentPageExcel() {
     const currentPageRows = getSignaledDatasource() || []
     if (!currentPageRows.length) return notification('No records on current page to export', 0)
     const ok = await ensureXLSXLoadedViewInventory()
     if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
     const rows = buildViewInventoryExcelRows(currentPageRows)
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Inventory_Page')
+    const wb = createViewInventoryWorkbookWithItemTypeDropdown(rows, 'Inventory_Page')
     XLSX.writeFile(wb, 'view_inventory_current_page.xlsx')
 }
 
@@ -298,9 +320,7 @@ async function exportViewInventoryAllExcel() {
     const ok = await ensureXLSXLoadedViewInventory()
     if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
     const rows = buildViewInventoryExcelRows(viewinventoryItems)
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Inventory_All')
+    const wb = createViewInventoryWorkbookWithItemTypeDropdown(rows, 'Inventory_All')
     XLSX.writeFile(wb, 'view_inventory_all.xlsx')
 }
 
