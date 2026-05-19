@@ -902,6 +902,16 @@ function extractRoomNumberFromOwnerInput(value = '') {
     return text
 }
 
+function getDatalistOptionTextByValue(listId = '', optionValue = '') {
+    const list = did(listId)
+    if(!list) return ''
+    const normalizedValue = String(optionValue || '').trim().toLowerCase()
+    if(!normalizedValue) return ''
+    const options = Array.from(list.querySelectorAll('option'))
+    const matchedOption = options.find((option) => String(option.value || '').trim().toLowerCase() === normalizedValue)
+    return String(matchedOption?.textContent || '').trim()
+}
+
 function resolveSalesOwnerPayloadValue() {
     const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
     const ownerHidden = String(did('owner')?.value || '').trim()
@@ -909,6 +919,10 @@ function resolveSalesOwnerPayloadValue() {
     if(applyto.includes('ROOM')) {
         const roomNumber = ownerHidden || extractRoomNumberFromOwnerInput(ownerVisible)
         return roomNumber || '-1'
+    }
+    if(applyto.includes('COST')) {
+        const selectedCostCenterId = getDatalistOptionTextByValue('hems_cost_center', ownerVisible)
+        return selectedCostCenterId || ownerHidden || ownerVisible || '-1'
     }
     return ownerVisible || ownerHidden || '-1'
 }
