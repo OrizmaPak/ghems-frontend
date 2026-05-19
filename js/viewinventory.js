@@ -357,6 +357,7 @@ function buildViewInventoryExcelRows(items = []) {
     return items.map(item => ({
         'Item ID': item?.itemid || '',
         'Item Name': item?.itemname || '',
+        'Sales Point': item?.salespoint || '',
         'Item Type': item?.itemtype || ''
     }))
 }
@@ -370,18 +371,20 @@ async function exportViewInventoryRowsWithDropdown(rows, sheetName, fileName) {
     worksheet.columns = [
         { header: 'Item ID', key: 'itemid', width: 18 },
         { header: 'Item Name', key: 'itemname', width: 40 },
+        { header: 'Sales Point', key: 'salespoint', width: 30 },
         { header: 'Item Type', key: 'itemtype', width: 22 }
     ]
 
     rows.forEach(row => worksheet.addRow({
         itemid: row['Item ID'] || '',
         itemname: row['Item Name'] || '',
+        salespoint: row['Sales Point'] || '',
         itemtype: row['Item Type'] || ''
     }))
 
     const maxRow = Math.max(rows.length + 1, 2)
     for (let rowIndex = 2; rowIndex <= maxRow; rowIndex++) {
-        worksheet.getCell(`C${rowIndex}`).dataValidation = {
+        worksheet.getCell(`D${rowIndex}`).dataValidation = {
             type: 'list',
             allowBlank: true,
             showErrorMessage: true,
@@ -422,6 +425,7 @@ function mapViewInventoryImportHeaders(rawRow = {}) {
         const normalizedKey = String(key || '').trim().toLowerCase()
         const value = rawRow[key]
         if (normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
+        if (normalizedKey === 'sales point' || normalizedKey === 'salespoint') mapped.salespoint = value
         if (normalizedKey === 'item type' || normalizedKey === 'itemtype') mapped.itemtype = value
     })
     return mapped
@@ -433,7 +437,7 @@ function normalizeViewInventoryItemType(value) {
     return viewInventoryAllowedItemTypes.find(item => item === normalized) || ''
 }
 
-async function updateViewInventoryItemTypeByRow(sourceItem, newItemType) {
+async function updateViewInventoryItemTypeByRow(sourceItem, newItemType, salesPoint = '') {
     const payload = new FormData()
     payload.append('itemid', sourceItem?.itemid || '')
     payload.append('itemname', sourceItem?.itemname || '')
@@ -449,6 +453,7 @@ async function updateViewInventoryItemTypeByRow(sourceItem, newItemType) {
     payload.append('composite', sourceItem?.composite || 'NO')
     payload.append('description', sourceItem?.description || '')
     payload.append('itemtype', newItemType)
+    payload.append('salespoint', salesPoint || sourceItem?.salespoint || '')
     const request = await httpRequest2('../controllers/editinventory', payload, null, 'json')
     return !!request?.status
 }
@@ -487,6 +492,7 @@ async function handleViewInventoryExcelUpload(event) {
             const row = mapViewInventoryImportHeaders(rawRows[i])
             const itemid = String(row.itemid || '').trim()
             const normalizedType = normalizeViewInventoryItemType(row.itemtype)
+            const salesPoint = String(row.salespoint || '').trim()
             if (!itemid || !normalizedType) {
                 skipped++
                 continue
@@ -498,9 +504,10 @@ async function handleViewInventoryExcelUpload(event) {
                 continue
             }
 
-            const successful = await updateViewInventoryItemTypeByRow(item, normalizedType)
+            const successful = await updateViewInventoryItemTypeByRow(item, normalizedType, salesPoint)
             if (successful) {
                 item.itemtype = normalizedType
+                if (salesPoint) item.salespoint = salesPoint
                 updated++
             } else {
                 failed++
