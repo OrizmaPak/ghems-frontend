@@ -437,6 +437,10 @@ function normalizeViewInventoryItemType(value) {
     return viewInventoryAllowedItemTypes.find(item => item === normalized) || ''
 }
 
+function normalizeViewInventorySalesPoint(value) {
+    return String(value || '').trim().toLowerCase()
+}
+
 async function updateViewInventoryItemTypeByRow(sourceItem, newItemType, salesPoint = '') {
     const payload = new FormData()
     payload.append('itemid', sourceItem?.itemid || '')
@@ -493,12 +497,16 @@ async function handleViewInventoryExcelUpload(event) {
             const itemid = String(row.itemid || '').trim()
             const normalizedType = normalizeViewInventoryItemType(row.itemtype)
             const salesPoint = String(row.salespoint || '').trim()
-            if (!itemid || !normalizedType) {
+            const normalizedSalesPoint = normalizeViewInventorySalesPoint(salesPoint)
+            if (!itemid || !normalizedType || !normalizedSalesPoint) {
                 skipped++
                 continue
             }
 
-            const item = viewinventoryItems.find(entry => String(entry?.itemid || '') === itemid)
+            const item = viewinventoryItems.find(entry =>
+                String(entry?.itemid || '').trim() === itemid
+                && normalizeViewInventorySalesPoint(entry?.salespoint) === normalizedSalesPoint
+            )
             if (!item) {
                 skipped++
                 continue
