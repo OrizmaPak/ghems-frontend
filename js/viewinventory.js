@@ -18,12 +18,30 @@ function updateInventorySummary(total) {
 }
 
 function normalizeViewInventoryItems(items) {
-    return items.map(item => ({
+    const flattened = []
+    ;(items || []).forEach(item => {
+        if (Array.isArray(item?.itemlist)) {
+            item.itemlist.forEach(entry => flattened.push({
+                ...entry,
+                salespoint: entry?.salespoint || item?.salespoint || ''
+            }))
+            return
+        }
+        flattened.push(item)
+    })
+
+    return flattened.map(item => ({
         ...item,
         composite: item?.composite || 'NO',
         itemtype: item?.itemtype || '',
         itemclass: item?.itemclass || '',
-        salespoint: item?.salespoint || ''
+        salespoint: item?.salespoint || '',
+        beginbalance: item?.beginbalance || '',
+        applyto: item?.applyto || '',
+        minbalance: item?.minbalance || '',
+        reorderlevel: item?.reorderlevel || '',
+        price_two: item?.price_two || '',
+        status: item?.status || ''
     }))
 }
 
@@ -45,7 +63,13 @@ function getFilteredViewInventoryItems() {
             item?.units,
             item?.itemtype,
             item?.itemid,
+            item?.salespoint,
             item?.itemclass,
+            item?.applyto,
+            item?.beginbalance,
+            item?.minbalance,
+            item?.reorderlevel,
+            item?.status,
             item?.composite,
             item?.description
         ].some(field => String(field ?? '').toLowerCase().includes(query))
@@ -234,12 +258,20 @@ async function onviewinventoryTableDataSignal() {
         return `
             <tr>
                 <td>${item.index + 1}</td>
+                <td>${safeText(item.salespoint || '-')}</td>
+                <td>${safeText(item.itemid || '-')}</td>
                 <td>${safeText(item.itemname || '-')}</td>
+                <td>${safeText(item.itemclass || '-')}</td>
+                <td>${safeText(item.itemtype || '-')}</td>
+                <td>${safeText(item.units || '-')}</td>
+                <td>${safeText(item.beginbalance || '0')}</td>
                 <td>${safeText(item.cost || '-')}</td>
                 <td>${safeText(item.price || '-')}</td>
-                <td>${safeText(item.units || '-')}</td>
-                <td>${safeText(item.itemtype || '-')}</td>
-                <td>${safeText(item.itemclass || '-')}</td>
+                <td>${safeText(item.price_two || '-')}</td>
+                <td>${safeText(item.applyto || '-')}</td>
+                <td>${safeText(item.minbalance || '0')}</td>
+                <td>${safeText(item.reorderlevel || '0')}</td>
+                <td>${safeText(item.status || '-')}</td>
                 <td><span style="display:inline-block;padding:2px 8px;border-radius:999px;color:#fff;background:${compositeColor};font-size:11px;font-weight:600;">${safeText(composite)}</span></td>
                 <td>${safeText(item.description || '-')}</td>
                 <td>

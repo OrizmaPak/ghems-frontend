@@ -204,16 +204,24 @@
                                     <input id="viewinventory-upload-excel-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
                                 </div>
                                 <div class="table-content" style="overflow-x: auto;">
-                                    <table style="min-width: 1120px;">
+                                    <table style="min-width: 1780px;">
                                         <thead>
                                             <tr>
                                                 <th>S/N</th>
+                                                <th>Sales Point</th>
+                                                <th>Item ID</th>
                                                 <th>Item Name</th>
+                                                <th>Item Class</th>
+                                                <th>Item Type</th>
+                                                <th>Units</th>
+                                                <th>Begin Balance</th>
                                                 <th>Cost</th>
                                                 <th>Price</th>
-                                                <th>Units</th>
-                                                <th>Item Type</th>
-                                                <th>Item Class</th>
+                                                <th>Price Two</th>
+                                                <th>Apply To</th>
+                                                <th>Min Balance</th>
+                                                <th>Reorder Level</th>
+                                                <th>Status</th>
                                                 <th>Composite</th>
                                                 <th>Description</th>
                                                 <th>Action</th>
