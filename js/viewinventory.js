@@ -33,7 +33,7 @@ function normalizeViewInventoryClass(value = '') {
 
 function getFilteredViewInventoryItems() {
     const query = String(did('itemname1')?.value || '').trim().toLowerCase()
-    const salespoint = String(did('viewinventorysalespoint')?.value || '').trim().toLowerCase()
+    const salespoint = String(did('viewinventorysalespoint')?.value || 'ALL').trim().toLowerCase()
     const itemclass = String(did('viewinventoryitemclass')?.value || 'ALL').trim().toUpperCase()
     const itemclassKey = normalizeViewInventoryClass(itemclass)
 
@@ -49,7 +49,7 @@ function getFilteredViewInventoryItems() {
             item?.composite,
             item?.description
         ].some(field => String(field ?? '').toLowerCase().includes(query))
-        const salespointPass = !salespoint || String(item?.salespoint || '').trim().toLowerCase() === salespoint
+        const salespointPass = !salespoint || salespoint === 'all' || String(item?.salespoint || '').trim().toLowerCase() === salespoint
         const itemclassPass = itemclassKey === 'ALL' || normalizeViewInventoryClass(item?.itemclass) === itemclassKey
         return queryPass && salespointPass && itemclassPass
     })
@@ -67,7 +67,7 @@ async function populateViewInventorySalespoints() {
     const request = await httpRequest2('../controllers/fetchdepartments', null, null, 'json')
     if (!request?.status || !Array.isArray(request.data)) return
     const departments = request.data.filter(item => item?.applyforsales === 'NON STOCK' || item?.applyforsales === 'STOCK')
-    target.innerHTML = `<option value="">-- Select Sales Point --</option>${departments.map(item => {
+    target.innerHTML = `<option selected>ALL</option>${departments.map(item => {
         const department = item.department === 'FRONT-DESK/BOOKING' ? 'Booking/Reservation' : item.department
         return `<option>${safeText(department || '')}</option>`
     }).join('')}`
@@ -97,7 +97,7 @@ function bindViewInventoryEvents() {
     if (resetBtn && !resetBtn.dataset.bound) {
         resetBtn.addEventListener('click', async () => {
             if (searchInput) searchInput.value = ''
-            if (salespointFilter) salespointFilter.value = ''
+            if (salespointFilter) salespointFilter.value = 'ALL'
             if (itemclassFilter) itemclassFilter.value = 'ALL'
             applyViewInventoryClientFilter()
         })

@@ -12,7 +12,7 @@
                                         <div class="form-group lg:col-span-3">
                                             <label for="viewinventorysalespoint" class="control-label">Sales Point</label>
                                             <select id="viewinventorysalespoint" class="form-control">
-                                                <option value="">-- Select Sales Point --</option>
+                                                <option selected>ALL</option>
                                             </select>
                                         </div>
                                         <div class="form-group lg:col-span-2">
