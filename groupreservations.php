@@ -172,6 +172,12 @@
                                                 </select>
                                             </div>
                                             <div class="form-group">
+                                                <label for="receivingbank" class="control-label">Receiving Bank</label>
+                                                <select name="moredata" id="receivingbank" class="form-control comp receiving-bank-select">
+                                                    <option value="">-- Select Receiving Bank --</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
                                                 <label for="logoname" class="control-label">block room number</label>
                                                 <input type="text" name="roomnumber" id="roomnumber" list="hems_roomnumber_id" onchange="checkdatalist(this);" class="form-control comp" placeholder="Enter root category">
                                             </div>

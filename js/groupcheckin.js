@@ -5,6 +5,7 @@ async function groupcheckinActive() {
     // markallcomp() 
     const form = document.querySelector('#groupcheckinform')  
     await checkinpopulatedl() 
+    await populateReceivingBankSelects()
     setCheckinPaymentMethodDefaultCash()
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('groupcheckinform'))
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', async e=>{

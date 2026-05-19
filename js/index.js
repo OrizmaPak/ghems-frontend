@@ -872,9 +872,88 @@ async function runavailablerooms(){
     return notification('No records for available rooms retrieved')
 }
 
+let receivingBanksCache = null
+let receivingBanksPromise = null
+
+function escapeReceivingBankOption(value = '') {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[char])
+}
+
+function getReceivingBankFieldMarkup(comp = 'comp', id = 'receivingbank', name = 'moredata') {
+    return `<div class="form-group mt-2">
+        <label for="${id}" class="control-label">Receiving Bank</label>
+        <select name="${name}" id="${id}" class="form-control ${comp} bg-white receiving-bank-select">
+            <option value="">-- Select Receiving Bank --</option>
+        </select>
+    </div>`
+}
+
+async function fetchReceivingBanks() {
+    if (Array.isArray(receivingBanksCache)) return receivingBanksCache
+    if (receivingBanksPromise) return receivingBanksPromise
+    receivingBanksPromise = httpRequest2('../controllers/fetchbanks.php', null, null, 'json')
+        .then((request) => {
+            const rows = Array.isArray(request?.data)
+                ? request.data
+                : (Array.isArray(request?.data?.data) ? request.data.data : [])
+            receivingBanksCache = request?.status ? rows : []
+            return receivingBanksCache
+        })
+        .catch(() => {
+            receivingBanksCache = []
+            return receivingBanksCache
+        })
+        .finally(() => {
+            receivingBanksPromise = null
+        })
+    return receivingBanksPromise
+}
+
+async function populateReceivingBankSelects(root = document) {
+    const selects = Array.from((root || document).querySelectorAll('.receiving-bank-select'))
+    if (!selects.length) return
+    const banks = await fetchReceivingBanks()
+    const options = `<option value="">-- Select Receiving Bank --</option>` + banks.map((bank) => {
+        const label = [bank.bankname, bank.accountnumber].filter(Boolean).join(' - ')
+        return `<option value="${escapeReceivingBankOption(bank.id)}">${escapeReceivingBankOption(label || bank.bankname || bank.id)}</option>`
+    }).join('')
+    selects.forEach((select) => {
+        const currentValue = select.value
+        select.innerHTML = options
+        if (currentValue) select.value = currentValue
+    })
+}
+
+function getReceivingBankValue(id = 'receivingbank') {
+    return String(did(id)?.value || document.querySelector('.receiving-bank-select')?.value || '').trim()
+}
+
+function appendReceivingBankMoreData(payload, id = 'receivingbank') {
+    if (!payload) return payload
+    const value = getReceivingBankValue(id)
+    if (value || did(id) || document.querySelector('.receiving-bank-select')) payload.set('moredata', value)
+    return payload
+}
+
+function validatePaymentMethodForAmount(amountId = 'amountpaid', paymentMethodId = 'paymentmethod') {
+    const amount = Number(String(did(amountId)?.value || '').replace(/,/g, ''))
+    if (amount > 0 && !String(did(paymentMethodId)?.value || '').trim()) {
+        notification('Please select a payment method for the amount paid.', 0)
+        return false
+    }
+    return true
+}
+
 function checkotherbankdetails(comp='comp'){
     if(document.getElementById('paymentmethod')){
-        if(document.getElementById('paymentmethod').value == 'TRANSFER' || document.getElementById('paymentmethod').value == 'POS'){
+        const method = String(document.getElementById('paymentmethod').value || '').trim().toUpperCase()
+        if(method.includes('TRANSFER') || method == 'POS' || method == 'BANK CARD'){
             document.getElementById('bankdetails').innerHTML = `<div class="form-group mt-2">
                                                      <label for="logoname" class="control-label">Bank Name</label>
                                                     <input type="text" name="bankname" id="bankname" placeholder="Enter bank name" class="form-control ${comp} bg-white" >
@@ -882,7 +961,9 @@ function checkotherbankdetails(comp='comp'){
                                                 <div class="form-group mt-2">
                                                     <label for="logoname" class="control-label">Other Details</label>
                                                     <textarea type="number" name="otherdetails" id="otherdetails" placeholder="Enter account name, transaction reference and other relevant details" class="form-control ${comp} bg-white"></textarea>
-                                                </div>`
+                                                </div>
+                                                ${getReceivingBankFieldMarkup(comp)}`
+            populateReceivingBankSelects(document.getElementById('bankdetails'))
         }else{
             document.getElementById('bankdetails').innerHTML = '';
         }

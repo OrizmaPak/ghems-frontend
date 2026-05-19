@@ -5,6 +5,7 @@ async function receivepurchasesActive() {
     const form = document.querySelector('#receivepurchasesform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receivepurchasesFormSubmitHandler)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     did('reference').addEventListener('change', e=>checkreferenceforreceivepurchase())
     datasource = [] 
     await requisititemviewpurchases()
@@ -367,6 +368,7 @@ async function receivepurchasesFormSubmitHandler() {
               paramstr.append('reference', document.getElementById('reference').value);
               paramstr.append('amountpaid', document.getElementById('amountpaid').value);
               paramstr.append('paymentmethod', document.getElementById('paymentmethod').value);
+              appendReceivingBankMoreData(paramstr);
               paramstr.append('entrypoint', 'RP');
               paramstr.append('rowsize', document.getElementsByName('supplyfrom').length);
               for (let i = 0; i < document.getElementsByName('supplyfrom').length; i++) {

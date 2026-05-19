@@ -448,7 +448,7 @@ function getCheckinRequiredIds(formId = '') {
         ids = getIdFromCls('comp', formId)
     }
 
-    const optionalPaymentIds = ['amountpaid', 'paymentmethod', 'bankname', 'otherdetails']
+    const optionalPaymentIds = ['amountpaid', 'paymentmethod', 'bankname', 'otherdetails', 'receivingbank']
     return ids.filter(id => id && !optionalPaymentIds.includes(id))
 }
 
@@ -505,6 +505,7 @@ async function runCheckinOtherDetailsSubmitGuard(formId) {
     const paymentMethod = String((did('paymentmethod') && did('paymentmethod').value) || '').trim().toUpperCase()
     const bankName = String((did('bankname') && did('bankname').value) || '').trim()
     const otherDetails = String((did('otherdetails') && did('otherdetails').value) || '').trim()
+    const receivingBank = getReceivingBankValue()
 
     if(!paymentMethod) {
         notification('Please select a payment method for the amount paid.', 0)
@@ -514,8 +515,8 @@ async function runCheckinOtherDetailsSubmitGuard(formId) {
 
     // If transfer is selected, bank details remain mandatory.
     if (paymentMethod === 'TRANSFER') {
-        if (!bankName || !otherDetails) {
-            notification('Please Enter Customer\'s Bank Name and Other Details')
+        if (!bankName || !otherDetails || !receivingBank) {
+            notification('Please Enter Customer\'s Bank Name, Other Details and Receiving Bank')
             did('modalformone').classList.remove('hidden')
             return false
         }
@@ -590,6 +591,7 @@ async function checkinActive() {
     await fetchtravelsres()
     await fetchcompanyres()
     await fetchgroupsres()
+    await populateReceivingBankSelects()
     did('initialroombtn').click()
     if(sessionStorage.getItem('checkinfromsomewhere')){
         let id = sessionStorage.getItem('checkinfromsomewhere')
@@ -3522,6 +3524,7 @@ async function checkinnFormSubmitHandler(guest){
             param.set('reference', did('referencer')?.value || '')
             if(did('bankname'))param.set('bankname', did('bankname').value)
             if(did('otherdetails'))param.set('otherdetails', did('otherdetails').value)
+            appendReceivingBankMoreData(param)
 
             return param
         }
@@ -3565,6 +3568,7 @@ async function checkinnFormSubmitHandler(guest){
             p.append('distribute', distribute)
             p.append('bankname', did('bankname')?.value || '')
             p.append('otherdetails', did('otherdetails')?.value || '')
+            appendReceivingBankMoreData(p)
 
             return p
         }

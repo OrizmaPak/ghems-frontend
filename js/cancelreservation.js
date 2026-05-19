@@ -3,6 +3,7 @@ async function cancelreservationActive() {
     // markallcomp()
     const form = document.querySelector('#cancelreservationform')
     await checkinpopulatedl()
+    await populateReceivingBankSelects()
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>checkinnFormSubmitHandler('cancelreservationform'))
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone')) 
     if(document.querySelector('#submitguestmodal')) document.querySelector('#submitguestmodal').addEventListener('click', e=>submitguestform())

@@ -6,6 +6,7 @@ async function posreceiptActive() {
     if(document.querySelector('#submitview')) document.querySelector('#submitview').addEventListener('click', fetchposreceipt);
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplytoreceipt());
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     datasource = [];
     // Don't fetch on initial load - wait for user to submit form with dates
     // await fetchposreceipt()
@@ -312,10 +313,12 @@ async function onposreceiptTableDataSignal() {
 
 async function posreceiptFormSubmitHandler() {
     if(!validateForm('posreceiptform', getIdFromCls('comp'))) return
+    if(!validatePaymentMethodForAmount()) return
     
     let payload
 
     payload = getFormData2(document.querySelector('#posreceiptform'))
+    appendReceivingBankMoreData(payload)
     let request = await httpRequest2('../controllers/receipts', payload, document.querySelector('#posreceiptform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);

@@ -4,6 +4,7 @@ async function invoicingActive() {
     if(document.querySelector('#submit')) document.querySelector('#submit').addEventListener('click', fetchinvoicing)
     if(document.querySelector('#submitinvoice')) document.querySelector('#submitinvoice').addEventListener('click', invoicingFormSubmitHandler)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     setupInvoicingReferencePicker()
     datasource = []
     // await fetchinvoicing()
@@ -319,6 +320,7 @@ async function oninvoicingTableDataSignal() {
 
 async function invoicingFormSubmitHandler() {
     if(!validateForm('invoicingform', getIdFromCls('comp'))) return
+    if(!validatePaymentMethodForAmount()) return
     if(!did('amountpaid').value)return notification('Please enter amount paid...', 0)
     if(!did('reference').value)return notification('Please enter reference...', 0)
     if(document.getElementById('bankname')){
@@ -337,6 +339,7 @@ async function invoicingFormSubmitHandler() {
         p.append('distribute', did('distribute').checked ? 'YES' : 'NO')
         if(document.getElementById('bankname'))p.append('bankname', did('bankname').value)
         if(document.getElementById('otherdetails'))p.append('otherdetails', did('otherdetails').value)
+        appendReceivingBankMoreData(p)
         // p.append('distribute', 'NO')
         return p
     }

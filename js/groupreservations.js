@@ -12,6 +12,7 @@ async function groupreservationsActive() {
     if(form2.querySelector('#submit')) form2.querySelector('#submit').addEventListener('click', groupreservationscheckinFormSubmitHandler)
     datasource = []
     await fetchgroupsgroupres()
+    await populateReceivingBankSelects()
     // await fetchgroupreservations()
 }
 

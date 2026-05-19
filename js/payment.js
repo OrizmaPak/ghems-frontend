@@ -5,6 +5,7 @@ async function paymentActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', paymentFormSubmitHandler);
     if(document.querySelector('#submitview')) document.querySelector('#submitview').addEventListener('click', fetchpayment);
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     // if(document.querySelector('#paidto1'))document.querySelector('#paidto1').addEventListener('change', e=>handlesalesapplytopaymentbalance());
     datasource = [];
     // await fetchpayment()
@@ -216,10 +217,12 @@ async function onpaymentTableDataSignal() {
 
 async function paymentFormSubmitHandler() {
     if(!validateForm('paymentform', getIdFromCls('comp'))) return notification('Please enter all compulsory fields')
+    if(!validatePaymentMethodForAmount()) return
     
     let payload
 
     payload = getFormData2(document.querySelector('#paymentform'))
+    appendReceivingBankMoreData(payload)
     let request = await httpRequest2('../controllers/payments', payload, document.querySelector('#paymentform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);

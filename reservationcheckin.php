@@ -532,6 +532,12 @@
                                                         <label for="logoname" class="control-label text-md">Other Details</label>
                                                         <textarea name="otherdetails" id="otherdetails" class="bg-white form-control !p-2 comp2" placeholder="Enter Other Details"></textarea>
                                                     </div>
+                                                    <div class="form-group">
+                                                        <label for="receivingbank" class="control-label text-md">Receiving Bank</label>
+                                                        <select name="moredata" id="receivingbank" class="bg-white form-control !p-2 comp2 receiving-bank-select">
+                                                            <option value="">-- Select Receiving Bank --</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                                 
                                                 

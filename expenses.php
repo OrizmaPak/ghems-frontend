@@ -81,6 +81,7 @@
                                                 <input type="number" name="amountpaid" id="amountpaid" class="form-control comp" placeholder="amount paid">
                                             </div>
                                         </div>
+                                        <div id="bankdetails"></div>
                                        
                             
                                     </div>

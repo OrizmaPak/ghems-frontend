@@ -13,6 +13,7 @@ async function reassignroomsActive() {
     // markallcomp() 
     const form = document.querySelector('#reassignroomsform')  
     await checkinpopulatedl() 
+    await populateReceivingBankSelects()
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>{
         if(reassignroom == document.getElementsByName('roomnumber')[0].value){
             return notification('Please note that the room was not changed.', 0);
@@ -23,8 +24,8 @@ async function reassignroomsActive() {
                 return did('modalformone').classList.remove('hidden')
             }
             if (did('paymentmethod').value == 'TRANSFER') {
-                if (!did('bankname').value || !did('otherdetails').value) {
-                    notification('Please Enter Customer\'s Bank Name and Other Details');
+                if (!did('bankname').value || !did('otherdetails').value || !getReceivingBankValue()) {
+                    notification('Please Enter Customer\'s Bank Name, Other Details and Receiving Bank');
                     did('modalformone').classList.remove('hidden');
                     return;  // Prevent further execution
                 }

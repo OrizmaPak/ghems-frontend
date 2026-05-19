@@ -4,6 +4,7 @@ async function guestsreservationsActive() {
     checkinid=''
     const form = document.querySelector('#guestreservationform')
     await checkinpopulatedl();
+    await populateReceivingBankSelects()
     bindCheckinSubmitButton('guestreservationform')
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone'))
     if(document.querySelector('#submitguestmodal')) document.querySelector('#submitguestmodal').addEventListener('click', e=>submitguestform())

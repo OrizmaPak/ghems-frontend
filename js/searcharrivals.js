@@ -11,6 +11,7 @@ async function searcharrivalsActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', searcharrivalsFormSubmitHandler)
     if(form2.querySelector('#submit')) form2.querySelector('#submit').addEventListener('click', searcharrivalscheckinFormSubmitHandler)
     datasource = []
+    await populateReceivingBankSelects()
     await fetchsearcharrivals()
 }
 

@@ -2101,6 +2101,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
     try {
         const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
         if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
+        if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && !validatePaymentMethodForAmount()) return
         let t = true
         for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
             if(document.getElementsByClassName('qqty')[i].value < 1)t = false;
@@ -2117,6 +2118,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         payload.set('owner', ownerPayloadValue || '-1')
         if(ttype)payload.set('ttype', ttype)
         if((isOrderWorkspaceMode() || ttype === 'ORDER') && orderEditBatchId) payload.set('batchid', orderEditBatchId)
+        if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && ttype !== 'ORDER' && ttype !== 'BILL') appendReceivingBankMoreData(payload)
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
             payload.delete('amountpaid')
             payload.delete('paymentmethod')

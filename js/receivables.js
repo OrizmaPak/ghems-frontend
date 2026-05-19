@@ -402,6 +402,12 @@ function openreceiveablemodal(dbt, cdt, rn, ccy='NGN'){
                     <input id="receivable-bankname" type="text" placeholder="Enter bank name" class="border rounded w-full py-2 px-3">
                 </div>
                 <div>
+                    <label class="text-sm font-semibold block mb-1">Receiving Bank</label>
+                    <select id="receivable-receivingbank" class="border rounded w-full py-2 px-3 receiving-bank-select">
+                        <option value="">-- Select Receiving Bank --</option>
+                    </select>
+                </div>
+                <div>
                     <label class="text-sm font-semibold block mb-1">Other Detail</label>
                     <input id="receivable-otherdetail" type="text" placeholder="Additional detail" class="border rounded w-full py-2 px-3">
                 </div>
@@ -415,6 +421,7 @@ function openreceiveablemodal(dbt, cdt, rn, ccy='NGN'){
     `
 
     toggleReceivableBankNameField()
+    populateReceivingBankSelects(did('modalreceipt'))
 }
 
 function toggleReceivableBankNameField(){
@@ -433,6 +440,7 @@ async function submitReceivablePayment(){
     const currency = did('receivable-currency')?.value ? String(did('receivable-currency').value).trim().toUpperCase() : 'NGN'
     const amountpaidRaw = did('receivable-amountpaid')?.value ? String(did('receivable-amountpaid').value).trim() : ''
     const bankname = did('receivable-bankname')?.value ? String(did('receivable-bankname').value).trim() : ''
+    const receivingbank = did('receivable-receivingbank')?.value ? String(did('receivable-receivingbank').value).trim() : ''
     const otherdetail = did('receivable-otherdetail')?.value ? String(did('receivable-otherdetail').value).trim() : ''
 
     if(!receiptto)return notification('Room number is required', 0)
@@ -444,8 +452,8 @@ async function submitReceivablePayment(){
         return notification('Enter a valid amount paid', 0)
     }
 
-    if(paymentmethod !== 'CASH' && !bankname){
-        return notification('Enter bank name', 0)
+    if(paymentmethod !== 'CASH' && (!bankname || !receivingbank)){
+        return notification('Enter bank name and receiving bank', 0)
     }
 
     const payload = new FormData()
@@ -455,6 +463,7 @@ async function submitReceivablePayment(){
     payload.append('currency', currency)
     payload.append('amountpaid', normalizedAmount)
     payload.append('bankname', bankname)
+    payload.append('moredata', receivingbank)
     payload.append('otherdetail', otherdetail)
 
     const submitBtn = did('receivable-pay-submit')

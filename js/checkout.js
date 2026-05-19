@@ -385,10 +385,12 @@ async function oncheckoutTableData2Signal() {
 async function checkoutFormSubmitHandler() {
     if(!validateForm('checkoutform', getIdFromCls('comp'))) return
     syncAllCheckoutPaymentInputs()
+    if(!validatePaymentMethodForAmount()) return
 
     let payload
 
     payload = getFormData2(document.querySelector('#checkoutform'), [['reference', did('reference').value]])
+    appendReceivingBankMoreData(payload)
     let request = await httpRequest2('../controllers/checkout', payload, document.querySelector('#checkoutform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);

@@ -2,6 +2,9 @@ let expensesid
 async function expensesActive() {
     const form = document.querySelector('#expensesform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', expensesFormSubmitHandler)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
+    checkotherbankdetails()
     if(document.querySelector('#submit1')) document.querySelector('#submit1').addEventListener('click', e=>fetchexpenses())
     if(document.querySelector('#additemrowexpenses')) document.querySelector('#additemrowexpenses').addEventListener('click', e=>additemrowexpenses(e))
     datasource = []
@@ -179,6 +182,7 @@ async function modalexpense(batchid){
 
 async function expensesFormSubmitHandler() {
     if(!validateForm('expensesform', getIdFromCls('comp'))) return notification('Please enter all compulsory fields', 0)
+    if(!validatePaymentMethodForAmount()) return
     
     givenamebyclass('item')
     givenamebyclass('amount')
@@ -190,6 +194,7 @@ async function expensesFormSubmitHandler() {
     let payload
 
     payload = getFormData2(document.querySelector('#expensesform'), expensesid ? [['id', expensesid], ['rowsize', document.getElementsByClassName('item').length]] : [['rowsize', document.getElementsByClassName('item').length]])
+    appendReceivingBankMoreData(payload)
     let request = await httpRequest2('../controllers/postexpenses', payload, document.querySelector('#expensesform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);

@@ -7,6 +7,7 @@ async function receiptsActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiptsFormSubmitHandler)
     if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', fetchreceipts)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     setupCashierReceiptReferencePicker()
     datasource = []
     // await fetchreceipts()
@@ -253,10 +254,12 @@ async function onreceiptsTableDataSignal() {
 
 async function receiptsFormSubmitHandler() {
     if(!validateForm('receiptsform', getIdFromCls('comp'))) return
+    if(!validatePaymentMethodForAmount()) return
     
     let payload
 
     payload = getFormData2(document.querySelector('#receiptsform'), [['distribute', did('distribute').checked ? 'YES' : 'NO'], ['reference', did('reference').value], ['amountpaid', did('amountpaid').value]])
+    appendReceivingBankMoreData(payload)
     let request = await httpRequest2('../controllers/receiptforcashier', payload, document.querySelector('#receiptsform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
