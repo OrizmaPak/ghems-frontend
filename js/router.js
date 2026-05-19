@@ -382,6 +382,11 @@ const routerTree = {
         startingFunction: 'costcenterActive',
         scriptName: './js/costcenter.js'
     },
+    banklist: {
+        template: 'banklist',
+        startingFunction: 'banklistActive',
+        scriptName: './js/banklist.js'
+    },
     discountcouponp: {
         template: 'discountcouponp',
         startingFunction: 'discountcouponActive',

@@ -11,6 +11,7 @@ const accessctrl_administration = [
     'BOOKING PLAN',
     'DISCOUNT COUPON',
     'COST CENTER',
+    'BANK LIST',
     'SETTINGS',
     'UPDATE OTHER USERS PROFILE',
     'REVERSE PAYMENT',
