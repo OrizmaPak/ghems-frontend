@@ -482,6 +482,7 @@ async function handleViewInventoryExcelUpload(event) {
     let updated = 0
     let skipped = 0
     let failed = 0
+    let resubmit = 0
 
     try {
         const buffer = await file.arrayBuffer()
@@ -498,8 +499,12 @@ async function handleViewInventoryExcelUpload(event) {
             const normalizedType = normalizeViewInventoryItemType(row.itemtype)
             const salesPoint = String(row.salespoint || '').trim()
             const normalizedSalesPoint = normalizeViewInventorySalesPoint(salesPoint)
-            if (!itemid || !normalizedType || !normalizedSalesPoint) {
+            if (!itemid || !normalizedSalesPoint) {
                 skipped++
+                continue
+            }
+            if (!normalizedType) {
+                resubmit++
                 continue
             }
 
@@ -523,7 +528,7 @@ async function handleViewInventoryExcelUpload(event) {
         }
 
         await viewinventoryFormSubmitHandler()
-        return notification(`Item type upload completed. Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}`, failed ? 0 : 1)
+        return notification(`Item type upload completed. Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}, Resubmit Rows (invalid item type): ${resubmit}`, (failed || resubmit) ? 0 : 1)
     } catch (error) {
         console.log(error)
         return notification('Unable to process uploaded Excel file', 0)
