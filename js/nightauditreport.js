@@ -128,12 +128,12 @@ function renderNightAuditReport(payload = {}) {
         const itemRows = section.rows.map((row) => `
             <tr>
                 <td>${row.label}</td>
-                <td class="text-right">${formatNightAuditAmount(row.todayAmount)}</td>
-                <td class="text-right">${formatNightAuditAmount(row.todayAllowance)}</td>
-                <td class="text-right">${formatNightAuditAmount(row.todayNet)}</td>
-                <td class="text-right">${formatNightAuditAmount(row.monthAmount)}</td>
-                <td class="text-right">${formatNightAuditAmount(row.monthAllowance)}</td>
-                <td class="text-right">${formatNightAuditAmount(row.monthNet)}</td>
+                <td class="text-left">${formatNightAuditAmount(row.todayAmount)}</td>
+                <td class="text-left">${formatNightAuditAmount(row.todayAllowance)}</td>
+                <td class="text-left">${formatNightAuditAmount(row.todayNet)}</td>
+                <td class="text-left">${formatNightAuditAmount(row.monthAmount)}</td>
+                <td class="text-left">${formatNightAuditAmount(row.monthAllowance)}</td>
+                <td class="text-left">${formatNightAuditAmount(row.monthNet)}</td>
             </tr>
         `).join('')
 
@@ -149,15 +149,15 @@ function renderNightAuditReport(payload = {}) {
             <tr class="bg-slate-100 font-semibold">
                 <td colspan="7">${section.title}</td>
             </tr>
-            ${itemRows || `<tr><td colspan="7" class="text-center opacity-70">No data</td></tr>`}
+            ${itemRows || `<tr><td colspan="7" class="text-left opacity-70">No data</td></tr>`}
             <tr class="font-semibold">
                 <td>Sub Total</td>
-                <td class="text-right">${formatNightAuditAmount(subtotals.todayAmount)}</td>
-                <td class="text-right">${formatNightAuditAmount(subtotals.todayAllowance)}</td>
-                <td class="text-right">${formatNightAuditAmount(subtotals.todayNet)}</td>
-                <td class="text-right">${formatNightAuditAmount(subtotals.monthAmount)}</td>
-                <td class="text-right">${formatNightAuditAmount(subtotals.monthAllowance)}</td>
-                <td class="text-right">${formatNightAuditAmount(subtotals.monthNet)}</td>
+                <td class="text-left">${formatNightAuditAmount(subtotals.todayAmount)}</td>
+                <td class="text-left">${formatNightAuditAmount(subtotals.todayAllowance)}</td>
+                <td class="text-left">${formatNightAuditAmount(subtotals.todayNet)}</td>
+                <td class="text-left">${formatNightAuditAmount(subtotals.monthAmount)}</td>
+                <td class="text-left">${formatNightAuditAmount(subtotals.monthAllowance)}</td>
+                <td class="text-left">${formatNightAuditAmount(subtotals.monthNet)}</td>
             </tr>
         `
     }).join('')
@@ -176,6 +176,7 @@ function renderNightAuditReport(payload = {}) {
                 padding:6px 8px;
                 font-size:13px;
                 line-height:1.2;
+                text-align:left;
             }
             #nightauditreportcontainer .nightaudit-table th{
                 background:#f8fafc;
@@ -183,7 +184,7 @@ function renderNightAuditReport(payload = {}) {
                 text-transform:uppercase;
             }
             #nightauditreportcontainer .nightaudit-table .group-head{
-                text-align:center;
+                text-align:left;
                 font-size:16px;
                 text-transform:none;
             }
@@ -216,17 +217,17 @@ function renderNightAuditReport(payload = {}) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${bodyRows || `<tr><td colspan="7" class="text-center opacity-70">No data</td></tr>`}
+                    ${bodyRows || `<tr><td colspan="7" class="text-left opacity-70">No data</td></tr>`}
                 </tbody>
                 <tfoot>
                     <tr class="font-semibold">
-                        <td class="text-right">TOTAL REVENUE</td>
-                        <td class="text-right">${formatNightAuditAmount(grandTotals.todayAmount)}</td>
-                        <td class="text-right">${formatNightAuditAmount(grandTotals.todayAllowance)}</td>
-                        <td class="text-right">${formatNightAuditAmount(grandTotals.todayNet)}</td>
-                        <td class="text-right">${formatNightAuditAmount(grandTotals.monthAmount)}</td>
-                        <td class="text-right">${formatNightAuditAmount(grandTotals.monthAllowance)}</td>
-                        <td class="text-right">${formatNightAuditAmount(grandTotals.monthNet)}</td>
+                        <td class="text-left">TOTAL REVENUE</td>
+                        <td class="text-left">${formatNightAuditAmount(grandTotals.todayAmount)}</td>
+                        <td class="text-left">${formatNightAuditAmount(grandTotals.todayAllowance)}</td>
+                        <td class="text-left">${formatNightAuditAmount(grandTotals.todayNet)}</td>
+                        <td class="text-left">${formatNightAuditAmount(grandTotals.monthAmount)}</td>
+                        <td class="text-left">${formatNightAuditAmount(grandTotals.monthAllowance)}</td>
+                        <td class="text-left">${formatNightAuditAmount(grandTotals.monthNet)}</td>
                     </tr>
                 </tfoot>
             </table>
