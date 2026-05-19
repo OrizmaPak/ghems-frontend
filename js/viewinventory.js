@@ -264,6 +264,17 @@ async function ensureXLSXLoadedViewInventory() {
     })
 }
 
+async function ensureExcelJsLoadedViewInventory() {
+    if (window.ExcelJS) return true
+    return await new Promise(resolve => {
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js'
+        script.onload = () => resolve(true)
+        script.onerror = () => resolve(false)
+        document.head.appendChild(script)
+    })
+}
+
 function buildViewInventoryExcelRows(items = []) {
     return items.map(item => ({
         'Item ID': item?.itemid || '',
@@ -272,47 +283,59 @@ function buildViewInventoryExcelRows(items = []) {
     }))
 }
 
-function createViewInventoryWorkbookWithItemTypeDropdown(rows, sheetName) {
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, sheetName)
+async function exportViewInventoryRowsWithDropdown(rows, sheetName, fileName) {
+    const ok = await ensureExcelJsLoadedViewInventory()
+    if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
 
-    // Apply Excel dropdown validation for Item Type column (column C, starting from row 2)
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet(sheetName)
+    worksheet.columns = [
+        { header: 'Item ID', key: 'itemid', width: 18 },
+        { header: 'Item Name', key: 'itemname', width: 40 },
+        { header: 'Item Type', key: 'itemtype', width: 22 }
+    ]
+
+    rows.forEach(row => worksheet.addRow({
+        itemid: row['Item ID'] || '',
+        itemname: row['Item Name'] || '',
+        itemtype: row['Item Type'] || ''
+    }))
+
     const maxRow = Math.max(rows.length + 1, 2)
-    ws['!dataValidation'] = ws['!dataValidation'] || []
-    ws['!dataValidation'].push({
-        sqref: `C2:C${maxRow}`,
-        type: 'list',
-        allowBlank: 1,
-        showInputMessage: 1,
-        showErrorMessage: 1,
-        errorTitle: 'Invalid Item Type',
-        error: 'Select one of: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS',
-        promptTitle: 'Item Type',
-        prompt: 'Choose from dropdown list',
-        formulas: [`"${viewInventoryAllowedItemTypes.join(',')}"`]
-    })
+    for (let rowIndex = 2; rowIndex <= maxRow; rowIndex++) {
+        worksheet.getCell(`C${rowIndex}`).dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            showErrorMessage: true,
+            errorTitle: 'Invalid Item Type',
+            error: 'Select one of: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS',
+            formulae: [`"${viewInventoryAllowedItemTypes.join(',')}"`]
+        }
+    }
 
-    return wb
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
 }
 
 async function exportViewInventoryCurrentPageExcel() {
     const currentPageRows = getSignaledDatasource() || []
     if (!currentPageRows.length) return notification('No records on current page to export', 0)
-    const ok = await ensureXLSXLoadedViewInventory()
-    if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
     const rows = buildViewInventoryExcelRows(currentPageRows)
-    const wb = createViewInventoryWorkbookWithItemTypeDropdown(rows, 'Inventory_Page')
-    XLSX.writeFile(wb, 'view_inventory_current_page.xlsx')
+    return exportViewInventoryRowsWithDropdown(rows, 'Inventory_Page', 'view_inventory_current_page.xlsx')
 }
 
 async function exportViewInventoryAllExcel() {
     if (!viewinventoryItems.length) return notification('No records to export', 0)
-    const ok = await ensureXLSXLoadedViewInventory()
-    if (!ok) return notification('Could not load Excel helper. Check your connection.', 0)
     const rows = buildViewInventoryExcelRows(viewinventoryItems)
-    const wb = createViewInventoryWorkbookWithItemTypeDropdown(rows, 'Inventory_All')
-    XLSX.writeFile(wb, 'view_inventory_all.xlsx')
+    return exportViewInventoryRowsWithDropdown(rows, 'Inventory_All', 'view_inventory_all.xlsx')
 }
 
 function mapViewInventoryImportHeaders(rawRow = {}) {
