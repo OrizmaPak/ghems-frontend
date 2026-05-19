@@ -267,17 +267,7 @@ function buildViewInventoryExcelRows(items = []) {
     return items.map(item => ({
         'Item ID': item?.itemid || '',
         'Item Name': item?.itemname || '',
-        'Item Type': item?.itemtype || '',
-        'Units': item?.units || '',
-        'Group Name': item?.groupname || '',
-        'Apply To': item?.applyto || '',
-        'Cost': item?.cost || '',
-        'Price': item?.price || '',
-        'Price Two': item?.price_two || '',
-        'Min Balance': item?.minbalance || '',
-        'Reorder Level': item?.reorderlevel || '',
-        'Composite': item?.composite || '',
-        'Description': item?.description || ''
+        'Item Type': item?.itemtype || ''
     }))
 }
 
