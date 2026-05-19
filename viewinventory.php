@@ -105,6 +105,16 @@
                                                     <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
                                                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                                             <div class="form-group">
+                                                                <label for="logoname" class="control-label">Item Type</label>
+                                                                <select name="itemtype" class="form-control comp">
+                                                                    <option value=''>-- Select Item Type --</option>
+                                                                    <option>FOOD</option>
+                                                                    <option>ALCOHOL</option>
+                                                                    <option>NON-ALCOHOL</option>
+                                                                    <option>MISCELLANEOUS</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group">
                                                                 <label for="logoname" class="control-label">apply to</label>
                                                                 <select name="applyto" id="applyto" class="form-control comp">
                                                                     <option value=''>-- Select Apply To --</option>
