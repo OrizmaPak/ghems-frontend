@@ -197,6 +197,7 @@ async function onviewinventoryTableDataSignal() {
                 <td>${safeText(item.cost || '-')}</td>
                 <td>${safeText(item.price || '-')}</td>
                 <td>${safeText(item.units || '-')}</td>
+                <td>${safeText(item.itemtype || '-')}</td>
                 <td>${safeText(item.groupname || '-')}</td>
                 <td><span style="display:inline-block;padding:2px 8px;border-radius:999px;color:#fff;background:${compositeColor};font-size:11px;font-weight:600;">${safeText(composite)}</span></td>
                 <td>${safeText(item.description || '-')}</td>

@@ -190,6 +190,7 @@
                                                 <th>Cost</th>
                                                 <th>Price</th>
                                                 <th>Units</th>
+                                                <th>Item Type</th>
                                                 <th>Group Name</th>
                                                 <th>Composite</th>
                                                 <th>Description</th>
