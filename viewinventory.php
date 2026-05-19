@@ -199,7 +199,7 @@
                                                 <th>Price</th>
                                                 <th>Units</th>
                                                 <th>Item Type</th>
-                                                <th>Group Name</th>
+                                                <th>Item Class</th>
                                                 <th>Composite</th>
                                                 <th>Description</th>
                                                 <th>Action</th>
