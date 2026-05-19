@@ -176,6 +176,7 @@
                                                     <label for="logoname" class="control-label hidden">Item</label>
                                                     <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">
                                                     <input autocomplete="off" class="itemmerid hidden" id="itemer-1">
+                                                    <input autocomplete="off" class="hidden" id="itemclass-1">
                                                 </td>
                                                 <td style="">
                                                     <div class="">

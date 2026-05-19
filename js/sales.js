@@ -808,6 +808,7 @@ async function loadSalesBillIntoForm(bill) {
                     <label for="logoname" class="control-label hidden">Item</label>
                     <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${firstRowId}')" onblur="salesitempop(this,'${firstRowId}')" list="hems_itemslist" name="item" id="item-${firstRowId}" class="form-control iitem comp">
                     <input autocomplete="off" class="itemmerid hidden" id="itemer-${firstRowId}">
+                    <input autocomplete="off" class="hidden" id="itemclass-${firstRowId}">
                 </td>
                 <td>
                     <div>
@@ -839,9 +840,15 @@ async function loadSalesBillIntoForm(bill) {
             if(index > 0) addsalesrow(rowId)
             if(did(`item-${rowId}`)) did(`item-${rowId}`).value = item.itemname || ''
             if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = item.itemid || ''
+            const inventoryItem = (Array.isArray(datasource) ? datasource : []).find((inv) => {
+                if(String(inv?.itemid || '') && String(item?.itemid || '')) return String(inv.itemid) === String(item.itemid)
+                return String(inv?.itemname || '').trim().toLowerCase() === String(item?.itemname || '').trim().toLowerCase()
+            }) || {}
+            const rowItemClass = item.itemclass || inventoryItem.itemclass || ''
+            if(did(`itemclass-${rowId}`)) did(`itemclass-${rowId}`).value = rowItemClass
             if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = item.itemtype || item.type || ''
             if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = item.units || item.unit || ''
-            if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = Math.max(Number(item.balance || 0), Number(item.qty || 0), 0)
+            if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = isNonStockItemClass(rowItemClass) ? '999999999' : Math.max(Number(item.balance || inventoryItem.balance || 0), Number(item.qty || 0), 0)
             if(did(`price-${rowId}`)) did(`price-${rowId}`).value = Number(item.cost || 0)
             if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = Number(item.qty || 0)
             if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = Number(item.cost || 0) * Number(item.qty || 0)
@@ -1052,13 +1059,28 @@ function clearrow(i){
 }
 
 function isNonStockItemClass(itemClassValue = '') {
-    const normalized = String(itemClassValue || '').trim().toUpperCase().replace(/\s+/g, ' ')
-    return normalized === 'NON STOCK-ITEM' || normalized === 'NON STOCK ITEM'
+    const normalized = String(itemClassValue || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+    return normalized === 'NONSTOCKITEM'
+}
+
+function getSalesRowItemClass(rowId) {
+    const explicitClass = String(did(`itemclass-${rowId}`)?.value || '').trim()
+    if(explicitClass) return explicitClass
+
+    const itemId = String(did(`itemer-${rowId}`)?.value || '').trim()
+    const itemName = String(did(`item-${rowId}`)?.value || '').trim().toLowerCase()
+    const inventoryItem = (Array.isArray(datasource) ? datasource : []).find((item) => {
+        if(itemId && String(item?.itemid || '') === itemId) return true
+        return itemName && String(item?.itemname || '').trim().toLowerCase() === itemName
+    })
+    const resolvedClass = String(inventoryItem?.itemclass || '').trim()
+    if(resolvedClass && did(`itemclass-${rowId}`)) did(`itemclass-${rowId}`).value = resolvedClass
+    return resolvedClass
 }
 
 function calsaleqty(i){
     if(Number(did(`qty-${i}`).value)<0)did(`qty-${i}`).value = 0
-    const itemClassValue = did(`itemclass-${i}`)?.value || ''
+    const itemClassValue = getSalesRowItemClass(i)
     const shouldCheckStockBalance = !isOrderWorkspaceMode() && !isNonStockItemClass(itemClassValue)
     if(shouldCheckStockBalance && Number(did(`balance-${i}`).textContent)<Number(did(`qty-${i}`).value)){
         let iniborder = did(`qty-${i}`).style.borderColor
@@ -1787,6 +1809,7 @@ async function loadOrderIntoForm(orderEntry = null) {
                         <label for="logoname" class="control-label hidden">Item</label>
                         <input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'${rowId}')" onblur="salesitempop(this,'${rowId}')" list="hems_itemslist" name="item" id="item-${rowId}" class="form-control iitem comp">
                         <input autocomplete="off" class="itemmerid hidden" id="itemer-${rowId}">
+                        <input autocomplete="off" class="hidden" id="itemclass-${rowId}">
                     </td>
                     <td>
                         <div>
@@ -1823,11 +1846,13 @@ async function loadOrderIntoForm(orderEntry = null) {
 
         const qty = Number(source.qty || 0)
         const cost = Number(source.cost || inventoryItem.price || 0)
+        const rowItemClass = source.itemclass || inventoryItem.itemclass || ''
         if(did(`item-${rowId}`)) did(`item-${rowId}`).value = String(source.itemname || inventoryItem.itemname || '').trim()
         if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = String(source.itemid || inventoryItem.itemid || '').trim()
+        if(did(`itemclass-${rowId}`)) did(`itemclass-${rowId}`).value = rowItemClass
         if(did(`type-${rowId}`)) did(`type-${rowId}`).textContent = source.itemtype || source.type || inventoryItem.itemtype || ''
         if(did(`unit-${rowId}`)) did(`unit-${rowId}`).textContent = source.units || source.unit || inventoryItem.units || ''
-        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = inventoryItem.balance ?? source.balance ?? ''
+        if(did(`balance-${rowId}`)) did(`balance-${rowId}`).textContent = isNonStockItemClass(rowItemClass) ? '999999999' : (inventoryItem.balance ?? source.balance ?? '')
         if(did(`price-${rowId}`)) did(`price-${rowId}`).value = cost
         if(did(`qty-${rowId}`)) did(`qty-${rowId}`).value = qty
         if(did(`amount-${rowId}`)) did(`amount-${rowId}`).value = cost * qty
