@@ -198,7 +198,7 @@ function renderNightAuditReport(payload = {}) {
             }
         </style>
         <div class="nightaudit-table-wrapper">
-            <table class="nightaudit-table">
+            <table id="nightauditreporttable" class="nightaudit-table">
                 <thead>
                     <tr>
                         <th></th>

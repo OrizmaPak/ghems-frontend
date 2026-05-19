@@ -28,6 +28,9 @@
     </form>
 
     <div class="my-4 flex justify-end items-start gap-3">
+        <button onclick="exportToExcel('nightauditreporttable', 'HEMS NIGHT AUDIT REPORT')" type="button" class="btn">
+            <span>Export Excel</span>
+        </button>
         <button onclick="printContent('HEMS NIGHT AUDIT REPORT', null, 'nightauditreportcontainer', true)" type="button" class="btn">
             <span>Print</span>
         </button>
