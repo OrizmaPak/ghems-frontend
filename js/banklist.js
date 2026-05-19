@@ -36,12 +36,6 @@ async function fetchbankslist(id = '') {
     if (manageTab) runoptioner(manageTab)
 }
 
-async function removebanklist(id) {
-    const confirmed = window.confirm('Delete bank is not wired yet. Continue?')
-    if (!confirmed) return
-    return notification('Delete controller not configured yet. Waiting for your delete controller.', 0)
-}
-
 async function onbanklistTableDataSignal() {
     const rows = (getSignaledDatasource() || []).map((item) => `
     <tr>
@@ -51,7 +45,6 @@ async function onbanklistTableDataSignal() {
         <td>${item.address || ''}</td>
         <td class="flex items-center gap-3">
             <button title="Edit row entry" onclick="fetchbankslist('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
-            <button title="Delete row entry" onclick="removebanklist('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </td>
     </tr>`).join('')
     injectPaginatatedTable(rows)
