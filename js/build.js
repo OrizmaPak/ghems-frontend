@@ -28,6 +28,13 @@ function getBuildMemberUnitPrice(member = {}) {
     return parseBuildAmount(member?.price ?? member?.unitprice ?? member?.unit_price ?? member?.cost ?? 0)
 }
 
+function getBuildItemTypeById(itemId = '') {
+    const normalized = String(itemId || '').trim()
+    if (!normalized) return '-'
+    const match = (datasource || []).find(entry => String(entry?.itemid || '').trim() === normalized)
+    return String(match?.itemtype || '-')
+}
+
 function resolveBuildImagePath(imageValue) {
     const normalized = String(imageValue ?? '').trim()
     if (!normalized || normalized === '-' || normalized.length <= 1) return '../images/default-avatar.png'
@@ -89,6 +96,7 @@ function printBuildInvoice(id) {
             <tr>
                 <td>${index + 1}</td>
                 <td>${sanitizePrintValue(member.itemname || '')}</td>
+                <td>${sanitizePrintValue(member.itemtype || '-')}</td>
                 <td class="num">${formatNumber(member.baseQty)}</td>
                 <td class="num">${formatNumber(computed.buildQty)}</td>
                 <td class="num">${formatNumber(member.finalQty)}</td>
@@ -96,7 +104,7 @@ function printBuildInvoice(id) {
                 <td class="num">${formatNumber(member.linePrice)}</td>
             </tr>
         `).join('')
-        : `<tr><td colspan="7" class="empty">No items found for this build</td></tr>`
+        : `<tr><td colspan="8" class="empty">No items found for this build</td></tr>`
 
     const printWindow = window.open('', '_blank', 'width=1100,height=800')
     if (!printWindow) return notification('Unable to open print window. Please allow popups.', 0)
@@ -144,6 +152,7 @@ function printBuildInvoice(id) {
                         <tr>
                             <th>s/n</th>
                             <th>Item Name</th>
+                            <th>Item Type</th>
                             <th>Base Qty</th>
                             <th>Build Qty</th>
                             <th>Final Qty</th>
@@ -154,7 +163,7 @@ function printBuildInvoice(id) {
                     <tbody>
                         ${rows}
                         <tr class="total-row">
-                            <td colspan="6" style="text-align:right;">Total</td>
+                            <td colspan="7" style="text-align:right;">Total</td>
                             <td class="num">${formatNumber(computed.total)}</td>
                         </tr>
                     </tbody>
@@ -228,6 +237,7 @@ function addbuilditem() {
     let x = `<td class="opacity-70 w-3 sn">  </td>
                 <td class="opacity-70" name="itemid"> ${selectedItemId} </td>
                 <td class="opacity-70"> ${getLabelByValue('item', selectedItemId)} </td>
+                <td class="opacity-70"> ${getBuildItemTypeById(selectedItemId)} </td>
                 <td class="opacity-70"> <input type="number" value='${document.getElementById('quantity').value}' name="qty" id="${generateUID()}" class="form-control verify" placeholder="Enter Quantity of Item"> </td>
                 <td class="flex items-center gap-3">
                     <button title="Delete item" onclick="removebuildtableitem(this, '${selectedItemId}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">remove</button>
@@ -372,17 +382,18 @@ async function onviewbuildTableDataSignal() {
                 ${previewMembers.map((dat) => `
                     <tr>
                         <td>${dat.itemname}</td>
+                        <td style="width: 80px">${dat.itemtype || '-'}</td>
                         <td style="width: 80px" class="text-right">${formatNumber(dat.finalQty)}</td>
                         <td style="width: 100px" class="text-right">${formatNumber(dat.linePrice)}</td>
                     </tr>
                 `).join('')}
                 ${computed.members.length > 3 ? `
                     <tr>
-                        <td colspan="3" onclick="modalviewbuild('${item.itembuiltdetail.id}')" style="color:green;cursor:pointer">Click to view more (${computed.members.length - 3} more items)</td>
+                        <td colspan="4" onclick="modalviewbuild('${item.itembuiltdetail.id}')" style="color:green;cursor:pointer">Click to view more (${computed.members.length - 3} more items)</td>
                     </tr>
                 ` : ''}
                 <tr>
-                    <td colspan="2" class="text-right font-semibold">Total</td>
+                    <td colspan="3" class="text-right font-semibold">Total</td>
                     <td class="text-right font-semibold">${formatNumber(computed.total)}</td>
                 </tr>
             </table>` : 'No Item found in this build'}
@@ -457,6 +468,7 @@ function modalviewbuild(id) {
             <tr>
                 <td>${i + 1}</td>
                 <td>${dat.itemname || ''}</td>
+                <td>${dat.itemtype || '-'}</td>
                 <td class="text-right">${formatNumber(dat.baseQty)}</td>
                 <td class="text-right">${formatNumber(computed.buildQty)}</td>
                 <td class="text-right">${formatNumber(dat.finalQty)}</td>
@@ -465,7 +477,7 @@ function modalviewbuild(id) {
             </tr>
         `).join('') + `
             <tr>
-                <td colspan="6" class="text-right font-semibold">Total</td>
+                <td colspan="7" class="text-right font-semibold">Total</td>
                 <td class="font-semibold text-right">${formatNumber(computed.total)}</td>
             </tr>
         `

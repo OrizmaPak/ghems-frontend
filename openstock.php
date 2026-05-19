@@ -36,6 +36,7 @@
                                             <tr>
                                                 <th>s/n</th>
                                                 <th>Item name</th>
+                                                <th>Item type</th>
                                                 <th>Begin Balance</th>
                                             </tr>
                                         </thead>

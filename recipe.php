@@ -71,6 +71,7 @@
                                         <th>s/n</th>
                                         <th>Item id</th>
                                         <th>item name</th>
+                                        <th>item type</th>
                                         <th>quantity</th>
                                         <th>unit price</th>
                                         <th>price</th>
@@ -158,6 +159,7 @@
                         <tr>
                             <th>s/n</th>
                             <th>Item Name</th>
+                            <th>Item Type</th>
                             <th>units</th>
                             <th>Group name</th>
                             <th>description</th>
@@ -191,6 +193,7 @@
                             <tr>
                                 <th>s/n </th>
                                 <th> Item Name </th>
+                                <th> Item Type </th>
                                 <th> Quantity </th>
                                 <th> Unit Price </th>
                                 <th> Price </th>

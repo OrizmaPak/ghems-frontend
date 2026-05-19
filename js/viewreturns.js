@@ -81,6 +81,7 @@ async function onviewreturnsTableDataSignal() {
                                                 `
                                             <tr>
                                                 <td>${dat.itemname}</td>
+                                                <td style="width: 20px">${dat.itemtype || '-'}</td>
                                                 <td style="width: 20px">${dat.qty}</td>
                                                 <td style="width: 20px">${dat.reason}</td>
                                             </tr>
@@ -134,6 +135,7 @@ function viewreturnsview(ref){
                 <td> ${index+1} </td>
                 <td>${data.itemid}</td>
                 <td>${data.itemname}</td>
+                <td>${data.itemtype || '-'}</td>
                 <td style="width: 20px">${data.qty}</td>
                 <td>${data.typeofissue}</td>
             </tr>
@@ -142,6 +144,7 @@ function viewreturnsview(ref){
     document.getElementById('tabledata2').innerHTML += `
         <tr data-open="false" class="source-row-item">
             <td> Total: </td>
+            <td></td>
             <td></td>
             <td></td>
             <td> ${totalqty} </td>
@@ -176,6 +179,7 @@ function intakemodal(itemid){
                 <td> ${index+1} </td>
                 <td>${data.itemid}</td>
                 <td>${data.itemname}</td>
+                <td>${data.itemtype || '-'}</td>
                 <td style="width: 20px">${data.qty}</td>
                 <td>&#8358;${formatCurrency(data.cost)}</td>
             </tr>

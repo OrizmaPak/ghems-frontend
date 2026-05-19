@@ -14,6 +14,12 @@ function getRecipeItemUnitPrice(itemId) {
     return parseRecipeAmount(item.price ?? item.unitprice ?? item.unit_price ?? item.cost ?? 0)
 }
 
+function getRecipeItemType(itemId) {
+    if (!itemId) return '-'
+    const item = (recipeInventoryDatasource || []).find(data => String(data?.itemid) === String(itemId))
+    return String(item?.itemtype || '-')
+}
+
 function refreshRecipeTableTotal() {
     const rows = Array.from(document.querySelectorAll('#recipetabledata tr'))
     const total = rows.reduce((sum, row) => {
@@ -143,6 +149,7 @@ function appendRecipeTableRow(itemId, quantity) {
     let x = `<td class="opacity-70 w-3 sn">  </td>
                 <td class="opacity-70" name="itemid"> ${selectedItemId} </td>
                 <td class="opacity-70"> ${getLabelByValue('item', selectedItemId)} </td>
+                <td class="opacity-70"> ${getRecipeItemType(selectedItemId)} </td>
                 <td class="opacity-70"><input type="number" value='${enteredQuantity}' name="qty" id="${generateUID()}" class="form-control verify" placeholder="Enter Quantity of Item" oninput="updateRecipeRowTotal(this)"></td>
                 <td class="opacity-70 recipe-item-unit-price" data-raw="${unitPrice}">${formatNumber(unitPrice)}</td>
                 <td class="opacity-70 recipe-item-total" data-raw="${linePrice}">${formatNumber(linePrice)}</td>
@@ -478,7 +485,7 @@ async function onviewrecipeTableDataSignal() {
                                         <th>sales point</th>
                                         <th>cost</th>
                                         <th>price</th>
-                                        <th>ITEM NAME | [QUANTITY]</th>
+                                        <th>ITEM NAME | TYPE | [QUANTITY]</th>
                                         <th>units</th>
                                         <th>Group name</th>
                                         <th>description</th>
@@ -512,6 +519,7 @@ async function onviewrecipeTableDataSignal() {
                                                                 `
                                                                 <tr>
                                                                     <td>${dat.itemname}</td>
+                                                                    <td style="width: 90px">${dat.itemtype || '-'}</td>
                                                                     <td style="width: 70px" class="text-right">${formatNumber(dat.qtyValue)}</td>
                                                                     <td style="width: 100px" class="text-right">${formatNumber(dat.linePrice)}</td>
                                                                 </tr>
@@ -520,11 +528,11 @@ async function onviewrecipeTableDataSignal() {
                                                         }).join('')}
                                                         ${members.length > 3 ? `
                                                             <tr>
-                                                                <td colspan="3" onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" style="color:green;cursor:pointer">Click to view more (${members.length - 3} more items)</td>
+                                                                <td colspan="4" onclick="modalviewrecipe('${record?.compositeitemdetail?.id}')" style="color:green;cursor:pointer">Click to view more (${members.length - 3} more items)</td>
                                                             </tr>
                                                         ` : ``}
                                                         <tr>
-                                                            <td colspan="2" class="text-right font-semibold">Total</td>
+                                                            <td colspan="3" class="text-right font-semibold">Total</td>
                                                             <td class="text-right font-semibold">${formatNumber(membersTotalPrice)}</td>
                                                         </tr>
                                                     </table>` : 'No Item found in this build'}
@@ -552,6 +560,7 @@ async function onviewrecipeTableDataSignal() {
             <tr>
                 <td>${group.index + 1}</td>
                 <td>${group.itemname}</td>
+                <td>${group.records?.[0]?.compositeitemdetail?.itemtype || '-'}</td>
                 <td>${group.units}</td>
                 <td>${group.groupname}</td>
                 <td>${group.description}</td>
@@ -615,13 +624,14 @@ function modalviewrecipe (id){
             <tr>
                 <td>${i+1}</td>
                 <td>${dat.itemname}</td>
+                <td>${dat.itemtype || '-'}</td>
                 <td style="width: 20px">${formatNumber(dat.qtyValue)}</td>
                 <td style="width: 20px">${formatNumber(dat.unitPrice)}</td>
                 <td style="width: 20px">${formatNumber(dat.linePrice)}</td>
             </tr> 
      `).join('') + `
             <tr>
-                <td colspan="4" class="text-right font-semibold">Total</td>
+                <td colspan="5" class="text-right font-semibold">Total</td>
                 <td class="font-semibold">${formatNumber(componentTotal)}</td>
             </tr>
      `;

@@ -113,6 +113,7 @@ async function openstockFormSubmitHandler(store) {
                     <input value="${item.id ? Number(item.id) : ''}" type="hidden" name="id" id="id-${index}" class="form-control comp" placeholder="Enter Price">
                     <td>${index + 1 }</td>
                     <td><p name="itemname">${item.itemname}</p></td>
+                    <td>${item.itemtype || '-'}</td>
                     <td><input type="number" name="beginbalance" id="beginbalance-${index}" class="form-control comp" placeholder="Enter min balance"></td>
                 </tr>`
                 )

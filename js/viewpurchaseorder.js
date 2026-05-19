@@ -81,6 +81,7 @@ async function onviewpurchaseorderTableDataSignal() {
                                                 `
                                             <tr>
                                                 <td>${dat.itemname}</td>
+                                                <td style="width: 20px">${dat.itemtype || '-'}</td>
                                                 <td style="width: 20px">${formatCurrency(dat.cost)}</td>
                                                 <td style="width: 20px">${dat.qty}</td>
                                             </tr>
@@ -139,6 +140,7 @@ function purchaseorderview(itemid){
                 <td> ${index+1} </td>
                 <td>${data.itemid}</td>
                 <td>${data.itemname}</td>
+                <td>${data.itemtype || '-'}</td>
                 <td style="width: 20px">${data.qty}</td>
                 <td>${formatCurrency(data.cost)}</td>
             </tr>
@@ -149,11 +151,13 @@ function purchaseorderview(itemid){
             <td> Total: </td>
             <td></td>
             <td></td>
+            <td></td>
             <td> ${totalqty} </td>
             <td>${formatCurrency(totalcost)} </td>
         </tr>
         <tr data-open="false" class="source-row-item">
             <td> Grand Total: </td>
+            <td></td>
             <td></td>
             <td></td>
             <td colspan="2" class="text-center text-md">${formatCurrency(totalcost*totalqty)} </td>

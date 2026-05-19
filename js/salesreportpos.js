@@ -132,6 +132,7 @@ async function modalsalesreportpos(ref, room=''){
                <th>s/n </th>
                 <th> Item ID </th>
                 <th> Item Name </th>
+                <th> Item Type </th>
                 <th> qty </th>
                 <th> PRICE </th>
                 <th> TOTAL </th>
@@ -158,6 +159,7 @@ async function modalsalesreportpos(ref, room=''){
                         <td>${i+1}</td>
                         <td>${dat.itemid}</td>
                         <td>${dat.itemname}</td>
+                        <td>${dat.itemtype || '-'}</td>
                         <td style="width: 20px">${formatNumber(dat.qty)}</td>
                         <td style="width: 20px">${formatNumber(dat.cost)}</td>
                         <td style="width: 20px">${formatNumber(Number(dat.qty)*Number(dat.cost))}</td>
@@ -166,6 +168,7 @@ async function modalsalesreportpos(ref, room=''){
              if(data.length > 0 && data1.saleentry.ttype != 'ROOMS')did('tabledata2').innerHTML += `
                     <tr>
                         <td>TOTAL</td>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>

@@ -92,6 +92,7 @@
                                                        <th>s/n </th>
                                                         <th> Item ID </th>
                                                         <th> Item Name </th>
+                                                        <th> Item Type </th>
                                                         <th> Quantity </th>
                                                         <th> type of issue </th>
                                                     </tr>

@@ -65,6 +65,7 @@
                                         <th>s/n</th>
                                         <th>Item id</th>
                                         <th>item name</th>
+                                        <th>item type</th>
                                         <th>quantity</th>
                                         <th>action</th>
                                     </tr>
@@ -121,7 +122,7 @@
                             <th>s/n</th>
                             <th>sales point</th>
                             <th>Item Name</th>
-                            <th>ITEM&nbsp;NAME&nbsp;|&nbsp;[QUANTITY]</th>
+                            <th>ITEM&nbsp;NAME&nbsp;|&nbsp;TYPE&nbsp;|&nbsp;[QUANTITY]</th>
                             <th>Item Price</th>
                             <th>Total Build Price</th>
                             <th>build Date</th>
@@ -155,6 +156,7 @@
                             <tr>
                                 <th>s/n </th>
                                 <th> Item Name </th>
+                                <th> Item Type </th>
                                 <th> Base Qty </th>
                                 <th> Build Qty </th>
                                 <th> Final Qty </th>

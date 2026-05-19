@@ -92,6 +92,7 @@ async function onviewpurchasesTableDataSignal() {
                                                 `
                                             <tr>
                                                 <td>${dat.itemname}</td>
+                                                <td style="width: 20px">${dat.itemtype || '-'}</td>
                                                 <td style="width: 20px">${formatNumber(dat.cost)}</td>
                                                 <td style="width: 20px">${dat.qty}</td>
                                             </tr>
@@ -151,6 +152,7 @@ function viewpurchasesview(itemid){
                 <td> ${index+1} </td>
                 <td>${data.itemid}</td>
                 <td>${data.itemname}</td>
+                <td>${data.itemtype || '-'}</td>
                 <td style="width: 20px">${data.qty}</td>
                 <td>${formatCurrency(data.cost)}</td>
             </tr>
@@ -161,11 +163,13 @@ function viewpurchasesview(itemid){
             <td> Total: </td>
             <td></td>
             <td></td>
+            <td></td>
             <td> ${totalqty} </td>
             <td>${formatCurrency(totalcost)} </td>
         </tr>
         <tr data-open="false" class="source-row-item">
             <td> Grand Total: </td>
+            <td></td>
             <td></td>
             <td></td>
             <td colspan="2" class="text-center">${formatCurrency(totalcost*totalqty)} </td>
@@ -199,6 +203,7 @@ function intakemodal(itemid){
                 <td> ${index+1} </td>
                 <td>${data.itemid}</td>
                 <td>${data.itemname}</td>
+                <td>${data.itemtype || '-'}</td>
                 <td style="width: 20px">${data.qty}</td>
                 <td>&#8358;${formatCurrency(data.cost)}</td>
             </tr>

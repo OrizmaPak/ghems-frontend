@@ -148,11 +148,12 @@ async function modalsalesreport(ref){
     let data = data1.saledetail || []
     did('tableheader').innerHTML = `
        <th>s/n </th>
-        <th> Item ID </th>
-        <th> Item Name </th>
-        <th> qty </th>
-        <th> PRICE </th>
-        <th> TOTAL </th>
+                                                        <th> Item ID </th>
+                                                        <th> Item Name </th>
+                                                        <th> Item Type </th>
+                                                        <th> qty </th>
+                                                        <th> PRICE </th>
+                                                        <th> TOTAL </th>
     `;
     did('modaldetails').innerHTML = `
         <p class="!text-sm font-thin"><img src="../images/${did('your_companylogo').value}" class="w-[100px] h-[100px]"></p>
@@ -173,6 +174,7 @@ async function modalsalesreport(ref){
                 <td>${i+1}</td>
                 <td>${dat.itemid}</td>
                 <td>${dat.itemname}</td>
+                <td>${dat.itemtype || '-'}</td>
                 <td style="width: 20px">${formatNumber(dat.qty)}</td>
                 <td style="width: 20px">${formatNumber(dat.cost)}</td>
                 <td style="width: 20px">${formatNumber(Number(dat.qty)*Number(dat.cost))}</td>
@@ -181,6 +183,7 @@ async function modalsalesreport(ref){
         did('tabledata2').innerHTML += `
             <tr>
                 <td>TOTAL</td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
