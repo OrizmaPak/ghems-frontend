@@ -250,15 +250,20 @@ async function removeviewinventory(id) {
 }
 
 async function onviewinventoryTableDataSignal() {
+    let currentSalespoint = ''
     const rows = (getSignaledDatasource() || []).map((item) => {
         const itemId = encodeURIComponent(String(item?.itemid ?? ''))
         const composite = String(item?.composite || 'NO').toUpperCase()
         const compositeColor = composite === 'YES' ? '#16a34a' : '#64748b'
+        const salespoint = String(item.salespoint || 'Unassigned').trim() || 'Unassigned'
+        const groupRow = salespoint !== currentSalespoint
+            ? `<tr class="bg-slate-100"><td colspan="17" class="font-bold text-left uppercase tracking-wide text-slate-700">${safeText(salespoint)}</td></tr>`
+            : ''
+        currentSalespoint = salespoint
 
-        return `
+        return `${groupRow}
             <tr>
                 <td>${item.index + 1}</td>
-                <td>${safeText(item.salespoint || '-')}</td>
                 <td>${safeText(item.itemid || '-')}</td>
                 <td>${safeText(item.itemname || '-')}</td>
                 <td>${safeText(item.itemclass || '-')}</td>
