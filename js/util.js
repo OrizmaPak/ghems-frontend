@@ -809,6 +809,7 @@ function getFormData(form) {
 }
 
 let paginationLimit = 10 
+const paginationLimitOptions = [10, 25, 50, 100]
 let filteredDataSource = []
 let pageCount; 
 let currentPage = 1; 
@@ -879,9 +880,19 @@ const paginationComponent = {
         const wrap = this.getStatusWrap()
         if(!wrap) return
 
+        const pageSizeOptionsMarkup = paginationLimitOptions
+            .map((size) => `<option value="${size}" ${Number(paginationLimit) === Number(size) ? 'selected' : ''}>${size}</option>`)
+            .join('')
+
         const template = `
             <div class="pagination-shell">
-                <span class="pagination-meta">${this.getStatusMarkup()}</span>
+                <span class="pagination-meta flex items-center gap-2">
+                    <span>${this.getStatusMarkup()}</span>
+                    <span class="flex items-center gap-1">
+                        <label for="page-size-select" class="text-xs opacity-70">Rows:</label>
+                        <select id="page-size-select" class="form-control !p-1 !h-[30px] !w-[80px]">${pageSizeOptionsMarkup}</select>
+                    </span>
+                </span>
                 <span class="flex pagination" aria-label="Pagination">
                     <button type="button" id="prev-button" class="pager-arrow" aria-label="Previous page" ${currentPage <= 1 ? 'disabled' : ''}>&lsaquo;</button>
                     ${this.getNumberButtonsMarkup()}
@@ -906,6 +917,16 @@ const paginationComponent = {
 
             const pageIndex = Number(target.getAttribute('page-index'))
             if(pageIndex) setCurrentPage(pageIndex)
+        })
+
+        wrap.addEventListener('change', (event) => {
+            const target = event.target
+            if(!target || target.id !== 'page-size-select') return
+            const nextLimit = Number(target.value || paginationLimit)
+            if(!Number.isFinite(nextLimit) || nextLimit <= 0) return
+            if(nextLimit === paginationLimit) return
+            paginationLimit = nextLimit
+            setCurrentPage(1)
         })
 
         wrap.dataset.paginationBound = '1'
