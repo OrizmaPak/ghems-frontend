@@ -43,6 +43,7 @@ function buildInvoicingPickerModal(){
             <button type="button" class="btn btn-sm" onclick="reloadInvoicingPickerTabData()">Filter</button>
           </div>
           <input id="invoicingPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderInvoicingPickerRows()">
+          <span id="invoicingPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
         </div>
         <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="invoicingPickerRows"></tbody></table></div>
       </div>
@@ -69,6 +70,7 @@ function switchInvoicingPickerTab(tab){
 }
 
 async function reloadInvoicingPickerTabData(){
+    setInvoicingPickerStatus('Fetching...', 'neutral')
     const startdate = did('invoicingPickerStartDate')?.value || ''
     const enddate = did('invoicingPickerEndDate')?.value || ''
     const payload = new FormData()
@@ -77,11 +79,23 @@ async function reloadInvoicingPickerTabData(){
     if(invoicingPickerTab == 'checkedin'){
         const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
         invoicingPickerData.checkedin = reqCheckin.status ? normalizeInvoicingPickerRows(reqCheckin.data || []) : []
+        if(reqCheckin?.status) setInvoicingPickerStatus(`Loaded ${invoicingPickerData.checkedin.length} record(s)`, 'ok')
+        else setInvoicingPickerStatus(reqCheckin?.message || 'Fetch failed', 'error')
     }else{
         const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
         invoicingPickerData.reservations = reqRes.status ? normalizeInvoicingPickerRows(reqRes.data || []) : []
+        if(reqRes?.status) setInvoicingPickerStatus(`Loaded ${invoicingPickerData.reservations.length} record(s)`, 'ok')
+        else setInvoicingPickerStatus(reqRes?.message || 'Fetch failed', 'error')
     }
     renderInvoicingPickerRows()
+}
+
+function setInvoicingPickerStatus(message='Idle', tone='neutral'){
+    const el = did('invoicingPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
 }
 
 function normalizeInvoicingPickerRows(data){

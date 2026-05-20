@@ -41,6 +41,7 @@ function initTrackRoomPickerModal(){
             <button type="button" class="btn btn-sm" onclick="reloadTrackPickerTabData()">Filter</button>
           </div>
           <input id="trackPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderTrackPickerRows()">
+          <span id="trackPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
         </div>
         <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="trackPickerRows"></tbody></table></div>
       </div>
@@ -67,6 +68,7 @@ function switchTrackPickerTab(tab){
 }
 
 async function reloadTrackPickerTabData(){
+    setTrackPickerStatus('Fetching...', 'neutral')
     const startdate = did('trackPickerStartDate')?.value || ''
     const enddate = did('trackPickerEndDate')?.value || ''
     const payload = new FormData()
@@ -75,11 +77,23 @@ async function reloadTrackPickerTabData(){
     if(trackPickerTab == 'checkedin'){
         const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
         trackPickerData.checkedin = reqCheckin.status ? normalizeTrackPickerCheckins(reqCheckin.data || []) : []
+        if(reqCheckin?.status) setTrackPickerStatus(`Loaded ${trackPickerData.checkedin.length} record(s)`, 'ok')
+        else setTrackPickerStatus(reqCheckin?.message || 'Fetch failed', 'error')
     }else{
         const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
         trackPickerData.reservations = reqRes.status ? normalizeTrackPickerReservations(reqRes.data || []) : []
+        if(reqRes?.status) setTrackPickerStatus(`Loaded ${trackPickerData.reservations.length} record(s)`, 'ok')
+        else setTrackPickerStatus(reqRes?.message || 'Fetch failed', 'error')
     }
     renderTrackPickerRows()
+}
+
+function setTrackPickerStatus(message='Idle', tone='neutral'){
+    const el = did('trackPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
 }
 
 function normalizeTrackPickerCheckins(data){

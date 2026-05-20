@@ -38,6 +38,7 @@ function initCashierReceiptReferencePickerModal(){
             <button type="button" class="btn btn-sm" onclick="reloadCashierReceiptPickerTabData()">Filter</button>
           </div>
           <input id="cashierReceiptPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderCashierReceiptPickerRows()">
+          <span id="cashierReceiptPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
         </div>
         <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="cashierReceiptPickerRows"></tbody></table></div>
       </div>
@@ -63,6 +64,7 @@ function switchCashierReceiptPickerTab(tab){
 }
 
 async function reloadCashierReceiptPickerTabData(){
+    setCashierReceiptPickerStatus('Fetching...', 'neutral')
     const startdate = did('cashierReceiptPickerStartDate')?.value || ''
     const enddate = did('cashierReceiptPickerEndDate')?.value || ''
     const payload = new FormData()
@@ -71,11 +73,23 @@ async function reloadCashierReceiptPickerTabData(){
     if(cashierReceiptPickerTab == 'checkedin'){
         const req = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
         cashierReceiptPickerData.checkedin = req.status ? normalizeCashierReceiptPickerRows(req.data || []) : []
+        if(req?.status) setCashierReceiptPickerStatus(`Loaded ${cashierReceiptPickerData.checkedin.length} record(s)`, 'ok')
+        else setCashierReceiptPickerStatus(req?.message || 'Fetch failed', 'error')
     }else{
         const req = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
         cashierReceiptPickerData.reservations = req.status ? normalizeCashierReceiptPickerRows(req.data || []) : []
+        if(req?.status) setCashierReceiptPickerStatus(`Loaded ${cashierReceiptPickerData.reservations.length} record(s)`, 'ok')
+        else setCashierReceiptPickerStatus(req?.message || 'Fetch failed', 'error')
     }
     renderCashierReceiptPickerRows()
+}
+
+function setCashierReceiptPickerStatus(message='Idle', tone='neutral'){
+    const el = did('cashierReceiptPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
 }
 
 function normalizeCashierReceiptPickerRows(data){

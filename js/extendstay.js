@@ -53,9 +53,11 @@ function buildExtendStayRefPickerModal() {
             <span class="material-symbols-outlined cp text-red-500" onclick="did('extendStayRefPickerModal').classList.add('hidden')">close</span>
           </div>
           <div class="flex flex-wrap gap-2 mb-3 items-end">
-            <input id="extendStayRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="renderExtendStayRefPickerRows()">
-            <input id="extendStayRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="renderExtendStayRefPickerRows()">
+            <input id="extendStayRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="reloadExtendStayRefPickerRows()">
+            <input id="extendStayRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="reloadExtendStayRefPickerRows()">
+            <button type="button" class="btn btn-sm" onclick="reloadExtendStayRefPickerRows()">Filter</button>
             <input id="extendStayRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderExtendStayRefPickerRows()">
+            <span id="extendStayRefPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
           </div>
           <div class="table-content">
             <table>
@@ -87,8 +89,26 @@ function buildExtendStayRefPickerModal() {
 async function openExtendStayRefPicker() {
     did('extendStayRefPickerModal').classList.remove('hidden')
     did('extendStayRefPickerRows').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading checked-ins...</td></tr>`
-    const request = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
-    extendStayPickerRows = request.status ? normalizeExtendStayPickerRows(request.data || []) : []
+    await reloadExtendStayRefPickerRows()
+}
+
+function setExtendStayRefPickerStatus(message = 'Idle', tone = 'neutral'){
+    const el = did('extendStayRefPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
+}
+
+async function reloadExtendStayRefPickerRows(){
+    setExtendStayRefPickerStatus('Fetching...', 'neutral')
+    const payload = new FormData()
+    payload.append('startdate', did('extendStayRefPickerStartDate')?.value || '')
+    payload.append('enddate', did('extendStayRefPickerEndDate')?.value || '')
+    const request = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
+    extendStayPickerRows = request?.status ? normalizeExtendStayPickerRows(request.data || []) : []
+    if(request?.status) setExtendStayRefPickerStatus(`Loaded ${extendStayPickerRows.length} record(s)`, 'ok')
+    else setExtendStayRefPickerStatus(request?.message || 'Fetch failed', 'error')
     renderExtendStayRefPickerRows()
 }
 

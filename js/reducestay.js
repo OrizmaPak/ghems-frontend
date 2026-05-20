@@ -49,9 +49,11 @@ function buildReduceStayRefPickerModal() {
             <span class="material-symbols-outlined cp text-red-500" onclick="did('reduceStayRefPickerModal').classList.add('hidden')">close</span>
           </div>
           <div class="flex flex-wrap gap-2 mb-3 items-end">
-            <input id="reduceStayRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="renderReduceStayRefPickerRows()">
-            <input id="reduceStayRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="renderReduceStayRefPickerRows()">
+            <input id="reduceStayRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="reloadReduceStayRefPickerRows()">
+            <input id="reduceStayRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="reloadReduceStayRefPickerRows()">
+            <button type="button" class="btn btn-sm" onclick="reloadReduceStayRefPickerRows()">Filter</button>
             <input id="reduceStayRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderReduceStayRefPickerRows()">
+            <span id="reduceStayRefPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
           </div>
           <div class="table-content">
             <table>
@@ -83,8 +85,26 @@ function buildReduceStayRefPickerModal() {
 async function openReduceStayRefPicker() {
     did('reduceStayRefPickerModal').classList.remove('hidden')
     did('reduceStayRefPickerRows').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading checked-ins...</td></tr>`
-    const request = await httpRequest2('../controllers/fetchallcheckins', new FormData(), null, 'json')
-    reduceStayPickerRows = request.status ? normalizeReduceStayPickerRows(request.data || []) : []
+    await reloadReduceStayRefPickerRows()
+}
+
+function setReduceStayRefPickerStatus(message = 'Idle', tone = 'neutral'){
+    const el = did('reduceStayRefPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
+}
+
+async function reloadReduceStayRefPickerRows(){
+    setReduceStayRefPickerStatus('Fetching...', 'neutral')
+    const payload = new FormData()
+    payload.append('startdate', did('reduceStayRefPickerStartDate')?.value || '')
+    payload.append('enddate', did('reduceStayRefPickerEndDate')?.value || '')
+    const request = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
+    reduceStayPickerRows = request?.status ? normalizeReduceStayPickerRows(request.data || []) : []
+    if(request?.status) setReduceStayRefPickerStatus(`Loaded ${reduceStayPickerRows.length} record(s)`, 'ok')
+    else setReduceStayRefPickerStatus(request?.message || 'Fetch failed', 'error')
     renderReduceStayRefPickerRows()
 }
 

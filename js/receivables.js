@@ -69,6 +69,7 @@ function buildReceivablesPickerModal(){
             <button type="button" class="btn btn-sm" onclick="reloadReceivablesPickerTabData()">Filter</button>
           </div>
           <input id="receivablesPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter room, guest, ref, phone" oninput="renderReceivablesPickerRows()">
+          <span id="receivablesPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
         </div>
         <div class="table-content"><table><thead><tr><th>ref</th><th>room</th><th>guest</th><th>phone</th><th>arrival</th><th>departure</th><th>action</th></tr></thead><tbody id="receivablesPickerRows"></tbody></table></div>
       </div>
@@ -95,6 +96,7 @@ function switchReceivablesPickerTab(tab){
 }
 
 async function reloadReceivablesPickerTabData(){
+    setReceivablesPickerStatus('Fetching...', 'neutral')
     const startdate = did('receivablesPickerStartDate')?.value || ''
     const enddate = did('receivablesPickerEndDate')?.value || ''
     const payload = new FormData()
@@ -103,11 +105,23 @@ async function reloadReceivablesPickerTabData(){
     if(receivablesPickerTab == 'checkedin'){
         const reqCheckin = await httpRequest2('../controllers/fetchallcheckins', payload, null, 'json')
         receivablesPickerData.checkedin = reqCheckin.status ? normalizeReceivablesPickerRows(reqCheckin.data || []) : []
+        if(reqCheckin?.status) setReceivablesPickerStatus(`Loaded ${receivablesPickerData.checkedin.length} record(s)`, 'ok')
+        else setReceivablesPickerStatus(reqCheckin?.message || 'Fetch failed', 'error')
     }else{
         const reqRes = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
         receivablesPickerData.reservations = reqRes.status ? normalizeReceivablesPickerRows(reqRes.data || []) : []
+        if(reqRes?.status) setReceivablesPickerStatus(`Loaded ${receivablesPickerData.reservations.length} record(s)`, 'ok')
+        else setReceivablesPickerStatus(reqRes?.message || 'Fetch failed', 'error')
     }
     renderReceivablesPickerRows()
+}
+
+function setReceivablesPickerStatus(message='Idle', tone='neutral'){
+    const el = did('receivablesPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
 }
 
 function normalizeReceivablesPickerRows(data){

@@ -55,9 +55,11 @@ function buildCancelReservationRefPickerModal() {
             <span class="material-symbols-outlined cp text-red-500" onclick="did('cancelReservationRefPickerModal').classList.add('hidden')">close</span>
           </div>
           <div class="flex flex-wrap gap-2 mb-3 items-end">
-            <input id="cancelReservationRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="renderCancelReservationRefPickerRows()">
-            <input id="cancelReservationRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="renderCancelReservationRefPickerRows()">
+            <input id="cancelReservationRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="reloadCancelReservationRefPickerRows()">
+            <input id="cancelReservationRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="reloadCancelReservationRefPickerRows()">
+            <button type="button" class="btn btn-sm" onclick="reloadCancelReservationRefPickerRows()">Filter</button>
             <input id="cancelReservationRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderCancelReservationRefPickerRows()">
+            <span id="cancelReservationRefPickerStatus" class="text-xs opacity-70 ml-auto">Idle</span>
           </div>
           <div class="table-content">
             <table>
@@ -108,8 +110,26 @@ async function openCancelReservationRefPicker() {
     buildCancelReservationRefPickerModal()
     did('cancelReservationRefPickerModal').classList.remove('hidden')
     did('cancelReservationRefPickerRows').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading reservations...</td></tr>`
-    const request = await httpRequest2('../controllers/fetchreservationsbyfilter', new FormData(), null, 'json')
+    await reloadCancelReservationRefPickerRows()
+}
+
+function setCancelReservationRefPickerStatus(message = 'Idle', tone = 'neutral'){
+    const el = did('cancelReservationRefPickerStatus')
+    if(!el) return
+    const toneClass = tone === 'ok' ? 'text-green-600' : tone === 'error' ? 'text-red-600' : 'text-slate-500'
+    el.className = `text-xs ml-auto ${toneClass}`
+    el.textContent = message
+}
+
+async function reloadCancelReservationRefPickerRows(){
+    setCancelReservationRefPickerStatus('Fetching...', 'neutral')
+    const payload = new FormData()
+    payload.append('startdate', did('cancelReservationRefPickerStartDate')?.value || '')
+    payload.append('enddate', did('cancelReservationRefPickerEndDate')?.value || '')
+    const request = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
     cancelReservationPickerRows = request?.status ? normalizeCancelReservationPickerRows(request.data || []) : []
+    if(request?.status) setCancelReservationRefPickerStatus(`Loaded ${cancelReservationPickerRows.length} record(s)`, 'ok')
+    else setCancelReservationRefPickerStatus(request?.message || 'Fetch failed', 'error')
     renderCancelReservationRefPickerRows()
 }
 
