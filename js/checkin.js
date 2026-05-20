@@ -437,7 +437,8 @@ function getCheckinRequiredIds(formId = '') {
     if(formId === 'guestreservationform') {
         ids = getGuestReservationRequiredIds()
     } else if(formId === 'cancelreservationform') {
-        ids = getIdFromCls('comp22', formId)
+        // Cancel reservation now requires only cancellation reason.
+        ids = ['reasonforcancellation']
     } else if(formId === 'extendstayform') {
         ids = getIdFromCls('comp33', formId)
     } else {
