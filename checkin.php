@@ -517,14 +517,14 @@
                                                                                                                 }else{
                                                                                                                     document.getElementById('bankside').classList.add('invisible')
                                                                                                                 }" class="bg-white form-control !p-2 comp2">
-                                                            <option value="">-- Select Payment Method --</option>
+                                                            <option value="" selected>Select Payment Method</option>
                                                             <option>TRANSFER</option>
                                                             <option>CASH</option>
                                                             <option>POS</option>
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div id="bankside" class="grid grid-cols-1 !mb-2 lg:grid-cols-2 gap-10">
+                                                <div id="bankside" class="grid grid-cols-1 !mb-2 lg:grid-cols-2 gap-10 invisible">
                                                     <div class="form-group">
                                                         <label for="logoname" class="control-label text-md">Bank Name</label> 
                                                         <input type="text" name="bankname" id="bankname" class="bg-white form-control !p-2 comp2" placeholder="Enter Bank Name">

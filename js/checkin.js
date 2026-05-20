@@ -387,12 +387,8 @@ function setCheckinPaymentMethodDefaultCash() {
     const paymentMethodEl = did('paymentmethod')
     if (!paymentMethodEl) return
     if (paymentMethodEl.value) return
-    const cashOption = Array.from(paymentMethodEl.options || []).find(opt => /^cash$/i.test(String(opt.value || '').trim()))
-    if (cashOption) {
-        paymentMethodEl.value = cashOption.value
-    } else {
-        paymentMethodEl.value = 'CASH'
-    }
+    paymentMethodEl.value = ''
+    did('bankside')?.classList.add('invisible')
 }
 
 function getCheckinNumericValue(value = '') {
