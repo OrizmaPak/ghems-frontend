@@ -20,9 +20,14 @@ async function fetcroomcategory(id) {
     }
     let request = await httpRequest2('../controllers/fetchroomcategories', id ? getparamm() : null, null, 'json')
     if(request.status && request.data.length) {
+        const postingMasterOnly = request.data.filter(dat => {
+            const type = String(dat.categorytype || dat.type || '').trim().toUpperCase()
+            return type === 'POSTING MASTER'
+        })
         const select = did('categoryid')
         if(select) {
-            const options = request.data.map(dat=>`<option value="${dat.id}">${dat.category}</option>`).join('')
+            const source = postingMasterOnly.length ? postingMasterOnly : request.data
+            const options = source.map(dat=>`<option value="${dat.id}">${dat.category}</option>`).join('')
             select.innerHTML = `<option value="">-- SELECT CATEGORY --</option>${options}`
         }
     } else if(!request.status) {
