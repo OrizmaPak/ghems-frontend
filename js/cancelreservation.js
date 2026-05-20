@@ -80,9 +80,11 @@ function buildCancelReservationRefPickerModal() {
       </div>
     `)
     did('cancelReservationRefPickerModal').onclick = function(event){ if(event.target.id=='cancelReservationRefPickerModal')this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('cancelReservationRefPickerStartDate') && !did('cancelReservationRefPickerStartDate').value) did('cancelReservationRefPickerStartDate').value = `${year}-01-01`
-    if(did('cancelReservationRefPickerEndDate') && !did('cancelReservationRefPickerEndDate').value) did('cancelReservationRefPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('cancelReservationRefPickerStartDate') && !did('cancelReservationRefPickerStartDate').value) did('cancelReservationRefPickerStartDate').value = monthStart
+    if(did('cancelReservationRefPickerEndDate') && !did('cancelReservationRefPickerEndDate').value) did('cancelReservationRefPickerEndDate').value = monthEnd
 }
 
 function normalizeCancelReservationPickerRows(data = []) {

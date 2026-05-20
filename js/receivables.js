@@ -74,9 +74,11 @@ function buildReceivablesPickerModal(){
       </div>
     `
     did('receivablesRoomPickerModal').onclick = function(event){ if(event.target.id=='receivablesRoomPickerModal')this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('receivablesPickerStartDate') && !did('receivablesPickerStartDate').value) did('receivablesPickerStartDate').value = `${year}-01-01`
-    if(did('receivablesPickerEndDate') && !did('receivablesPickerEndDate').value) did('receivablesPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('receivablesPickerStartDate') && !did('receivablesPickerStartDate').value) did('receivablesPickerStartDate').value = monthStart
+    if(did('receivablesPickerEndDate') && !did('receivablesPickerEndDate').value) did('receivablesPickerEndDate').value = monthEnd
 }
 
 async function openReceivablesRoomPicker(){

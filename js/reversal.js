@@ -31,9 +31,11 @@ function initCashierReversalSalesFinderModal(){
         <div class="table-content"><table><thead><tr><th>date</th><th>ref</th><th>room/cc</th><th>amount</th><th>method</th><th>action</th></tr></thead><tbody id="cashierReversalSalesRows"></tbody></table></div>
       </div>
     </div>`)
-    const year = new Date().getFullYear()
-    if(did('cashierReversalSalesStartDate')) did('cashierReversalSalesStartDate').value = `${year}-01-01`
-    if(did('cashierReversalSalesEndDate')) did('cashierReversalSalesEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('cashierReversalSalesStartDate') && !did('cashierReversalSalesStartDate').value) did('cashierReversalSalesStartDate').value = monthStart
+    if(did('cashierReversalSalesEndDate') && !did('cashierReversalSalesEndDate').value) did('cashierReversalSalesEndDate').value = monthEnd
 }
 
 async function openCashierReversalSalesFinder(target='sales'){

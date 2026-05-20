@@ -73,9 +73,11 @@ function buildReduceStayRefPickerModal() {
       </div>
     `)
     did('reduceStayRefPickerModal').onclick = function(event){ if(event.target.id=='reduceStayRefPickerModal')this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('reduceStayRefPickerStartDate') && !did('reduceStayRefPickerStartDate').value) did('reduceStayRefPickerStartDate').value = `${year}-01-01`
-    if(did('reduceStayRefPickerEndDate') && !did('reduceStayRefPickerEndDate').value) did('reduceStayRefPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('reduceStayRefPickerStartDate') && !did('reduceStayRefPickerStartDate').value) did('reduceStayRefPickerStartDate').value = monthStart
+    if(did('reduceStayRefPickerEndDate') && !did('reduceStayRefPickerEndDate').value) did('reduceStayRefPickerEndDate').value = monthEnd
 }
 
 async function openReduceStayRefPicker() {

@@ -46,9 +46,11 @@ function initTrackRoomPickerModal(){
       </div>
     `
     did('trackRoomPickerModal').onclick = function(event){ if(event.target.id=='trackRoomPickerModal')this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('trackPickerStartDate') && !did('trackPickerStartDate').value) did('trackPickerStartDate').value = `${year}-01-01`
-    if(did('trackPickerEndDate') && !did('trackPickerEndDate').value) did('trackPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('trackPickerStartDate') && !did('trackPickerStartDate').value) did('trackPickerStartDate').value = monthStart
+    if(did('trackPickerEndDate') && !did('trackPickerEndDate').value) did('trackPickerEndDate').value = monthEnd
 }
 
 async function openTrackRoomPicker(){

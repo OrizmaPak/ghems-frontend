@@ -43,9 +43,11 @@ function initCashierReceiptReferencePickerModal(){
       </div>
     `
     did('cashierReceiptRefPickerModal').onclick = function(event){ if(event.target.id=='cashierReceiptRefPickerModal') this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('cashierReceiptPickerStartDate') && !did('cashierReceiptPickerStartDate').value) did('cashierReceiptPickerStartDate').value = `${year}-01-01`
-    if(did('cashierReceiptPickerEndDate') && !did('cashierReceiptPickerEndDate').value) did('cashierReceiptPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('cashierReceiptPickerStartDate') && !did('cashierReceiptPickerStartDate').value) did('cashierReceiptPickerStartDate').value = monthStart
+    if(did('cashierReceiptPickerEndDate') && !did('cashierReceiptPickerEndDate').value) did('cashierReceiptPickerEndDate').value = monthEnd
 }
 
 async function openCashierReceiptReferencePicker(){

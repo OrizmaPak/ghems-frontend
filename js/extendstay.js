@@ -77,9 +77,11 @@ function buildExtendStayRefPickerModal() {
       </div>
     `)
     did('extendStayRefPickerModal').onclick = function(event){ if(event.target.id=='extendStayRefPickerModal')this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('extendStayRefPickerStartDate') && !did('extendStayRefPickerStartDate').value) did('extendStayRefPickerStartDate').value = `${year}-01-01`
-    if(did('extendStayRefPickerEndDate') && !did('extendStayRefPickerEndDate').value) did('extendStayRefPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('extendStayRefPickerStartDate') && !did('extendStayRefPickerStartDate').value) did('extendStayRefPickerStartDate').value = monthStart
+    if(did('extendStayRefPickerEndDate') && !did('extendStayRefPickerEndDate').value) did('extendStayRefPickerEndDate').value = monthEnd
 }
 
 async function openExtendStayRefPicker() {

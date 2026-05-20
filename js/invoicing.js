@@ -48,9 +48,11 @@ function buildInvoicingPickerModal(){
       </div>
     `
     did('invoicingReferencePickerModal').onclick = function(event){ if(event.target.id=='invoicingReferencePickerModal')this.classList.add('hidden') }
-    const year = new Date().getFullYear()
-    if(did('invoicingPickerStartDate') && !did('invoicingPickerStartDate').value) did('invoicingPickerStartDate').value = `${year}-01-01`
-    if(did('invoicingPickerEndDate') && !did('invoicingPickerEndDate').value) did('invoicingPickerEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('invoicingPickerStartDate') && !did('invoicingPickerStartDate').value) did('invoicingPickerStartDate').value = monthStart
+    if(did('invoicingPickerEndDate') && !did('invoicingPickerEndDate').value) did('invoicingPickerEndDate').value = monthEnd
 }
 
 async function openInvoicingReferencePicker(){

@@ -31,9 +31,11 @@ function initReversalSalesFinderModal(){
         <div class="table-content"><table><thead><tr><th>date</th><th>ref</th><th>room/cc</th><th>amount</th><th>method</th><th>action</th></tr></thead><tbody id="reversalSalesRows"></tbody></table></div>
       </div>
     </div>`)
-    const year = new Date().getFullYear()
-    if(did('reversalSalesStartDate')) did('reversalSalesStartDate').value = `${year}-01-01`
-    if(did('reversalSalesEndDate')) did('reversalSalesEndDate').value = `${year + 1}-12-31`
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    if(did('reversalSalesStartDate') && !did('reversalSalesStartDate').value) did('reversalSalesStartDate').value = monthStart
+    if(did('reversalSalesEndDate') && !did('reversalSalesEndDate').value) did('reversalSalesEndDate').value = monthEnd
     did('reversalSalesFinderModal').className = 'hidden fixed inset-0 z-[210] bg-[#00000052] p-4 overflow-auto flex items-center justify-center'
 }
 
