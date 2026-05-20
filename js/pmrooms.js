@@ -3,6 +3,13 @@ let pmRoomImportedRows = []
 let pmRoomImportEventsBound = false
 const pmRoomImportDelay = 1000
 
+async function requestPmRooms(endpointBase, payload = null, btn = null, responseType = 'json') {
+    let request = await httpRequest2(`../controllers/${endpointBase}`, payload, btn, responseType)
+    if(request?.status) return request
+    const alt = endpointBase.toLowerCase().endsWith('.php') ? endpointBase : `${endpointBase}.php`
+    return await httpRequest2(`../controllers/${alt}`, payload, btn, responseType)
+}
+
 async function pmroomsActive() {
     const form = document.querySelector('#pmroomsform')
     if(form?.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', pmroomsFormSubmitHandler)
@@ -41,7 +48,7 @@ async function fetchpmrooms(roomnumber) {
         paramstr.append('roomnumber', roomnumber)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchpmrooms', roomnumber ? getparamm() : null, null, 'json')
+    let request = await requestPmRooms('fetchpmrooms', roomnumber ? getparamm() : null, null, 'json')
     if(!roomnumber) document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!roomnumber) {
@@ -93,7 +100,7 @@ async function pmroomsFormSubmitHandler() {
     const extra = pmroomsEditRoomNumber ? [['roomnumber', pmroomsEditRoomNumber]] : null
     let payload = getFormData2(document.querySelector('#pmroomsform'), extra)
 
-    let request = await httpRequest2('../controllers/pmrooms', payload, document.querySelector('#pmroomsform #submit'))
+    let request = await requestPmRooms('pmrooms', payload, document.querySelector('#pmroomsform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1)
         pmroomsEditRoomNumber = ''
@@ -267,7 +274,7 @@ async function importSelectedPmRooms(){
         if(i>0) await delayPmRoomImport(pmRoomImportDelay)
         if(status) status.textContent = `Submitting ${i+1}/${rowsToImport.length}...`
         const payload = mapPmRoomRowToFormData(rowsToImport[i])
-        const request = await httpRequest2('../controllers/pmrooms', payload, null)
+        const request = await requestPmRooms('pmrooms', payload, null)
         if(request?.status) successCount++
     }
     if(loader) loader.style.display = 'none'
