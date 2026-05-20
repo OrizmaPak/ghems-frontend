@@ -51,15 +51,18 @@ async function fetchpmrooms(roomnumber) {
     let request = await requestPmRooms('fetchpmrooms', roomnumber ? getparamm() : null, null, 'json')
     if(!roomnumber) document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
+        const rows = Array.isArray(request?.data)
+            ? request.data
+            : (Array.isArray(request?.data?.data) ? request.data.data : [])
         if(!roomnumber) {
-            if(request.data.length) {
-                datasource = request.data
+            if(rows.length) {
+                datasource = rows
                 resolvePagination(datasource, onpmroomsTableDataSignal)
             }
         } else {
             const manageTab = document.querySelector('[name="managepmroomspanel"]')
             if(manageTab && typeof runoptioner === 'function') runoptioner(manageTab)
-            const record = (request.data || []).find(item => String(item.roomnumber) === String(roomnumber)) || request.data?.[0]
+            const record = rows.find(item => String(item.roomnumber) === String(roomnumber)) || rows[0]
             if(!record) return notification('No records retrieved')
             pmroomsEditRoomNumber = record.roomnumber
             populateData(record, [], [], 'pmroomsform')
