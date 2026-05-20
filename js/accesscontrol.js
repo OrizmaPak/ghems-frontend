@@ -12,6 +12,7 @@ const accessctrl_administration = [
     'DISCOUNT COUPON',
     'COST CENTER',
     'BANK LIST',
+    'PM ROOMS',
     'SETTINGS',
     'UPDATE OTHER USERS PROFILE',
     'REVERSE PAYMENT',

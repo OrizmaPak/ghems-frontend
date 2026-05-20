@@ -152,6 +152,11 @@ const routerTree = {
         startingFunction: 'addroomActive',
         scriptName: './js/addroom.js'
     },
+    pmrooms: {
+        template: 'pmrooms',
+        startingFunction: 'pmroomsActive',
+        scriptName: './js/pmrooms.js'
+    },
     roomcategories: {
         template: 'roomcategories',
         startingFunction: 'roomcategoriesActive',

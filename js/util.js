@@ -19,6 +19,7 @@ const permissionAliasesByRouteId = {
     viewrecipe: 'RECIPE',
     viewbuild: 'BUILD',
     approvepurchaseorder: 'APPROVE PURCHASE ORDER',
+    pmrooms: 'PM ROOMS',
     bills: 'BILLS',
     splitbill: 'BILLS',
     viewdailyassignmentsheet: 'VIEW DAILY ASSIGNMENT SHEET',
