@@ -69,6 +69,7 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                                                             <option>ALCOHOL</option>
                                                             <option>NON-ALCOHOL</option>
                                                             <option>MISCELLANEOUS</option>
+                                                            <option>SERVICE</option>
                                                         </select>
                                                     </div>
                                                     <div class="form-group">
