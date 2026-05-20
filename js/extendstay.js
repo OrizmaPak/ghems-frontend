@@ -53,6 +53,8 @@ function buildExtendStayRefPickerModal() {
             <span class="material-symbols-outlined cp text-red-500" onclick="did('extendStayRefPickerModal').classList.add('hidden')">close</span>
           </div>
           <div class="flex flex-wrap gap-2 mb-3 items-end">
+            <input id="extendStayRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="renderExtendStayRefPickerRows()">
+            <input id="extendStayRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="renderExtendStayRefPickerRows()">
             <input id="extendStayRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderExtendStayRefPickerRows()">
           </div>
           <div class="table-content">
@@ -75,6 +77,9 @@ function buildExtendStayRefPickerModal() {
       </div>
     `)
     did('extendStayRefPickerModal').onclick = function(event){ if(event.target.id=='extendStayRefPickerModal')this.classList.add('hidden') }
+    const year = new Date().getFullYear()
+    if(did('extendStayRefPickerStartDate') && !did('extendStayRefPickerStartDate').value) did('extendStayRefPickerStartDate').value = `${year}-01-01`
+    if(did('extendStayRefPickerEndDate') && !did('extendStayRefPickerEndDate').value) did('extendStayRefPickerEndDate').value = `${year + 1}-12-31`
 }
 
 async function openExtendStayRefPicker() {
@@ -106,8 +111,7 @@ function normalizeExtendStayPickerRows(data = []) {
 
 function renderExtendStayRefPickerRows() {
     if(!did('extendStayRefPickerRows')) return
-    const search = (did('extendStayRefPickerSearch')?.value || '').toLowerCase().trim()
-    const rows = extendStayPickerRows.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase().includes(search))
+    const rows = getFilteredExtendStayRefPickerRows()
     did('extendStayRefPickerRows').innerHTML = rows.map((item, index) => `
       <tr>
         <td>${item.reference || '-'}</td>
@@ -121,11 +125,26 @@ function renderExtendStayRefPickerRows() {
     `).join('') || `<tr><td colspan="100%" class="text-center opacity-70">No checked-ins found</td></tr>`
 }
 
-async function useExtendStayRefPicker(index) {
-    const filteredRows = extendStayPickerRows.filter(item => {
-        const search = (did('extendStayRefPickerSearch')?.value || '').toLowerCase().trim()
-        return `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase().includes(search)
+function getDateOnlyFromDateTimeString(value = '') {
+    return String(value || '').slice(0, 10)
+}
+
+function getFilteredExtendStayRefPickerRows() {
+    const search = (did('extendStayRefPickerSearch')?.value || '').toLowerCase().trim()
+    const start = String(did('extendStayRefPickerStartDate')?.value || '').trim()
+    const end = String(did('extendStayRefPickerEndDate')?.value || '').trim()
+    return extendStayPickerRows.filter(item => {
+        const hay = `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate}`.toLowerCase()
+        if(search && !hay.includes(search)) return false
+        const arrivalDate = getDateOnlyFromDateTimeString(item.arrivaldate)
+        if(start && arrivalDate && arrivalDate < start) return false
+        if(end && arrivalDate && arrivalDate > end) return false
+        return true
     })
+}
+
+async function useExtendStayRefPicker(index) {
+    const filteredRows = getFilteredExtendStayRefPickerRows()
     const selected = filteredRows[index]
     if(!selected || !selected.reference)return notification('Could not load selected record', 0)
     if(did('reference')) did('reference').value = selected.reference

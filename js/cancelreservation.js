@@ -55,6 +55,8 @@ function buildCancelReservationRefPickerModal() {
             <span class="material-symbols-outlined cp text-red-500" onclick="did('cancelReservationRefPickerModal').classList.add('hidden')">close</span>
           </div>
           <div class="flex flex-wrap gap-2 mb-3 items-end">
+            <input id="cancelReservationRefPickerStartDate" type="date" class="form-control max-w-[190px]" oninput="renderCancelReservationRefPickerRows()">
+            <input id="cancelReservationRefPickerEndDate" type="date" class="form-control max-w-[190px]" oninput="renderCancelReservationRefPickerRows()">
             <input id="cancelReservationRefPickerSearch" class="form-control ml-auto max-w-sm" placeholder="Filter by ref, room, guest, phone, arrival, departure" oninput="renderCancelReservationRefPickerRows()">
           </div>
           <div class="table-content">
@@ -78,6 +80,9 @@ function buildCancelReservationRefPickerModal() {
       </div>
     `)
     did('cancelReservationRefPickerModal').onclick = function(event){ if(event.target.id=='cancelReservationRefPickerModal')this.classList.add('hidden') }
+    const year = new Date().getFullYear()
+    if(did('cancelReservationRefPickerStartDate') && !did('cancelReservationRefPickerStartDate').value) did('cancelReservationRefPickerStartDate').value = `${year}-01-01`
+    if(did('cancelReservationRefPickerEndDate') && !did('cancelReservationRefPickerEndDate').value) did('cancelReservationRefPickerEndDate').value = `${year + 1}-12-31`
 }
 
 function normalizeCancelReservationPickerRows(data = []) {
@@ -108,7 +113,15 @@ async function openCancelReservationRefPicker() {
 
 function getFilteredCancelReservationPickerRows() {
     const search = (did('cancelReservationRefPickerSearch')?.value || '').toLowerCase().trim()
+    const start = String(did('cancelReservationRefPickerStartDate')?.value || '').trim()
+    const end = String(did('cancelReservationRefPickerEndDate')?.value || '').trim()
     return cancelReservationPickerRows.filter(item => `${item.reference} ${item.roomnumber} ${item.guestname} ${item.phone} ${item.arrivaldate} ${item.departuredate} ${item.status}`.toLowerCase().includes(search))
+    .filter(item => {
+        const arrivalDate = String(item.arrivaldate || '').slice(0, 10)
+        if(start && arrivalDate && arrivalDate < start) return false
+        if(end && arrivalDate && arrivalDate > end) return false
+        return true
+    })
 }
 
 function renderCancelReservationRefPickerRows() {
