@@ -1,7 +1,7 @@
 let viewinventoryid
 let viewinventoryItems = []
 let viewInventoryFilterTimer
-const viewInventoryAllowedItemTypes = ['FOOD', 'ALCOHOL', 'NON-ALCOHOL', 'MISCELLANEOUS']
+const viewInventoryAllowedItemTypes = ['FOOD', 'ALCOHOL', 'NON-ALCOHOL', 'MISCELLANEOUS', 'SERVICE']
 
 function safeText(value) {
     return String(value ?? '')
@@ -420,7 +420,7 @@ async function exportViewInventoryRowsWithDropdown(rows, sheetName, fileName) {
             allowBlank: true,
             showErrorMessage: true,
             errorTitle: 'Invalid Item Type',
-            error: 'Select one of: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS',
+            error: 'Select one of: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS, SERVICE',
             formulae: [`"${viewInventoryAllowedItemTypes.join(',')}"`]
         }
     }
