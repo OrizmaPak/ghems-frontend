@@ -50,6 +50,8 @@ async function fetchpmrooms(roomnumber) {
                 resolvePagination(datasource, onpmroomsTableDataSignal)
             }
         } else {
+            const manageTab = document.querySelector('[name="managepmroomspanel"]')
+            if(manageTab && typeof runoptioner === 'function') runoptioner(manageTab)
             const record = (request.data || []).find(item => String(item.roomnumber) === String(roomnumber)) || request.data?.[0]
             if(!record) return notification('No records retrieved')
             pmroomsEditRoomNumber = record.roomnumber
