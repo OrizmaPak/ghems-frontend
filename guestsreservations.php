@@ -1030,6 +1030,7 @@
                                                  <th style="width: 20px">s/n</th> 
                                                 <th>action</th>
                                                 <th>Rooms</th>
+                                                <th>balance</th>
                                                 <th>Guest</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
