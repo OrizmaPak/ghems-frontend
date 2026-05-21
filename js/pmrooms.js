@@ -13,15 +13,6 @@ async function requestPmRooms(endpointBase, payload = null, btn = null, response
 async function pmroomsActive() {
     const form = document.querySelector('#pmroomsform')
     if(form?.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', pmroomsFormSubmitHandler)
-    const roomNumberField = did('roomnumber')
-    if(roomNumberField) {
-        roomNumberField.addEventListener('input', () => {
-            if(pmroomsEditRoomNumber) roomNumberField.value = pmroomsEditRoomNumber
-        })
-        roomNumberField.addEventListener('keydown', (event) => {
-            if(pmroomsEditRoomNumber) event.preventDefault()
-        })
-    }
     datasource = []
     await fetcroomcategory()
     wirePmRoomImport()
@@ -75,11 +66,6 @@ async function fetchpmrooms(roomnumber) {
             if(!record) return notification('No records retrieved')
             pmroomsEditRoomNumber = record.roomnumber
             populateData(record, [], [], 'pmroomsform')
-            const roomNumberField = did('roomnumber')
-            if(roomNumberField) {
-                roomNumberField.setAttribute('readonly', 'readonly')
-                roomNumberField.style.pointerEvents = 'none'
-            }
         }
     } else {
         return notification('No records retrieved')
@@ -119,8 +105,6 @@ async function pmroomsFormSubmitHandler() {
     if(request.status) {
         notification('Record saved successfully!', 1)
         pmroomsEditRoomNumber = ''
-        if(roomNumberField) roomNumberField.removeAttribute('readonly')
-        if(roomNumberField) roomNumberField.style.pointerEvents = ''
         document.querySelector('#pmroomsform')?.reset()
         fetchpmrooms()
         return
