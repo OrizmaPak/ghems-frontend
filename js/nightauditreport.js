@@ -6,7 +6,8 @@ function normalizeNightAuditAmount(value = 0) {
 }
 
 function formatNightAuditAmount(value = 0) {
-    return formatNumber(normalizeNightAuditAmount(value))
+    const amount = normalizeNightAuditAmount(value)
+    return amount === 0 ? '' : formatNumber(amount)
 }
 
 function toTitleCase(value = '') {
