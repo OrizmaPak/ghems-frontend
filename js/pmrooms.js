@@ -66,6 +66,8 @@ async function fetchpmrooms(roomnumber) {
             if(!record) return notification('No records retrieved')
             pmroomsEditRoomNumber = record.roomnumber
             populateData(record, [], [], 'pmroomsform')
+            const roomNumberField = did('roomnumber')
+            if(roomNumberField) roomNumberField.setAttribute('readonly', 'readonly')
         }
     } else {
         return notification('No records retrieved')
@@ -99,14 +101,13 @@ async function pmroomsFormSubmitHandler() {
         return notification('Room number must be an integer.', 0)
     }
     if(roomNumberField) roomNumberField.value = parseInt(roomNumberValue, 10)
-
-    const extra = pmroomsEditRoomNumber ? [['roomnumber', pmroomsEditRoomNumber]] : null
-    let payload = getFormData2(document.querySelector('#pmroomsform'), extra)
+    let payload = getFormData2(document.querySelector('#pmroomsform'))
 
     let request = await requestPmRooms('pmrooms', payload, document.querySelector('#pmroomsform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1)
         pmroomsEditRoomNumber = ''
+        if(roomNumberField) roomNumberField.removeAttribute('readonly')
         document.querySelector('#pmroomsform')?.reset()
         fetchpmrooms()
         return
