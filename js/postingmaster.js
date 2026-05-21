@@ -40,7 +40,7 @@ let checkinid
 let populateddata // this is to hold the data populated
 let rr // this means a store roomcategory object for when the user enters the room number
 let ratedata // this holds the rate amount details pertaining to the rate code in the room  category
-let discountcoup // this will be used to hold all coupon data
+let discountcoup = [] // Posting Master keeps discount fields neutral for controller compatibility.
 let planobj // this is used to keep the plan object
 let nameandidofguest  // this will carry an array of the name and id of the newly created guest
 let actionid // this is the variable that will hold id in memory for me
@@ -334,11 +334,13 @@ async function postingMasterResolveAndApplyRateForRoomCard(idd = actionid, optio
     }
     ratedata = rateDetail
     checkinRateDataByCard[idd] = rateDetail
-    if(rateDetail.plan == 0)notification('Please note that no plan was all allocated to the choosen reservation', 0)
-    if(did('plan-'+idd)) did('plan-'+idd).value = rateDetail.planname || ''
+    if(did('plan-'+idd)) did('plan-'+idd).value = ''
+    if(did('planamount-'+idd)) did('planamount-'+idd).value = 0
+    if(did('discountcoupon-'+idd)) did('discountcoupon-'+idd).value = ''
+    if(did('discountamount-'+idd)) did('discountamount-'+idd).value = 0
+    if(did('plandiscountperc-'+idd)) did('plandiscountperc-'+idd).value = 0
+    if(did('plandiscountamount-'+idd)) did('plandiscountamount-'+idd).value = 0
     postingMasterHandlecheckinrate(idd, false, { skipResolve: true })
-    postingMasterRuncouponcalculations()
-    await postingMasterGetplanamount(idd, rateDetail)
     postingMasterCalculatetotals()
     return true
 }
@@ -829,7 +831,6 @@ function postingMasterGetCheckinSummaryGuests(roomId = '') {
 
 function postingMasterCollectCheckinTariffSummaryData(){
     const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
-    const otherDiscountPerc = Math.max(Math.min(Number(did('otherdiscount')?.value || 0), 100), 0)
     const rooms = Array.from(document.getElementsByClassName('roomcategory')).map((categoryEl) => {
         const id = String(categoryEl.id || '').replace('roomcategory-', '').trim()
         if(!id) return null
@@ -837,46 +838,24 @@ function postingMasterCollectCheckinTariffSummaryData(){
         const roomNumber = String(did('roomnumber-'+id)?.value || '').trim()
         const rateCodeName = String(did('ratecodename-'+id)?.value || '').trim()
         const roomRate = Number(did('roomrate-'+id)?.value || 0)
-        const roomDiscount = Number(did('discountamount-'+id)?.value || 0)
-        const planAmount = Number(did('planamount-'+id)?.value || 0)
-        const planDiscount = Number(did('plandiscountamount-'+id)?.value || 0)
         const oneDayTariff = roomRate / nights
-        const oneDayRoomDiscount = roomDiscount / nights
-        const oneDayPlanDiscount = planDiscount / nights
-        const guests = postingMasterGetCheckinSummaryGuests(id)
-        const adults = Number(did('adult-'+id)?.value || 0)
-        const children = Number(did('children-'+id)?.value || 0)
-        const infants = Number(did('infant-'+id)?.value || 0)
-        const discountCoupon = String(did('discountcoupon-'+id)?.options?.[did('discountcoupon-'+id)?.selectedIndex]?.textContent || '').trim()
-        const planName = String(did('plan-'+id)?.value || '').trim()
-        if(!categoryEl.value && !roomNumber && !rateCodeName && !roomRate && !planAmount) return null
+        const guests = postingMasterGetCheckinSummaryGuests(id).slice(0, 1)
+        if(!categoryEl.value && !roomNumber && !rateCodeName && !roomRate) return null
         return {
             id,
             categoryName,
             roomNumber,
             rateCodeName,
-            planName,
-            discountCoupon,
             roomRate,
-            roomDiscount,
-            planAmount,
-            planDiscount,
             oneDayTariff,
-            oneDayRoomDiscount,
-            oneDayPlanDiscount,
             guests,
-            adults,
-            children,
-            infants
+            adults: 1,
+            children: 0,
+            infants: 0
         }
     }).filter(Boolean)
     const totalRoomRate = rooms.reduce((sum, room) => sum + room.roomRate, 0)
-    const totalRoomDiscount = rooms.reduce((sum, room) => sum + room.roomDiscount, 0)
-    const totalPlanAmount = rooms.reduce((sum, room) => sum + room.planAmount, 0)
-    const totalPlanDiscount = rooms.reduce((sum, room) => sum + room.planDiscount, 0)
-    const otherDiscountTotal = (otherDiscountPerc / 100) * totalRoomRate
-    const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscountTotal
-    const totalDue = Number(did('totalamount')?.value || Math.max(totalRoomRate - totalDiscount, 0))
+    const totalDue = Number(did('totalamount')?.value || totalRoomRate)
     const formDetails = [
         ['Arrival', String(did('arrivaldate')?.value || '').replace('T', ' ')],
         ['Departure', String(did('departuredate')?.value || '').replace('T', ' ')],
@@ -893,15 +872,15 @@ function postingMasterCollectCheckinTariffSummaryData(){
         rooms,
         formDetails,
         netTariff: totalRoomRate / nights,
-        netTariffAfterDiscount: Math.max((totalRoomRate - totalDiscount) / nights, 0),
+        netTariffAfterDiscount: totalRoomRate / nights,
         totalNetTariffForNights: totalDue,
         totalRoomRate,
-        totalRoomDiscount,
-        totalPlanAmount,
-        totalPlanDiscount,
-        otherDiscountPerc,
-        otherDiscountTotal,
-        totalDiscount
+        totalRoomDiscount: 0,
+        totalPlanAmount: 0,
+        totalPlanDiscount: 0,
+        otherDiscountPerc: 0,
+        otherDiscountTotal: 0,
+        totalDiscount: 0
     }
 }
 
@@ -927,7 +906,7 @@ function postingMasterRenderCheckinSummaryTabButton(tab, activeTab, label, icon)
     </button>`
 }
 
-function postingMasterRenderCheckinCalculationSummary(data, discountRows) {
+function postingMasterRenderCheckinCalculationSummary(data) {
     const nightLabel = `${data.nights} ${data.nights === 1 ? 'Night' : 'Nights'}`
     return `
         ${data.formDetails.length ? `<div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
@@ -937,29 +916,12 @@ function postingMasterRenderCheckinCalculationSummary(data, discountRows) {
             </div>`).join('')}
         </div>` : ''}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            ${postingMasterRenderSummaryMetric('Net Rate (One Day)', data.netTariff)}
-            ${postingMasterRenderSummaryMetric(`Net Tariff for ${nightLabel}`, data.totalNetTariffForNights, 'text-blue-700')}
-            ${postingMasterRenderSummaryMetric('Net Tariff After Discount Per Day', data.netTariffAfterDiscount, 'text-emerald-700')}
+            ${postingMasterRenderSummaryMetric('Rate Per Day', data.netTariff)}
+            ${postingMasterRenderSummaryMetric(`Total Due for ${nightLabel}`, data.totalNetTariffForNights, 'text-blue-700')}
+            ${postingMasterRenderSummaryMetric('Rooms', data.rooms.length)}
         </div>
-        ${discountRows.length ? `<div class="rounded border border-slate-200 bg-white overflow-hidden mb-4">
-            <div class="grid grid-cols-3 bg-slate-100 text-xs font-bold text-slate-600 uppercase">
-                <div class="p-2">Discount</div>
-                <div class="p-2 text-right">Per Day</div>
-                <div class="p-2 text-right">Total</div>
-            </div>
-            ${discountRows.map(([label, perDay, total]) => `<div class="grid grid-cols-3 border-t border-slate-100 text-sm">
-                <div class="p-2 text-slate-700">${postingMasterEscapeCheckinSummaryText(label)}</div>
-                <div class="p-2 text-right font-semibold">${formatNumber(perDay)}</div>
-                <div class="p-2 text-right font-semibold">${formatNumber(total)}</div>
-            </div>`).join('')}
-        </div>` : ''}
-        ${data.totalPlanAmount > 0 ? `<div class="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-            Plan Amount: <span class="font-bold">${formatNumber(data.totalPlanAmount)}</span> (information is already in ratecode)
-        </div>` : ''}
         <div class="md:hidden space-y-3">
             ${data.rooms.length ? data.rooms.map((room) => {
-                const roomDiscountTotal = room.roomDiscount + room.planDiscount
-                const roomNetTotal = Math.max(room.roomRate - roomDiscountTotal, 0)
                 return `<div class="rounded border border-slate-200 bg-white p-3">
                     <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 mb-2">
                         <div>
@@ -967,8 +929,8 @@ function postingMasterRenderCheckinCalculationSummary(data, discountRows) {
                             ${room.roomNumber ? `<div class="text-xs text-slate-500">Room ${postingMasterEscapeCheckinSummaryText(room.roomNumber)}</div>` : ''}
                         </div>
                         <div class="text-right">
-                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Net Total</div>
-                            <div class="font-bold text-blue-700">${formatNumber(roomNetTotal)}</div>
+                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Total Due</div>
+                            <div class="font-bold text-blue-700">${formatNumber(room.roomRate)}</div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2 text-sm">
@@ -977,20 +939,12 @@ function postingMasterRenderCheckinCalculationSummary(data, discountRows) {
                             <div class="font-semibold text-slate-800 truncate" title="${postingMasterEscapeCheckinSummaryText(room.rateCodeName || '-')}">${postingMasterEscapeCheckinSummaryText(room.rateCodeName || '-')}</div>
                         </div>
                         <div class="rounded bg-slate-50 p-2">
-                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Plan / Coupon</div>
-                            <div class="font-semibold text-slate-800 truncate">${postingMasterEscapeCheckinSummaryText(room.planName || room.discountCoupon || '-')}</div>
-                        </div>
-                        <div class="rounded bg-slate-50 p-2">
                             <div class="text-[11px] uppercase text-slate-500 font-semibold">Net Rate (One Day)</div>
                             <div class="font-semibold">${formatNumber(room.oneDayTariff)}</div>
                         </div>
                         <div class="rounded bg-slate-50 p-2">
                             <div class="text-[11px] uppercase text-slate-500 font-semibold">Net Rate Total</div>
                             <div class="font-semibold">${formatNumber(room.roomRate)}</div>
-                        </div>
-                        <div class="rounded bg-slate-50 p-2">
-                            <div class="text-[11px] uppercase text-slate-500 font-semibold">Discount Total</div>
-                            <div class="font-semibold">${formatNumber(roomDiscountTotal)}</div>
                         </div>
                     </div>
                 </div>`
@@ -1002,34 +956,22 @@ function postingMasterRenderCheckinCalculationSummary(data, discountRows) {
                     <tr>
                         <th class="p-2 text-left">Room</th>
                         <th class="p-2 text-left">Rate Code</th>
-                        <th class="p-2 text-left">Plan / Coupon</th>
                         <th class="p-2 text-right">Net Rate (One Day)</th>
-                        <th class="p-2 text-right">Net Rate Total</th>
-                        <th class="p-2 text-right">Discount Total</th>
-                        <th class="p-2 text-right">Net Total</th>
+                        <th class="p-2 text-right">Total Due</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${data.rooms.length ? data.rooms.map((room) => {
-                        const roomDiscountTotal = room.roomDiscount + room.planDiscount
-                        const roomNetTotal = Math.max(room.roomRate - roomDiscountTotal, 0)
                         return `<tr class="border-t border-slate-100 align-top">
                             <td class="p-2">
                                 <div class="font-semibold text-slate-800">${postingMasterEscapeCheckinSummaryText(room.categoryName || '-')}</div>
                                 ${room.roomNumber ? `<div class="text-xs text-slate-500">Room ${postingMasterEscapeCheckinSummaryText(room.roomNumber)}</div>` : ''}
                             </td>
                             <td class="p-2 text-slate-700">${postingMasterEscapeCheckinSummaryText(room.rateCodeName || '-')}</td>
-                            <td class="p-2 text-slate-700">
-                                ${room.planName ? `<div>${postingMasterEscapeCheckinSummaryText(room.planName)}</div>` : ''}
-                                ${room.discountCoupon && !/select/i.test(room.discountCoupon) ? `<div class="text-xs text-slate-500">${postingMasterEscapeCheckinSummaryText(room.discountCoupon)}</div>` : ''}
-                                ${!room.planName && (!room.discountCoupon || /select/i.test(room.discountCoupon)) ? '-' : ''}
-                            </td>
                             <td class="p-2 text-right font-semibold">${formatNumber(room.oneDayTariff)}</td>
-                            <td class="p-2 text-right font-semibold">${formatNumber(room.roomRate)}</td>
-                            <td class="p-2 text-right">${formatNumber(roomDiscountTotal)}</td>
-                            <td class="p-2 text-right font-bold text-blue-700">${formatNumber(roomNetTotal)}</td>
+                            <td class="p-2 text-right font-bold text-blue-700">${formatNumber(room.roomRate)}</td>
                         </tr>`
-                    }).join('') : `<tr><td colspan="7" class="p-4 text-center text-slate-500">No room tariff data yet</td></tr>`}
+                    }).join('') : `<tr><td colspan="4" class="p-4 text-center text-slate-500">No room tariff data yet</td></tr>`}
                 </tbody>
             </table>
         </div>`
@@ -1087,23 +1029,16 @@ function postingMasterRenderCheckinFullDetailSummary(data) {
                 </div>
             </div>` : ''}
             <div class="rounded border border-slate-200 bg-white overflow-hidden">
-                <div class="bg-[#64748b] text-white text-xs font-bold uppercase px-3 py-2">Rooms, Guests, Tariff And Discount Details</div>
+                <div class="bg-[#64748b] text-white text-xs font-bold uppercase px-3 py-2">Room, Guest And Tariff Details</div>
                 <div class="divide-y divide-slate-100">
                     ${data.rooms.length ? data.rooms.map((room, index) => {
-                        const discountTotal = room.roomDiscount + room.planDiscount
-                        const netTotal = Math.max(room.roomRate - discountTotal, 0)
                         const detailRows = [
                             ['Room Category', room.categoryName],
                             ['Room Number', room.roomNumber],
                             ['Rate Code', room.rateCodeName],
-                            ['Plan', room.planName],
-                            ['Discount Coupon', room.discountCoupon && !/select/i.test(room.discountCoupon) ? room.discountCoupon : ''],
                             ['Net Rate (One Day)', formatNumber(room.oneDayTariff)],
                             ['Net Rate Total', formatNumber(room.roomRate)],
-                            ['Room Discount', formatNumber(room.roomDiscount)],
-                            ['Plan Amount', room.planAmount ? formatNumber(room.planAmount) : ''],
-                            ['Plan Discount', room.planDiscount ? formatNumber(room.planDiscount) : ''],
-                            ['Net Room Total', formatNumber(netTotal)]
+                            ['Total Due', formatNumber(room.roomRate)]
                         ].filter(([, value]) => String(value || '').trim())
                         return `<div class="p-3">
                             <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
@@ -1112,8 +1047,8 @@ function postingMasterRenderCheckinFullDetailSummary(data) {
                                     <div class="text-base font-bold text-slate-800">${postingMasterEscapeCheckinSummaryText(room.categoryName || 'Room')}</div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs font-bold uppercase text-slate-500">Net Total</div>
-                                    <div class="text-lg font-bold text-blue-700">${formatNumber(netTotal)}</div>
+                                    <div class="text-xs font-bold uppercase text-slate-500">Total Due</div>
+                                    <div class="text-lg font-bold text-blue-700">${formatNumber(room.roomRate)}</div>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
@@ -1158,11 +1093,6 @@ function postingMasterRenderCheckinTariffSummary(){
     const data = postingMasterCollectCheckinTariffSummaryData()
     const isOpen = container.dataset.open === 'true'
     const activeTab = container.dataset.tab || 'calculation'
-    const discountRows = [
-        ['Room Discount', data.totalRoomDiscount / data.nights, data.totalRoomDiscount],
-        ['Plan Discount', data.totalPlanDiscount / data.nights, data.totalPlanDiscount],
-        [`Other Discount${data.otherDiscountPerc ? ` (${formatNumber(data.otherDiscountPerc)}%)` : ''}`, data.otherDiscountTotal / data.nights, data.otherDiscountTotal]
-    ].filter((row) => Number(row[2] || 0) > 0)
     container.innerHTML = `
         <div class="rounded border border-slate-200 bg-slate-50 shadow-sm overflow-hidden">
             <button type="button" onclick="postingMasterToggleCheckinTariffSummary()" class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-white hover:bg-slate-50 transition">
@@ -1180,7 +1110,7 @@ function postingMasterRenderCheckinTariffSummary(){
                         ${postingMasterRenderCheckinSummaryTabButton('full', activeTab, 'Full Detail', 'fact_check')}
                     </div>
                     <div class="p-3">
-                        ${activeTab === 'guests' ? postingMasterRenderCheckinGuestsSummary(data) : activeTab === 'full' ? postingMasterRenderCheckinFullDetailSummary(data) : postingMasterRenderCheckinCalculationSummary(data, discountRows)}
+                        ${activeTab === 'guests' ? postingMasterRenderCheckinGuestsSummary(data) : activeTab === 'full' ? postingMasterRenderCheckinFullDetailSummary(data) : postingMasterRenderCheckinCalculationSummary(data)}
                     </div>
                 </div>
             </div>
@@ -1197,8 +1127,8 @@ function postingMasterToggleCheckinTariffSummary(){
 function postingMasterUpdateNetTariffFooterLabel(){
     const label = did('totalrate')?.previousElementSibling
     if(!label) return
-    label.innerHTML = 'Net Tariff <span class="block text-xs font-normal opacity-70">(per day)</span>'
-    label.setAttribute('title', 'Total rate code amount for one day')
+    label.innerHTML = 'Rate <span class="block text-xs font-normal opacity-70">(per day)</span>'
+    label.setAttribute('title', 'Rate amount per day')
 }
 
 function postingMasterRefreshCheckinSummaryAndTotals(reason = ''){
@@ -1219,44 +1149,35 @@ function postingMasterRemoveCheckinGuestRow(button){
 
 function postingMasterCalculatetotals(){
     postingMasterUpdateNetTariffFooterLabel()
-    did('totalplan').previousElementSibling.textContent = 'Total Due'
+    if(did('totalplan')?.previousElementSibling) did('totalplan').previousElementSibling.textContent = 'Total Due'
     let tr = 0;
-    let trd = 0;
-    let tp = 0;
-    let tpd = 0;
-    let otherdiscount = document.getElementById('otherdiscount') ? Number(document.getElementById('otherdiscount').value || 0) : 0;
-    if(otherdiscount < 0)otherdiscount = 0
-    if(otherdiscount > 100)otherdiscount = 100
-    if(document.getElementById('otherdiscount'))document.getElementById('otherdiscount').value = otherdiscount
     for(let i=0;i<document.getElementsByClassName('roomnumber').length;i++){
         tr = Number(document.getElementsByClassName('roomrate')[i].value)+tr
-        trd = Number(document.getElementsByClassName('discountamount')[i].value)+trd
-        tp = Number(document.getElementsByClassName('planamount')[i].value)+tp
-        tpd = Number(document.getElementsByClassName('plandiscountamount')[i].value)+tpd
     }
     postingMasterUpdateAllRoomRatePerDayLabels()
-    // ANI payable total is now rate-only; plan amount remains informational.
     const grossTotalAmount = tr
     const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
     const oneDayNetTariff = grossTotalAmount / nights
-    const otherDiscountAmount = (otherdiscount / 100) * grossTotalAmount
-    const totalDiscountAmount = trd + tpd + otherDiscountAmount
-    let totalamount = Math.max(grossTotalAmount - totalDiscountAmount, 0)
+    let totalamount = Math.max(grossTotalAmount, 0)
     did('totalrate').textContent = formatNumber(oneDayNetTariff)
-    did('totaldiscount').textContent = formatNumber(totalDiscountAmount)
-    did('totalplan').textContent = formatNumber(totalamount)
+    if(did('totaldiscount')) did('totaldiscount').textContent = formatNumber(0)
+    if(did('totalplan')) did('totalplan').textContent = formatNumber(totalamount)
     if(document.getElementById('totalamount'))document.getElementById('totalamount').value = totalamount
     postingMasterRenderCheckinTariffSummary()
 }
 
 // this is the function that adds new card
 async function postingMasterCheckinaddroom(){
+    if(did('roomfullcontainer')?.children?.length >= 1) {
+        postingMasterCalculatetotals()
+        return
+    }
     let id = genID()
     let el = document.createElement('div')
     el.classList.add('relative', 'border', 'rounded', 'py-3', 'px-4', 'mt-6', '!mb-2.5', 'bg-[#f5f5f5]', 'shadow-lg')
     el.setAttribute('onclick', `if(actionid != ${id}){actionid = ${id};postingMasterRunratcod()}`)
     el.innerHTML = `                            <button onclick="event.stopPropagation(); postingMasterRemoveCheckinRoomCard(this)" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
-                                                <button onclick="postingMasterCheckinaddroom()" type="button" class="absolute top-[-25px] shadow right-14 flex justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
+                                                <button onclick="postingMasterCheckinaddroom()" type="button" class="hidden absolute top-[-25px] shadow right-14 justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
 
 
                                                 <!--Room Category room industry source-->
@@ -1279,17 +1200,17 @@ async function postingMasterCheckinaddroom(){
                                                         </div>
                                                     </div>
                                                     <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
-                                                            <div class="form-group">
+                                                            <div class="form-group hidden">
                                                                 <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">adults</label>
-                                                                <input type="number" onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" name="adult" id="adult-${id}" class="bg-white adult form-control !p-2 comp" placeholder=""  oninput="enforceMaxLength(this)">
+                                                                <input type="number" value="1" readonly onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" name="adult" id="adult-${id}" class="bg-white adult form-control !p-2 comp" placeholder=""  oninput="enforceMaxLength(this)">
                                                             </div>
-                                                            <div class="form-group">
+                                                            <div class="form-group hidden">
                                                                 <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">children</label>
-                                                                <input type="number" onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" name="child" id="children-${id}" class="bg-white child form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
+                                                                <input type="number" value="0" readonly onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" name="child" id="children-${id}" class="bg-white child form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
                                                             </div>
-                                                            <div class="form-group">
+                                                            <div class="form-group hidden">
                                                                 <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">Infants</label>
-                                                                <input type="number" maxlength="2" name="infant" id="infant-${id}" class="bg-white infant form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
+                                                                <input type="number" value="0" readonly maxlength="2" name="infant" id="infant-${id}" class="bg-white infant form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
                                                             </div>
                                                             <div class="form-group col-span-2">
                                                                 <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate&nbsp;code</label>
@@ -1300,24 +1221,24 @@ async function postingMasterCheckinaddroom(){
                                                         </div>
                                             </div>
 
-                                                <div class="grid grid-cols-1 !mb-1 lg:grid-cols-2 gap-10">
+                                                <div class="grid grid-cols-1 !mb-1 lg:grid-cols-1 gap-10">
                                                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                                                            <div class="form-group">
+                                                            <div class="form-group hidden">
                                                                 <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">plan</label>
-                                                                <input type="text" name="plan" readonly id="plan-${id}" class="bg-transparent plan !p-1 comp2 border" placeholder="">
+                                                                <input type="text" name="plan" readonly value="" id="plan-${id}" class="bg-transparent plan !p-1 comp2 border" placeholder="">
                                                             </div>
-                                                            <div class="form-group">
+                                                            <div class="form-group hidden">
                                                                 <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">plan amount</label>
-                                                                <input type="text" name="planamount" readonly id="planamount-${id}" class="bg-transparent planamount !p-1 comp2 border" placeholder="">
+                                                                <input type="text" name="planamount" value="0" readonly id="planamount-${id}" class="bg-transparent planamount !p-1 comp2 border" placeholder="">
                                                             </div>
                                                             <div class="form-group">
                                                                 <label for="roomrate-${id}" id="roomrate-label-${id}" data-roomrate-label="${id}" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate</label>
-                                                                <input type="number" readonly name="roomrate" id="roomrate-${id}" oninput="postingMasterCalculatetotals()" onchange="postingMasterCalculatetotals()" class="bg-transparent roomrate !p-1 comp2 border" >
+                                                                <input type="number" name="roomrate" id="roomrate-${id}" oninput="postingMasterCalculatetotals()" onchange="postingMasterCalculatetotals()" class="bg-transparent roomrate !p-1 comp2 border" >
                                                                 <!--<select name="roomrate" onchange="getcategoryrateguest(document.getElementById('roomcategory'))" id="roomrate" class="bg-white  form-control !p-2 comp2" >-->
                                                                 <!--</select>-->
                                                             </div>
                                                         </div>
-                                                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
+                                                        <div class="hidden grid-cols-1 lg:grid-cols-4 gap-10">
                                                             <div class="form-group">
                                                                 <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">discount&nbsp;coupon</label>
                                                                 <select onchange="postingMasterRuncouponcalculations()" name="discountcoupon" id="discountcoupon-${id}" class="bg-white discountcoupon form-control !p-1 comp2">
@@ -1366,7 +1287,6 @@ async function postingMasterCheckinaddroom(){
      if(Array.isArray(rumcat) && rumcat.length && did('roomcategory-'+id)){
         did('roomcategory-'+id).innerHTML = `<option value="">-- Select Room Type --</option>` + rumcat.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
      }
-     postingMasterFetchdiscountcouponres()
      recalldatalist()
      postingMasterAssignallcheckinlisteners()
      postingMasterCalculatetotals()
@@ -1506,9 +1426,9 @@ function postingMasterHandlecheckinrate(idd, state=false, options={}){
     if(!idd)idd = actionid;
     if(!actionid)actionid = idd;
     actionid = idd;
-    if(did('adult-'+idd).value < 0)did('roomrate-'+idd).value = 0;
-    if(did('adult-'+idd).value < 0)did('adult-'+idd).value = 0;
-    if(!did('adult-'+idd).value || did('adult-'+idd).value == 0)return state ? notification('Please enter number of Adult', 0) : '';
+    if(did('adult-'+idd)) did('adult-'+idd).value = 1
+    if(did('children-'+idd)) did('children-'+idd).value = 0
+    if(did('infant-'+idd)) did('infant-'+idd).value = 0
     const activeRateData = checkinRateDataByCard[idd] || ratedata
     if(!activeRateData && !options.skipResolve){
         did('adult-'+idd).value = '';
@@ -1517,42 +1437,13 @@ function postingMasterHandlecheckinrate(idd, state=false, options={}){
     }
     if(!activeRateData)return state ? notification('Please fill out the room details first') : '';
     ratedata = activeRateData
-    if(Number(did('adult-'+idd).value) == 1)did('roomrate-'+idd).value = Number(activeRateData.adult1)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) == 2)did('roomrate-'+idd).value = Number(activeRateData.adult2)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) == 3)did('roomrate-'+idd).value = Number(activeRateData.adult3)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) == 4)did('roomrate-'+idd).value = Number(activeRateData.adult4)*Number(did('numberofnights').value);
-    if(Number(did('adult-'+idd).value) > 4){did('adult-'+idd).value = 4;did('roomrate-'+idd).value = Number(activeRateData.adult4);return state ? notification('Number of Adults in a room cannot exceed four', 0) : '';}
-    if(Number(did('children-'+idd).value) == 1)did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.extchild);
-    if(Number(did('children-'+idd).value) == 2)did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.aditchild);
-    if(Number(did('children-'+idd).value) > 2 && did('children-'+idd).value <= 5)did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.aditchild)*Number(did('children-'+idd).value);
-    if(Number(did('children-'+idd).value) > 5){did('children-'+idd).value = 5;did('roomrate-'+idd).value = Number(did('roomrate-'+idd).value)+Number(activeRateData.aditchild)*Number(did('children-'+idd).value);return state ? notification('Number of Children in a room cannot exceed five', 0) : '';}
-    if(Number(did('adult-'+idd).value) > 1 && did('moreguestcontainer-'+idd).children.length < Number(did('adult-'+idd).value)){
-        let l =  Number(Number(did('adult-'+idd).value) - did('moreguestcontainer-'+idd).children.length);
-        console.log('l', l)
-        for(let i=0;i<l;i++){
-            let id = genID()+i+1
-            let el = document.createElement('div')
-            el.classList.add('grid', 'grid-cols-1', 'lg:grid-cols-4', 'gap-2', 'mb-2')
-            el.innerHTML = `<div class="form-group col-span-3">
-                                <label for="logoname" class="control-label text-md">Guest</label>
-                                <input type="text"  name="" id="guest-${idd}_${id}" list="allguest" onchange="checkdatalist(this, 'guestid-${idd}_${id}', 'allguest2')" class="bg-white form-control comp !p-2 bg-white" placeholder="Enter Guest Name">
-                                <input type="text"  name="" id="guestid-${idd}_${id}" class="bg-white form-control !p-2 hidden" placeholder="">
-                            </div>
-                            <div class="w-full flex items-end justify-start">
-                                <button onclick="postingMasterOpenguestform('guest-${idd}_${id}', 'guestid-${idd}_${id}');did('modalform').classList.remove('hidden')" type="button" class="w-full h-[35px] bg-[#468df7] md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                        <div class="btnloader" style="display: none;"></div>
-                                        <span>Add&nbsp;New&nbsp;Guest</span>
-                                </button>
-                                <button onclick="postingMasterRemoveCheckinGuestRow(this)" type="button" class="w-full h-[35px] bg-red-400 md:w-max text-white text-sm capitalize p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                        <div class="btnloader" style="display: none;"></div>
-                                        <span>Delete</span>
-                                </button>
-                            </div>`;
-             document.getElementById('moreguestcontainer-'+idd).appendChild(el)
-        }
-    }
-    postingMasterRuncouponcalculations()
-    postingMasterGetplanamount(idd, activeRateData)
+    did('roomrate-'+idd).value = Number(activeRateData.adult1 || 0)*Number(did('numberofnights').value || 0);
+    if(did('plan-'+idd)) did('plan-'+idd).value = ''
+    if(did('planamount-'+idd)) did('planamount-'+idd).value = 0
+    if(did('discountcoupon-'+idd)) did('discountcoupon-'+idd).value = ''
+    if(did('discountamount-'+idd)) did('discountamount-'+idd).value = 0
+    if(did('plandiscountperc-'+idd)) did('plandiscountperc-'+idd).value = 0
+    if(did('plandiscountamount-'+idd)) did('plandiscountamount-'+idd).value = 0
     postingMasterCalculatetotals()
 }
 
@@ -1572,12 +1463,13 @@ async function postingMasterControlroomlist(idd, type){
         document.getElementById('ratecodee-'+idd).value = ''
         document.getElementById('roomrate-'+idd).value = ''
         document.getElementById('roomnumber-'+idd).value = ''
-        document.getElementById('discountcoupon-'+idd).value = ''
-        document.getElementById('discountamount-'+idd).value = ''
-        document.getElementById('adult-'+idd).value = ''
-        document.getElementById('children-'+idd).value = ''
-        document.getElementById('plan-'+idd).value = ''
-        document.getElementById('planamount-'+idd).value = ''
+        if(document.getElementById('discountcoupon-'+idd))document.getElementById('discountcoupon-'+idd).value = ''
+        if(document.getElementById('discountamount-'+idd))document.getElementById('discountamount-'+idd).value = 0
+        if(document.getElementById('adult-'+idd))document.getElementById('adult-'+idd).value = 1
+        if(document.getElementById('children-'+idd))document.getElementById('children-'+idd).value = 0
+        if(document.getElementById('infant-'+idd))document.getElementById('infant-'+idd).value = 0
+        if(document.getElementById('plan-'+idd))document.getElementById('plan-'+idd).value = ''
+        if(document.getElementById('planamount-'+idd))document.getElementById('planamount-'+idd).value = 0
         delete checkinRateDataByCard[idd]
         delete checkinRateSourceByCard[idd]
         postingMasterSetRateSourceMessage(idd, null)
@@ -2210,10 +2102,10 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
 function postingMasterPopulaterestcheckindata(x){
     let data = JSON.parse(x)
     console.log('data', data)
-    did('roomfullcontainer').innerHTML = data.roomguestrow.map((item, id)=>`
+    did('roomfullcontainer').innerHTML = (data.roomguestrow || []).slice(0, 1).map((item, id)=>`
         <div class="relative border rounded py-3 px-4 mt-6 !mb-2.5 bg-[#f5f5f5] shadow-lg" onclick="if(actionid != ${id}){actionid = ${id};postingMasterRunratcod()}">
          <button onclick="event.stopPropagation(); postingMasterRemoveCheckinRoomCard(this)" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
-            <button onclick="postingMasterCheckinaddroom()" type="button" class="absolute top-[-25px] shadow right-14 flex justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
+            <button onclick="postingMasterCheckinaddroom()" type="button" class="hidden absolute top-[-25px] shadow right-14 justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
 
 
             <!--Room Category room industry source-->
@@ -2237,17 +2129,17 @@ function postingMasterPopulaterestcheckindata(x){
                     </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
-                        <div class="form-group">
+                        <div class="form-group hidden">
                             <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">adults</label>
-                            <input type="number" onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" value="${item.roomdata.adult}" name="adult" id="adult-${id}" class="bg-white adult form-control !p-2 comp" placeholder=""  oninput="enforceMaxLength(this)">
+                            <input type="number" onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" value="1" readonly name="adult" id="adult-${id}" class="bg-white adult form-control !p-2 comp" placeholder=""  oninput="enforceMaxLength(this)">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group hidden">
                             <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">children</label>
-                            <input type="number" onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" name="child" value="${item.roomdata.child}" id="children-${id}" class="bg-white child form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
+                            <input type="number" onchange="postingMasterHandlecheckinrate('${id}','true')" maxlength="2" name="child" value="0" readonly id="children-${id}" class="bg-white child form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group hidden">
                             <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">Infants</label>
-                            <input type="number" maxlength="2" name="infant" id="infant-${id}" value="${item.roomdata.infant}" class="bg-white infant form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
+                            <input type="number" maxlength="2" name="infant" id="infant-${id}" value="0" readonly class="bg-white infant form-control !p-2 comp2" placeholder=""  oninput="enforceMaxLength(this)">
                         </div>
                         <div class="form-group col-span-2">
                             <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate&nbsp;code</label>
@@ -2258,15 +2150,15 @@ function postingMasterPopulaterestcheckindata(x){
                     </div>
         </div>
 
-            <div class="grid grid-cols-1 !mb-1 lg:grid-cols-2 gap-10">
+            <div class="grid grid-cols-1 !mb-1 lg:grid-cols-1 gap-10">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                        <div class="form-group">
+                        <div class="form-group hidden">
                             <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">plan</label>
-                            <input type="text" name="plan" value="${item.roomdata.plan}" readonly id="plan-${id}" class="bg-transparent plan !p-1 comp2 border" placeholder="">
+                            <input type="text" name="plan" value="" readonly id="plan-${id}" class="bg-transparent plan !p-1 comp2 border" placeholder="">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group hidden">
                             <label for="logoname" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">plan amount</label>
-                            <input type="text" name="planamount" value="${item.roomdata.planamount}" readonly id="planamount-${id}" class="bg-transparent planamount !p-1 comp2 border" placeholder="">
+                            <input type="text" name="planamount" value="0" readonly id="planamount-${id}" class="bg-transparent planamount !p-1 comp2 border" placeholder="">
                         </div>
                         <div class="form-group">
                             <label for="roomrate-${id}" id="roomrate-label-${id}" data-roomrate-label="${id}" class="control-label text-md relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">rate</label>
@@ -2275,7 +2167,7 @@ function postingMasterPopulaterestcheckindata(x){
                             <!--</select>-->
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
+                    <div class="hidden grid-cols-1 lg:grid-cols-4 gap-10">
                         <div class="form-group">
                             <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">discount&nbsp;coupon</label>
                             <select onchange="postingMasterRuncouponcalculations()" name="discountcoupon" id="discountcoupon-${id}" class="bg-white discountcoupon form-control !p-1 comp2">
@@ -2318,7 +2210,7 @@ function postingMasterPopulaterestcheckindata(x){
                         </button>
                     </div>
                 </div>` : ''}
-                ${item.guest2.length>0? `<div class="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
+                ${false && item.guest2.length>0? `<div class="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
                     <div class="form-group col-span-3">
                         <label for="logoname" class="control-label text-md">Guest</label>
                         <input type="text" value="${item.guest2[0].firstname} ${item.guest2[0].lastname} ${item.guest2[0].phone}_${item.guest2[0].id}" name="" id="guest-${id}_${id}2" list="allguest" onchange="checkdatalist(this, 'guestid-${id}_${id}2', 'allguest2')" class="bg-white comp form-control !p-2 comp bg-white" placeholder="Enter Guest Name">
@@ -2335,7 +2227,7 @@ function postingMasterPopulaterestcheckindata(x){
                         </button>
                     </div>
                 </div>`: ''}
-                ${item.guest3.length>0? `<div class="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
+                ${false && item.guest3.length>0? `<div class="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
                     <div class="form-group col-span-3">
                         <label for="logoname" class="control-label text-md">Guest</label>
                         <input type="text" value="${item.guest3[0].firstname} ${item.guest3[0].lastname} ${item.guest3[0].phone}_${item.guest3[0].id}" name="" id="guest-${id}_${id}3" list="allguest" onchange="checkdatalist(this, 'guestid-${id}_${id}3', 'allguest2')" class="bg-white comp form-control !p-2 comp bg-white" placeholder="Enter Guest Name">
@@ -2352,7 +2244,7 @@ function postingMasterPopulaterestcheckindata(x){
                         </button>
                     </div>
                 </div>`: ''}
-                ${item.guest4.length>0? `<div class="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
+                ${false && item.guest4.length>0? `<div class="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-2">
                     <div class="form-group col-span-3">
                         <label for="logoname" class="control-label text-md">Guest</label>
                         <input type="text" value="${item.guest4[0].firstname} ${item.guest4[0].lastname} ${item.guest4[0].phone}_${item.guest4[0].id}" name="" id="guest-${id}_${id}4" list="allguest" onchange="checkdatalist(this, 'guestid-${id}_${id}4', 'allguest2')" class="bg-white comp form-control !p-2 comp bg-white" placeholder="Enter Guest Name">
@@ -2814,18 +2706,10 @@ async function postingMasterOncheckinTableDataSignal() {
 function postingMasterOpencheckinreceipt(id, ratee, rooms){
     let receiptdata = datasource.filter(data=>data.reservations.id == id)[0]
     if(!receiptdata)return callModal('Something went wrong...')
-    const bookingRows = receiptdata.roomgeustrow || receiptdata.roomguestrow || []
+    const bookingRows = (receiptdata.roomgeustrow || receiptdata.roomguestrow || []).slice(0, 1)
     const totalRooms = bookingRows.length
     const totalRoomRate = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.roomrate || 0), 0)
-    const totalPlanAmount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.planamount || 0), 0)
-    const totalRoomDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.discountamount || 0), 0)
-    const totalPlanDiscount = bookingRows.reduce((sum, row)=>sum + Number(row?.roomdata?.plandiscountamount || 0), 0)
-    const otherDiscountPerc = Number(receiptdata?.reservations?.otherdiscount || 0)
-    // Receipt total mirrors form total: room-rate payable base only.
-    const grossTotalAmount = totalRoomRate
-    const otherDiscount = Math.max((Math.max(Math.min(otherDiscountPerc, 100), 0) / 100) * grossTotalAmount, 0)
-    const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
-    const calculatedTotalAmount = Math.max(totalRoomRate - totalDiscount, 0)
+    const calculatedTotalAmount = Math.max(totalRoomRate, 0)
     const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
     const finalTotalAmount = savedTotalAmount > 0 ? savedTotalAmount : calculatedTotalAmount
     // did('invoiceno').setAttribute('value', receiptdata.reservations.reference)
@@ -2927,10 +2811,6 @@ function postingMasterOpencheckinreceipt(id, ratee, rooms){
                                         <input readonly value="${formatNumber(totalRoomRate)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
                                         <label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Total Rooms:</label>
                                         <input readonly value="${totalRooms}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Billing company name" >
-                                        <label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Plan Amount:</label>
-                                        <input readonly value="${formatNumber(totalPlanAmount)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Plan Amount" >
-                                        <label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Total Discount:</label>
-                                        <input readonly value="${formatNumber(totalDiscount)}" class="mb-1 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" id="inline-full-name" type="text" placeholder="Total Discount" >
                                     </div>
                                     <div class="w-full md:w-1/3">
                                         <label class="text-gray-800 block mb-1 font-semibold text-xs uppercase tracking-wide">Firm:</label>
@@ -2967,20 +2847,12 @@ function postingMasterOpencheckinreceipt(id, ratee, rooms){
                                                     </table>
                                                 </th>
                                                 <th class="text-center opacity-70">rate</th>
-                                                <th class="text-center opacity-70">plan amount</th>
-                                                <th class="text-center opacity-70">discount</th>
-                                                <th class="text-center opacity-70">plan discount</th>
-                                                <th class="text-center opacity-70">line total</th>
                                             </tr>
                                         </thead>
                                         <tbody id="roomtabledata">
                                             ${
                                                 bookingRows.map((item, index)=>{
                                                     const roomRate = Number(item.roomdata.roomrate || 0)
-                                                    const planAmount = Number(item.roomdata.planamount || 0)
-                                                    const roomDiscount = Number(item.roomdata.discountamount || 0)
-                                                    const planDiscount = Number(item.roomdata.plandiscountamount || 0)
-                                                    const lineTotal = Math.max(roomRate - (roomDiscount + planDiscount), 0)
                                                     return `
                                                         <tr>
                                                             <td>${index + 1 }</td>
@@ -2994,29 +2866,10 @@ function postingMasterOpencheckinreceipt(id, ratee, rooms){
                                                                                 <td id="rcheckindate" class="text-center opacity-70">${item.guest1[0].firstname}&nbsp;${item.guest1[0].lastname}&nbsp;${item.guest1[0].othernames}</td>
                                                                                 <td id="rcheckindate" class="text-center opacity-70">${item.guest1[0].phone}</td>
                                                                             </tr>` : ''}
-                                                                            ${item.guest2.length>0 ? `<tr>
-                                                                                <td class="text-center opacity-70">2</td>
-                                                                                <td id="rcheckindate" class="text-center opacity-70">${item.guest2[0].firstname}&nbsp;${item.guest2[0].lastname}&nbsp;${item.guest2[0].othernames}</td>
-                                                                                <td id="rcheckindate" class="text-center opacity-70">${item.guest2[0].phone}</td>
-                                                                            </tr>` : ''}
-                                                                            ${item.guest3.length>0 ? `<tr>
-                                                                                <td class="text-center opacity-70">3</td>
-                                                                                <td id="rcheckindate" class="text-center opacity-70">${item.guest3[0].firstname}&nbsp;${item.guest3[0].lastname}&nbsp;${item.guest3[0].othernames}</td>
-                                                                                <td id="rcheckindate" class="text-center opacity-70">${item.guest3[0].phone}</td>
-                                                                            </tr>` : ''}
-                                                                            ${item.guest4.length>0 ? `<tr>
-                                                                                <td class="text-center opacity-70">4</td>
-                                                                                <td id="rcheckindate" class="text-center opacity-70">${item.guest4[0].firstname}&nbsp;${item.guest4[0].lastname}&nbsp;${item.guest4[0].othernames}</td>
-                                                                                <td id="rcheckindate" class="text-center opacity-70">${item.guest4[0].phone}</td>
-                                                                            </tr>` : ''}
                                                                         </tbody>
                                                                     </table>
                                                             </td>
                                                             <td>${formatNumber(roomRate)}</td>
-                                                            <td>${formatNumber(planAmount)}</td>
-                                                            <td>${formatNumber(roomDiscount)}</td>
-                                                            <td>${formatNumber(planDiscount)}</td>
-                                                            <td>${formatNumber(lineTotal)}</td>
                                                         </tr> `
                                                 }).join('')
                                             }
@@ -3097,36 +2950,6 @@ function postingMasterOpencheckinreceipt(id, ratee, rooms){
                                         <div class="text-gray-800 text-right flex-1">Total Room Rate</div>
                                         <div class="text-right w-40">
                                             <div id="rtotalbalance" class="text-gray-800 font-medium">${formatNumber(totalRoomRate)}</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between mb-3">
-                                        <div class="text-gray-800 text-right flex-1">Total Plan Amount</div>
-                                        <div class="text-right w-40">
-                                            <div class="text-gray-800 font-medium">${formatNumber(totalPlanAmount)}</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between mb-3">
-                                        <div class="text-gray-800 text-right flex-1">Room Discount</div>
-                                        <div class="text-right w-40">
-                                            <div class="text-gray-800 font-medium">${formatNumber(totalRoomDiscount)}</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between mb-3">
-                                        <div class="text-gray-800 text-right flex-1">Plan Discount</div>
-                                        <div class="text-right w-40">
-                                            <div class="text-gray-800 font-medium">${formatNumber(totalPlanDiscount)}</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between mb-3">
-                                        <div class="text-gray-800 text-right flex-1">Other Discount (${formatNumber(otherDiscountPerc)}%)</div>
-                                        <div class="text-right w-40">
-                                            <div class="text-gray-800 font-medium">${formatNumber(otherDiscount)}</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between mb-4">
-                                        <div class="text-gray-800 text-right flex-1">Total Discount</div>
-                                        <div class="text-right w-40">
-                                            <div class="text-gray-800 font-medium">${formatNumber(totalDiscount)}</div>
                                         </div>
                                     </div>
                                     <div class="py-2 border-t border-b">
@@ -3303,7 +3126,6 @@ function postingMasterOpenSubmittedCheckinPaymentReceipt(context = null) {
     const companyAddress = String(did('your_companyaddress')?.value || '').trim()
     const companyPhone = String(did('your_companyphone')?.value || '').trim()
     const companyInitials = companyName.split(/\s+/).filter(Boolean).map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase() || 'HM'
-    const totalDiscount = Number(context.totalRoomDiscount || 0) + Number(context.totalPlanDiscount || 0)
     const formatReceiptDate = (value = '') => {
         const raw = String(value || '').trim()
         if(!raw) return '-'
@@ -3327,13 +3149,11 @@ function postingMasterOpenSubmittedCheckinPaymentReceipt(context = null) {
         const guests = row.guests?.length ? row.guests.join(', ') : '-'
         const serial = row.serial || index + 1
         const roomrate = Number(row.roomrate || 0)
-        const lineDiscount = Number(row.discountamount || 0) + Number(row.plandiscountamount || 0)
-        const lineTotal = Math.max(roomrate - lineDiscount, 0)
         return `
             <div style="padding: 9px 0; border-bottom: 1px dashed #cbd5e1;">
                 <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 800; color: #0f172a;">
                     <span style="max-width: 62%; word-break: break-word;">${serial}. ${postingMasterEscapeCheckinSummaryText(row.category || 'Room')}</span>
-                    <span>${formatNumber(lineTotal)}</span>
+                    <span>${formatNumber(roomrate)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 8px; color: #475569; font-size: 10px; margin-top: 2px;">
                     <span>Room: ${postingMasterEscapeCheckinSummaryText(row.roomnumber || '-')}</span>
@@ -3341,7 +3161,6 @@ function postingMasterOpenSubmittedCheckinPaymentReceipt(context = null) {
                 </div>
                 ${row.ratecode ? `<div style="color: #475569; font-size: 10px; margin-top: 2px;">Rate Code: ${postingMasterEscapeCheckinSummaryText(row.ratecode)}</div>` : ''}
                 ${guests && guests !== '-' ? `<div style="color: #475569; font-size: 10px; margin-top: 2px; word-break: break-word;">Guest: ${postingMasterEscapeCheckinSummaryText(guests)}</div>` : ''}
-                ${lineDiscount ? `<div style="display: flex; justify-content: space-between; gap: 8px; color: #b91c1c; font-size: 10px; margin-top: 2px;"><span>Discount</span><span>${formatNumber(lineDiscount)}</span></div>` : ''}
             </div>
         `
     }).join('') : `<div style="padding: 14px 0; text-align: center; color: #64748b; border-bottom: 1px dashed #cbd5e1;">No room lines available</div>`
@@ -3388,8 +3207,6 @@ function postingMasterOpenSubmittedCheckinPaymentReceipt(context = null) {
 
                         <div style="padding: 10px 0; border-top: 1px dashed #0f172a; border-bottom: 1px dashed #0f172a;">
                             <div style="display: flex; justify-content: space-between; color: #334155;"><span>Room Rate</span><span>${formatNumber(context.totalRoomRate || 0)}</span></div>
-                            ${Number(context.totalPlanAmount || 0) ? `<div style="display: flex; justify-content: space-between; color: #334155;"><span>Plan Info (in rate)</span><span>${formatNumber(context.totalPlanAmount || 0)}</span></div>` : ''}
-                            ${totalDiscount ? `<div style="display: flex; justify-content: space-between; color: #b91c1c;"><span>Discount</span><span>${formatNumber(totalDiscount)}</span></div>` : ''}
                             <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; margin-top: 7px;"><span>Total Due</span><span>${formatNumber(context.totalDue || 0)}</span></div>
                             <div style="display: flex; justify-content: space-between; align-items: center; background: #ecfeff; border: 1px solid #67e8f9; border-radius: 5px; padding: 5px 6px; margin-top: 6px; font-weight: 800; font-size: 14px;"><span>PAID</span><span>${formatNumber(context.amountPaid || 0)}</span></div>
                             <div style="display: flex; justify-content: space-between; font-weight: 800; margin-top: 5px;"><span>Balance</span><span>${formatNumber(context.balance || 0)}</span></div>
@@ -3456,6 +3273,20 @@ function postingMasterCheckDuplicateRoomNumbers(root = document) {
     return false; // No duplicates found
 }
 
+function postingMasterNormalizeSinglePostingMasterForm(form){
+    const roomCards = Array.from(did('roomfullcontainer')?.children || [])
+    roomCards.slice(1).forEach(card => card.remove())
+    const firstRoomId = String(form?.querySelector('.roomcategory')?.id || '').replace('roomcategory-', '').trim()
+    Array.from(form?.querySelectorAll('.adult') || []).forEach(input => input.value = 1)
+    Array.from(form?.querySelectorAll('.child, .infant, .planamount, .discountamount, .plandiscountperc, .plandiscountamount') || []).forEach(input => input.value = 0)
+    Array.from(form?.querySelectorAll('.plan, .discountcoupon') || []).forEach(input => input.value = '')
+    if(did('otherdiscount')) did('otherdiscount').value = 0
+    if(firstRoomId && did('moreguestcontainer-'+firstRoomId)){
+        const guestRows = Array.from(did('moreguestcontainer-'+firstRoomId).children || [])
+        guestRows.slice(1).forEach(row => row.remove())
+    }
+}
+
 async function postingMasterCheckinnFormSubmitHandler(guest){
     if(!guest)return notification('Wrong call point', 0)
     const form = did(guest)
@@ -3470,6 +3301,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
     let successNotified = false
 
     try {
+        if(guest == 'postingmasterform') postingMasterNormalizeSinglePostingMasterForm(form)
         if(!postingMasterValidateSubmittedCheckinForm(guest))return
 
         if(postingMasterIsCheckinPaymentForm(guest)){
@@ -3536,7 +3368,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
             if(did('arrivaldate'))param.set('arrivaldate', did('arrivaldate').value.replace('T', ' '))
             if(did('departuredate'))param.set('departuredate', did('departuredate').value.replace('T', ' '))
             param.set('rowsize', rn.length)
-            if(did('otherdiscount'))param.set('otherdiscount', did('otherdiscount').value || 0)
+            param.set('otherdiscount', 0)
             if(did('totalamount'))param.set('totalamount', did('totalamount').value || 0)
 
             for(let i=0;i<rn.length;i++){

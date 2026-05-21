@@ -186,7 +186,7 @@
                                          </div>
                                         </div>
                                         <div class="w-full flex justify-end">
-                                            <button onclick="postingMasterCheckinaddroom()" id="initialroombtn" type="button" class="relative bottom-0 right-0 text-white w-fit h-fit flex items-center justify-center bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span>Add&nbsp;Room</button>
+                                            <button onclick="postingMasterCheckinaddroom()" id="initialroombtn" type="button" class="hidden relative bottom-0 right-0 text-white w-fit h-fit items-center justify-center bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span>Add&nbsp;Room</button>
                                         </div>
 
                                         <div id="roomfullcontainer" class="relative border rounded py-2 px-2 mt-6 !mb-2 shadow-sm bg-[#3b82f6]">
@@ -592,16 +592,16 @@
                                             <input type="text"  name="" id="currency" class="bg-white form-control !p-2 !hidden border-none text-[blue]" readonly>
                                             <input type="text" id="" class="bg-white form-control !p-2 !hidden border-none text-[blue]" readonly>
                                         </div>
-                                        <div class="flex items-center gap-5 text-md border  p-4 ">
+                                        <div class="hidden items-center gap-5 text-md border  p-4 ">
                                             <label for="otherdiscount" class=" font-bold">Other Discount (%):</label>
-                                            <input type="number" min="0" max="100" name="otherdiscount" id="otherdiscount" oninput="postingMasterRefreshCheckinSummaryAndTotals('other-discount-change')" class="bg-white form-control !p-2" placeholder="0-100">
+                                            <input type="number" min="0" max="100" value="0" name="otherdiscount" id="otherdiscount" oninput="postingMasterRefreshCheckinSummaryAndTotals('other-discount-change')" class="bg-white form-control !p-2" placeholder="0-100">
                                         </div>
-                                        <div class="flex items-center gap-5 text-md border  p-4 ">
+                                        <div class="hidden items-center gap-5 text-md border  p-4 ">
                                             <label for="logoname" class=" font-bold">Total Discount:</label>
                                             <label for="logoname" id="totaldiscount" class=" !text-md font-bold text-[blue]">00.00</label>
                                         </div>
                                         <div class="flex items-center gap-5 text-md border  p-4 ">
-                                            <label for="logoname" class=" font-bold">Total Plan:</label>
+                                            <label for="logoname" class=" font-bold">Total Due:</label>
                                             <label for="logoname" id="totalplan" class=" !text-md font-bold text-[blue]">00.00</label>
                                         </div>
                                          <button onclick="did('modalformone').classList.remove('hidden')" type="button" class="m-auto w-full h-[35px] md:w-max text-blue-400 text-sm capitalize border border-2 border-blue-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
