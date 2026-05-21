@@ -96,6 +96,7 @@ const accessctrl_frontdesk = [
     'GUESTS & RESERVATIONS',
     'RESERVATION CHECK IN',
     'DIRECT CHECK IN',
+    'POSTING MASTER',
     'GROUP RESERVATIONS',
     'GROUP CHECK IN',
     'PRINT REGISTRATION CARD',

@@ -227,6 +227,11 @@ const routerTree = {
         startingFunction: 'checkinActive',
         scriptName: './js/checkin.js'
     },
+    postingmaster: {
+        template: 'postingmaster',
+        startingFunction: 'postingmasterActive',
+        scriptName: './js/postingmaster.js'
+    },
     messages: {
         template: 'messages',
         startingFunction: 'messagesActive',
