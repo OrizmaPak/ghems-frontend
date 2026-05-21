@@ -1,4 +1,5 @@
 let pmroomsEditRoomNumber = ''
+let pmroomsEditId = ''
 let pmRoomImportedRows = []
 let pmRoomImportEventsBound = false
 const pmRoomImportDelay = 1000
@@ -65,6 +66,7 @@ async function fetchpmrooms(roomnumber) {
             const record = rows.find(item => String(item.roomnumber) === String(roomnumber)) || rows[0]
             if(!record) return notification('No records retrieved')
             pmroomsEditRoomNumber = record.roomnumber
+            pmroomsEditId = record.id || ''
             populateData(record, [], [], 'pmroomsform')
         }
     } else {
@@ -99,12 +101,14 @@ async function pmroomsFormSubmitHandler() {
         return notification('Room number must be an integer.', 0)
     }
     if(roomNumberField) roomNumberField.value = parseInt(roomNumberValue, 10)
-    let payload = getFormData2(document.querySelector('#pmroomsform'))
+    const extra = pmroomsEditId ? [['id', pmroomsEditId]] : null
+    let payload = getFormData2(document.querySelector('#pmroomsform'), extra)
 
     let request = await requestPmRooms('pmrooms', payload, document.querySelector('#pmroomsform #submit'))
     if(request.status) {
         notification('Record saved successfully!', 1)
         pmroomsEditRoomNumber = ''
+        pmroomsEditId = ''
         document.querySelector('#pmroomsform')?.reset()
         fetchpmrooms()
         return
