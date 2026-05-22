@@ -2,7 +2,7 @@
 let datasource = []
 
 const postingMasterControllers = {
-    list: 'fetchpmreservationbyref',
+    list: 'fetchpmreservationsbyfilter',
     single: 'fetchpmreservationbyid',
     save: 'pmreservations',
     payment: 'invoicing',
