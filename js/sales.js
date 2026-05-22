@@ -1176,7 +1176,18 @@ async function salesitempop(val,i,qty=0) {
     console.log(x)
     if(x>1)notification(`${val.value} is already listed`)
     if(x>1)return clearrow(i)
-    let ddid = await getLabelFromValue(val.value, 'hems_itemslist_getid');
+    const selectedName = String(val.value || '').trim().toLowerCase()
+    const sourceItems = Array.isArray(datasource) ? datasource : []
+    const nameMatches = sourceItems.filter((item) => String(item?.itemname || '').trim().toLowerCase() === selectedName)
+    const currentRowItemId = String(did(`itemer-${i}`)?.value || '').trim()
+    const matchedByRowId = currentRowItemId
+        ? nameMatches.find((item) => String(item?.itemid || '').trim() === currentRowItemId)
+        : null
+    const resolvedItem = matchedByRowId || nameMatches[0] || null
+
+    let ddid = String(resolvedItem?.itemid || '').trim()
+    if(!ddid) ddid = await getLabelFromValue(val.value, 'hems_itemslist_getid')
+    if(did(`itemer-${i}`)) did(`itemer-${i}`).value = ddid
     console.log(val.value, ddid)
     // scrollToTop('scrolldiv')
     function getparamm(){
@@ -1187,7 +1198,7 @@ async function salesitempop(val,i,qty=0) {
     }
     let request = await httpRequest2('../controllers/fetchitemdetail', ddid ? getparamm() : null, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
-    if(request.status) {
+    if(request.status && Array.isArray(request.itemdata) && request.itemdata.length) {
         did(`type-${i}`).innerHTML = request.itemdata[0].itemtype
         if(did(`itemclass-${i}`)) did(`itemclass-${i}`).value = request.itemdata[0].itemclass || ''
         did(`unit-${i}`).innerHTML = request.itemdata[0].units
@@ -1197,8 +1208,23 @@ async function salesitempop(val,i,qty=0) {
         did(`qty-${i}`).value = Number(qty)
         did(`amount-${i}`).value = Number(request.itemdata[0].price)*Number(did(`qty-${i}`).value)
         if(did(`qty-${i}`).value)calsaleqty(`${i}`)
+        return
     }
-    else return notification('No records retrieved')
+
+    // Fallback to the already filtered salespoint datasource when detail lookup does not return.
+    if(resolvedItem){
+        did(`type-${i}`).innerHTML = resolvedItem.itemtype || ''
+        if(did(`itemclass-${i}`)) did(`itemclass-${i}`).value = resolvedItem.itemclass || ''
+        did(`unit-${i}`).innerHTML = resolvedItem.units || ''
+        const rowItemClass = resolvedItem.itemclass || ''
+        did(`balance-${i}`).innerHTML = isNonStockItemClass(rowItemClass) ? '999999999' : (resolvedItem.balance ?? '')
+        did(`price-${i}`).value = Number(resolvedItem.price || 0)
+        did(`qty-${i}`).value = Number(qty)
+        did(`amount-${i}`).value = Number(resolvedItem.price || 0) * Number(did(`qty-${i}`).value)
+        if(did(`qty-${i}`).value)calsaleqty(`${i}`)
+        return
+    }
+    return notification('No records retrieved')
 }
 
 function addsalesrow(ii=''){
