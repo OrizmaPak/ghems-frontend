@@ -454,13 +454,8 @@ function postingMasterUpdateRoomRatePerDayLabel(idd = '') {
     if(!id) return
     const label = did('roomrate-label-'+id) || document.querySelector(`[data-roomrate-label="${id}"]`)
     if(!label) return
-    const roomRate = Number(did('roomrate-'+id)?.value || 0)
-    const nights = Math.max(Number(did('numberofnights')?.value || 0), 1)
-    const perDayRate = roomRate > 0 ? roomRate / nights : 0
-    label.innerHTML = perDayRate
-        ? `rate <span class="text-[10px] font-semibold text-slate-600 whitespace-nowrap">(${formatNumber(perDayRate)} Per Day)</span>`
-        : 'rate'
-    label.setAttribute('title', perDayRate ? `Rate per day based on ${nights} night${nights === 1 ? '' : 's'}` : 'Rate')
+    label.innerHTML = 'rate'
+    label.setAttribute('title', 'Rate')
 }
 
 function postingMasterUpdateAllRoomRatePerDayLabels() {
@@ -1177,31 +1172,8 @@ function postingMasterRenderCheckinFullDetailSummary(data) {
 function postingMasterRenderCheckinTariffSummary(){
     const container = did('checkinTariffSummary')
     if(!container) return
-    const data = postingMasterCollectCheckinTariffSummaryData()
-    const isOpen = container.dataset.open === 'true'
-    const activeTab = container.dataset.tab || 'calculation'
-    container.innerHTML = `
-        <div class="rounded border border-slate-200 bg-slate-50 shadow-sm overflow-hidden">
-            <button type="button" onclick="postingMasterToggleCheckinTariffSummary()" class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-white hover:bg-slate-50 transition">
-                <span class="flex items-center gap-2 font-semibold text-slate-800">
-                    <span class="material-symbols-outlined text-blue-500 text-lg">summarize</span>
-                    Tariff Summary
-                </span>
-                <span class="material-symbols-outlined text-slate-500 transition ${isOpen ? 'rotate-180' : ''}">expand_more</span>
-            </button>
-            <div class="${isOpen ? '' : 'hidden'} border-t border-slate-200 p-4">
-                <div class="rounded border border-slate-200 bg-white overflow-hidden">
-                    <div class="flex flex-wrap items-center border-b border-slate-200 bg-white">
-                        ${postingMasterRenderCheckinSummaryTabButton('calculation', activeTab, 'Room Calculation', 'calculate')}
-                        ${postingMasterRenderCheckinSummaryTabButton('guests', activeTab, 'Rooms & Guests', 'groups')}
-                        ${postingMasterRenderCheckinSummaryTabButton('full', activeTab, 'Full Detail', 'fact_check')}
-                    </div>
-                    <div class="p-3">
-                        ${activeTab === 'guests' ? postingMasterRenderCheckinGuestsSummary(data) : activeTab === 'full' ? postingMasterRenderCheckinFullDetailSummary(data) : postingMasterRenderCheckinCalculationSummary(data)}
-                    </div>
-                </div>
-            </div>
-        </div>`
+    container.innerHTML = ''
+    container.classList.add('hidden')
 }
 
 function postingMasterToggleCheckinTariffSummary(){
@@ -1214,8 +1186,8 @@ function postingMasterToggleCheckinTariffSummary(){
 function postingMasterUpdateNetTariffFooterLabel(){
     const label = did('totalrate')?.previousElementSibling
     if(!label) return
-    label.innerHTML = 'Rate <span class="block text-xs font-normal opacity-70">(per day)</span>'
-    label.setAttribute('title', 'Rate amount per day')
+    label.innerHTML = 'Rate'
+    label.setAttribute('title', 'Rate')
 }
 
 function postingMasterRefreshCheckinSummaryAndTotals(reason = ''){
@@ -1236,7 +1208,7 @@ function postingMasterRemoveCheckinGuestRow(button){
 
 function postingMasterCalculatetotals(){
     postingMasterUpdateNetTariffFooterLabel()
-    if(did('totalplan')?.previousElementSibling) did('totalplan').previousElementSibling.textContent = 'Total Due'
+    if(did('totalplan')?.previousElementSibling) did('totalplan').previousElementSibling.textContent = 'Total Amount:'
     let tr = 0;
     for(let i=0;i<document.getElementsByClassName('roomnumber').length;i++){
         tr = Number(document.getElementsByClassName('roomrate')[i].value)+tr
