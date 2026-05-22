@@ -36,45 +36,59 @@ function postingMasterController(key) {
     return `../controllers/${postingMasterControllers[key] || key}`
 }
 
+const POSTING_MASTER_ROOM_CATEGORY = 'POSTING MASTER'
+let postingMasterRoomCategoryObserver = null
+let postingMasterApplyingRoomCategoryRestriction = false
+
+function postingMasterRoomCategoryName(item = {}) {
+    return String(item?.category || item?.categoryname || item?.roomcategory || item?.roomcategoryname || '').trim()
+}
+
 function postingMasterAllowedRoomCategories() {
     const categories = Array.isArray(rumcat) ? rumcat : []
-    return categories.filter((item) => String(item?.category || '').trim().toUpperCase() === 'POSTING MASTER')
+    return categories.filter((item) => postingMasterRoomCategoryName(item).toUpperCase() === POSTING_MASTER_ROOM_CATEGORY)
 }
 
 function postingMasterKeepOnlyPostingMasterOption(selectEl) {
     if(!selectEl) return false
     const options = Array.from(selectEl.querySelectorAll('option'))
     if(!options.length) return false
-    const match = options.find((option) => String(option.textContent || '').trim().toUpperCase() === 'POSTING MASTER')
+    const match = options.find((option) => String(option.textContent || '').trim().toUpperCase() === POSTING_MASTER_ROOM_CATEGORY)
     if(!match) return false
     const value = String(match.value || '').trim()
-    const label = String(match.textContent || '').trim() || 'POSTING MASTER'
+    const label = String(match.textContent || '').trim() || POSTING_MASTER_ROOM_CATEGORY
     selectEl.innerHTML = `<option value="${value}">${label}</option>`
     selectEl.value = value
     return true
 }
 
 function postingMasterApplyRoomCategoryRestriction(root = document) {
-    const allowed = postingMasterAllowedRoomCategories()
-    const roomCategorySelects = Array.from((root || document).querySelectorAll('.roomcategory'))
-    const roomTypeSelect = did('room-type')
+    if(postingMasterApplyingRoomCategoryRestriction) return
+    postingMasterApplyingRoomCategoryRestriction = true
+    try {
+        const allowed = postingMasterAllowedRoomCategories()
+        const roomCategorySelects = Array.from((root || document).querySelectorAll('.roomcategory'))
+        const roomTypeSelect = did('room-type')
 
-    if(allowed.length){
-        const defaultCategory = allowed[0]
-        const optionsHtml = allowed.map((item) => `<option value="${item.id}">${item.category}</option>`).join('')
-        roomCategorySelects.forEach((select) => {
-            select.innerHTML = optionsHtml
-            select.value = String(defaultCategory.id)
-        })
-        if(roomTypeSelect){
-            roomTypeSelect.innerHTML = optionsHtml
-            roomTypeSelect.value = String(defaultCategory.id)
+        if(allowed.length){
+            const defaultCategory = allowed[0]
+            const optionsHtml = allowed.map((item) => `<option value="${item.id}">${postingMasterRoomCategoryName(item) || POSTING_MASTER_ROOM_CATEGORY}</option>`).join('')
+            roomCategorySelects.forEach((select) => {
+                select.innerHTML = optionsHtml
+                select.value = String(defaultCategory.id)
+            })
+            if(roomTypeSelect){
+                roomTypeSelect.innerHTML = optionsHtml
+                roomTypeSelect.value = String(defaultCategory.id)
+            }
+            return
         }
-        return
-    }
 
-    roomCategorySelects.forEach((select) => postingMasterKeepOnlyPostingMasterOption(select))
-    postingMasterKeepOnlyPostingMasterOption(roomTypeSelect)
+        roomCategorySelects.forEach((select) => postingMasterKeepOnlyPostingMasterOption(select))
+        postingMasterKeepOnlyPostingMasterOption(roomTypeSelect)
+    } finally {
+        postingMasterApplyingRoomCategoryRestriction = false
+    }
 }
 
 function postingMasterScheduleRoomCategoryRestriction(root = document) {
@@ -82,6 +96,29 @@ function postingMasterScheduleRoomCategoryRestriction(root = document) {
     ;[150, 400, 900, 1500].forEach((delay) => {
         setTimeout(() => postingMasterApplyRoomCategoryRestriction(root), delay)
     })
+}
+
+function postingMasterStartRoomCategoryRestrictionObserver() {
+    if(postingMasterRoomCategoryObserver || !document.body) return
+    let pending = false
+    postingMasterRoomCategoryObserver = new MutationObserver((mutations) => {
+        if(pending || postingMasterApplyingRoomCategoryRestriction) return
+        const shouldRestrict = mutations.some((mutation) => {
+            const target = mutation.target
+            if(target?.classList?.contains('roomcategory') || target?.id === 'room-type') return true
+            return Array.from(mutation.addedNodes || []).some((node) => {
+                if(!node?.querySelector && !node?.classList) return false
+                return node.classList?.contains('roomcategory') || node.id === 'room-type' || !!node.querySelector?.('.roomcategory, #room-type')
+            })
+        })
+        if(!shouldRestrict) return
+        pending = true
+        setTimeout(() => {
+            pending = false
+            postingMasterApplyRoomCategoryRestriction()
+        }, 0)
+    })
+    postingMasterRoomCategoryObserver.observe(document.body, { childList: true, subtree: true })
 }
 
 let checkinid
@@ -642,6 +679,7 @@ async function postingMasterCheckinActive() {
     notification('Loading...')
     checkinid = ''
     checkinOtherDetailsPromptState.postingmasterform = false
+    postingMasterStartRoomCategoryRestrictionObserver()
     // markallcomp()
     const form = document.querySelector('#postingmasterform')
     await postingMasterCheckinpopulatedl()
