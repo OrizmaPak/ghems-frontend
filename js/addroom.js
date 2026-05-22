@@ -3,37 +3,52 @@ let addroomImportedRows = []
 let addroomImportEventsBound = false
 const addroomImportDelay = 1000
 let addroomViewSearchTerm = ''
+let addroomDatasource = []
 
 function applyAddRoomFrontendSearch() {
     const term = String(addroomViewSearchTerm || '').trim().toLowerCase()
-    const rows = Array.isArray(datasource) ? datasource : []
-    if(!term){
-        resolvePagination(rows, onaddroomTableDataSignal)
-        return
-    }
-    const filtered = rows.filter((item) => {
+    const rows = Array.isArray(addroomDatasource) ? addroomDatasource : []
+    const filtered = !term ? rows : rows.filter((item) => {
         const line = [
             item?.roomname,
             item?.roomnumber,
             item?.roomcategory,
+            item?.category,
+            item?.categoryid,
             item?.building,
             item?.floor,
             item?.description
         ].map((value) => String(value || '').toLowerCase()).join(' ')
         return line.includes(term)
     })
+
+    if(!filtered.length){
+        did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${term ? 'No matching rooms found' : 'No records retrieved'}</td></tr>`
+        const tableStatus = document.querySelector('#addroomviewpanel .table-status')
+        if(tableStatus) tableStatus.innerHTML = ''
+        return
+    }
     resolvePagination(filtered, onaddroomTableDataSignal)
 }
 
 async function addroomActive() {
     const form = document.querySelector('#addroomform')
-    if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', addroomFormSubmitHandler)
-    if(did('addroomviewsearch')) did('addroomviewsearch').addEventListener('input', (event) => {
-        addroomViewSearchTerm = event.target.value || ''
-        applyAddRoomFrontendSearch()
-    })
+    const submitBtn = form.querySelector('#submit')
+    if(submitBtn && submitBtn.dataset.addroomBound !== '1'){
+        submitBtn.dataset.addroomBound = '1'
+        submitBtn.addEventListener('click', addroomFormSubmitHandler)
+    }
+    const searchInput = did('addroomviewsearch')
+    if(searchInput && searchInput.dataset.addroomSearchBound !== '1'){
+        searchInput.dataset.addroomSearchBound = '1'
+        searchInput.addEventListener('input', (event) => {
+            addroomViewSearchTerm = event.target.value || ''
+            applyAddRoomFrontendSearch()
+        })
+    }
     if(did('addroomoptioner_manage')) runoptioner(did('addroomoptioner_manage'))
     datasource = []
+    addroomDatasource = []
     await fetcroomcategory()
     wireAddRoomImport()
     await fetchaddroom()
@@ -72,7 +87,10 @@ async function fetchaddroom(id) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = request.data
+                addroomDatasource = request.data
+                applyAddRoomFrontendSearch()
+            }else{
+                addroomDatasource = []
                 applyAddRoomFrontendSearch()
             }
         }else{
