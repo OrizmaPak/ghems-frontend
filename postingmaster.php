@@ -57,7 +57,7 @@
 
                                     <div class="flex flex-col  bg-white/90 p-5 pt-0 rounded-sm">
                                         <p class="page-title">
-                                            <span>RESERVATION</span>
+                                            <span>POSTING MASTER</span>
                                         </p>
 
                                         <!--arrival departure reservationtype nights-->
