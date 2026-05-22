@@ -2,6 +2,12 @@
                             <p class="page-title">
                                 <span>MANAGE ROOM</span>
                             </p>
+                            <ul class="navitem-parent text-sm mt-4">
+                                <li id="addroomtabmanage" class="navitem active !text-blue-600"><p>Manage Room</p></li>
+                                <li id="addroomtabview" class="navitem"><p>View Room</p></li>
+                            </ul>
+                            <hr class="my-4">
+                            <div id="addroommanagepanel">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                                 <div class="text-xs text-[orange]">Download the template, fill in room details, and import to review them in bulk.</div>
                                 <div class="flex items-center gap-2">
@@ -69,10 +75,12 @@
                         
                                 </div>
                             </form>
-                            <hr class="my-10">
-                            
-                            
-                             <div >
+                            </div>
+                            <div id="addroomviewpanel" class="hidden">
+                                <div class="flex justify-end mb-3">
+                                    <input id="addroomviewsearch" type="text" class="form-control max-w-md" placeholder="Search by room name, room number, category, building, floor, description">
+                                </div>
+                             <div>
                                 <div class="table-content">
                                     <table>
                                         <thead>
@@ -97,6 +105,7 @@
                                     </table>
                                 </div>
                                 <div class="table-status"></div>
+                            </div>
                             </div>
                             
                             <datalist id="supplierlistpayable">
