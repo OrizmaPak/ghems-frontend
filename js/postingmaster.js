@@ -2720,6 +2720,7 @@ async function postingMasterOncheckinTableDataSignal() {
         item?.reservations?.travelagentname ||
         ''
     ).trim()
+    const isPostingMasterView = !!did('postingmasterform')
 
     return `
     <tr>
@@ -2732,8 +2733,8 @@ async function postingMasterOncheckinTableDataSignal() {
                                     if(did('expectedarrivalsform'))did('reservationcheckin').click();
                                     if(did('reservationpostingmasterform'))postingMasterChecksessionstorage();
                                     sessionStorage.setItem('postingmasterfromsomewhere', '${item.reservations.id}');
-                                    " class="material-symbols-outlined ${item.reservations.status != 'CHECKED IN' && item.reservations.status != 'CHECKED OUT' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">check_circle</button>
-                <button title="Reverse Reservation" onclick="postingMasterReverseareservation('${item.reservations.id}', 'reserved')" class="material-symbols-outlined ${item.reservations.status == 'RESERVED' ? '' : item.reservations.status == 'OPEN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
+                                    " class="material-symbols-outlined ${isPostingMasterView ? 'hidden' : ''} ${item.reservations.status != 'CHECKED IN' && item.reservations.status != 'CHECKED OUT' ? !did('cancelreservationformfilter') ? '' : 'hidden' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">check_circle</button>
+                <button title="Reverse Reservation" onclick="postingMasterReverseareservation('${item.reservations.id}', 'reserved')" class="material-symbols-outlined ${isPostingMasterView ? 'hidden' : ''} ${item.reservations.status == 'RESERVED' ? '' : item.reservations.status == 'OPEN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Posting Master" onclick="postingMasterReverseareservation('${item.reservations.id}', 'checked in')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Check Out" onclick="postingMasterReverseareservation('${item.reservations.id}', 'checked out')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED OUT' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Edit Reservation" onclick="postingMasterOpenGuestReservationForEdit('${item.reservations.id}')" class="${did('guestreservationform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' || item.reservations.status == 'CHECKED OUT' ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
