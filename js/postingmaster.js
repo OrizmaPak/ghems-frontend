@@ -1245,7 +1245,7 @@ async function postingMasterCheckinaddroom(){
                                                                 <input type="text" readonly name="roomnumber"  id="roomnumber-${id}" class="bg-white form-control roomnumber !p-2 comp" placeholder="">
                                                                 <!--<input type="text" name="roomnumber" id="roomnumber1" list="hems_available_roomnumber_id" onchange="checkdatalist(this);getcategoryrateguest(this)" class="bg-white form-control !p-2 comp2" placeholder="Enter root category">-->
                                                             </div>
-                                                            <button id="searchroombtn-${id}" onclick="postingMasterOpentheroomboard('${id}')" type="button" class="hidden scale-[0.7] absolute top-0 right-0 text-white w-10 h-10 bg-blue-400 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-blue-600 cark:hover:bg-blue-700 focus:outline-none cark:focus:ring-blue-800"><span class="material-symbols-outlined">search</span></button>
+                                                            <button id="searchroombtn-${id}" onclick="postingMasterOpentheroomboard('${id}')" type="button" class="scale-[0.7] absolute top-0 right-0 text-white w-10 h-10 bg-blue-400 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-blue-600 cark:hover:bg-blue-700 focus:outline-none cark:focus:ring-blue-800"><span class="material-symbols-outlined">search</span></button>
                                                         </div>
                                                     </div>
                                                     <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
@@ -1531,7 +1531,7 @@ async function postingMasterControlroomlist(idd, type){
         postingMasterSetRateSourceMessage(idd, null)
     }
     if(!document.querySelector('#roomcategory-'+idd).value){
-        document.getElementById('searchroombtn-'+idd).classList.add('hidden')
+        document.getElementById('searchroombtn-'+idd).classList.remove('hidden')
         document.getElementById('roomnumber-'+idd).value = ''
         document.getElementById('ratecodee-'+idd).value = ''
         document.getElementById('ratecodename-'+idd).value = ''
