@@ -138,6 +138,26 @@ const CHECKIN_PENDING_PAYMENT_RECEIPT_KEY = 'postingmaster_pending_payment_recei
 let checkinOrgContextChangeLock = false
 let checkinViewTableSource = []
 
+function postingMasterNormalizeReservationRow(row = {}) {
+    const normalized = { ...row }
+    normalized.reservations = normalized.reservations || {}
+    const roomRows = Array.isArray(normalized.roomgeustrow)
+        ? normalized.roomgeustrow
+        : Array.isArray(normalized.roomguestrow)
+            ? normalized.roomguestrow
+            : []
+    normalized.roomgeustrow = roomRows.map((roomRow) => ({
+        ...roomRow,
+        roomdata: roomRow?.roomdata || {},
+        guest1: Array.isArray(roomRow?.guest1) ? roomRow.guest1 : [],
+        guest2: Array.isArray(roomRow?.guest2) ? roomRow.guest2 : [],
+        guest3: Array.isArray(roomRow?.guest3) ? roomRow.guest3 : [],
+        guest4: Array.isArray(roomRow?.guest4) ? roomRow.guest4 : []
+    }))
+    normalized.roomguestrow = normalized.roomgeustrow
+    return normalized
+}
+
 function postingMasterBuildCheckinViewSearchText(item = {}) {
     const reservation = item?.reservations || {}
     const roomRows = item?.roomgeustrow || item?.roomguestrow || []
@@ -2160,7 +2180,8 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                if(did('postingmasterform'))datasource = request.data.filter(data=>data.reservations.status == 'CHECKED IN')
+                const normalizedRows = request.data.map(postingMasterNormalizeReservationRow)
+                if(did('postingmasterform'))datasource = normalizedRows
                 if(did('noshowform'))datasource = request.data
                 if(did('reassignroomsform'))datasource = request.data.filter(data=>data.reservations.status == 'CHECKED IN')
                 if(did('guestreservationform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id == 0)
@@ -2182,7 +2203,7 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
             }
         }else{
             if(Array.isArray(request.data) && request.data.length){
-                return applyFetchedReservationRecord(request.data[0])
+                return applyFetchedReservationRecord(postingMasterNormalizeReservationRow(request.data[0]))
             }
             const fallbackRecord = (datasource || []).find((row) => String(row?.reservations?.id || '') === String(id))
             if(fallbackRecord) return applyFetchedReservationRecord(fallbackRecord)
@@ -2193,9 +2214,9 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
 }
 
 function postingMasterPopulaterestcheckindata(x){
-    let data = JSON.parse(x)
+    let data = postingMasterNormalizeReservationRow(JSON.parse(x))
     console.log('data', data)
-    did('roomfullcontainer').innerHTML = (data.roomguestrow || []).slice(0, 1).map((item, id)=>`
+    did('roomfullcontainer').innerHTML = (data.roomgeustrow || data.roomguestrow || []).slice(0, 1).map((item, id)=>`
         <div class="relative border rounded py-3 px-4 mt-6 !mb-2.5 bg-[#f5f5f5] shadow-lg" onclick="if(actionid != ${id}){actionid = ${id};postingMasterRunratcod()}">
          <button onclick="event.stopPropagation(); postingMasterRemoveCheckinRoomCard(this)" type="button" class="absolute top-[-25px] shadow right-0 flex justify-center items-center text-white w-10 h-10 bg-red-400 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-red-600 cark:hover:bg-red-700 focus:outline-none cark:focus:ring-red-800"><span class="material-symbols-outlined">delete</span></button>
             <button onclick="postingMasterCheckinaddroom()" type="button" class="hidden absolute top-[-25px] shadow right-14 justify-center items-center text-white w-10 h-10 bg-green-400 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-2 py-1 me-1 mb-1 cark:bg-green-600 cark:hover:bg-green-700 focus:outline-none cark:focus:ring-green-800"><span class="material-symbols-outlined">add</span></button>
