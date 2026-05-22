@@ -41,22 +41,47 @@ function postingMasterAllowedRoomCategories() {
     return categories.filter((item) => String(item?.category || '').trim().toUpperCase() === 'POSTING MASTER')
 }
 
+function postingMasterKeepOnlyPostingMasterOption(selectEl) {
+    if(!selectEl) return false
+    const options = Array.from(selectEl.querySelectorAll('option'))
+    if(!options.length) return false
+    const match = options.find((option) => String(option.textContent || '').trim().toUpperCase() === 'POSTING MASTER')
+    if(!match) return false
+    const value = String(match.value || '').trim()
+    const label = String(match.textContent || '').trim() || 'POSTING MASTER'
+    selectEl.innerHTML = `<option value="${value}">${label}</option>`
+    selectEl.value = value
+    return true
+}
+
 function postingMasterApplyRoomCategoryRestriction(root = document) {
     const allowed = postingMasterAllowedRoomCategories()
-    if(!allowed.length) return
-    const defaultCategory = allowed[0]
-    const optionsHtml = allowed.map((item) => `<option value="${item.id}">${item.category}</option>`).join('')
-
-    Array.from((root || document).querySelectorAll('.roomcategory')).forEach((select) => {
-        select.innerHTML = optionsHtml
-        select.value = String(defaultCategory.id)
-    })
-
+    const roomCategorySelects = Array.from((root || document).querySelectorAll('.roomcategory'))
     const roomTypeSelect = did('room-type')
-    if(roomTypeSelect){
-        roomTypeSelect.innerHTML = optionsHtml
-        roomTypeSelect.value = String(defaultCategory.id)
+
+    if(allowed.length){
+        const defaultCategory = allowed[0]
+        const optionsHtml = allowed.map((item) => `<option value="${item.id}">${item.category}</option>`).join('')
+        roomCategorySelects.forEach((select) => {
+            select.innerHTML = optionsHtml
+            select.value = String(defaultCategory.id)
+        })
+        if(roomTypeSelect){
+            roomTypeSelect.innerHTML = optionsHtml
+            roomTypeSelect.value = String(defaultCategory.id)
+        }
+        return
     }
+
+    roomCategorySelects.forEach((select) => postingMasterKeepOnlyPostingMasterOption(select))
+    postingMasterKeepOnlyPostingMasterOption(roomTypeSelect)
+}
+
+function postingMasterScheduleRoomCategoryRestriction(root = document) {
+    postingMasterApplyRoomCategoryRestriction(root)
+    ;[150, 400, 900, 1500].forEach((delay) => {
+        setTimeout(() => postingMasterApplyRoomCategoryRestriction(root), delay)
+    })
 }
 
 let checkinid
@@ -652,7 +677,7 @@ async function postingMasterCheckinActive() {
     await postingMasterFetchcompanyres()
     await postingMasterFetchgroupsres()
     await populateReceivingBankSelects()
-    postingMasterApplyRoomCategoryRestriction()
+    postingMasterScheduleRoomCategoryRestriction()
     did('initialroombtn').click()
     if(sessionStorage.getItem('postingmasterfromsomewhere')){
         let id = sessionStorage.getItem('postingmasterfromsomewhere')
@@ -1318,7 +1343,7 @@ async function postingMasterCheckinaddroom(){
         }
      }
      recalldatalist()
-     postingMasterApplyRoomCategoryRestriction(did('roomfullcontainer'))
+     postingMasterScheduleRoomCategoryRestriction(did('roomfullcontainer'))
      postingMasterAssignallcheckinlisteners()
      postingMasterCalculatetotals()
 }
@@ -2296,7 +2321,7 @@ function postingMasterPopulaterestcheckindata(x){
             </div>
         </div>
     `).join('')
-    postingMasterApplyRoomCategoryRestriction(did('roomfullcontainer'))
+    postingMasterScheduleRoomCategoryRestriction(did('roomfullcontainer'))
     postingMasterCalculatetotals()
 }
 
