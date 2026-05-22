@@ -1546,7 +1546,6 @@ async function postingMasterControlroomlist(idd, type){
         did('roomtable').innerHTML = 'Loading...'
         function param(){
             let p = new FormData()
-            p.append('categoryid', document.querySelector('#roomcategory-'+idd).value)
             p.append('arrivaldate', document.querySelector('#arrivaldate').value.replace('T',' '))
             p.append('departuredate', document.querySelector('#departuredate').value.replace('T',' '))
             return p
