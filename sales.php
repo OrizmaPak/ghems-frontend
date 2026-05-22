@@ -79,6 +79,9 @@
                                             <div class="form-group" id="ownercontainer">
                                                 <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Order Details' : 'Invoice / reciept to'; ?></label>
                                                 <input autocomplete="off" type="text" name="" id="owner1" class="form-control comp" onchange="checkdatalist(this, 'owner');" placeholder="">
+                                                <select id="pmownerselect" class="form-control hidden">
+                                                    <option value="">-- Select Posting Master --</option>
+                                                </select>
                                 <input type="text" name="ownerdetail" id="owner" class="form-control hidden" onchange="checkdatalist(this);" placeholder="">
                                                 <p id="pmownerbalance" class="text-xs text-slate-600 mt-1 hidden"></p>
                                                 <datalist id="hems_pm_reservation_owner"></datalist>

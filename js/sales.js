@@ -256,6 +256,7 @@ async function salesActive() {
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
     if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', () => handleSalesOwnerSelectionChange())
+    if(document.querySelector('#pmownerselect'))document.querySelector('#pmownerselect').addEventListener('change', () => handleSalesOwnerSelectionChange())
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
@@ -938,6 +939,22 @@ function populatePmReservationOwnerDatalist(rows = []) {
     }).join('')
 }
 
+function populatePmReservationOwnerSelect(rows = []) {
+    const select = did('pmownerselect')
+    if(!select) return
+    select.innerHTML = `<option value="">-- Select Posting Master --</option>${
+        rows.map((row) => {
+            const reservationId = String(row?.reservations?.id || '').trim()
+            if(!reservationId) return ''
+            const guestName = getPmGuestNameFromReservationRow(row)
+            const fallbackBalance = Number(row?.reservations?.totalamount || 0) - Number(row?.reservations?.amountpaid || 0)
+            const balanceText = formatNumber(Number.isFinite(fallbackBalance) ? fallbackBalance : 0)
+            const label = `${guestName} | Bal: ${balanceText}`
+            return `<option value="${reservationId.replace(/"/g, '&quot;')}">${label.replace(/</g, '&lt;')}</option>`
+        }).join('')
+    }`
+}
+
 async function fetchPmReservationOwnerOptions() {
     const payload = new FormData()
     const now = new Date()
@@ -949,13 +966,17 @@ async function fetchPmReservationOwnerOptions() {
     if(!request?.status || !Array.isArray(request.data)) {
         pmReservationOwnerRows = []
         populatePmReservationOwnerDatalist([])
+        populatePmReservationOwnerSelect([])
         return notification(request?.message || 'Unable to load PM owners', 0)
     }
     pmReservationOwnerRows = request.data
     populatePmReservationOwnerDatalist(pmReservationOwnerRows)
+    populatePmReservationOwnerSelect(pmReservationOwnerRows)
 }
 
 function getSelectedPmReservationId() {
+    const selectValue = String(did('pmownerselect')?.value || '').trim()
+    if(selectValue) return selectValue
     const ownerHidden = String(did('owner')?.value || '').trim()
     if(ownerHidden) return ownerHidden
     const ownerVisible = String(did('owner1')?.value || '').trim()
@@ -998,6 +1019,7 @@ async function showPmOwnerBalanceForSelection() {
 async function handleSalesOwnerSelectionChange() {
     const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
     if(!applyto.includes('PM')) return
+    if(did('owner')) did('owner').value = getSelectedPmReservationId()
     await showPmOwnerBalanceForSelection()
 }
  
@@ -1005,8 +1027,11 @@ function handlesalesapplyto (){
     if(!document.getElementById('applyto').value)return
     document.getElementById('owner').value = '';
     document.getElementById('owner1').value = '';
+    if(did('pmownerselect')) did('pmownerselect').value = ''
     document.getElementById('owner1').removeAttribute('list')
     document.getElementById('owner').removeAttribute('list')
+    if(did('owner1')) did('owner1').classList.remove('hidden')
+    if(did('pmownerselect')) did('pmownerselect').classList.add('hidden')
     if(document.getElementById('applyto').value == 'ROOMS'){
         document.getElementById('owner1').setAttribute('list', 'hems_roomnumber_id1')
     }
@@ -1015,7 +1040,8 @@ function handlesalesapplyto (){
         document.getElementById('owner1').setAttribute('list', 'hems_cost_center')
     }
     if(document.getElementById('applyto').value == 'PM'){
-        document.getElementById('owner1').setAttribute('list', 'hems_pm_reservation_owner')
+        if(did('owner1')) did('owner1').classList.add('hidden')
+        if(did('pmownerselect')) did('pmownerselect').classList.remove('hidden')
         fetchPmReservationOwnerOptions()
     } else {
         hidePmOwnerBalance()
@@ -1065,6 +1091,9 @@ function resolveSalesOwnerPayloadValue() {
 function applySalesOwnerToInputs(ownerValue = '') {
     const normalizedOwner = String(ownerValue || '').trim()
     if(did('owner1')) did('owner1').value = normalizedOwner
+    if(did('pmownerselect') && String(did('applyto')?.value || '').trim().toUpperCase().includes('PM')) {
+        did('pmownerselect').value = normalizedOwner
+    }
     if(did('owner')) {
         if(String(did('applyto')?.value || '').trim().toUpperCase().includes('ROOM')) {
             did('owner').value = extractRoomNumberFromOwnerInput(normalizedOwner)
