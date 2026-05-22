@@ -947,9 +947,7 @@ function populatePmReservationOwnerSelect(rows = []) {
             const reservationId = String(row?.reservations?.id || '').trim()
             if(!reservationId) return ''
             const guestName = getPmGuestNameFromReservationRow(row)
-            const fallbackBalance = Number(row?.reservations?.totalamount || 0) - Number(row?.reservations?.amountpaid || 0)
-            const balanceText = formatNumber(Number.isFinite(fallbackBalance) ? fallbackBalance : 0)
-            const label = `${guestName} | Bal: ${balanceText}`
+            const label = guestName
             return `<option value="${reservationId.replace(/"/g, '&quot;')}">${label.replace(/</g, '&lt;')}</option>`
         }).join('')
     }`
