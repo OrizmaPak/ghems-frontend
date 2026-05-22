@@ -447,6 +447,11 @@ const routerTree = {
         startingFunction: 'cancelreservationActive',
         scriptName: './js/cancelreservation.js'
     },
+    cancelpostingmaster: {
+        template: 'cancelpostingmaster',
+        startingFunction: 'cancelpostingmasterActive',
+        scriptName: './js/postingmaster.js'
+    },
     extendstay: {
         template: 'extendstay',
         startingFunction: 'extendstayActive',

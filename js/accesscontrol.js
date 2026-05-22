@@ -107,6 +107,7 @@ const accessctrl_frontdesk = [
     'CHECK OUT',
     'LATE CHECKOUT',
     'CANCEL RESERVATION',
+    'CANCEL POSTING MASTER',
     'RE-ASSIGN ROOMS',
     'ROOM STATUS',
     'MESSAGES',

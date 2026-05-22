@@ -27,6 +27,7 @@ const postingMasterControllers = {
     reservations: 'reservations',
     reservationcheckin: 'reservationcheckin',
     cancelreservation: 'cancelreservation',
+    cancelpostingmaster: 'cancelpmreservation',
     transferroom: 'transferroom',
     extendstay: 'extendstay',
     reducestay: 'reducestay.php'
@@ -581,7 +582,7 @@ function postingMasterGetCheckinRequiredIds(formId = '') {
     let ids = []
     if(formId === 'guestreservationform') {
         ids = postingMasterGetGuestReservationRequiredIds()
-    } else if(formId === 'cancelreservationform') {
+    } else if(formId === 'cancelreservationform' || formId === 'cancelpostingmasterform') {
         // Cancel reservation now requires only cancellation reason.
         ids = ['reasonforcancellation']
     } else if(formId === 'extendstayform') {
@@ -744,6 +745,39 @@ async function postingMasterCheckinActive() {
     }
     postingMasterFlushSubmittedCheckinPaymentReceipt()
 
+}
+
+async function cancelpostingmasterActive() {
+    notification('Loading...')
+    checkinid = ''
+    const form = document.querySelector('#cancelpostingmasterform')
+    await postingMasterCheckinpopulatedl()
+    await populateReceivingBankSelects()
+    if(form?.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>postingMasterCheckinnFormSubmitHandler('cancelpostingmasterform'))
+    if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', postingMasterFetchDataForCancelPostingMaster)
+    if(document.querySelector('#openCancelReservationRefPicker')) document.querySelector('#openCancelReservationRefPicker').addEventListener('click', postingMasterOpenCancelPostingMasterRefPicker)
+    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', e=>checkotherbankdetails('comp22'))
+    datasource = []
+    await postingMasterFetchcheckinn('', '', 'cancelpostingmasterformfilter')
+    await postingMasterFetchtravelsres()
+    await postingMasterFetchcompanyres()
+    await postingMasterFetchgroupsres()
+    did('initialroombtn')?.click()
+    postingMasterCancelPostingMasterCheck()
+}
+
+async function postingMasterOpenCancelPostingMasterRefPicker() {
+    const start = did('arrivaldaterr')?.value || ''
+    const end = did('arrivaldaterrr')?.value || ''
+    const payload = new FormData()
+    if(start) payload.append('startdate', start)
+    if(end) payload.append('enddate', end)
+    const request = await httpRequest2(postingMasterController('list'), payload, did('openCancelReservationRefPicker'), 'json')
+    const rows = request?.status ? (request.data || []).map(postingMasterNormalizeReservationRow).filter((item) => ['OPEN', 'RESERVED'].includes(String(item?.reservations?.status || '').toUpperCase())) : []
+    if(!rows.length) return notification(request?.message || 'No cancellable posting master records found', 0)
+    const selected = rows[0]
+    if(did('reference')) did('reference').value = selected.reservations.reference || ''
+    await postingMasterFetchDataForCancelPostingMaster()
 }
 
 
@@ -2125,6 +2159,7 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
     }
     let request
     if(did('postingmasterform'))request = await httpRequest2(postingMasterController(id ? 'single' : 'list'), getparamm(), null, 'json')
+    if(did('cancelpostingmasterform'))request = await httpRequest2(postingMasterController(id ? 'single' : 'receiptFallback'), getparamm(), null, 'json')
     if(did('noshowform'))request = await httpRequest2(`../controllers/${id? 'fetchnoshowreservations' : 'fetchnoshowreservations'}`, getparamm(), null, 'json')
     if(did('reassignroomsform'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchcheckindirect'}`, getparamm(), null, 'json')
     if(did('guestreservationform'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchreservationsbyfilter'}`, getparamm(), did('fetchgandres'), 'json')
@@ -2133,6 +2168,7 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
     if(did('grouppostingmasterform'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchreservationsbyfilter'}`, getparamm(), null, 'json')
     // if(did('cancelreservationform'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchreservationsbyfilter'}`, getparamm(), null, 'json')
     if(did('cancelreservationformfilter'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchcancelledreservations'}`, getparamm(), null, 'json')
+    if(did('cancelpostingmasterformfilter'))request = await httpRequest2(postingMasterController(id ? 'single' : 'list'), getparamm(), null, 'json')
     if(did('checkoutformfilter'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchcheckoutsbyfilter'}`, getparamm(), btn, 'json')
     if(did('extendstayform'))request = await httpRequest2(`../controllers/${id? 'fetchreservationbyid' : 'fetchreservationsbyfilter'}`, getparamm(), null, 'json')
     // let request = await httpRequest2(`../controllers/${id? 'fetchcheckindirect' : 'fetchcheckindirect'}`, id ? getparamm() : null, null, 'json')
@@ -2148,6 +2184,7 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
         if(did('grouppostingmasterform'))populateData(record.reservations, [], [], 'grouppostingmasterform')
         if(did('extendstayform'))populateData(record.reservations, [], [], 'extendstayform')
         if(did('cancelreservationform'))populateData(record.reservations, [], [], 'cancelreservationform')
+        if(did('cancelpostingmasterform'))populateData(record.reservations, [], [], 'cancelpostingmasterform')
         if(did('checkoutformfilter'))populateData(record.reservations, [], [], 'checkoutformfilter')
         if(did('amountpaid') && Number(did('amountpaid').value || 0) === 0) did('amountpaid').value = ''
         let x = JSON.stringify(record)
@@ -2190,6 +2227,7 @@ async function postingMasterFetchcheckinn(id='', oyn='', form="", btn=null) {
                 if(did('extendstayform'))datasource = request.data
                 // if(did('cancelreservationform'))datasource = request.data.filter(data=>data.reservations.status == 'OPEN' || data.reservations.status == 'RESERVED').filter(data=>data.reservations.group_id != 0)
                 if(did('cancelreservationformfilter'))datasource = request.data
+                if(did('cancelpostingmasterformfilter'))datasource = request.data.map(postingMasterNormalizeReservationRow)
                 if(did('checkoutformfilter'))datasource = request.data
                 if(did('postingmasterform'))checkinViewTableSource = Array.isArray(datasource) ? [...datasource] : []
                 if(datasource.length > 0)document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
@@ -2554,8 +2592,56 @@ async function postingMasterPerformAsyncTask() {
 }
 
 function postingMasterRemoveguestsreservations(ref){
-    sessionStorage.setItem('cancelreservation', ref)
-    document.getElementById('cancelreservation').click()
+    sessionStorage.setItem('cancelpostingmaster', ref)
+    document.getElementById('cancelpostingmaster')?.click()
+}
+
+function postingMasterCancelPostingMasterCheck(){
+    if(sessionStorage.getItem('cancelpostingmaster')){
+        did('reference').value = sessionStorage.getItem('cancelpostingmaster');
+        sessionStorage.removeItem('cancelpostingmaster')
+        did('submitref')?.click()
+    }
+}
+
+async function postingMasterFetchDataForCancelPostingMaster() {
+  did('mainform').classList.add('hidden');
+
+  if (!did('reference').value) {
+    return notification('Please enter a valid reference number', 0);
+  }
+
+  function getParam() {
+    const formData = new FormData();
+    formData.append('reference', did('reference').value);
+    return formData;
+  }
+
+  const request = await httpRequest2(
+    postingMasterController('receiptFallback'),
+    getParam(),
+    document.querySelector('#submitref'),
+    'json'
+  );
+
+  if (request.status) {
+    const record = postingMasterNormalizeReservationRow(request.data[0] || {});
+    const reservation = record.reservations;
+
+    datasource = [record];
+    did('referencer').value = did('reference').value;
+    did('mainform').classList.add('hidden');
+
+    if (reservation.status !== 'RESERVED' && reservation.status !== 'OPEN') {
+      did('reference').value = '';
+      return notification(`The posting master has already ${reservation.status}`, 0);
+    }
+
+    did('mainform').classList.remove('hidden');
+    postingMasterChecksessionstorage(reservation.id);
+  } else {
+    return notification(request.message, 0);
+  }
 }
 
 function postingMasterApplyReservationTypePaymentRequirement(showNotice = false) {
@@ -3425,7 +3511,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
             if(!canSubmitPaymentState)return
         }
 
-        if(guest == 'cancelreservationform' && window.Swal){
+        if((guest == 'cancelreservationform' || guest == 'cancelpostingmasterform') && window.Swal){
             const cancelResult = await Swal.fire({
               title: "Are you sure?",
               text: "You won't be able to revert this!",
@@ -3561,6 +3647,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
         if(guest == 'guestreservationform')request = await httpRequest2(postingMasterController('reservations'), payload(), submitButton)
         if(guest == 'reservationpostingmasterform')request = await httpRequest2(postingMasterController('reservationcheckin'), payload(), submitButton)
         if(guest == 'cancelreservationform')request = await httpRequest2(postingMasterController('cancelreservation'), payloadcancel(), submitButton)
+        if(guest == 'cancelpostingmasterform')request = await httpRequest2(postingMasterController('cancelpostingmaster'), payloadcancel(), submitButton)
         if(guest == 'extendstayform'){
             const isReduceStayMode = !!did('reducestaymode')
             const stayController = isReduceStayMode ? postingMasterController('reducestay') : postingMasterController('extendstay')
@@ -3571,7 +3658,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
             return notification(postingMasterGetCheckinResponseMessage(request, 'Submit failed. Please check your connection/session and try again.'), 0)
         }
 
-        if((postingMasterIsCheckinPaymentForm(guest) || guest == 'grouppostingmasterform') && guest != 'cancelreservationform' && guest != 'extendstayform'){
+        if((postingMasterIsCheckinPaymentForm(guest) || guest == 'grouppostingmasterform') && guest != 'cancelreservationform' && guest != 'cancelpostingmasterform' && guest != 'extendstayform'){
             const amountPaidValue = postingMasterGetCheckinAmountPaidValue()
             const previousAmountPaid = populateddata && checkinid ? postingMasterGetCheckinNumericValue(populateddata.amountpaid || 0) : 0
             const shouldPostPayment = amountPaidValue > 0 && (!populateddata || !checkinid || previousAmountPaid !== amountPaidValue)
@@ -3610,7 +3697,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
                     }
                 }
             }
-        } else if(guest == 'cancelreservationform' && window.Swal){
+        } else if((guest == 'cancelreservationform' || guest == 'cancelpostingmasterform') && window.Swal){
             Swal.fire({
               title: "Cancelled!",
               text: "Reservation Cancelled",
@@ -3627,9 +3714,16 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
         if(guest == 'grouppostingmasterform')document.querySelector('#groupcheckin')?.click()
         if(guest == 'extendstayform')document.querySelector(did('reducestaymode') ? '#reducestay' : '#extendstay')?.click()
         if(guest == 'cancelreservationform')document.querySelector('#cancelreservation')?.click()
-        if(guest != 'cancelreservationform' || guest == 'extendstayform')postingMasterFetchcheckinn()
+        if(guest == 'cancelpostingmasterform')document.querySelector('#cancelpostingmaster')?.click()
+        if((guest != 'cancelreservationform' && guest != 'cancelpostingmasterform') || guest == 'extendstayform')postingMasterFetchcheckinn()
         if (guest == 'cancelreservationform') {
             const elements = document.querySelectorAll('#cancelreservationform input, #cancelreservationform select, #cancelreservationform textarea')
+            if(elements)elements.forEach(element => {
+                if (!element.classList.contains('sss')) element.disabled = true
+            })
+        }
+        if (guest == 'cancelpostingmasterform') {
+            const elements = document.querySelectorAll('#cancelpostingmasterform input, #cancelpostingmasterform select, #cancelpostingmasterform textarea')
             if(elements)elements.forEach(element => {
                 if (!element.classList.contains('sss')) element.disabled = true
             })
@@ -3648,6 +3742,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
 
 
 window.postingmasterActive = postingMasterCheckinActive
+window.cancelpostingmasterActive = cancelpostingmasterActive
 window.postingMasterFetchSubmittedCheckinFallbackByReference = postingMasterFetchSubmittedCheckinFallbackByReference
 window.postingMasterApplyReservationTypePaymentRequirement = postingMasterApplyReservationTypePaymentRequirement
 window.postingMasterSetupReservationTypePaymentRequirement = postingMasterSetupReservationTypePaymentRequirement
@@ -3708,6 +3803,7 @@ window.postingMasterFetchCheckinRatecodeById = postingMasterFetchCheckinRatecode
 window.postingMasterGetCheckinScopedElements = postingMasterGetCheckinScopedElements
 window.postingMasterEscapeCheckinSummaryText = postingMasterEscapeCheckinSummaryText
 window.postingMasterRemoveguestsreservations = postingMasterRemoveguestsreservations
+window.postingMasterFetchDataForCancelPostingMaster = postingMasterFetchDataForCancelPostingMaster
 window.postingMasterOncheckinTableDataSignal = postingMasterOncheckinTableDataSignal
 window.postingMasterNormalizeCheckinOrgType = postingMasterNormalizeCheckinOrgType
 window.postingMasterBindCheckinSubmitButton = postingMasterBindCheckinSubmitButton
