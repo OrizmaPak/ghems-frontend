@@ -8,7 +8,7 @@ const postingMasterControllers = {
     payment: 'invoicing',
     balance: 'getreservationrefbalance',
     receiptFallback: 'fetchpmreservationbyref',
-    roomStatus: 'getallroomstatus',
+    roomStatus: 'getallpmroomstatus',
     currentRoomBalance: 'fetchcurrentroombalance',
     ratecode: 'fetchratecode',
     bookingPlan: 'fetchbookingplan',
@@ -34,6 +34,29 @@ const postingMasterControllers = {
 
 function postingMasterController(key) {
     return `../controllers/${postingMasterControllers[key] || key}`
+}
+
+function postingMasterAllowedRoomCategories() {
+    const categories = Array.isArray(rumcat) ? rumcat : []
+    return categories.filter((item) => String(item?.category || '').trim().toUpperCase() === 'POSTING MASTER')
+}
+
+function postingMasterApplyRoomCategoryRestriction(root = document) {
+    const allowed = postingMasterAllowedRoomCategories()
+    if(!allowed.length) return
+    const defaultCategory = allowed[0]
+    const optionsHtml = allowed.map((item) => `<option value="${item.id}">${item.category}</option>`).join('')
+
+    Array.from((root || document).querySelectorAll('.roomcategory')).forEach((select) => {
+        select.innerHTML = optionsHtml
+        select.value = String(defaultCategory.id)
+    })
+
+    const roomTypeSelect = did('room-type')
+    if(roomTypeSelect){
+        roomTypeSelect.innerHTML = optionsHtml
+        roomTypeSelect.value = String(defaultCategory.id)
+    }
 }
 
 let checkinid
@@ -629,6 +652,7 @@ async function postingMasterCheckinActive() {
     await postingMasterFetchcompanyres()
     await postingMasterFetchgroupsres()
     await populateReceivingBankSelects()
+    postingMasterApplyRoomCategoryRestriction()
     did('initialroombtn').click()
     if(sessionStorage.getItem('postingmasterfromsomewhere')){
         let id = sessionStorage.getItem('postingmasterfromsomewhere')
@@ -1285,9 +1309,16 @@ async function postingMasterCheckinaddroom(){
                                                     `
      did('roomfullcontainer').appendChild(el)
      if(Array.isArray(rumcat) && rumcat.length && did('roomcategory-'+id)){
-        did('roomcategory-'+id).innerHTML = `<option value="">-- Select Room Type --</option>` + rumcat.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
+        const allowed = postingMasterAllowedRoomCategories()
+        if(allowed.length){
+            did('roomcategory-'+id).innerHTML = allowed.map(data=>`<option value="${data.id}">${data.category}</option>`).join('')
+            did('roomcategory-'+id).value = String(allowed[0].id)
+        }else{
+            did('roomcategory-'+id).innerHTML = `<option value="">-- Select Room Type --</option>`
+        }
      }
      recalldatalist()
+     postingMasterApplyRoomCategoryRestriction(did('roomfullcontainer'))
      postingMasterAssignallcheckinlisteners()
      postingMasterCalculatetotals()
 }
@@ -2115,7 +2146,7 @@ function postingMasterPopulaterestcheckindata(x){
                         <label for="logoname" class="control-label text-md bg-white relative top-2 left-[-3px] px-2 rounded border w-fit opacity-[0.7]">room category</label>
                         <select name="roomcategory" id="roomcategory-${id}" onchange="postingMasterControlroomlist('${id}', 'roomcategory')" class="bg-white roomcategory form-control comp !p-1 ">
                             <option value="">-- Select Room Type --</option>
-                            ${rumcat.map(data=>`<option ${item.roomdata.roomcategory == data.id ? 'selected' : ''} value="${data.id}">${data.category}</option>`).join('')}
+                            ${postingMasterAllowedRoomCategories().map(data=>`<option ${item.roomdata.roomcategory == data.id ? 'selected' : ''} value="${data.id}">${data.category}</option>`).join('')}
                         </select>
                     </div>
                     <div class="form-group !flex relative">
@@ -2265,6 +2296,7 @@ function postingMasterPopulaterestcheckindata(x){
             </div>
         </div>
     `).join('')
+    postingMasterApplyRoomCategoryRestriction(did('roomfullcontainer'))
     postingMasterCalculatetotals()
 }
 
