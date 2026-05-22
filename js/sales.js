@@ -242,6 +242,7 @@ async function salesActive() {
     datasource = []
     await fetchsales()
     await getAllUsers()
+    removeMainStoreFromPosSalespointLists()
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
     if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') await splitbillActive()
@@ -276,6 +277,7 @@ async function salesActive() {
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
     if(!(isBillsWorkspaceMode() && pendingOrderToBillData)) await handlesalesdepartment(default_department)
+    removeMainStoreFromPosSalespointLists()
     await fetchtablenumber()
     if(!isOrderWorkspaceMode() && !(isBillsWorkspaceMode() && pendingOrderToBillData)) await fetchsalesbills()
     if(isBillsWorkspaceMode() && pendingOrderToBillData){
@@ -365,6 +367,7 @@ function syncSalesViewFilterSalespointOptions() {
     const target = did('salespointname2')
     if(!source || !target) return
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+    removeMainStoreFromPosSalespointLists()
 }
 
 function syncSalesBillFilterSalespointOptions() {
@@ -372,6 +375,24 @@ function syncSalesBillFilterSalespointOptions() {
     const target = did('billfiltersalespoint')
     if(!source || !target) return
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
+    removeMainStoreFromPosSalespointLists()
+}
+
+function removeMainStoreFromSelect(selectEl) {
+    if(!selectEl) return
+    Array.from(selectEl.querySelectorAll('option')).forEach((option) => {
+        const optionValue = String(option.value || '').trim().toUpperCase()
+        const optionText = String(option.textContent || '').trim().toUpperCase()
+        if(optionValue === 'MAIN STORE' || optionText === 'MAIN STORE') {
+            option.remove()
+        }
+    })
+}
+
+function removeMainStoreFromPosSalespointLists() {
+    removeMainStoreFromSelect(did('salespointname'))
+    removeMainStoreFromSelect(did('salespointname2'))
+    removeMainStoreFromSelect(did('billfiltersalespoint'))
 }
 
 function normalizeSalesTextValue(value) {
