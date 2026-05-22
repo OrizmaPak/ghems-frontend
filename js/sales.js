@@ -10,6 +10,8 @@ let canDeleteBillsInView = false
 let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
+let pmReservationOwnerRows = []
+const pmReservationBalanceCache = new Map()
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -253,6 +255,7 @@ async function salesActive() {
     if(did('orderviewfilled')) did('orderviewfilled').addEventListener('click', () => setOrderViewStatusFilter('FILLED'))
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
     if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
+    if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', () => handleSalesOwnerSelectionChange())
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
     if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
@@ -806,6 +809,7 @@ async function loadSalesBillIntoForm(bill) {
         if(did('applyto')){
             if(String(bill.ttype || '').toUpperCase() === 'ROOMS') did('applyto').value = 'ROOMS'
             else if(String(bill.ttype || '').toUpperCase().includes('COST')) did('applyto').value = 'COST CENTER'
+            else if(String(bill.ttype || '').toUpperCase().includes('PM')) did('applyto').value = 'PM'
             else did('applyto').value = 'OTHERS'
             handlesalesapplyto()
         }
@@ -895,6 +899,107 @@ function checkifitisrestaurant(){
         did('tablecheck').classList.add('hidden')
     }
 }
+
+function hidePmOwnerBalance() {
+    const balanceEl = did('pmownerbalance')
+    if(!balanceEl) return
+    balanceEl.classList.add('hidden')
+    balanceEl.textContent = ''
+}
+
+function getPmGuestNameFromReservationRow(row = null) {
+    if(!row) return 'Unknown Guest'
+    const guest = row?.roomgeustrow?.[0]?.guest1?.[0]
+    if(guest) {
+        const fullName = `${String(guest.firstname || '').trim()} ${String(guest.lastname || '').trim()}`.trim()
+        if(fullName) return fullName
+    }
+    return String(row?.reservations?.reference || row?.reservations?.id || 'Unknown Guest')
+}
+
+function getPmReservationOptionValue(row = null) {
+    if(!row?.reservations) return ''
+    const reservationId = String(row.reservations.id || '').trim()
+    if(!reservationId) return ''
+    const guestName = getPmGuestNameFromReservationRow(row)
+    const fallbackBalance = Number(row.reservations.totalamount || 0) - Number(row.reservations.amountpaid || 0)
+    const balanceText = formatNumber(Number.isFinite(fallbackBalance) ? fallbackBalance : 0)
+    return `${guestName} | Bal: ${balanceText} | Ref: ${row.reservations.reference || '-'}`
+}
+
+function populatePmReservationOwnerDatalist(rows = []) {
+    const list = did('hems_pm_reservation_owner')
+    if(!list) return
+    list.innerHTML = rows.map((row) => {
+        const optionValue = getPmReservationOptionValue(row)
+        const reservationId = String(row?.reservations?.id || '').trim()
+        if(!optionValue || !reservationId) return ''
+        return `<option value="${optionValue.replace(/"/g, '&quot;')}">${reservationId}</option>`
+    }).join('')
+}
+
+async function fetchPmReservationOwnerOptions() {
+    const payload = new FormData()
+    const now = new Date()
+    const previousYear = now.getFullYear() - 1
+    const nextYear = now.getFullYear() + 1
+    payload.append('startdate', `${previousYear}-01-01`)
+    payload.append('enddate', `${nextYear}-12-31`)
+    const request = await httpRequest2('../controllers/fetchpmreservationsbyfilter', payload, null, 'json')
+    if(!request?.status || !Array.isArray(request.data)) {
+        pmReservationOwnerRows = []
+        populatePmReservationOwnerDatalist([])
+        return notification(request?.message || 'Unable to load PM owners', 0)
+    }
+    pmReservationOwnerRows = request.data
+    populatePmReservationOwnerDatalist(pmReservationOwnerRows)
+}
+
+function getSelectedPmReservationId() {
+    const ownerHidden = String(did('owner')?.value || '').trim()
+    if(ownerHidden) return ownerHidden
+    const ownerVisible = String(did('owner1')?.value || '').trim()
+    if(!ownerVisible) return ''
+    const list = did('hems_pm_reservation_owner')
+    if(!list) return ''
+    const option = Array.from(list.querySelectorAll('option')).find((entry) => String(entry.value || '').trim() === ownerVisible)
+    return String(option?.textContent || '').trim()
+}
+
+async function fetchPmReservationBalanceByReference(reference = '') {
+    const ref = String(reference || '').trim()
+    if(!ref) return null
+    if(pmReservationBalanceCache.has(ref)) return pmReservationBalanceCache.get(ref)
+    const payload = new FormData()
+    payload.append('reference', ref)
+    const request = await httpRequest2('../controllers/getreservationrefbalance', payload, null, 'json')
+    if(!request?.status) return null
+    const balanceValue = Number(request.balance || request.data?.balance || 0)
+    pmReservationBalanceCache.set(ref, balanceValue)
+    return balanceValue
+}
+
+async function showPmOwnerBalanceForSelection() {
+    const balanceEl = did('pmownerbalance')
+    if(!balanceEl) return
+    const selectedId = getSelectedPmReservationId()
+    if(!selectedId) return hidePmOwnerBalance()
+    const selectedRow = pmReservationOwnerRows.find((row) => String(row?.reservations?.id || '').trim() === selectedId)
+    if(!selectedRow?.reservations) return hidePmOwnerBalance()
+    balanceEl.classList.remove('hidden')
+    balanceEl.textContent = 'Loading balance...'
+    const reference = String(selectedRow.reservations.reference || '').trim()
+    const fetchedBalance = await fetchPmReservationBalanceByReference(reference)
+    const fallbackBalance = Number(selectedRow.reservations.totalamount || 0) - Number(selectedRow.reservations.amountpaid || 0)
+    const finalBalance = Number.isFinite(fetchedBalance) ? fetchedBalance : fallbackBalance
+    balanceEl.textContent = `Guest: ${getPmGuestNameFromReservationRow(selectedRow)} | Balance: ${formatNumber(Number.isFinite(finalBalance) ? finalBalance : 0)}`
+}
+
+async function handleSalesOwnerSelectionChange() {
+    const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
+    if(!applyto.includes('PM')) return
+    await showPmOwnerBalanceForSelection()
+}
  
 function handlesalesapplyto (){
     if(!document.getElementById('applyto').value)return
@@ -908,6 +1013,12 @@ function handlesalesapplyto (){
     markallcomp()
     if(document.getElementById('applyto').value == 'COST CENTER'){
         document.getElementById('owner1').setAttribute('list', 'hems_cost_center')
+    }
+    if(document.getElementById('applyto').value == 'PM'){
+        document.getElementById('owner1').setAttribute('list', 'hems_pm_reservation_owner')
+        fetchPmReservationOwnerOptions()
+    } else {
+        hidePmOwnerBalance()
     }
     // if(document.getElementById('applyto').value == 'OTHERS')document.getElementById('owner').value = document.getElementById('owner1').value
 }
@@ -944,6 +1055,9 @@ function resolveSalesOwnerPayloadValue() {
     if(applyto.includes('COST')) {
         const selectedCostCenterId = getDatalistOptionTextByValue('hems_cost_center', ownerVisible)
         return selectedCostCenterId || ownerHidden || ownerVisible || '-1'
+    }
+    if(applyto.includes('PM')) {
+        return ownerHidden || getSelectedPmReservationId() || ownerVisible || '-1'
     }
     return ownerVisible || ownerHidden || '-1'
 }
@@ -1847,6 +1961,7 @@ async function loadOrderIntoForm(orderEntry = null) {
         const applyto = String(orderEntry.saleentry.applyto || 'OTHERS').toUpperCase()
         if(applyto.includes('ROOM')) did('applyto').value = 'ROOMS'
         else if(applyto.includes('COST')) did('applyto').value = 'COST CENTER'
+        else if(applyto.includes('PM')) did('applyto').value = 'PM'
         else did('applyto').value = 'OTHERS'
         handlesalesapplyto()
     }
@@ -1957,6 +2072,7 @@ async function composeOrderToBill(orderEntry = null) {
         const applyto = String(orderEntry.saleentry.applyto || 'OTHERS').toUpperCase()
         if(applyto.includes('ROOM')) did('applyto').value = 'ROOMS'
         else if(applyto.includes('COST')) did('applyto').value = 'COST CENTER'
+        else if(applyto.includes('PM')) did('applyto').value = 'PM'
         else did('applyto').value = 'OTHERS'
         handlesalesapplyto()
     }

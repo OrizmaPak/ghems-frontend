@@ -73,12 +73,15 @@
                                                     <!--<option value="">-- Select Applied to --</option>-->
                                                     <option>ROOMS</option>
                                                     <option>COST CENTER</option>
+                                                    <option>PM</option>
                                                 </select>
                                             </div>
                                             <div class="form-group" id="ownercontainer">
                                                 <label for="logoname" class="control-label"><?php echo $isOrderRoute ? 'Order Details' : 'Invoice / reciept to'; ?></label>
                                                 <input autocomplete="off" type="text" name="" id="owner1" class="form-control comp" onchange="checkdatalist(this, 'owner');" placeholder="">
                                 <input type="text" name="ownerdetail" id="owner" class="form-control hidden" onchange="checkdatalist(this);" placeholder="">
+                                                <p id="pmownerbalance" class="text-xs text-slate-600 mt-1 hidden"></p>
+                                                <datalist id="hems_pm_reservation_owner"></datalist>
                                             </div>
                                         </div>
                                            <div id="tablecheck" class="hidden mb-2">
