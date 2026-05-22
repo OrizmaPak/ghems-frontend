@@ -581,10 +581,10 @@
 
 
                                         <!--</div>-->
-                                          <div id="checkinTariffSummary" class="mt-4 hidden"></div>
+                                          <div id="checkinTariffSummary" class="mt-4"></div>
                                           <div class="flex justify-end mt-5 gap-4 h-fit">
                                                   <div class="flex w-full justify-start items-end">
-                                        <div class="hidden items-center gap-5 text-md border  p-4 ">
+                                        <div class="flex items-center gap-5 text-md border  p-4 ">
                                             <label for="logoname" class=" font-bold">Total Rate:</label>
                                             <label for="logoname" id="totalrate" class=" !text-md font-bold text-[blue]">00.00</label>
                                             <label for="logoname" id="totalmounttext" class=" !text-md hidden font-bold text-[blue]">00.00</label>
@@ -601,10 +601,10 @@
                                             <label for="logoname" id="totaldiscount" class=" !text-md font-bold text-[blue]">00.00</label>
                                         </div>
                                         <div class="flex items-center gap-5 text-md border  p-4 ">
-                                            <label for="logoname" class=" font-bold">Total Amount:</label>
+                                            <label for="logoname" class=" font-bold">Total Due:</label>
                                             <label for="logoname" id="totalplan" class=" !text-md font-bold text-[blue]">00.00</label>
                                         </div>
-                                         <button onclick="did('modalformone').classList.remove('hidden')" type="button" class="hidden m-auto w-full h-[35px] md:w-max text-blue-400 text-sm capitalize border border-2 border-blue-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out items-center justify-center gap-3">
+                                         <button onclick="did('modalformone').classList.remove('hidden')" type="button" class="m-auto w-full h-[35px] md:w-max text-blue-400 text-sm capitalize border border-2 border-blue-400 p-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                             <div class="btnloader" style="display: none;"></div>
                                             <span>More&nbsp;Details</span>
                                         </button>
