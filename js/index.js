@@ -955,8 +955,8 @@ function checkotherbankdetails(comp='comp'){
         const method = String(document.getElementById('paymentmethod').value || '').trim().toUpperCase()
         if(method.includes('TRANSFER') || method == 'POS' || method == 'BANK CARD'){
             document.getElementById('bankdetails').innerHTML = `<div class="form-group mt-2">
-                                                     <label for="logoname" class="control-label">Bank Name</label>
-                                                    <input type="text" name="bankname" id="bankname" placeholder="Enter bank name" class="form-control ${comp} bg-white" >
+                                                     <label for="logoname" class="control-label">Sender Bank Name</label>
+                                                    <input type="text" name="bankname" id="bankname" placeholder="Enter sender bank name (optional)" class="form-control ${comp} bg-white" >
                                                 </div>
                                                 <div class="form-group mt-2">
                                                     <label for="logoname" class="control-label">Other Details</label>

@@ -414,8 +414,8 @@ function openreceiveablemodal(dbt, cdt, rn, ccy='NGN'){
                     <input id="receivable-amountpaid" type="text" inputmode="decimal" placeholder="Enter amount paid" class="border rounded w-full py-2 px-3">
                 </div>
                 <div>
-                    <label class="text-sm font-semibold block mb-1">Bank Name</label>
-                    <input id="receivable-bankname" type="text" placeholder="Enter bank name" class="border rounded w-full py-2 px-3">
+                    <label class="text-sm font-semibold block mb-1">Sender Bank Name</label>
+                    <input id="receivable-bankname" type="text" placeholder="Enter sender bank name (optional)" class="border rounded w-full py-2 px-3">
                 </div>
                 <div>
                     <label class="text-sm font-semibold block mb-1">Receiving Bank</label>
@@ -468,8 +468,8 @@ async function submitReceivablePayment(){
         return notification('Enter a valid amount paid', 0)
     }
 
-    if(paymentmethod !== 'CASH' && (!bankname || !receivingbank)){
-        return notification('Enter bank name and receiving bank', 0)
+    if(paymentmethod === 'TRANSFER' && !receivingbank){
+        return notification('Select receiving bank', 0)
     }
 
     const payload = new FormData()

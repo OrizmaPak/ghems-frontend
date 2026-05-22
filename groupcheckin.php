@@ -524,8 +524,8 @@
                                                 </div>
                                                 <div id="bankside" class="grid grid-cols-1 !mb-2 lg:grid-cols-2 gap-10">
                                                     <div class="form-group">
-                                                        <label for="logoname" class="control-label text-md">Bank Name</label> 
-                                                        <input type="text" name="bankname" id="bankname" class="bg-white form-control !p-2 comp2" placeholder="Enter Bank Name">
+                                                        <label for="logoname" class="control-label text-md">Sender Bank Name</label> 
+                                                        <input type="text" name="bankname" id="bankname" class="bg-white form-control !p-2 comp2" placeholder="Enter Sender Bank Name (Optional)">
                                                     </div>
                                                     <div class="form-group">
                                                         <label for="logoname" class="control-label text-md">Other Details</label>
@@ -1036,3 +1036,4 @@
                             <datalist id="roomlist"></datalist>
                         
                         </section>  
+

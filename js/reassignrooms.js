@@ -24,8 +24,8 @@ async function reassignroomsActive() {
                 return did('modalformone').classList.remove('hidden')
             }
             if (did('paymentmethod').value == 'TRANSFER') {
-                if (!did('bankname').value || !did('otherdetails').value || !getReceivingBankValue()) {
-                    notification('Please Enter Customer\'s Bank Name, Other Details and Receiving Bank');
+                if (!getReceivingBankValue()) {
+                    notification('Please select receiving bank');
                     did('modalformone').classList.remove('hidden');
                     return;  // Prevent further execution
                 }

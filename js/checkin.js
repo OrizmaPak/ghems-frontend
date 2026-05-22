@@ -510,10 +510,10 @@ async function runCheckinOtherDetailsSubmitGuard(formId) {
         return false
     }
 
-    // If transfer is selected, bank details remain mandatory.
+    // If transfer is selected, receiving bank remains mandatory.
     if (paymentMethod === 'TRANSFER') {
-        if (!bankName || !otherDetails || !receivingBank) {
-            notification('Please Enter Customer\'s Bank Name, Other Details and Receiving Bank')
+        if (!receivingBank) {
+            notification('Please select receiving bank')
             did('modalformone').classList.remove('hidden')
             return false
         }

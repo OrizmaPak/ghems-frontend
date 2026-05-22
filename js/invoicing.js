@@ -339,11 +339,8 @@ async function invoicingFormSubmitHandler() {
     if(!validatePaymentMethodForAmount()) return
     if(!did('amountpaid').value)return notification('Please enter amount paid...', 0)
     if(!did('reference').value)return notification('Please enter reference...', 0)
-    if(document.getElementById('bankname')){
-        if(!document.getElementById('bankname').value)return notification('Please enter bank name')
-    }
-    if(document.getElementById('otherdetails')){
-        if(!document.getElementById('otherdetails').value)return notification('Please other details of the transaction')
+    if(String(did('paymentmethod')?.value || '').trim().toUpperCase() === 'TRANSFER' && !getReceivingBankValue()){
+        return notification('Please select receiving bank', 0)
     }
 
     function payload(){
