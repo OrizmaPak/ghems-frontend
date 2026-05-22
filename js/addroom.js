@@ -4,21 +4,6 @@ let addroomImportEventsBound = false
 const addroomImportDelay = 1000
 let addroomViewSearchTerm = ''
 
-function openAddRoomTab(tab = 'manage'){
-    const managePanel = did('addroommanagepanel')
-    const viewPanel = did('addroomviewpanel')
-    const manageTab = did('addroomtabmanage')
-    const viewTab = did('addroomtabview')
-    const isView = tab === 'view'
-
-    if(managePanel) managePanel.classList.toggle('hidden', isView)
-    if(viewPanel) viewPanel.classList.toggle('hidden', !isView)
-    if(manageTab) manageTab.classList.toggle('active', !isView)
-    if(viewTab) viewTab.classList.toggle('active', isView)
-    if(manageTab) manageTab.classList.toggle('!text-blue-600', !isView)
-    if(viewTab) viewTab.classList.toggle('!text-blue-600', isView)
-}
-
 function applyAddRoomFrontendSearch() {
     const term = String(addroomViewSearchTerm || '').trim().toLowerCase()
     const rows = Array.isArray(datasource) ? datasource : []
@@ -43,13 +28,11 @@ function applyAddRoomFrontendSearch() {
 async function addroomActive() {
     const form = document.querySelector('#addroomform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', addroomFormSubmitHandler)
-    if(did('addroomtabmanage')) did('addroomtabmanage').addEventListener('click', () => openAddRoomTab('manage'))
-    if(did('addroomtabview')) did('addroomtabview').addEventListener('click', () => openAddRoomTab('view'))
     if(did('addroomviewsearch')) did('addroomviewsearch').addEventListener('input', (event) => {
         addroomViewSearchTerm = event.target.value || ''
         applyAddRoomFrontendSearch()
     })
-    openAddRoomTab('manage')
+    if(did('addroomoptioner_manage')) runoptioner(did('addroomoptioner_manage'))
     datasource = []
     await fetcroomcategory()
     wireAddRoomImport()
@@ -99,7 +82,7 @@ async function fetchaddroom(id) {
             addroomid = record.id
             // Populate the form including description and the two room images.
             populateData(record, ['imageurl1', 'imageurl2'], [], 'addroomform')
-            openAddRoomTab('manage')
+            if(did('addroomoptioner_manage')) runoptioner(did('addroomoptioner_manage'))
         }
     }
     else return notification('No records retrieved')
@@ -142,7 +125,7 @@ async function onaddroomTableDataSignal() {
         <td>${item.floor}</td>
         <td>${item.description}</td>
         <td class="flex items-center gap-3">
-            <button title="Edit row entry" onclick="openAddRoomTab('manage');fetchaddroom('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
+            <button title="Edit row entry" onclick="if(did('addroomoptioner_manage'))runoptioner(did('addroomoptioner_manage'));fetchaddroom('${item.id}')" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
             <button title="Delete row entry"s onclick="removeaddroom('${item.id}')" class="material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
         </td>
     </tr>`

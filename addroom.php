@@ -2,9 +2,13 @@
                             <p class="page-title">
                                 <span>MANAGE ROOM</span>
                             </p>
-                            <ul class="navitem-parent text-sm mt-4">
-                                <li id="addroomtabmanage" class="navitem active !text-blue-600"><p>Manage Room</p></li>
-                                <li id="addroomtabview" class="navitem"><p>View Room</p></li>
+                            <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
+                                <li id="addroomoptioner_manage" class="me-2 cp optioner !text-blue-600 active" name="addroommanagepanel" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Manage Room</p>
+                                </li>
+                                <li id="addroomoptioner_view" class="me-2 cp optioner" name="addroomviewpanel" onclick="runoptioner(this)">
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Room</p>
+                                </li>
                             </ul>
                             <hr class="my-4">
                             <div id="addroommanagepanel">
