@@ -2,12 +2,12 @@
 let datasource = []
 
 const postingMasterControllers = {
-    list: 'fetchcheckindirect',
-    single: 'fetchreservationbyid',
-    save: 'checkindirectmodified',
+    list: 'fetchpmreservationbyref',
+    single: 'fetchpmreservationbyid',
+    save: 'pmreservations',
     payment: 'invoicing',
     balance: 'getreservationrefbalance',
-    receiptFallback: 'fetchreservationbyref',
+    receiptFallback: 'fetchpmreservationbyref',
     roomStatus: 'getallroomstatus',
     currentRoomBalance: 'fetchcurrentroombalance',
     ratecode: 'fetchratecode',
