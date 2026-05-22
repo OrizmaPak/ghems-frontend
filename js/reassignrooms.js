@@ -18,20 +18,6 @@ async function reassignroomsActive() {
         if(reassignroom == document.getElementsByName('roomnumber')[0].value){
             return notification('Please note that the room was not changed.', 0);
         }
-        if(document.getElementById('reservationtype').value == 'GUARANTEED'){
-            if(did('amountpaid').value == ''){
-                notification('please Enter Amount Paid', 0);
-                return did('modalformone').classList.remove('hidden')
-            }
-            if (did('paymentmethod').value == 'TRANSFER') {
-                if (!getReceivingBankValue()) {
-                    notification('Please select receiving bank');
-                    did('modalformone').classList.remove('hidden');
-                    return;  // Prevent further execution
-                }
-            }
-        return checkinnFormSubmitHandler('reassignroomsform')
-        }
         return checkinnFormSubmitHandler('reassignroomsform')
     })
     if(document.querySelector('#phone')) document.querySelector('#phone').addEventListener('change', e=>handlecheckinphone('phone'))
