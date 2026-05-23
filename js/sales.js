@@ -946,8 +946,8 @@ function populatePmReservationOwnerSelect(rows = []) {
         rows.map((row) => {
             const reservationId = String(row?.reservations?.id || '').trim()
             if(!reservationId) return ''
-            const guestName = getPmGuestNameFromReservationRow(row)
-            const label = guestName
+            const roomNumber = String(row?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim()
+            const label = roomNumber || '-'
             return `<option value="${reservationId.replace(/"/g, '&quot;')}">${label.replace(/</g, '&lt;')}</option>`
         }).join('')
     }`
@@ -1005,13 +1005,9 @@ async function showPmOwnerBalanceForSelection() {
     if(!selectedId) return hidePmOwnerBalance()
     const selectedRow = pmReservationOwnerRows.find((row) => String(row?.reservations?.id || '').trim() === selectedId)
     if(!selectedRow?.reservations) return hidePmOwnerBalance()
-    balanceEl.classList.remove('hidden')
-    balanceEl.textContent = 'Loading balance...'
+    hidePmOwnerBalance()
     const reference = String(selectedRow.reservations.reference || '').trim()
-    const fetchedBalance = await fetchPmReservationBalanceByReference(reference)
-    const fallbackBalance = Number(selectedRow.reservations.totalamount || 0) - Number(selectedRow.reservations.amountpaid || 0)
-    const finalBalance = Number.isFinite(fetchedBalance) ? fetchedBalance : fallbackBalance
-    balanceEl.textContent = `Guest: ${getPmGuestNameFromReservationRow(selectedRow)} | Balance: ${formatNumber(Number.isFinite(finalBalance) ? finalBalance : 0)}`
+    await fetchPmReservationBalanceByReference(reference)
 }
 
 async function handleSalesOwnerSelectionChange() {
