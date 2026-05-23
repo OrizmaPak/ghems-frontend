@@ -258,6 +258,14 @@ async function salesActive() {
     if(document.querySelector('#pmownerselect'))document.querySelector('#pmownerselect').addEventListener('change', () => handleSalesOwnerSelectionChange())
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
     if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
+    if(did('amountpaid')) did('amountpaid').addEventListener('input', () => {
+        const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
+        if(isOrderWorkspaceMode() || isBillsWorkspaceMode() || !applyto.includes('PM')) return
+        if(Number(did('amountpaid')?.value || 0) > 0){
+            did('amountpaid').value = ''
+            notification('For PM, leave Amount Paid empty. Charge will go to PM folio.', 0)
+        }
+    })
     if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
     if(did('billreferencecode')) did('billreferencecode').addEventListener('keydown', (event) => {
         if(event.key === 'Enter'){
@@ -316,6 +324,7 @@ async function salesActive() {
         }
         openSalesFormTab()
     }
+    syncPmPaymentUi()
     if(isOrderWorkspaceMode()) setOrderViewStatusFilter(orderViewStatusFilter)
     // await salesitempop()
 }
@@ -929,6 +938,25 @@ function hidePmOwnerBalance() {
     balanceEl.textContent = ''
 }
 
+function syncPmPaymentUi() {
+    if(isOrderWorkspaceMode() || isBillsWorkspaceMode()) return
+    const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
+    const amountInput = did('amountpaid')
+    const hintEl = did('pmamountpaidhint')
+    const paymentMethodEl = did('paymentmethod')
+    const isPm = applyto.includes('PM')
+    if(hintEl) hintEl.classList.toggle('hidden', !isPm)
+    if(!amountInput) return
+    if(isPm) {
+        amountInput.value = ''
+        amountInput.setAttribute('disabled', 'disabled')
+        if(paymentMethodEl) paymentMethodEl.value = ''
+        if(did('bankdetails')) did('bankdetails').innerHTML = ''
+        return
+    }
+    amountInput.removeAttribute('disabled')
+}
+
 function getPmGuestNameFromReservationRow(row = null) {
     if(!row) return 'Unknown Guest'
     const guest = row?.roomgeustrow?.[0]?.guest1?.[0]
@@ -1092,6 +1120,7 @@ function handlesalesapplyto (){
     } else {
         hidePmOwnerBalance()
     }
+    syncPmPaymentUi()
     // if(document.getElementById('applyto').value == 'OTHERS')document.getElementById('owner').value = document.getElementById('owner1').value
 }
 
@@ -2360,6 +2389,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         preparesalesvalues()
 
         const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
+        if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && applyto.includes('PM') && Number(did('amountpaid')?.value || 0) > 0){
+            if(did('amountpaid')) did('amountpaid').value = ''
+            return notification('Amount Paid is not allowed for PM. Leave it empty to deduct from PM folio.', 0)
+        }
         if(did('description')){
             did('description').value = normalizeDescriptionByApplyTo(did('description').value, applyto)
         }

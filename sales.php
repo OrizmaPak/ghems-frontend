@@ -222,6 +222,7 @@
                                                     <label for="logoname" class="control-label text-xl">Amount&nbsp;Paid:</label>
                                                     <input autocomplete="off" type="number"  name="amountpaid" id="amountpaid" class="form-control" onchange="" placeholder="">
                                                 </div>
+                                                <p id="pmamountpaidhint" class="hidden mx-5 -mt-3 mb-2 text-xs text-amber-700">For Posting Master charges, leave Amount Paid empty or 0 so the charge is deducted from PM folio.</p>
                                             </div>
                                     <div class="flex justify-end w-full my-4">
                                                  <?php if($isOrderRoute || $isBillsRoute): ?>
