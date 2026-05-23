@@ -404,6 +404,24 @@ function normalizeSalesTextValue(value) {
     return text && text !== '-1' && text !== '-' && text.toLowerCase() !== 'null' && text.toLowerCase() !== 'undefined' ? text : ''
 }
 
+function resolveReceiptOwnerDisplay(rows = []) {
+    const sourceRows = Array.isArray(rows) ? rows : []
+    if(!sourceRows.length) return '-'
+    const firstRow = sourceRows[0] || {}
+    const ownerCandidates = [
+        firstRow.ownerdetail,
+        firstRow.owner,
+        firstRow.ownerid
+    ]
+    sourceRows.forEach((row) => ownerCandidates.push(row?.ownerdetail, row?.owner, row?.ownerid))
+    const ownerValue = ownerCandidates.map(normalizeSalesTextValue).find(Boolean) || '-'
+    const applyTo = String(firstRow.applyto || '').trim().toUpperCase()
+    const ttype = String(firstRow.ttype || '').trim().toUpperCase()
+    const isPm = applyTo.includes('PM') || ttype.includes('PM')
+    if(isPm && ownerValue !== '-') return `PM ${ownerValue}`
+    return ownerValue
+}
+
 function resolveOrderDetailsValue(entry = {}, details = []) {
     const candidates = [
         entry.ownerdetail,
@@ -2591,8 +2609,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
-            const ownerTextRaw = String(firstRow.ownerdetail ?? firstRow.owner ?? firstRow.ownerid ?? rows.find((row) => String(row.ownerdetail ?? row.owner ?? row.ownerid ?? '').trim())?.ownerdetail ?? rows.find((row) => String(row.ownerdetail ?? row.owner ?? row.ownerid ?? '').trim())?.owner ?? rows.find((row) => String(row.ownerdetail ?? row.owner ?? row.ownerid ?? '').trim())?.ownerid ?? '').trim()
-            const ownerText = ownerTextRaw && ownerTextRaw !== '-1' ? ownerTextRaw : '-'
+            const ownerText = resolveReceiptOwnerDisplay(rows)
             const shouldShowOwner = true
             const receiptDescription = String(
                 firstRow.description
@@ -2614,7 +2631,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                         <span>${rows[0].reference}</span>
                                       </p>
                                       ${shouldShowOwner ? `<p class="flex justify-between">
-                                        <span class="text-gray-400">Order Details:</span>
+                                        <span class="text-gray-400">${orderPrintMode ? 'Order Details:' : 'Invoice / Receipt To:'}</span>
                                         <span>${ownerText}</span>
                                       </p>` : ''}
                                       <p class="flex justify-between">
