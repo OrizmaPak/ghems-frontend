@@ -998,7 +998,7 @@ function getSelectedPmReservationId() {
     const selectValue = String(did('pmownerselect')?.value || '').trim()
     if(selectValue) return selectValue
     const ownerHidden = String(did('owner')?.value || '').trim()
-    if(ownerHidden) return ownerHidden
+    if(ownerHidden && pmReservationOwnerRows.some((row) => String(row?.reservations?.id || '').trim() === ownerHidden)) return ownerHidden
     const ownerVisible = String(did('owner1')?.value || '').trim()
     if(!ownerVisible) return ''
     const list = did('hems_pm_reservation_owner')
@@ -1007,10 +1007,22 @@ function getSelectedPmReservationId() {
     return String(option?.textContent || '').trim()
 }
 
-function buildPmDescriptionSuffix() {
+function getSelectedPmReservationRow() {
     const selectedId = getSelectedPmReservationId()
-    if(!selectedId) return ''
-    const selectedRow = pmReservationOwnerRows.find((row) => String(row?.reservations?.id || '').trim() === selectedId)
+    const ownerValue = String(did('owner')?.value || did('owner1')?.value || '').trim()
+    return pmReservationOwnerRows.find((row) => {
+        const reservationId = String(row?.reservations?.id || '').trim()
+        const roomNumber = String(row?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim()
+        return (selectedId && reservationId === selectedId) || (ownerValue && roomNumber === ownerValue)
+    }) || null
+}
+
+function getSelectedPmRoomNumber() {
+    return String(getSelectedPmReservationRow()?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim()
+}
+
+function buildPmDescriptionSuffix() {
+    const selectedRow = getSelectedPmReservationRow()
     if(!selectedRow) return ''
     const roomNumber = String(selectedRow?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim() || '-'
     const guestName = getPmGuestNameFromReservationRow(selectedRow) || '-'
@@ -1039,9 +1051,7 @@ async function fetchPmReservationBalanceByReference(reference = '') {
 async function showPmOwnerBalanceForSelection() {
     const balanceEl = did('pmownerbalance')
     if(!balanceEl) return
-    const selectedId = getSelectedPmReservationId()
-    if(!selectedId) return hidePmOwnerBalance()
-    const selectedRow = pmReservationOwnerRows.find((row) => String(row?.reservations?.id || '').trim() === selectedId)
+    const selectedRow = getSelectedPmReservationRow()
     if(!selectedRow?.reservations) return hidePmOwnerBalance()
     balanceEl.classList.remove('hidden')
     balanceEl.textContent = 'Loading balance...'
@@ -1055,7 +1065,7 @@ async function showPmOwnerBalanceForSelection() {
 async function handleSalesOwnerSelectionChange() {
     const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
     if(!applyto.includes('PM')) return
-    if(did('owner')) did('owner').value = getSelectedPmReservationId()
+    if(did('owner')) did('owner').value = getSelectedPmRoomNumber()
     await showPmOwnerBalanceForSelection()
 }
  
@@ -1119,7 +1129,7 @@ function resolveSalesOwnerPayloadValue() {
         return selectedCostCenterId || ownerHidden || ownerVisible || '-1'
     }
     if(applyto.includes('PM')) {
-        return ownerHidden || getSelectedPmReservationId() || ownerVisible || '-1'
+        return getSelectedPmRoomNumber() || ownerHidden || ownerVisible || '-1'
     }
     return ownerVisible || ownerHidden || '-1'
 }
@@ -1128,10 +1138,17 @@ function applySalesOwnerToInputs(ownerValue = '') {
     const normalizedOwner = String(ownerValue || '').trim()
     if(did('owner1')) did('owner1').value = normalizedOwner
     if(did('pmownerselect') && String(did('applyto')?.value || '').trim().toUpperCase().includes('PM')) {
-        did('pmownerselect').value = normalizedOwner
+        const selectedRow = pmReservationOwnerRows.find((row) => {
+            const reservationId = String(row?.reservations?.id || '').trim()
+            const roomNumber = String(row?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim()
+            return reservationId === normalizedOwner || roomNumber === normalizedOwner
+        })
+        did('pmownerselect').value = String(selectedRow?.reservations?.id || normalizedOwner)
     }
     if(did('owner')) {
-        if(String(did('applyto')?.value || '').trim().toUpperCase().includes('ROOM')) {
+        if(String(did('applyto')?.value || '').trim().toUpperCase().includes('PM')) {
+            did('owner').value = getSelectedPmRoomNumber() || normalizedOwner
+        } else if(String(did('applyto')?.value || '').trim().toUpperCase().includes('ROOM')) {
             did('owner').value = extractRoomNumberFromOwnerInput(normalizedOwner)
         } else {
             did('owner').value = normalizedOwner
