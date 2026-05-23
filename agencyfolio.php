@@ -1,9 +1,9 @@
        <section class="animate__animated animate__fadeIn">
                             <p class="page-title">
-                                <span>GUEST FOLIO</span>
+                                <span>AGENCY FOLIO</span>
                             </p>
                             <p class="text-sm text-slate-600 mt-1 mb-3">
-                                Select a guest to view their current expenses across room charges, sales, purchased items, and services rendered.
+                                Select an agency to view folio entries and balances.
                             </p>
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
@@ -12,7 +12,7 @@
                                 <!--    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Check-In</p>-->
                                 <!--</li>-->
                                 <li id="" class="me-2 cp updater optioner" name="checkinview" onclick="runoptioner(this)">
-                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Guest Folio</p>
+                                    <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 ">View Agency Folio</p>
                                 </li>
                             </ul>
                             

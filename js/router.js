@@ -282,6 +282,21 @@ const routerTree = {
         startingFunction: 'guestfolioActive',
         scriptName: './js/guestfolio.js'
     },
+    companyfolio: {
+        template: 'companyfolio',
+        startingFunction: 'companyfolioActive',
+        scriptName: './js/guestfolio.js'
+    },
+    agencyfolio: {
+        template: 'agencyfolio',
+        startingFunction: 'agencyfolioActive',
+        scriptName: './js/guestfolio.js'
+    },
+    groupfolio: {
+        template: 'groupfolio',
+        startingFunction: 'groupfolioActive',
+        scriptName: './js/guestfolio.js'
+    },
     nightauditreport: {
         template: 'nightauditreport',
         startingFunction: 'nightauditreportActive',

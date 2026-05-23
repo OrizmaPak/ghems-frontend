@@ -5,6 +5,7 @@ const guestfolioPaymentController = '../controllers/receipts'
 let guestfolioGuestTomSelect = null
 let guestfolioTomSelectAssetsPromise = null
 let guestfolioGuestOptions = []
+let orgFolioOptions = []
 let guestFolioBuckets = new Map()
 let guestfolioViewTab = 'receivable'
 
@@ -15,6 +16,18 @@ async function receiveablesActive(mode='receiveables') {
 
 async function guestfolioActive() {
     return receivablesActive('guestfolio')
+}
+
+async function companyfolioActive() {
+    return receivablesActive('companyfolio')
+}
+
+async function agencyfolioActive() {
+    return receivablesActive('agencyfolio')
+}
+
+async function groupfolioActive() {
+    return receivablesActive('groupfolio')
 }
 
 function initGuestFolioViewTabs() {
@@ -44,6 +57,22 @@ function isPayPendingCheckoutBillsRoute(){
 
 function isGuestFolioRoute(){
     return guestfolioPageMode === 'guestfolio' || getCurrentRouteName() === 'guestfolio'
+}
+
+function isCompanyFolioRoute(){
+    return guestfolioPageMode === 'companyfolio' || getCurrentRouteName() === 'companyfolio'
+}
+
+function isAgencyFolioRoute(){
+    return guestfolioPageMode === 'agencyfolio' || getCurrentRouteName() === 'agencyfolio'
+}
+
+function isGroupFolioRoute(){
+    return guestfolioPageMode === 'groupfolio' || getCurrentRouteName() === 'groupfolio'
+}
+
+function isOrganisationFolioRoute(){
+    return isCompanyFolioRoute() || isAgencyFolioRoute() || isGroupFolioRoute()
 }
 
 function renderReceiveablesEmptyState(message='No records retrieved'){
@@ -402,14 +431,16 @@ async function receivablesActive(mode='') {
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
     if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => {
         if(isGuestFolioRoute()) fetchreceiveables('', getSelectedReceivablesGuestId())
+        else if(isOrganisationFolioRoute()) fetchreceiveables('', getSelectedOrganisationId())
         else fetchreceiveables('', did('receiveablesroomnumber').value)
     })
-    if(!isGuestFolioRoute()) setupReceivablesRoomPicker()
+    if(!isGuestFolioRoute() && !isOrganisationFolioRoute()) setupReceivablesRoomPicker()
     else if(did('openReceivablesRoomPicker')) did('openReceivablesRoomPicker').classList.add('hidden')
     if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
     initGuestFolioViewTabs()
     configureReceivablesFilterMode()
     if(isGuestFolioRoute()) await initializeGuestFolioGuestPicker()
+    if(isOrganisationFolioRoute()) await initializeOrganisationFolioPicker()
     datasource = []
     guestfolioReceiveablesFiltered = false
     setreceiveablesTableHeader()
@@ -430,14 +461,31 @@ function normalizeGuestDisplayName(item = {}) {
 function configureReceivablesFilterMode() {
     const roomWrap = did('receivablesRoomFilterWrap')
     const guestWrap = did('guestFolioGuestFilterWrap')
+    const orgWrap = did('orgFolioOrgFilterWrap')
     const pageTitleSpan = document.querySelector('.page-title span')
     const viewTabLabel = document.querySelector('li[name="checkinview"] p')
     const showGuestMode = isGuestFolioRoute()
+    const showOrganisationMode = isOrganisationFolioRoute()
+    const pageTitle = isCompanyFolioRoute()
+        ? 'COMPANY FOLIO'
+        : isAgencyFolioRoute()
+            ? 'AGENCY FOLIO'
+            : isGroupFolioRoute()
+                ? 'GROUP FOLIO'
+                : (showGuestMode ? 'GUEST FOLIO' : 'RECEIVABLES')
+    const tabTitle = isCompanyFolioRoute()
+        ? 'View Company Folio'
+        : isAgencyFolioRoute()
+            ? 'View Agency Folio'
+            : isGroupFolioRoute()
+                ? 'View Group Folio'
+                : (showGuestMode ? 'View Guest Folio' : 'View Receivables')
 
-    if(pageTitleSpan) pageTitleSpan.textContent = showGuestMode ? 'GUEST FOLIO' : 'RECEIVABLES'
-    if(viewTabLabel) viewTabLabel.textContent = showGuestMode ? 'View Guest Folio' : 'View Receivables'
-    if(roomWrap) roomWrap.classList.toggle('hidden', showGuestMode)
+    if(pageTitleSpan) pageTitleSpan.textContent = pageTitle
+    if(viewTabLabel) viewTabLabel.textContent = tabTitle
+    if(roomWrap) roomWrap.classList.toggle('hidden', showGuestMode || showOrganisationMode)
     if(guestWrap) guestWrap.classList.toggle('hidden', !showGuestMode)
+    if(orgWrap) orgWrap.classList.toggle('hidden', !showOrganisationMode)
 }
 
 function receivablesEnsureTomSelectAssets() {
@@ -499,6 +547,71 @@ function getSelectedReceivablesGuestId() {
         return String(guestfolioGuestTomSelect.getValue() || '').trim()
     }
     return String(did('receiveablesguestid')?.value || '').trim()
+}
+
+function getOrganisationPickerController() {
+    if(isCompanyFolioRoute()) return '../controllers/fetchcompanyforgroups'
+    if(isAgencyFolioRoute()) return '../controllers/fetchtravelagency'
+    if(isGroupFolioRoute()) return '../controllers/fetchguestgroup'
+    return ''
+}
+
+function getOrganisationFolioFetchController() {
+    if(isCompanyFolioRoute()) return '../controllers/fetchcompanyfolio'
+    if(isAgencyFolioRoute()) return '../controllers/fetchagencyfolio'
+    if(isGroupFolioRoute()) return '../controllers/fetchgroupfolio'
+    return '../controllers/fetchguestfolio'
+}
+
+function getOrganisationDisplayName(row = {}) {
+    return String(
+        row.companyname ||
+        row.agencyname ||
+        row.groupname ||
+        row.name ||
+        row.title ||
+        ''
+    ).trim()
+}
+
+function getOrganisationId(row = {}) {
+    return String(row.id || row.organisationid || row.organizationid || '').trim()
+}
+
+async function initializeOrganisationFolioPicker() {
+    const input = did('receiveablesorgname')
+    const hidden = did('receiveablesorgid')
+    const list = did('receiveablesorglist')
+    if(!input || !hidden || !list) return
+
+    const controller = getOrganisationPickerController()
+    if(!controller) return
+    const request = await httpRequest2(controller, null, null, 'json')
+    orgFolioOptions = request?.status && Array.isArray(request.data) ? request.data : []
+    list.innerHTML = orgFolioOptions
+        .map((row) => {
+            const id = getOrganisationId(row)
+            const name = getOrganisationDisplayName(row)
+            if(!id || !name) return ''
+            return `<option value="${name.replace(/"/g, '&quot;')}">${id}</option>`
+        })
+        .join('')
+
+    input.onchange = () => {
+        const selected = orgFolioOptions.find((row) => getOrganisationDisplayName(row) === String(input.value || '').trim())
+        hidden.value = selected ? getOrganisationId(selected) : ''
+    }
+}
+
+function getSelectedOrganisationId() {
+    const hidden = did('receiveablesorgid')
+    const typed = did('receiveablesorgname')
+    const selectedHidden = String(hidden?.value || '').trim()
+    if(selectedHidden) return selectedHidden
+    const typedName = String(typed?.value || '').trim()
+    if(!typedName) return ''
+    const selected = orgFolioOptions.find((row) => getOrganisationDisplayName(row) === typedName)
+    return selected ? getOrganisationId(selected) : ''
 }
 
 let guestfolioPickerData = { checkedin: [], reservations: [] }
@@ -624,6 +737,8 @@ function useReceivablesRoomPicker(rowIndex){
 
 async function fetchreceiveables(id='', roomnumber='') {
     const normalizedRoomNumber = String(roomnumber || '').trim()
+    const startdate = String(did('receiveablesstartdate')?.value || '').trim()
+    const enddate = String(did('receiveablesenddate')?.value || '').trim()
     if(isPayPendingCheckoutBillsRoute() && !id && !normalizedRoomNumber){
         guestfolioReceiveablesFiltered = false
         setreceiveablesTableHeader()
@@ -639,14 +754,23 @@ async function fetchreceiveables(id='', roomnumber='') {
         if(id)paramstr.append('id', id)
         if(normalizedRoomNumber){
             if(isGuestFolioRoute()) paramstr.append('guestid', normalizedRoomNumber)
+            else if(isOrganisationFolioRoute()) paramstr.append('organisationid', normalizedRoomNumber)
             else paramstr.append('roomnumber', normalizedRoomNumber)
         }
+        if(startdate) paramstr.append('startdate', startdate)
+        if(enddate) paramstr.append('enddate', enddate)
         return paramstr
     }
-    const fetchController = isGuestFolioRoute() ? '../controllers/fetchguestfolio' : '../controllers/fetchreceivablesbyrooms'
+    const fetchController = isGuestFolioRoute()
+        ? '../controllers/fetchguestfolio'
+        : isOrganisationFolioRoute()
+            ? getOrganisationFolioFetchController()
+            : '../controllers/fetchreceivablesbyrooms'
     const shouldSendParams = Boolean(
         id ||
-        normalizedRoomNumber
+        normalizedRoomNumber ||
+        startdate ||
+        enddate
     )
     let request = await httpRequest2(fetchController, shouldSendParams ? getparamm() : null, document.querySelector('#submitreceiveablesfilter'), 'json')
     if(!id)renderReceiveablesEmptyState()
@@ -674,6 +798,10 @@ function resetreceiveablesfilter(){
     if(did('receiveablesroomnumber'))did('receiveablesroomnumber').value = ''
     if(guestfolioGuestTomSelect && typeof guestfolioGuestTomSelect.clear === 'function') guestfolioGuestTomSelect.clear(true)
     if(did('receiveablesguestid'))did('receiveablesguestid').value = ''
+    if(did('receiveablesorgname'))did('receiveablesorgname').value = ''
+    if(did('receiveablesorgid'))did('receiveablesorgid').value = ''
+    if(did('receiveablesstartdate'))did('receiveablesstartdate').value = ''
+    if(did('receiveablesenddate'))did('receiveablesenddate').value = ''
     if(isPayPendingCheckoutBillsRoute()){
         datasource = []
         guestfolioReceiveablesFiltered = false
@@ -962,6 +1090,7 @@ async function submitReceivablePayment(){
         notification('Payment received successfully', 1)
         did('modalreceipt').classList.add('hidden')
         if(isGuestFolioRoute()) fetchreceiveables('', getSelectedReceivablesGuestId())
+        else if(isOrganisationFolioRoute()) fetchreceiveables('', getSelectedOrganisationId())
         else fetchreceiveables('', did('receiveablesroomnumber')?.value || '')
         return
     }
