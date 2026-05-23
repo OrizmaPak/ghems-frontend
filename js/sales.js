@@ -1004,6 +1004,23 @@ function getSelectedPmReservationId() {
     return String(option?.textContent || '').trim()
 }
 
+function buildPmDescriptionSuffix() {
+    const selectedId = getSelectedPmReservationId()
+    if(!selectedId) return ''
+    const selectedRow = pmReservationOwnerRows.find((row) => String(row?.reservations?.id || '').trim() === selectedId)
+    if(!selectedRow) return ''
+    const roomNumber = String(selectedRow?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim() || '-'
+    const guestName = getPmGuestNameFromReservationRow(selectedRow) || '-'
+    return `PM - ${roomNumber} - ${guestName}`
+}
+
+function normalizeDescriptionForPm(baseDescription = '') {
+    const base = String(baseDescription || '').split('|||')[0].trim()
+    const suffix = buildPmDescriptionSuffix()
+    if(!suffix) return base
+    return `${base} ||| ${suffix}`.trim()
+}
+
 async function fetchPmReservationBalanceByReference(reference = '') {
     const ref = String(reference || '').trim()
     if(!ref) return null
@@ -2318,6 +2335,11 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         if(!t)return notification('Please one or more quantity values are invalid', 0)
         
         preparesalesvalues()
+
+        const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
+        if(applyto === 'PM' && did('description')){
+            did('description').value = normalizeDescriptionForPm(did('description').value)
+        }
         
         const ownerPayloadValue = resolveSalesOwnerPayloadValue()
         if(did('owner')) did('owner').value = ownerPayloadValue
