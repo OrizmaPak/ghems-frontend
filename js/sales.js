@@ -946,8 +946,9 @@ function populatePmReservationOwnerSelect(rows = []) {
         rows.map((row) => {
             const reservationId = String(row?.reservations?.id || '').trim()
             if(!reservationId) return ''
+            const roomNumber = String(row?.roomgeustrow?.[0]?.roomdata?.roomnumber || '').trim()
             const guestName = getPmGuestNameFromReservationRow(row)
-            const label = guestName
+            const label = `${roomNumber || '-'} - ${guestName}`
             return `<option value="${reservationId.replace(/"/g, '&quot;')}">${label.replace(/</g, '&lt;')}</option>`
         }).join('')
     }`
