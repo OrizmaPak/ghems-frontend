@@ -11,7 +11,6 @@ let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
 let pmReservationOwnerRows = []
-const pmReservationBalanceCache = new Map()
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -1030,14 +1029,11 @@ function normalizeDescriptionByApplyTo(baseDescription = '', applytoValue = '') 
 async function fetchPmReservationBalanceByReference(reference = '') {
     const ref = String(reference || '').trim()
     if(!ref) return null
-    if(pmReservationBalanceCache.has(ref)) return pmReservationBalanceCache.get(ref)
     const payload = new FormData()
     payload.append('reference', ref)
     const request = await httpRequest2('../controllers/getreservationrefbalance', payload, null, 'json')
     if(!request?.status) return null
-    const balanceValue = Number(request.balance || request.data?.balance || 0)
-    pmReservationBalanceCache.set(ref, balanceValue)
-    return balanceValue
+    return Number(request.balance || request.data?.balance || 0)
 }
 
 async function showPmOwnerBalanceForSelection() {
