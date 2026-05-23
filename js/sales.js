@@ -821,7 +821,6 @@ async function loadSalesBillIntoForm(bill) {
         }
 
         if(did('transactiondate')) did('transactiondate').value = String(bill.transactiondate || '').slice(0, 10)
-        if(did('description')) did('description').value = bill.description || ''
         if(did('paymentmethod')) did('paymentmethod').value = bill.paymentmethod || ''
         if(did('amountpaid')) did('amountpaid').value = Number(bill.amountpaid || 0)
 
@@ -832,6 +831,11 @@ async function loadSalesBillIntoForm(bill) {
             else did('applyto').value = 'OTHERS'
             handlesalesapplyto()
         }
+
+        if(did('description')) did('description').value = normalizeDescriptionByApplyTo(
+            bill.description || '',
+            did('applyto')?.value || ''
+        )
 
         const ownerValue = String(bill.ownerdetail ?? bill.owner ?? bill.ownerid ?? '')
         if(did('owner1')) did('owner1').value = ownerValue
@@ -1014,8 +1018,10 @@ function buildPmDescriptionSuffix() {
     return `PM - ${roomNumber} - ${guestName}`
 }
 
-function normalizeDescriptionForPm(baseDescription = '') {
+function normalizeDescriptionByApplyTo(baseDescription = '', applytoValue = '') {
+    const normalizedApplyTo = String(applytoValue || '').trim().toUpperCase()
     const base = String(baseDescription || '').split('|||')[0].trim()
+    if(normalizedApplyTo !== 'PM') return base
     const suffix = buildPmDescriptionSuffix()
     if(!suffix) return base
     return `${base} ||| ${suffix}`.trim()
@@ -2031,7 +2037,10 @@ async function loadOrderIntoForm(orderEntry = null) {
 
     const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
     applySalesOwnerToInputs(ownerValue)
-    if(did('description')) did('description').value = String(orderEntry.saleentry.description || '').trim()
+    if(did('description')) did('description').value = normalizeDescriptionByApplyTo(
+        String(orderEntry.saleentry.description || '').trim(),
+        did('applyto')?.value || ''
+    )
     if(did('transactiondate')) did('transactiondate').value = String(orderEntry.saleentry.transactiondate || '').slice(0, 10) || new Date().toISOString().split('T')[0]
     if(did('moredata')) did('moredata').value = normalizeOrderStatusValue(orderEntry.saleentry.moredata, true) || 'ORDER'
     if(did('billreferencecode')) did('billreferencecode').value = ''
@@ -2151,9 +2160,10 @@ async function composeOrderToBill(orderEntry = null) {
         const orderRef = String(orderEntry.saleentry.reference || '').trim()
         const refTag = orderRef ? `Order Ref ${orderRef}` : ''
         const hasRefAlready = refTag && existingDescription.toLowerCase().includes(refTag.toLowerCase())
-        did('description').value = hasRefAlready
+        const composedDescription = hasRefAlready
             ? existingDescription
             : [existingDescription, refTag].filter(Boolean).join(' | ')
+        did('description').value = normalizeDescriptionByApplyTo(composedDescription, did('applyto')?.value || '')
     }
     if(did('transactiondate')) did('transactiondate').value = new Date().toISOString().split('T')[0]
     if(did('billreferencecode')) did('billreferencecode').value = ''
@@ -2337,8 +2347,8 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         preparesalesvalues()
 
         const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
-        if(applyto === 'PM' && did('description')){
-            did('description').value = normalizeDescriptionForPm(did('description').value)
+        if(did('description')){
+            did('description').value = normalizeDescriptionByApplyTo(did('description').value, applyto)
         }
         
         const ownerPayloadValue = resolveSalesOwnerPayloadValue()
