@@ -176,6 +176,61 @@ function normalizeGuestFolioRows(payload = []) {
     return deduped
 }
 
+function normalizeOrganisationFolioRows(payload = []) {
+    if(!Array.isArray(payload)) return []
+
+    const pickFirstDefined = (...values) => {
+        for (const value of values) {
+            if(value !== undefined && value !== null && String(value).trim() !== '') return value
+        }
+        return ''
+    }
+
+    const normalized = []
+    payload.forEach((entry, entryIndex) => {
+        const guestRows = Array.isArray(entry?.guest) ? entry.guest : []
+        const roomNumbers = guestRows.map((row) => String(row?.roomnumber || '').trim()).filter(Boolean)
+        const roomIdentifier = roomNumbers.join(', ')
+        const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
+
+        if(!transactions.length) {
+            normalized.push({
+                id: `org-${entryIndex + 1}`,
+                ownerid: roomIdentifier,
+                roomnumber: roomIdentifier,
+                description: 'No transactions available yet',
+                debit: 0,
+                credit: 0,
+                transactiondate: pickFirstDefined(guestRows[0]?.tlog, ''),
+                _emptyTransaction: true
+            })
+            return
+        }
+
+        transactions.forEach((tx, txIndex) => {
+            const source = tx?.saleentry || tx?.transaction || tx
+            normalized.push({
+                ...source,
+                id: pickFirstDefined(source?.id, `org-${entryIndex + 1}-${txIndex + 1}`),
+                ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, roomIdentifier),
+                roomnumber: pickFirstDefined(source?.roomnumber, roomIdentifier),
+                debit: Number(source?.debit || tx?.debit || 0),
+                credit: Number(source?.credit || tx?.credit || 0),
+                transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
+                description: pickFirstDefined(source?.description, tx?.description)
+            })
+        })
+    })
+
+    normalized.sort((a, b) => {
+        const dateA = new Date(String(a?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        const dateB = new Date(String(b?.transactiondate || '').replace(' ', 'T')).getTime() || 0
+        return dateB - dateA
+    })
+
+    return normalized
+}
+
 function formatFolioAmount(value = 0) {
     const numeric = Number(value || 0)
     return numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -790,7 +845,11 @@ async function fetchreceiveables(id='', roomnumber='') {
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = isGuestFolioRoute() ? normalizeGuestFolioRows(request.data) : request.data
+                datasource = isGuestFolioRoute()
+                    ? normalizeGuestFolioRows(request.data)
+                    : isOrganisationFolioRoute()
+                        ? normalizeOrganisationFolioRows(request.data)
+                        : request.data
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
                 if(isGuestFolioRoute()) renderGuestFolioPrintTable()
             }else{
