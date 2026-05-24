@@ -85,6 +85,27 @@ function normalizeGuestFolioRows(payload = []) {
     if(!Array.isArray(payload)) return []
     const guestBuckets = new Map()
 
+    const pickFirstDefined = (...values) => {
+        for (const value of values) {
+            if(value !== undefined && value !== null && String(value).trim() !== '') return value
+        }
+        return ''
+    }
+
+    const normalizeFolioTransaction = (tx = {}, bucket = {}) => {
+        const source = tx?.saleentry || tx?.transaction || tx
+        return {
+            ...source,
+            ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, tx?.ownerid, tx?.roomnumber),
+            guestid: bucket.guestid,
+            guestname: bucket.guestname,
+            debit: Number(source?.debit || tx?.debit || 0),
+            credit: Number(source?.credit || tx?.credit || 0),
+            transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
+            description: pickFirstDefined(source?.description, tx?.description)
+        }
+    }
+
     const ensureGuestBucket = (guest = {}) => {
         const guestId = String(guest?.id || '').trim() || `guest-${genID()}`
         const guestName = [guest?.lastname, guest?.firstname, guest?.othernames].map(value => String(value || '').trim()).filter(Boolean).join(' ') || '-'
@@ -106,22 +127,14 @@ function normalizeGuestFolioRows(payload = []) {
     payload.forEach((entry) => {
         const guest = entry?.guest || {}
         const bucket = ensureGuestBucket(guest)
-        bucket.company = entry?.company || null
-        bucket.travelagency = entry?.travelagency || null
-        bucket.groups = entry?.groups || null
+        if(entry?.company) bucket.company = entry.company
+        if(entry?.travelagency) bucket.travelagency = entry.travelagency
+        if(entry?.groups) bucket.groups = entry.groups
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
 
         if(transactions.length) {
             transactions.forEach((tx) => {
-                bucket.transactions.push({
-                    ...tx,
-                    ownerid: tx?.ownerid || tx?.roomnumber || '',
-                    guestid: bucket.guestid,
-                    guestname: bucket.guestname,
-                    debit: Number(tx?.debit || 0),
-                    credit: Number(tx?.credit || 0),
-                    transactiondate: tx?.transactiondate || tx?.tlog || ''
-                })
+                bucket.transactions.push(normalizeFolioTransaction(tx, bucket))
             })
         }
     })
