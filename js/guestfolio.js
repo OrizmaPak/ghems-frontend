@@ -187,38 +187,83 @@ function normalizeOrganisationFolioRows(payload = []) {
     }
 
     const normalized = []
+    const organisationBuckets = new Map()
+    const ensureOrganisationBucket = (entry = {}, entryIndex = 0) => {
+        const company = entry?.company || null
+        const travelagency = entry?.travelagency || null
+        const groups = entry?.groups || null
+        const orgType = travelagency ? 'travelagency' : company ? 'company' : groups ? 'group' : 'organisation'
+        const orgId = String(
+            travelagency?.id ||
+            company?.id ||
+            groups?.id ||
+            entryIndex + 1
+        ).trim()
+        const bucketId = `${orgType}-${orgId || (entryIndex + 1)}`
+        if(!organisationBuckets.has(bucketId)) {
+            const orgName = String(
+                travelagency?.agencyname ||
+                travelagency?.name ||
+                company?.companyname ||
+                company?.name ||
+                groups?.groupname ||
+                groups?.name ||
+                'Organisation'
+            ).trim() || 'Organisation'
+            organisationBuckets.set(bucketId, {
+                guestid: bucketId,
+                guestname: orgName,
+                guest: {},
+                company,
+                travelagency,
+                groups,
+                transactions: []
+            })
+        }
+        return organisationBuckets.get(bucketId)
+    }
+
     payload.forEach((entry, entryIndex) => {
+        const bucket = ensureOrganisationBucket(entry, entryIndex)
         const guestRows = Array.isArray(entry?.guest) ? entry.guest : []
         const roomNumbers = guestRows.map((row) => String(row?.roomnumber || '').trim()).filter(Boolean)
         const roomIdentifier = roomNumbers.join(', ')
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
 
         if(!transactions.length) {
-            normalized.push({
+            const emptyRow = {
                 id: `org-${entryIndex + 1}`,
                 ownerid: roomIdentifier,
                 roomnumber: roomIdentifier,
+                guestid: bucket.guestid,
+                guestname: bucket.guestname,
                 description: 'No transactions available yet',
                 debit: 0,
                 credit: 0,
                 transactiondate: pickFirstDefined(guestRows[0]?.tlog, ''),
                 _emptyTransaction: true
-            })
+            }
+            normalized.push(emptyRow)
+            bucket.transactions.push(emptyRow)
             return
         }
 
         transactions.forEach((tx, txIndex) => {
             const source = tx?.saleentry || tx?.transaction || tx
-            normalized.push({
+            const row = {
                 ...source,
                 id: pickFirstDefined(source?.id, `org-${entryIndex + 1}-${txIndex + 1}`),
                 ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, roomIdentifier),
                 roomnumber: pickFirstDefined(source?.roomnumber, roomIdentifier),
+                guestid: bucket.guestid,
+                guestname: bucket.guestname,
                 debit: Number(source?.debit || tx?.debit || 0),
                 credit: Number(source?.credit || tx?.credit || 0),
                 transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
                 description: pickFirstDefined(source?.description, tx?.description)
-            })
+            }
+            normalized.push(row)
+            bucket.transactions.push(row)
         })
     })
 
@@ -228,6 +273,7 @@ function normalizeOrganisationFolioRows(payload = []) {
         return dateB - dateA
     })
 
+    guestFolioBuckets = organisationBuckets
     return normalized
 }
 
@@ -851,10 +897,10 @@ async function fetchreceiveables(id='', roomnumber='') {
                         ? normalizeOrganisationFolioRows(request.data)
                         : request.data
                 resolvePagination(datasource, onreceiveablesTableDataSignal)
-                if(isGuestFolioRoute()) renderGuestFolioPrintTable()
+                if(isGuestFolioRoute() || isOrganisationFolioRoute()) renderGuestFolioPrintTable()
             }else{
                 renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
-                if(isGuestFolioRoute() && did('guestFolioPrintTableBody')) {
+                if((isGuestFolioRoute() || isOrganisationFolioRoute()) && did('guestFolioPrintTableBody')) {
                     did('guestFolioPrintTableBody').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
                 }
             }
