@@ -136,8 +136,71 @@ const checkinRateDataByCard = {}
 const checkinRateSourceByCard = {}
 const checkinSubmitLocks = {}
 const CHECKIN_PENDING_PAYMENT_RECEIPT_KEY = 'postingmaster_pending_payment_receipt'
+const POSTING_MASTER_CANCEL_TAB_SESSION_KEY = 'postingmaster_open_cancel_tab'
 let checkinOrgContextChangeLock = false
 let checkinViewTableSource = []
+let postingMasterCancelPanelInitialized = false
+
+function postingMasterSetModuleTab(tabName = 'manage') {
+    const managePanel = did('postingmastermodulemanagepanel')
+    const cancelPanel = did('postingmastermodulecancelpanel')
+    const manageTab = document.querySelector('[data-postingmaster-tab="manage"]')
+    const cancelTab = document.querySelector('[data-postingmaster-tab="cancel"]')
+    if(!managePanel || !cancelPanel || !manageTab || !cancelTab) return
+
+    const isCancel = tabName === 'cancel'
+    managePanel.classList.toggle('hidden', isCancel)
+    cancelPanel.classList.toggle('hidden', !isCancel)
+    manageTab.classList.toggle('active', !isCancel)
+    cancelTab.classList.toggle('active', isCancel)
+
+    const manageBtn = manageTab.querySelector('button')
+    const cancelBtn = cancelTab.querySelector('button')
+    manageBtn?.classList.toggle('!text-blue-600', !isCancel)
+    cancelBtn?.classList.toggle('!text-blue-600', isCancel)
+
+    if(isCancel && !postingMasterCancelPanelInitialized){
+        postingMasterCancelPanelInitialized = true
+        setTimeout(() => {
+            if(typeof cancelpostingmasterActive === 'function') cancelpostingmasterActive(true)
+        }, 0)
+    }
+}
+
+function postingMasterOpenCancelTab(reference = '') {
+    const cancelTab = document.getElementById('postingmastercanceltab')
+    if(cancelTab?.classList.contains('hidden')) return
+    if(reference) sessionStorage.setItem('cancelpostingmaster', reference)
+    postingMasterSetModuleTab('cancel')
+    postingMasterCancelPostingMasterCheck()
+}
+
+async function postingMasterInitModuleTabs() {
+    const tabsRoot = did('postingmastermoduletabs')
+    if(!tabsRoot || tabsRoot.dataset.bound === '1') return
+    tabsRoot.dataset.bound = '1'
+    const profile = (typeof fetchCurrentUserProfileCached === 'function') ? await fetchCurrentUserProfileCached() : null
+    const granted = profile?.grantedPermissions instanceof Set ? profile.grantedPermissions : new Set()
+    const canManage = granted.has('*') || granted.has('POSTING MASTER')
+    const canCancel = granted.has('*') || granted.has('CANCEL POSTING MASTER')
+    const manageTab = document.querySelector('[data-postingmaster-tab="manage"]')
+    const cancelTab = did('postingmastercanceltab')
+
+    if(cancelTab) cancelTab.classList.toggle('hidden', !canCancel)
+    if(manageTab) manageTab.classList.toggle('hidden', !canManage)
+    if(did('cancelpostingmaster')) did('cancelpostingmaster').classList.add('hidden')
+
+    tabsRoot.addEventListener('click', (event) => {
+        const tabNode = event.target?.closest?.('[data-postingmaster-tab]')
+        if(!tabNode) return
+        const tabName = tabNode.getAttribute('data-postingmaster-tab')
+        postingMasterSetModuleTab(tabName === 'cancel' ? 'cancel' : 'manage')
+    })
+
+    const openCancel = sessionStorage.getItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY) === '1' || (!canManage && canCancel)
+    sessionStorage.removeItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY)
+    postingMasterSetModuleTab(openCancel ? 'cancel' : 'manage')
+}
 
 function postingMasterNormalizeReservationRow(row = {}) {
     const normalized = { ...row }
@@ -738,6 +801,7 @@ async function postingMasterCheckinActive() {
     await populateReceivingBankSelects()
     postingMasterScheduleRoomCategoryRestriction()
     did('initialroombtn').click()
+    await postingMasterInitModuleTabs()
     if(sessionStorage.getItem('postingmasterfromsomewhere')){
         let id = sessionStorage.getItem('postingmasterfromsomewhere')
         postingMasterFetchcheckinn(id)
@@ -748,21 +812,29 @@ async function postingMasterCheckinActive() {
 }
 
 async function cancelpostingmasterActive() {
+    if(!did('cancelpostingmasterform')){
+        sessionStorage.setItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY, '1')
+        document.querySelector('#postingmaster')?.click()
+        return
+    }
+    if(arguments[0] === true && did('postingmastermodulewrapper')){
+        notification('Loading...')
+    } else {
     notification('Loading...')
+    }
     checkinid = ''
     const form = document.querySelector('#cancelpostingmasterform')
     await postingMasterCheckinpopulatedl()
     await populateReceivingBankSelects()
     if(form?.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', e=>postingMasterCheckinnFormSubmitHandler('cancelpostingmasterform'))
-    if(document.querySelector('#submitref')) document.querySelector('#submitref').addEventListener('click', postingMasterFetchDataForCancelPostingMaster)
-    if(document.querySelector('#openCancelReservationRefPicker')) document.querySelector('#openCancelReservationRefPicker').addEventListener('click', postingMasterOpenCancelPostingMasterRefPicker)
-    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', e=>checkotherbankdetails('comp22'))
+    if(form?.querySelector('#submitref')) form.querySelector('#submitref').addEventListener('click', postingMasterFetchDataForCancelPostingMaster)
+    if(form?.querySelector('#openCancelReservationRefPicker')) form.querySelector('#openCancelReservationRefPicker').addEventListener('click', postingMasterOpenCancelPostingMasterRefPicker)
+    if(form?.querySelector('#paymentmethod')) form.querySelector('#paymentmethod').addEventListener('click', e=>checkotherbankdetails('comp22'))
     datasource = []
     await postingMasterFetchcheckinn('', '', 'cancelpostingmasterformfilter')
     await postingMasterFetchtravelsres()
     await postingMasterFetchcompanyres()
     await postingMasterFetchgroupsres()
-    did('initialroombtn')?.click()
     postingMasterCancelPostingMasterCheck()
 }
 
@@ -2592,8 +2664,7 @@ async function postingMasterPerformAsyncTask() {
 }
 
 function postingMasterRemoveguestsreservations(ref){
-    sessionStorage.setItem('cancelpostingmaster', ref)
-    document.getElementById('cancelpostingmaster')?.click()
+    postingMasterOpenCancelTab(ref)
 }
 
 function postingMasterCancelPostingMasterCheck(){
@@ -3714,7 +3785,7 @@ async function postingMasterCheckinnFormSubmitHandler(guest){
         if(guest == 'grouppostingmasterform')document.querySelector('#groupcheckin')?.click()
         if(guest == 'extendstayform')document.querySelector(did('reducestaymode') ? '#reducestay' : '#extendstay')?.click()
         if(guest == 'cancelreservationform')document.querySelector('#cancelreservation')?.click()
-        if(guest == 'cancelpostingmasterform')document.querySelector('#cancelpostingmaster')?.click()
+        if(guest == 'cancelpostingmasterform')postingMasterOpenCancelTab()
         if((guest != 'cancelreservationform' && guest != 'cancelpostingmasterform') || guest == 'extendstayform')postingMasterFetchcheckinn()
         if (guest == 'cancelreservationform') {
             const elements = document.querySelectorAll('#cancelreservationform input, #cancelreservationform select, #cancelreservationform textarea')
