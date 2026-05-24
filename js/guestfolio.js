@@ -394,6 +394,7 @@ function openGuestFolioPrint(guestId = '') {
     const model = getGuestFolioPrintModel(guestId)
     if(!model) return notification('Unable to load guest folio print data', 0)
     did('modalreceipt').classList.remove('hidden')
+    const isAgencyFolioPrint = isAgencyFolioRoute()
 
     const firstTransaction = model.transactions[0] || {}
     const lastTransaction = model.transactions[model.transactions.length - 1] || {}
@@ -463,7 +464,7 @@ function openGuestFolioPrint(guestId = '') {
             <table class="meta">
                 <tr>
                     <td style="width:58%;border:1px solid #ccc;padding:2px 6px;vertical-align:top;">
-                        <div><strong>Guest:</strong> ${normalizeFolioText(model.guestname)}</div>
+                        ${isAgencyFolioPrint ? '' : `<div><strong>Guest:</strong> ${normalizeFolioText(model.guestname)}</div>`}
                         <div><strong>Travel Agent:</strong> ${normalizeFolioText(model.travelagency?.agencyname || model.travelagency?.name || '')}</div>
                         <div><strong>Company:</strong> ${normalizeFolioText(model.company?.companyname || model.guest?.companyname || '')}</div>
                         <div><strong>Bill Instruction:</strong> ${normalizeFolioText(model.guest?.moredata?.billinstruction || '')}</div>
