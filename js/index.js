@@ -18,7 +18,8 @@ const availableRoomsState = {
     building: 'ALL',
     floor: 'ALL',
     category: 'ALL',
-    autoRefresh: true
+    autoRefresh: true,
+    layout: 'compact'
 }
 let availableRoomsDataset = []
 const default_department = 'Main Store'
@@ -472,6 +473,14 @@ function getAvailableRoomStatusPillClass(rawStatus=''){
     return 'bg-indigo-50 text-indigo-800 ring-indigo-200'
 }
 
+function getAvailableRoomCompactTileClass(rawStatus=''){
+    const status = normalizeRoomStatus(rawStatus)
+    if(status === 'OCCUPIED') return 'bg-red-600 text-white border-red-800 shadow-[inset_0_-2px_0_rgba(127,29,29,0.45)]'
+    if(status === 'RESERVED') return 'bg-amber-400 text-slate-950 border-amber-600 shadow-[inset_0_-2px_0_rgba(180,83,9,0.35)]'
+    if(status === 'AVAILABLE') return 'bg-emerald-400 text-slate-950 border-emerald-600 shadow-[inset_0_-2px_0_rgba(4,120,87,0.35)]'
+    return 'bg-sky-500 text-white border-sky-700 shadow-[inset_0_-2px_0_rgba(3,105,161,0.4)]'
+}
+
 function getAvailableRoomStatusDescription(room={}){
     const value = String(room.roomstatusdescription || '').trim()
     if(!value || value === '-') return ''
@@ -630,6 +639,12 @@ function ensureAvailableRoomSliderEventsBound(){
             renderAvailableRoomsBoard()
             return
         }
+        const layoutButton = event.target.closest('[data-ar-layout]')
+        if(layoutButton){
+            availableRoomsState.layout = layoutButton.getAttribute('data-ar-layout') || 'compact'
+            renderAvailableRoomsBoard()
+            return
+        }
         const actionButton = event.target.closest('[data-ar-action]')
         if(!actionButton) return
         const action = actionButton.getAttribute('data-ar-action')
@@ -669,6 +684,7 @@ function renderAvailableRoomsBoard(){
 
     const validDetail = availableRoomsDetail && availableRoomsDataset.find(item => String(item.roomnumber || '') === String(availableRoomsDetail.roomnumber || ''))
     if(!validDetail) availableRoomsDetail = null
+    const isCompactLayout = availableRoomsState.layout !== 'cards'
 
     host.innerHTML = `
         <div class="h-full overflow-hidden flex flex-col gap-2">
@@ -696,7 +712,15 @@ function renderAvailableRoomsBoard(){
             <div class="sticky top-[104px] z-20 bg-white/95 border border-slate-200 rounded-md p-2 shadow-sm">
                 <div class="flex flex-wrap gap-1 mb-2">
                     ${pills.map(pill => `<button data-ar-status="${pill.key}" class="px-2 py-1 text-[10px] rounded border ${availableRoomsState.status === pill.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300'}">${pill.label}</button>`).join('')}
-                    <button data-ar-action="clear-filters" class="ml-auto px-2 py-1 text-[10px] rounded border border-slate-300 text-slate-600">Clear</button>
+                    <button data-ar-layout="compact" class="ml-auto inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${isCompactLayout ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Compact layout">
+                        <span class="material-symbols-outlined" style="font-size:14px;">grid_view</span>
+                        Compact
+                    </button>
+                    <button data-ar-layout="cards" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${!isCompactLayout ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Card layout">
+                        <span class="material-symbols-outlined" style="font-size:14px;">dashboard</span>
+                        Cards
+                    </button>
+                    <button data-ar-action="clear-filters" class="px-2 py-1 text-[10px] rounded border border-slate-300 text-slate-600">Clear</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-1">
                     <input id="searchavailableroom" value="${availableRoomsState.search}" class="form-control !p-2 text-xs" placeholder="Search room, category, building">
@@ -715,15 +739,19 @@ function renderAvailableRoomsBoard(){
                 </div>
             </div>
             <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'} gap-2 overflow-hidden">
-                <div class="border border-slate-200 rounded-md p-2 overflow-y-auto bg-white">
+                <div class="border border-slate-200 rounded-md p-2 ${isCompactLayout ? 'overflow-hidden' : 'overflow-y-auto'} bg-white">
                     ${filtered.length ? groupedByFloor.map(([floorLabel, floorRooms]) => `
-                        <section class="mb-3">
-                            <div class="sticky top-0 z-10 bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 mb-1">
-                                Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}
-                                <span class="font-medium text-slate-500">(${floorRooms.length})</span>
+                        <section class="${isCompactLayout ? 'mb-1' : 'mb-3'}">
+                            <div class="${isCompactLayout ? 'flex items-center justify-between bg-slate-900 text-white rounded px-1.5 py-[2px] text-[9px] font-black uppercase' : 'sticky top-0 z-10 bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 mb-1'}">
+                                <span>Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}</span>
+                                <span class="${isCompactLayout ? 'text-white/70' : 'font-medium text-slate-500'}">(${floorRooms.length})</span>
                             </div>
-                            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                                ${floorRooms.map((data) => `
+                            <div class="${isCompactLayout ? 'grid gap-[3px] mt-[3px]' : 'grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2'}" ${isCompactLayout ? 'style="grid-template-columns:repeat(auto-fill,minmax(34px,1fr));"' : ''}>
+                                ${floorRooms.map((data) => isCompactLayout ? `
+                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" title="Room ${data.roomnumber || '-'} - ${getAvailableRoomStatusLabel(data.roomstatus)}${getAvailableRoomStatusDescription(data) ? ' - ' + getAvailableRoomStatusDescription(data) : ''}" class="relative h-[24px] min-w-0 rounded-[4px] border px-[2px] text-[10px] font-black leading-none ${getAvailableRoomCompactTileClass(data.roomstatus)} transition hover:scale-105 hover:ring-2 hover:ring-slate-900/20 focus:outline-none focus:ring-2 focus:ring-slate-900/30">
+                                        <span class="block truncate">${data.roomnumber || '-'}</span>
+                                    </button>
+                                ` : `
                                     <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} group relative overflow-hidden border rounded-xl min-h-[88px] p-0 shadow-[0_10px_24px_rgba(15,23,42,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(15,23,42,0.16)] focus:outline-none focus:ring-2 focus:ring-slate-900/10">
                                         <span class="absolute inset-x-0 top-0 h-[3px] ${getAvailableRoomAccentClass(data.roomstatus)}"></span>
                                         <span class="absolute -right-7 -top-8 h-16 w-16 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} opacity-10"></span>
