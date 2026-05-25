@@ -3,7 +3,7 @@
                             <!--    <span>CHECK-IN</span>-->
                             <!--</p>-->
                             
-                             <ul class="hidden flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400">
+                             <ul style="display:none !important;" class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('cancelpostingmasterform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
                                 <li  class="me-2 cp updater optioner !text-blue-600 active" name="cancelpostingmasterform" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Cancel Posting Master</p>
