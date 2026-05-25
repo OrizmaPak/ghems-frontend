@@ -475,10 +475,10 @@ function getAvailableRoomStatusPillClass(rawStatus=''){
 
 function getAvailableRoomCompactTileClass(rawStatus=''){
     const status = normalizeRoomStatus(rawStatus)
-    if(status === 'OCCUPIED') return 'bg-red-600 text-white border-red-800 shadow-[inset_0_-2px_0_rgba(127,29,29,0.45)]'
-    if(status === 'RESERVED') return 'bg-amber-400 text-slate-950 border-amber-600 shadow-[inset_0_-2px_0_rgba(180,83,9,0.35)]'
-    if(status === 'AVAILABLE') return 'bg-emerald-400 text-slate-950 border-emerald-600 shadow-[inset_0_-2px_0_rgba(4,120,87,0.35)]'
-    return 'bg-sky-500 text-white border-sky-700 shadow-[inset_0_-2px_0_rgba(3,105,161,0.4)]'
+    if(status === 'OCCUPIED') return 'bg-gradient-to-br from-red-500 to-red-700 text-white border-red-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_5px_10px_rgba(185,28,28,0.22)]'
+    if(status === 'RESERVED') return 'bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 border-amber-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_5px_10px_rgba(217,119,6,0.18)]'
+    if(status === 'AVAILABLE') return 'bg-gradient-to-br from-emerald-300 to-emerald-500 text-slate-950 border-emerald-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.34),0_5px_10px_rgba(5,150,105,0.18)]'
+    return 'bg-gradient-to-br from-sky-400 to-sky-600 text-white border-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_5px_10px_rgba(3,105,161,0.2)]'
 }
 
 function getAvailableRoomStatusDescription(room={}){
@@ -746,9 +746,9 @@ function renderAvailableRoomsBoard(){
                                 <span>Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}</span>
                                 <span class="${isCompactLayout ? 'text-white/70' : 'font-medium text-slate-500'}">(${floorRooms.length})</span>
                             </div>
-                            <div class="${isCompactLayout ? 'grid gap-[3px] mt-[3px]' : 'grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2'}" ${isCompactLayout ? 'style="grid-template-columns:repeat(auto-fill,minmax(34px,1fr));"' : ''}>
+                            <div class="${isCompactLayout ? 'grid gap-1 mt-1' : 'grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2'}" ${isCompactLayout ? 'style="grid-template-columns:repeat(auto-fill,minmax(42px,1fr));"' : ''}>
                                 ${floorRooms.map((data) => isCompactLayout ? `
-                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" title="Room ${data.roomnumber || '-'} - ${getAvailableRoomStatusLabel(data.roomstatus)}${getAvailableRoomStatusDescription(data) ? ' - ' + getAvailableRoomStatusDescription(data) : ''}" class="relative h-[24px] min-w-0 rounded-[4px] border px-[2px] text-[10px] font-black leading-none ${getAvailableRoomCompactTileClass(data.roomstatus)} transition hover:scale-105 hover:ring-2 hover:ring-slate-900/20 focus:outline-none focus:ring-2 focus:ring-slate-900/30">
+                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" title="Room ${data.roomnumber || '-'} - ${getAvailableRoomStatusLabel(data.roomstatus)}${getAvailableRoomStatusDescription(data) ? ' - ' + getAvailableRoomStatusDescription(data) : ''}" class="relative h-[30px] min-w-0 rounded-md border px-1 text-[11px] font-black leading-none ${getAvailableRoomCompactTileClass(data.roomstatus)} transition hover:-translate-y-[1px] hover:scale-[1.04] hover:ring-2 hover:ring-slate-900/20 focus:outline-none focus:ring-2 focus:ring-slate-900/30">
                                         <span class="block truncate">${data.roomnumber || '-'}</span>
                                     </button>
                                 ` : `
