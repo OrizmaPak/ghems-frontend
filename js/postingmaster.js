@@ -141,6 +141,24 @@ let checkinOrgContextChangeLock = false
 let checkinViewTableSource = []
 let postingMasterCancelPanelInitialized = false
 
+function postingMasterSwitchInnerPanel(panelId = 'postingmasterform') {
+    const panelIds = ['postingmasterform', 'postingmasterview', 'cancelpostingmasterform', 'cancelpostingmasterview']
+    panelIds.forEach((id) => {
+        const node = did(id)
+        if(node) node.classList.toggle('hidden', id !== panelId)
+    })
+
+    // Keep legacy optioner highlighting in sync without relying on global runoptioner side effects.
+    const optionNames = ['postingmasterform', 'postingmasterview', 'cancelpostingmasterform', 'cancelpostingmasterview']
+    optionNames.forEach((name) => {
+        document.querySelectorAll(`.optioner[name="${name}"]`).forEach((optioner) => {
+            const active = name === panelId
+            optioner.classList.toggle('active', active)
+            optioner.classList.toggle('!text-blue-600', active)
+        })
+    })
+}
+
 function postingMasterSetModuleTab(tabName = 'postingmasterform') {
     const managePanel = did('postingmastermodulemanagepanel')
     const cancelPanel = did('postingmastermodulecancelpanel')
@@ -163,8 +181,7 @@ function postingMasterSetModuleTab(tabName = 'postingmasterform') {
         }, 0)
     }
 
-    const targetOptioner = document.querySelector(`.optioner[name="${tabName}"]`)
-    if(targetOptioner) runoptioner(targetOptioner)
+    postingMasterSwitchInnerPanel(tabName)
 }
 
 function postingMasterOpenCancelTab(reference = '') {
