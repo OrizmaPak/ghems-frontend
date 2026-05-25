@@ -1,5 +1,5 @@
             <div id="postingmastermodulewrapper" class="animate__animated animate__fadeIn">
-                <ul id="postingmastermoduletabs" class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400 mb-3">
+                <ul id="postingmastermoduletabs" class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400 mb-3 opacity-0 pointer-events-none transition-opacity duration-150">
                     <li class="me-2 cp active" data-postingmaster-tab="postingmasterform">
                         <button type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 !text-blue-600">Posting Master</button>
                     </li>
@@ -19,7 +19,7 @@
                             <!--    <span>POSTING MASTER</span>-->
                             <!--</p>-->
 
-                             <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400">
+                             <ul class="hidden flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('guestsreservationsform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
                                 <li id="iddpostingmasterform" class="me-2 cp updater optioner !text-blue-600 active" name="postingmasterform" onclick="runoptioner(this)">
                                     <p class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Posting Master</p>

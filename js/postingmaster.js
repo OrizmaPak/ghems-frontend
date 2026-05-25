@@ -208,6 +208,7 @@ async function postingMasterInitModuleTabs() {
     const openCancel = sessionStorage.getItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY) === '1' || (!canManage && canCancel)
     sessionStorage.removeItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY)
     postingMasterSetModuleTab(openCancel ? 'cancelpostingmasterform' : 'postingmasterform')
+    tabsRoot.classList.remove('opacity-0', 'pointer-events-none')
 }
 
 function postingMasterNormalizeReservationRow(row = {}) {
