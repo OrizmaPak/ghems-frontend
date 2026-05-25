@@ -558,6 +558,17 @@ function groupAvailableRoomsByFloor(rooms=[]){
         })
 }
 
+function groupAvailableRoomsByStatus(rooms=[]){
+    const order = ['AVAILABLE', 'RESERVED', 'OCCUPIED', 'OTHER']
+    const grouped = new Map(order.map(status => [status, []]))
+    rooms.forEach((room)=>{
+        const status = normalizeRoomStatus(room.roomstatus)
+        if(!grouped.has(status)) grouped.set(status, [])
+        grouped.get(status).push(room)
+    })
+    return order.map(status => [status, grouped.get(status) || []])
+}
+
 function clearAvailableRoomFilters(){
     availableRoomsState.search = ''
     availableRoomsState.status = 'ALL'
@@ -604,6 +615,92 @@ function openCheckinFromAvailableRoom(room){
 function setAvailableRoomsAutoRefresh(enabled){
     availableRoomsState.autoRefresh = !!enabled
     renderAvailableRoomsBoard()
+}
+
+function renderAvailableRoomCompactButton(data = {}, extraClass = ''){
+    return `
+        <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" title="Room ${data.roomnumber || '-'} - ${getAvailableRoomStatusLabel(data.roomstatus)}${getAvailableRoomStatusDescription(data) ? ' - ' + getAvailableRoomStatusDescription(data) : ''}" class="relative h-[30px] min-w-0 rounded-md border px-1 text-[11px] font-black leading-none ${getAvailableRoomCompactTileClass(data.roomstatus)} ${extraClass} transition hover:-translate-y-[1px] hover:scale-[1.04] hover:ring-2 hover:ring-slate-900/20 focus:outline-none focus:ring-2 focus:ring-slate-900/30">
+            <span class="block truncate">${data.roomnumber || '-'}</span>
+        </button>
+    `
+}
+
+function renderAvailableRoomCardButton(data = {}){
+    return `
+        <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} group relative overflow-hidden border rounded-xl min-h-[88px] p-0 shadow-[0_10px_24px_rgba(15,23,42,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(15,23,42,0.16)] focus:outline-none focus:ring-2 focus:ring-slate-900/10">
+            <span class="absolute inset-x-0 top-0 h-[3px] ${getAvailableRoomAccentClass(data.roomstatus)}"></span>
+            <span class="absolute -right-7 -top-8 h-16 w-16 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} opacity-10"></span>
+            <div class="relative flex h-full min-h-[88px] flex-col justify-between p-2">
+                <div class="flex items-start justify-between gap-1">
+                    <span class="max-w-[76%] truncate rounded-full px-2 py-[2px] text-[8px] font-black uppercase tracking-wide ring-1 ${getAvailableRoomStatusPillClass(data.roomstatus)}">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
+                    <span class="mt-1 h-2.5 w-2.5 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} shadow-[0_0_0_3px_rgba(255,255,255,0.95)]"></span>
+                </div>
+                <div class="text-left">
+                    <div class="flex items-end gap-1">
+                        <span class="text-[26px] leading-none font-black tracking-[-0.04em] text-slate-950">${data.roomnumber || '-'}</span>
+                        <span class="material-symbols-outlined mb-0.5 text-slate-300 transition-colors group-hover:text-slate-500" style="font-size:15px;">door_front</span>
+                    </div>
+                    ${getAvailableRoomStatusDescription(data) ? `<div class="mt-1 max-w-full truncate text-[9px] font-semibold text-slate-500">${getAvailableRoomStatusDescription(data)}</div>` : ''}
+                </div>
+                <div class="border-t border-slate-100 pt-1">
+                    <div class="w-full truncate text-left text-[8px] font-black uppercase tracking-wide text-slate-600">${getAvailableRoomCategoryLabel(data)}</div>
+                </div>
+            </div>
+        </button>
+    `
+}
+
+function renderAvailableRoomsLayout(filtered = [], groupedByFloor = []){
+    const layout = availableRoomsState.layout || 'compact'
+    if(!filtered.length) return `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`
+
+    if(layout === 'status') {
+        return `
+            <div class="grid h-full grid-cols-2 xl:grid-cols-4 gap-2">
+                ${groupAvailableRoomsByStatus(filtered).map(([status, rooms]) => `
+                    <section class="min-h-0 rounded-md border border-slate-200 bg-slate-50 p-2 flex flex-col">
+                        <div class="mb-2 flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-black uppercase ring-1 ${getAvailableRoomStatusPillClass(status)}">
+                                <span class="h-2 w-2 rounded-full ${getAvailableRoomAccentClass(status)}"></span>
+                                ${status}
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-500">${rooms.length}</span>
+                        </div>
+                        <div class="grid gap-1 overflow-hidden" style="grid-template-columns:repeat(auto-fill,minmax(42px,1fr));">
+                            ${rooms.map(room => renderAvailableRoomCompactButton(room)).join('') || `<div class="col-span-full text-center text-[11px] text-slate-400 py-4">No rooms</div>`}
+                        </div>
+                    </section>
+                `).join('')}
+            </div>
+        `
+    }
+
+    if(layout === 'floor') {
+        return groupedByFloor.map(([floorLabel, floorRooms]) => `
+            <section class="mb-2 rounded-md border border-slate-200 bg-white p-2">
+                <div class="mb-2 flex items-center justify-between bg-slate-950 text-white rounded px-2 py-1 text-[10px] font-black uppercase">
+                    <span>Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}</span>
+                    <span class="text-white/70">${floorRooms.length}</span>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                    ${floorRooms.map(room => renderAvailableRoomCompactButton(room, 'flex-none w-[46px]')).join('')}
+                </div>
+            </section>
+        `).join('')
+    }
+
+    const isCompactLayout = layout === 'compact'
+    return groupedByFloor.map(([floorLabel, floorRooms]) => `
+        <section class="${isCompactLayout ? 'mb-1' : 'mb-3'}">
+            <div class="${isCompactLayout ? 'flex items-center justify-between bg-slate-900 text-white rounded px-1.5 py-[2px] text-[9px] font-black uppercase' : 'sticky top-0 z-10 bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 mb-1'}">
+                <span>Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}</span>
+                <span class="${isCompactLayout ? 'text-white/70' : 'font-medium text-slate-500'}">(${floorRooms.length})</span>
+            </div>
+            <div class="${isCompactLayout ? 'grid gap-1 mt-1' : 'grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2'}" ${isCompactLayout ? 'style="grid-template-columns:repeat(auto-fill,minmax(42px,1fr));"' : ''}>
+                ${floorRooms.map((data) => isCompactLayout ? renderAvailableRoomCompactButton(data) : renderAvailableRoomCardButton(data)).join('')}
+            </div>
+        </section>
+    `).join('')
 }
 
 function ensureAvailableRoomSliderEventsBound(){
@@ -684,7 +781,7 @@ function renderAvailableRoomsBoard(){
 
     const validDetail = availableRoomsDetail && availableRoomsDataset.find(item => String(item.roomnumber || '') === String(availableRoomsDetail.roomnumber || ''))
     if(!validDetail) availableRoomsDetail = null
-    const isCompactLayout = availableRoomsState.layout !== 'cards'
+    const currentLayout = availableRoomsState.layout || 'compact'
 
     host.innerHTML = `
         <div class="h-full overflow-hidden flex flex-col gap-2">
@@ -712,11 +809,19 @@ function renderAvailableRoomsBoard(){
             <div class="sticky top-[104px] z-20 bg-white/95 border border-slate-200 rounded-md p-2 shadow-sm">
                 <div class="flex flex-wrap gap-1 mb-2">
                     ${pills.map(pill => `<button data-ar-status="${pill.key}" class="px-2 py-1 text-[10px] rounded border ${availableRoomsState.status === pill.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300'}">${pill.label}</button>`).join('')}
-                    <button data-ar-layout="compact" class="ml-auto inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${isCompactLayout ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Compact layout">
+                    <button data-ar-layout="compact" class="ml-auto inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${currentLayout === 'compact' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Compact layout">
                         <span class="material-symbols-outlined" style="font-size:14px;">grid_view</span>
                         Compact
                     </button>
-                    <button data-ar-layout="cards" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${!isCompactLayout ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Card layout">
+                    <button data-ar-layout="floor" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${currentLayout === 'floor' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Floor map layout">
+                        <span class="material-symbols-outlined" style="font-size:14px;">view_stream</span>
+                        Floor Map
+                    </button>
+                    <button data-ar-layout="status" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${currentLayout === 'status' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Status columns layout">
+                        <span class="material-symbols-outlined" style="font-size:14px;">view_column</span>
+                        Status
+                    </button>
+                    <button data-ar-layout="cards" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${currentLayout === 'cards' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Card layout">
                         <span class="material-symbols-outlined" style="font-size:14px;">dashboard</span>
                         Cards
                     </button>
@@ -739,43 +844,8 @@ function renderAvailableRoomsBoard(){
                 </div>
             </div>
             <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'} gap-2 overflow-hidden">
-                <div class="border border-slate-200 rounded-md p-2 ${isCompactLayout ? 'overflow-hidden' : 'overflow-y-auto'} bg-white">
-                    ${filtered.length ? groupedByFloor.map(([floorLabel, floorRooms]) => `
-                        <section class="${isCompactLayout ? 'mb-1' : 'mb-3'}">
-                            <div class="${isCompactLayout ? 'flex items-center justify-between bg-slate-900 text-white rounded px-1.5 py-[2px] text-[9px] font-black uppercase' : 'sticky top-0 z-10 bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-700 mb-1'}">
-                                <span>Floor ${floorLabel === 'UNSPECIFIED' ? 'Unspecified' : floorLabel}</span>
-                                <span class="${isCompactLayout ? 'text-white/70' : 'font-medium text-slate-500'}">(${floorRooms.length})</span>
-                            </div>
-                            <div class="${isCompactLayout ? 'grid gap-1 mt-1' : 'grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2'}" ${isCompactLayout ? 'style="grid-template-columns:repeat(auto-fill,minmax(42px,1fr));"' : ''}>
-                                ${floorRooms.map((data) => isCompactLayout ? `
-                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" title="Room ${data.roomnumber || '-'} - ${getAvailableRoomStatusLabel(data.roomstatus)}${getAvailableRoomStatusDescription(data) ? ' - ' + getAvailableRoomStatusDescription(data) : ''}" class="relative h-[30px] min-w-0 rounded-md border px-1 text-[11px] font-black leading-none ${getAvailableRoomCompactTileClass(data.roomstatus)} transition hover:-translate-y-[1px] hover:scale-[1.04] hover:ring-2 hover:ring-slate-900/20 focus:outline-none focus:ring-2 focus:ring-slate-900/30">
-                                        <span class="block truncate">${data.roomnumber || '-'}</span>
-                                    </button>
-                                ` : `
-                                    <button data-ar-action="open-details" data-room-number="${data.roomnumber || ''}" class="ar-room-tile ${getAvailableRoomStatusClass(data.roomstatus)} group relative overflow-hidden border rounded-xl min-h-[88px] p-0 shadow-[0_10px_24px_rgba(15,23,42,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(15,23,42,0.16)] focus:outline-none focus:ring-2 focus:ring-slate-900/10">
-                                        <span class="absolute inset-x-0 top-0 h-[3px] ${getAvailableRoomAccentClass(data.roomstatus)}"></span>
-                                        <span class="absolute -right-7 -top-8 h-16 w-16 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} opacity-10"></span>
-                                        <div class="relative flex h-full min-h-[88px] flex-col justify-between p-2">
-                                            <div class="flex items-start justify-between gap-1">
-                                                <span class="max-w-[76%] truncate rounded-full px-2 py-[2px] text-[8px] font-black uppercase tracking-wide ring-1 ${getAvailableRoomStatusPillClass(data.roomstatus)}">${getAvailableRoomStatusLabel(data.roomstatus)}</span>
-                                                <span class="mt-1 h-2.5 w-2.5 rounded-full ${getAvailableRoomAccentClass(data.roomstatus)} shadow-[0_0_0_3px_rgba(255,255,255,0.95)]"></span>
-                                            </div>
-                                            <div class="text-left">
-                                                <div class="flex items-end gap-1">
-                                                    <span class="text-[26px] leading-none font-black tracking-[-0.04em] text-slate-950">${data.roomnumber || '-'}</span>
-                                                    <span class="material-symbols-outlined mb-0.5 text-slate-300 transition-colors group-hover:text-slate-500" style="font-size:15px;">door_front</span>
-                                                </div>
-                                                ${getAvailableRoomStatusDescription(data) ? `<div class="mt-1 max-w-full truncate text-[9px] font-semibold text-slate-500">${getAvailableRoomStatusDescription(data)}</div>` : ''}
-                                            </div>
-                                            <div class="border-t border-slate-100 pt-1">
-                                                <div class="w-full truncate text-left text-[8px] font-black uppercase tracking-wide text-slate-600">${getAvailableRoomCategoryLabel(data)}</div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </section>
-                    `).join('') : `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`}
+                <div class="border border-slate-200 rounded-md p-2 ${currentLayout === 'compact' || currentLayout === 'status' ? 'overflow-hidden' : 'overflow-y-auto'} bg-white">
+                    ${renderAvailableRoomsLayout(filtered, groupedByFloor)}
                 </div>
                 ${availableRoomsDetail ? `
                     <div class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-[0_16px_36px_rgba(15,23,42,0.12)] overflow-y-auto">
