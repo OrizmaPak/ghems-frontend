@@ -655,7 +655,12 @@ function postingMasterGetCheckinRequiredIds(formId = '') {
     }
 
     const optionalPaymentIds = ['amountpaid', 'paymentmethod', 'bankname', 'otherdetails', 'receivingbank']
-    return ids.filter(id => id && !optionalPaymentIds.includes(id))
+    return ids.filter(id => {
+        if(!id) return false
+        if(optionalPaymentIds.includes(id)) return false
+        if(formId === 'postingmasterform' && String(id).startsWith('roomnumber-')) return false
+        return true
+    })
 }
 
 function postingMasterShowCheckinValidationFeedback(formId = '') {
