@@ -926,6 +926,19 @@ function postingMasterOpenGuestReservationForEdit(id = '') {
     postingMasterFetchcheckinn(reservationId)
 }
 
+function postingMasterOpenPostingMasterForEdit(id = '', status = '') {
+    const reservationId = String(id || '').trim()
+    if(!reservationId) return
+    const normalizedStatus = String(status || '').trim().toUpperCase()
+    const editableStatuses = new Set(['OPEN', 'RESERVED', 'CHECKED IN'])
+    if(!editableStatuses.has(normalizedStatus)) return notification('Checked out posting master cannot be edited.', 0)
+
+    postingMasterSetModuleTab('manage')
+    const postingMasterUpdaterTab = document.querySelector('.optioner[name="postingmasterform"]')
+    if(postingMasterUpdaterTab) runoptioner(postingMasterUpdaterTab)
+    postingMasterFetchcheckinn(reservationId)
+}
+
 function postingMasterNormalizeRoomNumberDisplay(value = '') {
     const normalized = String(value ?? '').trim()
     if (!normalized || normalized === '0') return ''
@@ -2900,6 +2913,7 @@ async function postingMasterOncheckinTableDataSignal() {
                 <button title="Reverse Posting Master" onclick="postingMasterReverseareservation('${item.reservations.id}', 'checked in')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED IN' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Reverse Check Out" onclick="postingMasterReverseareservation('${item.reservations.id}', 'checked out')" class="material-symbols-outlined ${item.reservations.status == 'CHECKED OUT' ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} rounded-full bg-red-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete_history</button>
                 <button title="Edit Reservation" onclick="postingMasterOpenGuestReservationForEdit('${item.reservations.id}')" class="${did('guestreservationform') ? '' : 'hidden'} ${item.reservations.status == 'CHECKED IN' || item.reservations.status == 'CHECKED OUT' ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
+                <button title="Edit Posting Master" onclick="postingMasterOpenPostingMasterForEdit('${item.reservations.id}', '${item.reservations.status}')" class="${did('postingmasterform') ? '' : 'hidden'} ${['OPEN','RESERVED','CHECKED IN'].includes(String(item.reservations.status || '').toUpperCase()) ? '' : 'hidden'} material-symbols-outlined rounded-full bg-blue-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit_square</button>
                 <button title="Edit row entry" onclick="postingMasterFetchcheckinn('${item.reservations.id}')" class="${item.reservations.status == 'CHECKED IN' ? 'hidden' : ''} ${did('cancelreservationformfilter') ? '' : 'hidden'} ${!did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                 <button title="Cancel Reservation" onclick="postingMasterRemoveguestsreservations('${item.reservations.reference}')" class="${item.reservations.status != 'CHECKED IN' ? '' : 'hidden'} material-symbols-outlined rounded-full bg-red-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">delete</button>
                 <button title="Make Payment" onclick="postingMasterOpenReceiveDepositFromDirectCheckin('${item.reservations.reference}')" class="${did('postingmasterform') ? '' : 'hidden'} ${did('noshowform') ? 'hidden' : ''} material-symbols-outlined rounded-full bg-emerald-600 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">payments</button>
@@ -3899,6 +3913,7 @@ window.postingMasterTravelssubmithandler = postingMasterTravelssubmithandler
 window.postingMasterCompanysubmithandler = postingMasterCompanysubmithandler
 window.postingMasterGroupssubmithandler = postingMasterGroupssubmithandler
 window.postingMasterChecksessionstorage = postingMasterChecksessionstorage
+window.postingMasterOpenPostingMasterForEdit = postingMasterOpenPostingMasterForEdit
 window.postingMasterRenderSummaryMetric = postingMasterRenderSummaryMetric
 window.postingMasterGrouptravelagentres = postingMasterGrouptravelagentres
 window.postingMasterReverseareservation = postingMasterReverseareservation
