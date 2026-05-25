@@ -141,37 +141,37 @@ let checkinOrgContextChangeLock = false
 let checkinViewTableSource = []
 let postingMasterCancelPanelInitialized = false
 
-function postingMasterSetModuleTab(tabName = 'manage') {
+function postingMasterSetModuleTab(tabName = 'postingmasterform') {
     const managePanel = did('postingmastermodulemanagepanel')
     const cancelPanel = did('postingmastermodulecancelpanel')
-    const manageTab = document.querySelector('[data-postingmaster-tab="manage"]')
-    const cancelTab = document.querySelector('[data-postingmaster-tab="cancel"]')
-    if(!managePanel || !cancelPanel || !manageTab || !cancelTab) return
+    if(!managePanel || !cancelPanel) return
+    const isCancelSide = tabName === 'cancelpostingmasterform' || tabName === 'cancelpostingmasterview'
+    managePanel.classList.toggle('hidden', isCancelSide)
+    cancelPanel.classList.toggle('hidden', !isCancelSide)
 
-    const isCancel = tabName === 'cancel'
-    managePanel.classList.toggle('hidden', isCancel)
-    cancelPanel.classList.toggle('hidden', !isCancel)
-    manageTab.classList.toggle('active', !isCancel)
-    cancelTab.classList.toggle('active', isCancel)
+    const allTabs = Array.from(document.querySelectorAll('#postingmastermoduletabs [data-postingmaster-tab]'))
+    allTabs.forEach((tabEl) => {
+        const active = tabEl.getAttribute('data-postingmaster-tab') === tabName
+        tabEl.classList.toggle('active', active)
+        tabEl.querySelector('button')?.classList.toggle('!text-blue-600', active)
+    })
 
-    const manageBtn = manageTab.querySelector('button')
-    const cancelBtn = cancelTab.querySelector('button')
-    manageBtn?.classList.toggle('!text-blue-600', !isCancel)
-    cancelBtn?.classList.toggle('!text-blue-600', isCancel)
-
-    if(isCancel && !postingMasterCancelPanelInitialized){
+    if(isCancelSide && !postingMasterCancelPanelInitialized){
         postingMasterCancelPanelInitialized = true
         setTimeout(() => {
             if(typeof cancelpostingmasterActive === 'function') cancelpostingmasterActive(true)
         }, 0)
     }
+
+    const targetOptioner = document.querySelector(`.optioner[name="${tabName}"]`)
+    if(targetOptioner) runoptioner(targetOptioner)
 }
 
 function postingMasterOpenCancelTab(reference = '') {
-    const cancelTab = document.getElementById('postingmastercanceltab')
+    const cancelTab = document.getElementById('postingmastercancelformtab')
     if(cancelTab?.classList.contains('hidden')) return
     if(reference) sessionStorage.setItem('cancelpostingmaster', reference)
-    postingMasterSetModuleTab('cancel')
+    postingMasterSetModuleTab('cancelpostingmasterform')
     postingMasterCancelPostingMasterCheck()
 }
 
@@ -183,23 +183,31 @@ async function postingMasterInitModuleTabs() {
     const granted = profile?.grantedPermissions instanceof Set ? profile.grantedPermissions : new Set()
     const canManage = granted.has('*') || granted.has('POSTING MASTER')
     const canCancel = granted.has('*') || granted.has('CANCEL POSTING MASTER')
-    const manageTab = document.querySelector('[data-postingmaster-tab="manage"]')
-    const cancelTab = did('postingmastercanceltab')
+    const manageTabs = [
+        document.querySelector('[data-postingmaster-tab="postingmasterform"]'),
+        document.querySelector('[data-postingmaster-tab="postingmasterview"]')
+    ]
+    const cancelTabs = [did('postingmastercancelformtab'), did('postingmastercancelviewtab')]
 
-    if(cancelTab) cancelTab.classList.toggle('hidden', !canCancel)
-    if(manageTab) manageTab.classList.toggle('hidden', !canManage)
+    cancelTabs.forEach((tab) => tab?.classList.toggle('hidden', !canCancel))
+    manageTabs.forEach((tab) => tab?.classList.toggle('hidden', !canManage))
     if(did('cancelpostingmaster')) did('cancelpostingmaster').classList.add('hidden')
+
+    const legacyManageTabs = document.querySelectorAll('#postingmastermodulemanagepanel .optioner[name="postingmasterform"], #postingmastermodulemanagepanel .optioner[name="postingmasterview"]')
+    legacyManageTabs.forEach((node) => node.closest('ul')?.classList.add('hidden'))
+    const legacyCancelTabs = document.querySelectorAll('#postingmastermodulecancelpanel .optioner[name="cancelpostingmasterform"], #postingmastermodulecancelpanel .optioner[name="cancelpostingmasterview"]')
+    legacyCancelTabs.forEach((node) => node.closest('ul')?.classList.add('hidden'))
 
     tabsRoot.addEventListener('click', (event) => {
         const tabNode = event.target?.closest?.('[data-postingmaster-tab]')
         if(!tabNode) return
         const tabName = tabNode.getAttribute('data-postingmaster-tab')
-        postingMasterSetModuleTab(tabName === 'cancel' ? 'cancel' : 'manage')
+        postingMasterSetModuleTab(tabName || 'postingmasterform')
     })
 
     const openCancel = sessionStorage.getItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY) === '1' || (!canManage && canCancel)
     sessionStorage.removeItem(POSTING_MASTER_CANCEL_TAB_SESSION_KEY)
-    postingMasterSetModuleTab(openCancel ? 'cancel' : 'manage')
+    postingMasterSetModuleTab(openCancel ? 'cancelpostingmasterform' : 'postingmasterform')
 }
 
 function postingMasterNormalizeReservationRow(row = {}) {
@@ -933,7 +941,7 @@ function postingMasterOpenPostingMasterForEdit(id = '', status = '') {
     const editableStatuses = new Set(['OPEN', 'RESERVED', 'CHECKED IN'])
     if(!editableStatuses.has(normalizedStatus)) return notification('Checked out posting master cannot be edited.', 0)
 
-    postingMasterSetModuleTab('manage')
+    postingMasterSetModuleTab('postingmasterform')
     const postingMasterUpdaterTab = document.querySelector('.optioner[name="postingmasterform"]')
     if(postingMasterUpdaterTab) runoptioner(postingMasterUpdaterTab)
     postingMasterFetchcheckinn(reservationId)

@@ -1,10 +1,16 @@
             <div id="postingmastermodulewrapper" class="animate__animated animate__fadeIn">
                 <ul id="postingmastermoduletabs" class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 cark:border-gray-700 cark:text-gray-400 mb-3">
-                    <li class="me-2 cp active" data-postingmaster-tab="manage">
+                    <li class="me-2 cp active" data-postingmaster-tab="postingmasterform">
                         <button type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 !text-blue-600">Posting Master</button>
                     </li>
-                    <li class="me-2 cp hidden" id="postingmastercanceltab" data-postingmaster-tab="cancel">
+                    <li class="me-2 cp" data-postingmaster-tab="postingmasterview">
+                        <button type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Posting Master</button>
+                    </li>
+                    <li class="me-2 cp hidden" id="postingmastercancelformtab" data-postingmaster-tab="cancelpostingmasterform">
                         <button type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">Cancel Posting Master</button>
+                    </li>
+                    <li class="me-2 cp hidden" id="postingmastercancelviewtab" data-postingmaster-tab="cancelpostingmasterview">
+                        <button type="button" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50">View Cancelled Posting Master</button>
                     </li>
                 </ul>
                 <div id="postingmastermodulemanagepanel">
