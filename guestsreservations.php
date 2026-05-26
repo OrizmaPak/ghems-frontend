@@ -1034,6 +1034,7 @@
                                                 <th>Guest</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
+                                                <th>rate&nbsp;per&nbsp;day</th>
                                                 <th>reservation&nbsp;type</th>
                                                 <th>arrival&nbsp;date</th>
                                                 <th>departure&nbsp;date</th>
