@@ -1020,6 +1020,7 @@
                                                 <th>guest</th>
                                                 <th>no.&nbsp;of&nbsp;nights</th>
                                                 <th>total&nbsp;rate</th>
+                                                <th>rate&nbsp;per&nbsp;day</th>
                                                 <th>arrival&nbsp;date</th>
                                                 <th>departure&nbsp;date</th>
                                                 <th>billing&nbsp;info</th>

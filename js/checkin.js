@@ -2670,6 +2670,8 @@ async function oncheckinTableDataSignal() {
             if(item.roomgeustrow[i].roomdata.roomrate)r = Number(item.roomgeustrow[i].roomdata.roomrate)+r
         }
     }
+    const nightsCount = Number(item?.reservations?.numberofnights || 0)
+    const ratePerDay = nightsCount > 0 ? (Number(r) / nightsCount) : 0
     const companyOrTravelAgency = String(
         item?.reservations?.companyname ||
         item?.reservations?.travelagentname ||
@@ -2758,6 +2760,7 @@ async function oncheckinTableDataSignal() {
         </td>
         <td>${formatNumber(item.reservations.numberofnights)}&nbsp;Night(s)</td> 
         <td>${formatNumber(r)}</td>
+        <td>${formatNumber(ratePerDay)}</td>
         <td>${formatDate(item.reservations.arrivaldate)}</td>
         <td>${formatDate(item.reservations.departuredate)}</td>
         <td>${item.reservations.billinginfo}</td>
