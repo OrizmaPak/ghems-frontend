@@ -297,6 +297,11 @@ const routerTree = {
         startingFunction: 'groupfolioActive',
         scriptName: './js/guestfolio.js'
     },
+    directdebit: {
+        template: 'directdebit',
+        startingFunction: 'directdebitActive',
+        scriptName: './js/directdebit.js'
+    },
     nightauditreport: {
         template: 'nightauditreport',
         startingFunction: 'nightauditreportActive',

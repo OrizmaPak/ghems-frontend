@@ -257,6 +257,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                                         <li class="navitem-child text-[#292929] hidden" title="Select a company to view folio entries and balances." id="companyfolio">Company Folio</li>
                                         <li class="navitem-child text-[#292929] hidden" title="Select an agency to view folio entries and balances." id="agencyfolio">Travel Agency Folio</li>
                                         <li class="navitem-child text-[#292929] hidden" title="Select a group to view folio entries and balances." id="groupfolio">Group Folio</li>
+                                        <li class="navitem-child text-[#292929] hidden" title="Post direct debit against room folio by sales point." id="directdebit">Direct Debit</li>
                                     </ul>
                                 </li>
                                 <li class="nav-item"> 
