@@ -299,7 +299,7 @@ function getGuestFolioOrganisationProfile() {
 }
 
 function classifyGuestFolioSummary(description = '') {
-    const text = String(description || '').toLowerCase()
+    const text = String(formatReceivableDescription(description) || '').toLowerCase()
     if(text.includes('accommodation') || text.includes('booking')) return 'Accommodation'
     if(text.includes('discount')) return 'Tariff Discount'
     if(text.includes('restaurant') || text.includes('meal') || text.includes('food')) return 'Restaurant Bill'
@@ -411,7 +411,7 @@ function openGuestFolioPrint(guestId = '') {
             <tr>
                 <td style="border:1px solid #ccc;padding:4px 6px;">${specialformatDateTime(tx.transactiondate || '')}</td>
                 <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(tx.reference)}</td>
-                <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(tx.description)}</td>
+                <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(formatReceivableDescription(tx.description))}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.debit)}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.credit)}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.runningBalance)}</td>
@@ -1070,11 +1070,14 @@ function formatReceivableTransactionDate(value){
 
 function formatReceivableDescription(value){
     if(!value)return ''
+    const text = String(value).trim()
+    if(!text) return ''
 
-    const parts = String(value).split('|').map(part => part.trim())
-    if(parts.length >= 3 && parts[1])return parts[1]
-
-    return value
+    // PM suffix is appended as "||| PM - room - guest"; keep base description in folio grids/prints.
+    const base = text.split('|||')[0].trim()
+    const parts = base.split('|').map(part => part.trim()).filter(Boolean)
+    if(parts.length >= 3 && parts[1]) return parts[1]
+    return base
 }
 
 function getReceivableRunningBalance(index){

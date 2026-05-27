@@ -1027,21 +1027,21 @@
                                     <table id="tableer">
                                         <thead>
                                             <tr>
-                                                 <th style="width: 20px">s/n</th> 
+                                                <th style="width: 20px">s/n</th>
                                                 <th>action</th>
                                                 <th>Rooms</th>
                                                 <th>balance</th>
                                                 <th>Guest</th>
-                                                <th>no.&nbsp;of&nbsp;nights</th>
-                                                <th>total&nbsp;rate</th>
-                                                <th>rate&nbsp;per&nbsp;day</th>
-                                                <th>arrival&nbsp;date</th>
-                                                <th>departure&nbsp;date</th>
-                                                <th>billing&nbsp;info</th>
-                                                <th>company/travel&nbsp;agency</th>
-                                                <th>reservation&nbsp;date</th>
+                                                <th>no. of nights</th>
+                                                <th>total rate</th>
+                                                <th>rate per day</th>
+                                                <th>arrival date</th>
+                                                <th>departure date</th>
+                                                <th>billing info</th>
+                                                <th>company/travel agency</th>
+                                                <th>reservation date</th>
                                                 <th>reference</th>
-                                                <th>initial&nbsp;deposit</th>
+                                                <th>initial deposit</th>
                                                 <th>timeline</th>
                                                 <th>status</th>
                                             </tr>
