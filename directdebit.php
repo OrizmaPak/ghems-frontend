@@ -17,7 +17,7 @@
                     <input type="text" id="roomnumber" name="roomnumber" list="hems_roomnumber_id" class="form-control comp" placeholder="Enter room number">
                 </div>
                 <div class="form-group">
-                    <label class="control-label">Tariff/Debit Amount</label>
+                    <label class="control-label">Amount(Debit)</label>
                     <input type="number" min="0" step="0.01" id="debitamount" name="debitamount" class="form-control comp" placeholder="0.00">
                 </div>
                 <div class="form-group">

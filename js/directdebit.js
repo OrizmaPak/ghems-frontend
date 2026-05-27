@@ -39,7 +39,7 @@ async function hydrateDirectDebitSalesPoints() {
 }
 
 async function directdebitFormSubmitHandler() {
-    if(!validateForm('directdebitform', ['salespoint', 'roomnumber', 'debitamount', 'narration'])) {
+    if(!validateForm('directdebitform', ['salespoint', 'roomnumber', 'debitamount'])) {
         return notification('Please enter all compulsory fields', 0)
     }
 
