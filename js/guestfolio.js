@@ -115,6 +115,8 @@ function normalizeGuestFolioRows(payload = []) {
                 guestname: guestName,
                 createdAt: guest?.created_at || guest?.tlog || '',
                 guest,
+                guestRows: [],
+                reservation: null,
                 company: null,
                 travelagency: null,
                 groups: null,
@@ -127,6 +129,7 @@ function normalizeGuestFolioRows(payload = []) {
     payload.forEach((entry) => {
         const guest = entry?.guest || {}
         const bucket = ensureGuestBucket(guest)
+        if(entry?.reservations) bucket.reservation = entry.reservations
         if(entry?.company) bucket.company = entry.company
         if(entry?.travelagency) bucket.travelagency = entry.travelagency
         if(entry?.groups) bucket.groups = entry.groups
@@ -214,6 +217,8 @@ function normalizeOrganisationFolioRows(payload = []) {
                 guestid: bucketId,
                 guestname: orgName,
                 guest: {},
+                guestRows: [],
+                reservation: null,
                 company,
                 travelagency,
                 groups,
@@ -226,6 +231,8 @@ function normalizeOrganisationFolioRows(payload = []) {
     payload.forEach((entry, entryIndex) => {
         const bucket = ensureOrganisationBucket(entry, entryIndex)
         const guestRows = Array.isArray(entry?.guest) ? entry.guest : []
+        if(guestRows.length) bucket.guestRows = guestRows
+        if(entry?.reservations) bucket.reservation = entry.reservations
         const roomNumbers = guestRows.map((row) => String(row?.roomnumber || '').trim()).filter(Boolean)
         const roomIdentifier = roomNumbers.join(', ')
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
@@ -317,6 +324,8 @@ function getGuestFolioPrintModel(guestId = '') {
         const dateB = new Date(String(b?.transactiondate || '').replace(' ', 'T')).getTime() || 0
         return dateA - dateB
     })
+    const primaryGuestRow = Array.isArray(bucket.guestRows) && bucket.guestRows.length ? bucket.guestRows[0] : {}
+    const reservation = bucket.reservation || {}
 
     const groupedDays = []
     const dayMap = new Map()
@@ -357,6 +366,16 @@ function getGuestFolioPrintModel(guestId = '') {
     return {
         profile,
         guest: bucket.guest || {},
+        guestRows: bucket.guestRows || [],
+        reservation,
+        stayInfo: {
+            arrivalDate: reservation?.arrivaldate || primaryGuestRow?.arrivaldate || '',
+            departureDate: reservation?.departuredate || primaryGuestRow?.departuredate || '',
+            rackRate: Number(primaryGuestRow?.roomrate || reservation?.roomrate || 0),
+            pax: Number(primaryGuestRow?.adult || 0) + Number(primaryGuestRow?.child || 0) + Number(primaryGuestRow?.infant || 0),
+            roomNo: String(primaryGuestRow?.roomnumber || '').trim(),
+            reservationNo: String(primaryGuestRow?.reservationid || reservation?.id || '').trim()
+        },
         company: bucket.company,
         travelagency: bucket.travelagency,
         groups: bucket.groups,
@@ -380,6 +399,9 @@ function renderGuestFolioPrintTable() {
             <tr>
                 <td>${index + 1}</td>
                 <td>${normalizeFolioText(model.guestname)}</td>
+                <td>${normalizeFolioText(model.stayInfo?.arrivalDate ? specialformatDateTime(model.stayInfo.arrivalDate) : '')}</td>
+                <td>${normalizeFolioText(model.stayInfo?.departureDate ? specialformatDateTime(model.stayInfo.departureDate) : '')}</td>
+                <td>${model.stayInfo?.rackRate ? formatFolioAmount(model.stayInfo.rackRate) : '-'}</td>
                 <td>${formatFolioAmount(model.totalDebit)}</td>
                 <td>${formatFolioAmount(model.totalCredit)}</td>
                 <td>${formatFolioAmount(model.finalBalance)}</td>
@@ -398,7 +420,7 @@ function openGuestFolioPrint(guestId = '') {
 
     const firstTransaction = model.transactions[0] || {}
     const lastTransaction = model.transactions[model.transactions.length - 1] || {}
-    const roomNo = model.transactions.map(tx => String(tx.ownerid || '').trim()).filter(v => v && v !== '-2').join(', ') || '-'
+    const roomNo = model.stayInfo?.roomNo || model.transactions.map(tx => String(tx.ownerid || '').trim()).filter(v => v && v !== '-2').join(', ') || '-'
     const summaryRows = model.billSummary.map(([label, amount]) => `
         <tr>
             <td style="padding:2px 0;border:1px solid #ccc;">${label}</td>
@@ -472,13 +494,13 @@ function openGuestFolioPrint(guestId = '') {
                     <td style="border:1px solid #ccc;padding:2px 6px;vertical-align:top;">
                         <div><strong>Invoice No:</strong> ${normalizeFolioText(lastTransaction.reference)}</div>
                         <div><strong>Invoice Date:</strong> ${normalizeFolioText(lastTransaction.transactiondate ? specialformatDateTime(lastTransaction.transactiondate) : '')}</div>
-                        <div><strong>Arrival Date:</strong> -</div>
-                        <div><strong>Departure Date:</strong> -</div>
-                        <div><strong>Pax:</strong> -</div>
+                        <div><strong>Arrival Date:</strong> ${normalizeFolioText(model.stayInfo?.arrivalDate ? specialformatDateTime(model.stayInfo.arrivalDate) : '')}</div>
+                        <div><strong>Departure Date:</strong> ${normalizeFolioText(model.stayInfo?.departureDate ? specialformatDateTime(model.stayInfo.departureDate) : '')}</div>
+                        <div><strong>Pax:</strong> ${model.stayInfo?.pax ? model.stayInfo.pax : '-'}</div>
                         <div><strong>Room No:</strong> ${normalizeFolioText(roomNo)}</div>
                         <div><strong>Reg No:</strong> ${normalizeFolioText(model.guest?.id)}</div>
-                        <div><strong>Reservation No:</strong> ${normalizeFolioText(firstTransaction.reference)}</div>
-                        <div><strong>Rack Rate:</strong> -</div>
+                        <div><strong>Reservation No:</strong> ${normalizeFolioText(model.stayInfo?.reservationNo || firstTransaction.reference)}</div>
+                        <div><strong>Rack Rate:</strong> ${model.stayInfo?.rackRate ? formatFolioAmount(model.stayInfo.rackRate) : '-'}</div>
                     </td>
                 </tr>
             </table>
@@ -528,7 +550,7 @@ function openGuestFolioPrint(guestId = '') {
 
             <div class="signatures">
                 <span>Cashier Signature</span>
-                <span>Reprint Bill (1)</span>
+                <span></span>
                 <span>Guest Signature</span>
             </div>
         </div>

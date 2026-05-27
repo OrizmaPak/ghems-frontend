@@ -297,6 +297,11 @@ const routerTree = {
         startingFunction: 'groupfolioActive',
         scriptName: './js/guestfolio.js'
     },
+    directroomcharge: {
+        template: 'directroomcharge',
+        startingFunction: 'directroomchargeActive',
+        scriptName: './js/directroomcharge.js'
+    },
     nightauditreport: {
         template: 'nightauditreport',
         startingFunction: 'nightauditreportActive',

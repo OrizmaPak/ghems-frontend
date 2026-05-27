@@ -103,6 +103,9 @@
                                                 <tr>
                                                     <th>S/N</th>
                                                     <th>Guest Name</th>
+                                                    <th>Arrival Date</th>
+                                                    <th>Departure Date</th>
+                                                    <th>Rack Rate</th>
                                                     <th>Total Debit</th>
                                                     <th>Total Credit</th>
                                                     <th>Balance</th>
@@ -128,3 +131,6 @@
                             </div>
                         
                         </section>
+
+
+
