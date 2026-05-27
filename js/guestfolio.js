@@ -99,6 +99,7 @@ function normalizeGuestFolioRows(payload = []) {
             ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, tx?.ownerid, tx?.roomnumber),
             guestid: bucket.guestid,
             guestname: bucket.guestname,
+            hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
             debit: Number(source?.debit || tx?.debit || 0),
             credit: Number(source?.credit || tx?.credit || 0),
             transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
@@ -150,6 +151,7 @@ function normalizeGuestFolioRows(payload = []) {
                 ownerid: '',
                 guestid: bucket.guestid,
                 guestname: bucket.guestname,
+                hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
                 description: 'No transactions available yet',
                 debit: 0,
                 credit: 0,
@@ -289,6 +291,11 @@ function formatFolioAmount(value = 0) {
     return numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function maskCreditDisplayIfNeeded(value, shouldMask = false) {
+    if(!shouldMask) return formatNumber(value || 0)
+    return '***'
+}
+
 function normalizeFolioText(value = '') {
     const text = String(value ?? '').trim()
     if(!text || text === '-' || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return '-'
@@ -368,6 +375,7 @@ function getGuestFolioPrintModel(guestId = '') {
         guest: bucket.guest || {},
         guestRows: bucket.guestRows || [],
         reservation,
+        hideCredit: Boolean(bucket.company || bucket.travelagency),
         stayInfo: {
             arrivalDate: reservation?.arrivaldate || primaryGuestRow?.arrivaldate || '',
             departureDate: reservation?.departuredate || primaryGuestRow?.departuredate || '',
@@ -403,7 +411,7 @@ function renderGuestFolioPrintTable() {
                 <td>${normalizeFolioText(model.stayInfo?.departureDate ? specialformatDateTime(model.stayInfo.departureDate) : '')}</td>
                 <td>${model.stayInfo?.rackRate ? formatFolioAmount(model.stayInfo.rackRate) : '-'}</td>
                 <td>${formatFolioAmount(model.totalDebit)}</td>
-                <td>${formatFolioAmount(model.totalCredit)}</td>
+                <td>${model.hideCredit ? '***' : formatFolioAmount(model.totalCredit)}</td>
                 <td>${formatFolioAmount(model.finalBalance)}</td>
                 <td><button onclick="openGuestFolioPrint('${bucket.guestid}')" class="btn btn-sm bg-slate-700 text-white">View/Print Folio</button></td>
             </tr>
@@ -435,7 +443,7 @@ function openGuestFolioPrint(guestId = '') {
                 <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(tx.reference)}</td>
                 <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(formatReceivableDescription(tx.description))}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.debit)}</td>
-                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.credit)}</td>
+                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${model.hideCredit ? '***' : formatFolioAmount(tx.credit)}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.runningBalance)}</td>
             </tr>
         `).join('')
@@ -444,7 +452,7 @@ function openGuestFolioPrint(guestId = '') {
             <tr class="day-total-row">
                 <td colspan="3" style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">Day Total</td>
                 <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayDebit)}</td>
-                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayCredit)}</td>
+                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${model.hideCredit ? '***' : formatFolioAmount(day.dayCredit)}</td>
                 <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayClosingBalance)}</td>
             </tr>
         `
@@ -528,7 +536,7 @@ function openGuestFolioPrint(guestId = '') {
                 <tr>
                     <td style="text-align:right;padding-top:6px;"><strong>Grand Total:</strong></td>
                     <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalDebit)}</strong></td>
-                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalCredit)}</strong></td>
+                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${model.hideCredit ? '***' : formatFolioAmount(model.totalCredit)}</strong></td>
                     <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.finalBalance)}</strong></td>
                 </tr>
             </table>
@@ -1000,7 +1008,7 @@ async function onreceiveablesTableDataSignal() {
                 <td>${item.guestname || '-'}</td>
                 <td>${formatReceivableDescription(item.description || (item._emptyTransaction ? 'No transactions available yet' : ''))}</td>
                 <td>${formatNumber(item.debit || 0)}</td>
-                <td>${formatNumber(item.credit || 0)}</td>
+                <td>${maskCreditDisplayIfNeeded(item.credit || 0, item.hasHiddenCredit)}</td>
                 <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
             </tr>`)
         }).join('')
