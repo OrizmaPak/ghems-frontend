@@ -2,9 +2,6 @@
                             <p class="page-title">
                                 <span>GUEST FOLIO</span>
                             </p>
-                            <p class="text-sm text-slate-600 mt-1 mb-3">
-                                Select a guest to view their current expenses across room charges, sales, purchased items, and services rendered.
-                            </p>
                             
                              <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
                                 <!--<li id="rccview" class="me-2 cp viewer" onclick="did('guestsreservationsform').classList.add('hidden');this.children[0].classList.add('active', '!text-blue-600');did('lostandfoundview').classList.remove('hidden');this.nextElementSibling.children[0].classList.remove('active', '!text-blue-600');">-->
@@ -20,6 +17,9 @@
                                     <div id="checkinview" class="">
                             <form id="receiveablesfilterform">
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
+                                    <p class="text-sm text-slate-600">
+                                        Select a guest to view their current expenses across room charges, sales, purchased items, and services rendered.
+                                    </p>
                                     <div class="grid grid-cols-1 !mb-5 lg:grid-cols-3 gap-10">
                                         <div id="receivablesRoomFilterWrap" class="form-group lg:col-span-2 hidden">
                                             <label for="receiveablesroomnumber" class="control-label">Room Number</label>
