@@ -10,7 +10,6 @@ const permissionAliasesByRouteId = {
     companyfolio: 'COMPANY FOLIO',
     agencyfolio: 'AGENCY FOLIO',
     groupfolio: 'GROUP FOLIO',
-    directroomcharge: 'DIRECT ROOM CHARGE',
     reassignrooms: 'RE-ASSIGN ROOMS',
     expectedcheckouts: 'EXPECTED CHECK OUT',
     noshow: 'NO SHOW',
@@ -113,7 +112,6 @@ const permissionAliasesByValue = {
     'FRONT OFFICE': 'FRONT DESK',
     'PERSONNEL AND PAYROLL': 'PERSONNEL & PAYROLL',
     'PERSONNEL & PAYROLL': 'PERSONNEL & PAYROLL',
-    'DIRECT ROOM CHARGE': 'DIRECT ROOM CHARGE'
 }
 
 const personnelPayrollPermissionKeys = [

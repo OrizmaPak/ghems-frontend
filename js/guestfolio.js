@@ -466,7 +466,10 @@ function openGuestFolioPrint(guestId = '') {
                 #guestfolioprintcontainer .summary{margin-top:10px;max-width:360px;margin-left:auto;}
                 #guestfolioprintcontainer .summary-title{text-align:center;font-weight:700;margin-bottom:4px;}
                 #guestfolioprintcontainer .footer-note{margin-top:12px;border-top:1px solid #bbb;padding-top:6px;display:flex;justify-content:space-between;font-size:11px;}
-                #guestfolioprintcontainer .signatures{margin-top:24px;display:flex;justify-content:space-between;font-size:12px;}
+                #guestfolioprintcontainer .signatures{margin-top:34px;display:flex;justify-content:space-between;align-items:flex-end;gap:40px;}
+                #guestfolioprintcontainer .signature-block{width:42%;text-align:center;}
+                #guestfolioprintcontainer .signature-line{border-bottom:1px solid #111;height:24px;}
+                #guestfolioprintcontainer .signature-label{margin-top:6px;font-size:12px;font-weight:600;letter-spacing:.3px;}
                 @media print{
                     #guestfolioprintcontainer{max-width:900px !important;width:900px !important;}
                     #guestfolioprintcontainer .logo{width:52px !important;height:52px !important;max-width:52px !important;max-height:52px !important;}
@@ -549,9 +552,14 @@ function openGuestFolioPrint(guestId = '') {
             </div>
 
             <div class="signatures">
-                <span>Cashier Signature</span>
-                <span></span>
-                <span>Guest Signature</span>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Cashier Signature</div>
+                </div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Guest Signature</div>
+                </div>
             </div>
         </div>
 
