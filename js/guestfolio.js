@@ -95,7 +95,7 @@ function normalizeGuestFolioRows(payload = []) {
     const getReservationData = (entry = {}) => entry?.resrvationdata || entry?.reservationdata || entry?.reservations || null
     const isValidRoomNumberValue = (value = '') => {
         const text = String(value ?? '').trim()
-        return Boolean(text && text !== '-' && text !== '-1' && text !== '-2' && text.toLowerCase() !== 'null' && text.toLowerCase() !== 'undefined')
+        return Boolean(text && text !== '0' && text !== '-' && text !== '-1' && text !== '-2' && text.toLowerCase() !== 'null' && text.toLowerCase() !== 'undefined')
     }
     const extractRoomNumberFromDescription = (description = '') => {
         const text = String(description || '')
@@ -105,18 +105,26 @@ function normalizeGuestFolioRows(payload = []) {
         if(bookingChargeMatch?.[1]) return bookingChargeMatch[1].trim()
         return ''
     }
-    const normalizeRoomNumberFromTransaction = (source = {}, tx = {}) => {
-        const directRoom = pickFirstDefined(source?.roomnumber, tx?.roomnumber)
+    const normalizeRoomNumberFromTransaction = (source = {}, tx = {}, entryRoomNumber = '') => {
+        const directRoom = pickFirstDefined(entryRoomNumber, source?.roomnumber, tx?.roomnumber)
         if(isValidRoomNumberValue(directRoom)) return directRoom
         const ownerValue = pickFirstDefined(source?.ownerid, source?.owner, source?.receiptto, tx?.ownerid, tx?.owner)
         if(isValidRoomNumberValue(ownerValue)) return ownerValue
         return extractRoomNumberFromDescription(pickFirstDefined(source?.description, tx?.description))
     }
 
-    const normalizeFolioTransaction = (tx = {}, bucket = {}, reservation = null) => {
+    const addRoomNumberToGuestBucket = (bucket, value = '') => {
+        if(!isValidRoomNumberValue(value)) return
+        const roomNumber = String(value).trim()
+        if(!bucket.roomNumbers.includes(roomNumber)) bucket.roomNumbers.push(roomNumber)
+    }
+
+    const normalizeFolioTransaction = (tx = {}, bucket = {}, reservation = null, entry = {}) => {
         const source = tx?.saleentry || tx?.transaction || tx
-        const roomNumber = normalizeRoomNumberFromTransaction(source, tx)
+        const roomNumber = normalizeRoomNumberFromTransaction(source, tx, entry?.roomnumber)
         const reservationReference = String(reservation?.reference || reservation?.id || bucket.reservationReference || '').trim()
+        const hasHiddenCredit = Boolean(entry?.company || entry?.travelagency)
+        addRoomNumberToGuestBucket(bucket, roomNumber)
         return {
             ...source,
             ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, tx?.ownerid, tx?.roomnumber),
@@ -125,7 +133,7 @@ function normalizeGuestFolioRows(payload = []) {
             folioid: bucket.folioid,
             guestname: bucket.guestname,
             reservationReference,
-            hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
+            hasHiddenCredit,
             debit: Number(source?.debit || tx?.debit || 0),
             credit: Number(source?.credit || tx?.credit || 0),
             transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
@@ -160,6 +168,7 @@ function normalizeGuestFolioRows(payload = []) {
                 createdAt: reservation?.reservationdate || reservation?.tlog || guest?.created_at || guest?.tlog || '',
                 guest,
                 guestRows: [],
+                roomNumbers: [],
                 reservation,
                 reservations: [],
                 reservationKeys: [],
@@ -186,24 +195,19 @@ function normalizeGuestFolioRows(payload = []) {
         if(entry?.company) bucket.company = entry.company
         if(entry?.travelagency) bucket.travelagency = entry.travelagency
         if(entry?.groups) bucket.groups = entry.groups
+        addRoomNumberToGuestBucket(bucket, entry?.roomnumber || guest?.roomnumber)
         const roomGuestRows = Array.isArray(entry?.roomgeustrow) ? entry.roomgeustrow : (Array.isArray(entry?.roomguestrow) ? entry.roomguestrow : [])
         if(roomGuestRows.length) {
             bucket.guestRows = roomGuestRows.map(row => row?.roomdata || row).filter(Boolean)
+            bucket.guestRows.forEach(row => addRoomNumberToGuestBucket(bucket, row?.roomnumber))
         }
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
 
         if(transactions.length) {
             transactions.forEach((tx) => {
-                bucket.transactions.push(normalizeFolioTransaction(tx, bucket, reservation))
+                bucket.transactions.push(normalizeFolioTransaction(tx, bucket, reservation, entry))
             })
         }
-    })
-
-    // If a guest is company/travel-agency backed on any source row, hide credit for all that guest's rows.
-    guestBuckets.forEach((bucket) => {
-        const shouldHideCredit = Boolean(bucket.company || bucket.travelagency)
-        if(!shouldHideCredit) return
-        bucket.transactions = bucket.transactions.map((tx) => ({ ...tx, hasHiddenCredit: true }))
     })
 
     const normalized = []
@@ -217,7 +221,7 @@ function normalizeGuestFolioRows(payload = []) {
                 folioid: bucket.folioid,
                 guestname: bucket.guestname,
                 reservationReference: bucket.reservationReference,
-                hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
+                hasHiddenCredit: false,
                 description: 'No transactions available yet',
                 debit: 0,
                 credit: 0,
@@ -375,7 +379,7 @@ function getReceivableCreditValueForBalance(item = {}) {
 
 function isFolioValidRoomNumber(value = '') {
     const text = String(value ?? '').trim()
-    return Boolean(text && text !== '-' && text !== '-1' && text !== '-2' && text.toLowerCase() !== 'null' && text.toLowerCase() !== 'undefined')
+    return Boolean(text && text !== '0' && text !== '-' && text !== '-1' && text !== '-2' && text.toLowerCase() !== 'null' && text.toLowerCase() !== 'undefined')
 }
 
 function extractFolioRoomNumberFromDescription(description = '') {
@@ -388,6 +392,8 @@ function extractFolioRoomNumberFromDescription(description = '') {
 }
 
 function resolveGuestFolioRoomNumber(model = {}) {
+    const roomNumbers = Array.isArray(model.roomNumbers) ? model.roomNumbers.filter(isFolioValidRoomNumber) : []
+    if(roomNumbers.length) return [...new Set(roomNumbers.map(room => String(room).trim()))].join(', ')
     const guestRoomNumber = model?.guest?.roomnumber
     if(isFolioValidRoomNumber(guestRoomNumber)) return String(guestRoomNumber).trim()
     const primaryGuestRow = Array.isArray(model.guestRows) && model.guestRows.length ? model.guestRows[0] : {}
@@ -496,7 +502,7 @@ function getGuestFolioPrintModel(guestId = '') {
     const reservations = Array.isArray(bucket.reservations) && bucket.reservations.length ? bucket.reservations : (reservation ? [reservation] : [])
     const reservationNo = String(bucket.reservationReferences?.length ? bucket.reservationReferences.join(', ') : (bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '')).trim()
     const rackRate = resolveCombinedGuestFolioRackRate(primaryGuestRow, reservations, reservation)
-    const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], transactions })
+    const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], roomNumbers: bucket.roomNumbers || [], transactions })
     const arrivalDate = getEarliestFolioDate([
         ...reservations.map((item) => item?.arrivaldate),
         primaryGuestRow?.arrivaldate
@@ -547,9 +553,10 @@ function getGuestFolioPrintModel(guestId = '') {
         profile,
         guest: bucket.guest || {},
         guestRows: bucket.guestRows || [],
+        roomNumbers: bucket.roomNumbers || [],
         reservation,
         reservations,
-        hideCredit: Boolean(bucket.company || bucket.travelagency),
+        hideCredit: transactions.some(tx => tx?.hasHiddenCredit),
         stayInfo: {
             arrivalDate,
             departureDate,
@@ -592,7 +599,7 @@ function buildGuestFolioPrintContent(model, containerId = '') {
                 <td style="border:1px solid #ccc;padding:4px 6px;">${formatGuestFolioVoucher(tx, model.stayInfo?.reservationNo)}</td>
                 <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(formatReceivableDescription(tx.description))}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.debit)}</td>
-                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${model.hideCredit ? '***' : formatFolioAmount(tx.credit)}</td>
+                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${tx.hasHiddenCredit ? '***' : formatFolioAmount(tx.credit)}</td>
                 <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.runningBalance)}</td>
             </tr>
         `).join('')
@@ -601,7 +608,7 @@ function buildGuestFolioPrintContent(model, containerId = '') {
             <tr class="day-total-row">
                 <td colspan="3" style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">Day Total</td>
                 <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayDebit)}</td>
-                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${model.hideCredit ? '***' : formatFolioAmount(day.dayCredit)}</td>
+                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayCredit)}</td>
                 <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayClosingBalance)}</td>
             </tr>
         `
@@ -684,7 +691,7 @@ function buildGuestFolioPrintContent(model, containerId = '') {
                 <tr>
                     <td style="text-align:right;padding-top:6px;"><strong>Grand Total:</strong></td>
                     <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalDebit)}</strong></td>
-                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${model.hideCredit ? '***' : formatFolioAmount(model.totalCredit)}</strong></td>
+                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalCredit)}</strong></td>
                     <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.finalBalance)}</strong></td>
                 </tr>
             </table>
