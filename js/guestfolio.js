@@ -593,6 +593,7 @@ function buildGuestFolioPrintContent(model, containerId = '') {
     `).join('')
 
     const dayRows = model.groupedDays.map((day) => {
+        const dayHasHiddenCredit = day.rows.some(tx => tx?.hasHiddenCredit)
         const txRows = day.rows.map((tx) => `
             <tr>
                 <td style="border:1px solid #ccc;padding:4px 6px;">${specialformatDateTime(tx.transactiondate || '')}</td>
@@ -608,7 +609,7 @@ function buildGuestFolioPrintContent(model, containerId = '') {
             <tr class="day-total-row">
                 <td colspan="3" style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">Day Total</td>
                 <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayDebit)}</td>
-                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayCredit)}</td>
+                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${dayHasHiddenCredit ? '***' : formatFolioAmount(day.dayCredit)}</td>
                 <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayClosingBalance)}</td>
             </tr>
         `
@@ -691,7 +692,7 @@ function buildGuestFolioPrintContent(model, containerId = '') {
                 <tr>
                     <td style="text-align:right;padding-top:6px;"><strong>Grand Total:</strong></td>
                     <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalDebit)}</strong></td>
-                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalCredit)}</strong></td>
+                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${model.hideCredit ? '***' : formatFolioAmount(model.totalCredit)}</strong></td>
                     <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.finalBalance)}</strong></td>
                 </tr>
             </table>
