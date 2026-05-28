@@ -259,7 +259,7 @@ function normalizeOrganisationFolioRows(payload = []) {
     const ensureOrganisationBucket = (entry = {}, entryIndex = 0) => {
         const company = entry?.company || null
         const travelagency = entry?.travelagency || null
-        const groups = entry?.groups || null
+        const groups = entry?.groups || entry?.group || null
         const orgType = travelagency ? 'travelagency' : company ? 'company' : groups ? 'group' : 'organisation'
         const orgId = String(
             travelagency?.id ||
@@ -297,12 +297,17 @@ function normalizeOrganisationFolioRows(payload = []) {
 
     payload.forEach((entry, entryIndex) => {
         const bucket = ensureOrganisationBucket(entry, entryIndex)
+        if(entry?.company) bucket.company = entry.company
+        if(entry?.travelagency) bucket.travelagency = entry.travelagency
+        if(entry?.groups || entry?.group) bucket.groups = entry?.groups || entry?.group
         const reservation = getReservationData(entry)
         if(reservation) {
             bucket.reservation = bucket.reservation || reservation
             bucket.reservations.push(reservation)
         }
-        const guestRows = Array.isArray(entry?.guest) ? entry.guest : []
+        const guestRows = Array.isArray(entry?.guest)
+            ? entry.guest
+            : (Array.isArray(entry?.guests) ? entry.guests : [])
         if(guestRows.length) bucket.guestRows = guestRows
         guestRows.forEach((row) => addRoomNumberToBucket(bucket, row?.roomnumber))
         addRoomNumberToBucket(bucket, entry?.roomnumber)
