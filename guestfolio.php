@@ -97,19 +97,8 @@
                                 </div>
 
                                 <div id="guestFolioPrintTableWrap" class="hidden">
-                                    <div class="table-content">
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>Folio Print Preview</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="guestFolioPrintTableBody">
-                                                <tr>
-                                                    <td colspan="100%" class="text-center opacity-70">Table is empty</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div id="guestFolioPrintTableBody" class="space-y-6">
+                                        <div class="text-center opacity-70">Table is empty</div>
                                     </div>
                                 </div>
                             </div> 

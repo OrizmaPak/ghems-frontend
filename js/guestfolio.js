@@ -657,26 +657,22 @@ function buildGuestFolioPrintContent(model, containerId = '') {
 }
 
 function renderGuestFolioPrintTable() {
-    const tableBody = did('guestFolioPrintTableBody')
-    if(!tableBody) return
+    const printWrap = did('guestFolioPrintTableBody')
+    if(!printWrap) return
     const rows = Array.from(guestFolioBuckets.values()).map((bucket, index) => {
         const model = getGuestFolioPrintModel(bucket.folioid || bucket.guestid)
         if(!model) return ''
         return `
-            <tr>
-                <td colspan="100%" class="!p-0 bg-slate-50">
-                    <div class="mb-6 overflow-x-auto rounded border border-slate-200 bg-white p-3">
-                        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Folio ${index + 1}</div>
-                        ${buildGuestFolioPrintContent(model)}
-                        <div class="mt-3 flex justify-end">
-                            <button onclick="openGuestFolioPrint('${bucket.folioid || bucket.guestid}')" class="btn btn-sm bg-slate-700 text-white">View/Print Folio</button>
-                        </div>
-                    </div>
-                </td>
-            </tr>
+            <div class="overflow-x-auto rounded border border-slate-200 bg-white p-3">
+                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Folio ${index + 1}</div>
+                ${buildGuestFolioPrintContent(model)}
+                <div class="mt-3 flex justify-end">
+                    <button onclick="openGuestFolioPrint('${bucket.folioid || bucket.guestid}')" class="btn btn-sm bg-slate-700 text-white">View/Print Folio</button>
+                </div>
+            </div>
         `
     }).filter(Boolean).join('')
-    tableBody.innerHTML = rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+    printWrap.innerHTML = rows || `<div class="text-center opacity-70">No records found</div>`
 }
 
 function openGuestFolioPrint(guestId = '') {
@@ -687,155 +683,11 @@ function openGuestFolioPrint(guestId = '') {
     if(!modalReceipt || !invoiceContainer) return notification('Unable to open folio print modal', 0)
     modalReceipt.className = 'fixed w-screen h-screen top-0 z-[200] left-0 flex justify-center items-center overflow-hidden p-3 md:p-6 bg-[#00000052]'
     invoiceContainer.className = 'w-[min(96vw,980px)] max-h-[92vh] mx-auto border rounded shadow bg-white overflow-hidden flex flex-col'
-    const isAgencyFolioPrint = isAgencyFolioRoute()
-
-    const lastTransaction = model.transactions[model.transactions.length - 1] || {}
-    const roomNo = model.stayInfo?.roomNo || '-'
-    const invoiceDate = lastTransaction.transactiondate || model.reservation?.reservationdate || model.reservation?.tlog || ''
-    const summaryRows = model.billSummary.map(([label, amount]) => `
-        <tr>
-            <td style="padding:2px 0;border:1px solid #ccc;">${label}</td>
-            <td style="padding:2px 0; text-align:right;border:1px solid #ccc;">${formatFolioAmount(amount)}</td>
-        </tr>
-    `).join('')
-
-    const dayRows = model.groupedDays.map((day) => {
-        const txRows = day.rows.map((tx) => `
-            <tr>
-                <td style="border:1px solid #ccc;padding:4px 6px;">${specialformatDateTime(tx.transactiondate || '')}</td>
-                <td style="border:1px solid #ccc;padding:4px 6px;">${formatGuestFolioVoucher(tx, model.stayInfo?.reservationNo)}</td>
-                <td style="border:1px solid #ccc;padding:4px 6px;">${normalizeFolioText(formatReceivableDescription(tx.description))}</td>
-                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.debit)}</td>
-                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${model.hideCredit ? '***' : formatFolioAmount(tx.credit)}</td>
-                <td style="text-align:right;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(tx.runningBalance)}</td>
-            </tr>
-        `).join('')
-        return `
-            ${txRows}
-            <tr class="day-total-row">
-                <td colspan="3" style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">Day Total</td>
-                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayDebit)}</td>
-                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${model.hideCredit ? '***' : formatFolioAmount(day.dayCredit)}</td>
-                <td style="text-align:right; font-weight:700;border:1px solid #ccc;padding:4px 6px;">${formatFolioAmount(day.dayClosingBalance)}</td>
-            </tr>
-        `
-    }).join('')
-
     invoiceContainer.innerHTML = `
         <div class="flex min-h-0 flex-1 flex-col bg-white">
             <div class="min-h-0 flex-1 overflow-auto p-3 md:p-5">
-                <div id="guestfolioprintcontainer" class="bg-white p-4 md:p-8" style="max-width:900px;margin:0 auto;">
-            <style>
-                #guestfolioprintcontainer{font-family:Arial,sans-serif;color:#222;font-size:12px;line-height:1.25;}
-                #guestfolioprintcontainer .header{text-align:center;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:8px;}
-                #guestfolioprintcontainer .logo{width:52px;height:52px;max-width:52px;max-height:52px;object-fit:contain;margin:0 auto 4px;display:block;}
-                #guestfolioprintcontainer .title{font-size:18px;font-weight:700;letter-spacing:.5px;margin-top:4px;}
-                #guestfolioprintcontainer table{width:100%;border-collapse:collapse;}
-                #guestfolioprintcontainer .meta td{vertical-align:top;padding:2px 6px;border:1px solid #ccc;}
-                #guestfolioprintcontainer .ledger th,#guestfolioprintcontainer .ledger td{border:1px solid #ccc;padding:4px 6px;}
-                #guestfolioprintcontainer .ledger th{background:#f3f4f6;text-transform:uppercase;font-size:11px;}
-                #guestfolioprintcontainer .day-total-row{background:#f8fafc;}
-                #guestfolioprintcontainer .grand{margin-top:6px;font-weight:700;}
-                #guestfolioprintcontainer .summary{margin-top:10px;max-width:360px;margin-left:auto;}
-                #guestfolioprintcontainer .summary-title{text-align:center;font-weight:700;margin-bottom:4px;}
-                #guestfolioprintcontainer .footer-note{margin-top:12px;border-top:1px solid #bbb;padding-top:6px;display:flex;justify-content:space-between;font-size:11px;}
-                #guestfolioprintcontainer .signatures{margin-top:34px;display:flex;justify-content:space-between;align-items:flex-end;gap:40px;}
-                #guestfolioprintcontainer .signature-block{width:42%;text-align:center;}
-                #guestfolioprintcontainer .signature-line{border-bottom:1px solid #111;height:24px;}
-                #guestfolioprintcontainer .signature-label{margin-top:6px;font-size:12px;font-weight:600;letter-spacing:.3px;}
-                @media print{
-                    #guestfolioprintcontainer{max-width:900px !important;width:900px !important;}
-                    #guestfolioprintcontainer .logo{width:52px !important;height:52px !important;max-width:52px !important;max-height:52px !important;}
-                    #guestfolioprintcontainer table,
-                    #guestfolioprintcontainer td,
-                    #guestfolioprintcontainer th{border-color:#ccc !important;border-style:solid !important;}
-                }
-            </style>
-            <div class="header">
-                ${model.profile.logoUrl ? `<img src="${model.profile.logoUrl}" alt="logo" class="logo" width="52" height="52" style="width:52px !important;height:52px !important;max-width:52px !important;max-height:52px !important;object-fit:contain;display:block;margin:0 auto 4px;">` : ''}
-                <div style="font-size:20px;font-weight:700;">${normalizeFolioText(model.profile.companyName)}</div>
-                <div>${normalizeFolioText(model.profile.companyAddress)}</div>
-                <div>${normalizeFolioText(model.profile.companyPhone)} ${model.profile.companyEmail ? ' | ' + model.profile.companyEmail : ''}</div>
-                <div class="title">GUEST INVOICE</div>
+                ${buildGuestFolioPrintContent(model, 'guestfolioprintcontainer')}
             </div>
-
-            <table class="meta">
-                <tr>
-                    <td style="width:58%;border:1px solid #ccc;padding:2px 6px;vertical-align:top;">
-                        ${isAgencyFolioPrint ? '' : `<div><strong>Guest:</strong> ${normalizeFolioText(model.guestname)}</div>`}
-                        <div><strong>Travel Agent:</strong> ${normalizeFolioText(model.travelagency?.agencyname || model.travelagency?.name || '')}</div>
-                        <div><strong>Company:</strong> ${normalizeFolioText(model.company?.companyname || model.guest?.companyname || '')}</div>
-                        <div><strong>Bill Instruction:</strong> ${normalizeFolioText(model.guest?.moredata?.billinstruction || '')}</div>
-                    </td>
-                    <td style="border:1px solid #ccc;padding:2px 6px;vertical-align:top;">
-                        <div><strong>Invoice Date:</strong> ${normalizeFolioText(invoiceDate ? specialformatDateTime(invoiceDate) : '')}</div>
-                        <div><strong>Arrival Date:</strong> ${normalizeFolioText(model.stayInfo?.arrivalDate ? specialformatDateTime(model.stayInfo.arrivalDate) : '')}</div>
-                        <div><strong>Departure Date:</strong> ${normalizeFolioText(model.stayInfo?.departureDate ? specialformatDateTime(model.stayInfo.departureDate) : '')}</div>
-                        <div><strong>Pax:</strong> ${model.stayInfo?.pax ? model.stayInfo.pax : '-'}</div>
-                        <div><strong>Room No:</strong> ${normalizeFolioText(roomNo)}</div>
-                        <div><strong>Reg No:</strong> ${normalizeFolioText(model.guest?.id)}</div>
-                        <div><strong>Reservation No:</strong> ${normalizeFolioText(model.stayInfo?.reservationNo)}</div>
-                        <div><strong>Rack Rate:</strong> ${model.stayInfo?.rackRate ? formatFolioAmount(model.stayInfo.rackRate) : '-'}</div>
-                    </td>
-                </tr>
-            </table>
-
-            <table class="ledger" style="margin-top:8px;">
-                <thead>
-                    <tr>
-                        <th style="width:18%;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Date</th>
-                        <th style="width:22%;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Invoice Number / Reservation Number</th>
-                        <th style="border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Description</th>
-                        <th style="width:14%;text-align:right;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Debit</th>
-                        <th style="width:14%;text-align:right;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Credit</th>
-                        <th style="width:14%;text-align:right;border:1px solid #ccc;padding:4px 6px;background:#f3f4f6;">Balance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${dayRows || '<tr><td colspan="6" style="text-align:center;">No transactions</td></tr>'}
-                </tbody>
-            </table>
-
-            <table class="grand">
-                <tr>
-                    <td style="text-align:right;padding-top:6px;"><strong>Grand Total:</strong></td>
-                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.totalDebit)}</strong></td>
-                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${model.hideCredit ? '***' : formatFolioAmount(model.totalCredit)}</strong></td>
-                    <td style="width:14%;text-align:right;padding-top:6px;"><strong>${formatFolioAmount(model.finalBalance)}</strong></td>
-                </tr>
-            </table>
-
-            <div class="summary">
-                <div class="summary-title">--- Bill Summary ---</div>
-                <table>
-                    <tbody>
-                        ${summaryRows || '<tr><td>Others</td><td style="text-align:right;">0.00</td></tr>'}
-                        <tr>
-                            <td style="padding-top:4px;font-weight:700;">Total</td>
-                            <td style="padding-top:4px;text-align:right;font-weight:700;">${formatFolioAmount(model.finalBalance)}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="footer-note">
-                <span>WE HOPE YOU ENJOYED YOUR STAY AND WOULD LIKE TO WELCOME YOU BACK</span>
-                <span>Please Deposit Your Room Key</span>
-            </div>
-
-            <div class="signatures">
-                <div class="signature-block">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Cashier Signature</div>
-                </div>
-                <div class="signature-block">
-                    <div class="signature-line"></div>
-                    <div class="signature-label">Guest Signature</div>
-                </div>
-            </div>
-                </div>
-            </div>
-
             <div class="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-white/95 p-3">
                 <button type="button" class="btn" onclick="printContent('HEMS GUEST FOLIO', null, 'guestfolioprintcontainer', true)">Print</button>
                 <button type="button" class="btn" onclick="did('modalreceipt').classList.add('hidden')">Close</button>
@@ -1206,7 +1058,7 @@ async function fetchreceiveables(id='', roomnumber='') {
             }else{
                 renderReceiveablesEmptyState(isPayPendingCheckoutBillsRoute() ? 'No pending checkout bills were found for this room' : 'No records retrieved')
                 if((isGuestFolioRoute() || isOrganisationFolioRoute()) && did('guestFolioPrintTableBody')) {
-                    did('guestFolioPrintTableBody').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`
+                    did('guestFolioPrintTableBody').innerHTML = `<div class="text-center opacity-70">No records found</div>`
                 }
             }
         }else{
