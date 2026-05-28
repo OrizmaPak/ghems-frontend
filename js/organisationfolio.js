@@ -435,8 +435,9 @@ function resolveGuestFolioRackRate(primaryGuestRow = {}, reservation = {}) {
     return totalAmount
 }
 
-function resolveCombinedGuestFolioRackRate(primaryGuestRow = {}, reservations = [], fallbackReservation = {}) {
-    const roomRate = Number(primaryGuestRow?.roomrate || 0)
+function resolveCombinedGuestFolioRackRate(primaryGuestRow = {}, reservations = [], fallbackReservation = {}, guestRows = []) {
+    const lastGuestRow = Array.isArray(guestRows) && guestRows.length ? guestRows[guestRows.length - 1] : {}
+    const roomRate = Number(lastGuestRow?.roomrate || primaryGuestRow?.roomrate || 0)
     if(roomRate) return roomRate
     const validReservations = Array.isArray(reservations) && reservations.length ? reservations : [fallbackReservation].filter(Boolean)
     let totalAmount = 0
@@ -526,7 +527,7 @@ function getGuestFolioPrintModel(guestId = '') {
     const reservations = Array.isArray(bucket.reservations) && bucket.reservations.length ? bucket.reservations : (reservation ? [reservation] : [])
     const reservationReferences = [...new Set(reservations.map((item) => String(item?.reference || item?.id || '').trim()).filter(Boolean))]
     const reservationNo = String(reservationReferences.join(', ') || bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '').trim()
-    const rackRate = resolveCombinedGuestFolioRackRate(primaryGuestRow, reservations, reservation)
+    const rackRate = resolveCombinedGuestFolioRackRate(primaryGuestRow, reservations, reservation, bucket.guestRows || [])
     const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], roomNumbers: bucket.roomNumbers || [], transactions })
     const arrivalDate = getEarliestFolioDate([
         ...reservations.map((item) => item?.arrivaldate),
