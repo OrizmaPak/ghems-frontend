@@ -113,9 +113,10 @@ function normalizeGuestFolioRows(payload = []) {
         return extractRoomNumberFromDescription(pickFirstDefined(source?.description, tx?.description))
     }
 
-    const normalizeFolioTransaction = (tx = {}, bucket = {}) => {
+    const normalizeFolioTransaction = (tx = {}, bucket = {}, reservation = null) => {
         const source = tx?.saleentry || tx?.transaction || tx
         const roomNumber = normalizeRoomNumberFromTransaction(source, tx)
+        const reservationReference = String(reservation?.reference || reservation?.id || bucket.reservationReference || '').trim()
         return {
             ...source,
             ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, tx?.ownerid, tx?.roomnumber),
@@ -123,7 +124,7 @@ function normalizeGuestFolioRows(payload = []) {
             guestid: bucket.guestid,
             folioid: bucket.folioid,
             guestname: bucket.guestname,
-            reservationReference: bucket.reservationReference,
+            reservationReference,
             hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
             debit: Number(source?.debit || tx?.debit || 0),
             credit: Number(source?.credit || tx?.credit || 0),
@@ -132,11 +133,25 @@ function normalizeGuestFolioRows(payload = []) {
         }
     }
 
+    const addReservationToGuestBucket = (bucket, reservation = null) => {
+        if(!reservation) return
+        const reservationReference = String(reservation?.reference || reservation?.id || '').trim()
+        const reservationKey = reservationReference || String(reservation?.reservationdate || reservation?.tlog || bucket.reservations.length + 1)
+        if(!bucket.reservationKeys.includes(reservationKey)) {
+            bucket.reservationKeys.push(reservationKey)
+            bucket.reservations.push(reservation)
+        }
+        if(reservationReference && !bucket.reservationReferences.includes(reservationReference)) {
+            bucket.reservationReferences.push(reservationReference)
+        }
+        bucket.reservation = bucket.reservation || reservation
+        bucket.reservationReference = bucket.reservationReferences.join(', ')
+    }
+
     const ensureGuestBucket = (guest = {}, reservation = null, entryIndex = 0) => {
         const guestId = String(guest?.id || '').trim() || `guest-${genID()}`
         const guestName = [guest?.lastname, guest?.firstname, guest?.othernames].map(value => String(value || '').trim()).filter(Boolean).join(' ') || '-'
-        const reservationKey = String(reservation?.id || reservation?.reference || '').trim()
-        const folioId = `${guestId}__${reservationKey || `entry-${entryIndex + 1}`}`
+        const folioId = guestId
         if(!guestBuckets.has(folioId)) {
             guestBuckets.set(folioId, {
                 folioid: folioId,
@@ -146,6 +161,9 @@ function normalizeGuestFolioRows(payload = []) {
                 guest,
                 guestRows: [],
                 reservation,
+                reservations: [],
+                reservationKeys: [],
+                reservationReferences: [],
                 reservationReference: String(reservation?.reference || reservation?.id || '').trim(),
                 company: null,
                 travelagency: null,
@@ -153,7 +171,9 @@ function normalizeGuestFolioRows(payload = []) {
                 transactions: []
             })
         }
-        return guestBuckets.get(folioId)
+        const bucket = guestBuckets.get(folioId)
+        addReservationToGuestBucket(bucket, reservation)
+        return bucket
     }
 
     payload.forEach((entry, entryIndex) => {
@@ -161,8 +181,7 @@ function normalizeGuestFolioRows(payload = []) {
         const reservation = getReservationData(entry)
         const bucket = ensureGuestBucket(guest, reservation, entryIndex)
         if(reservation) {
-            bucket.reservation = reservation
-            bucket.reservationReference = String(reservation?.reference || reservation?.id || '').trim()
+            addReservationToGuestBucket(bucket, reservation)
         }
         if(entry?.company) bucket.company = entry.company
         if(entry?.travelagency) bucket.travelagency = entry.travelagency
@@ -175,7 +194,7 @@ function normalizeGuestFolioRows(payload = []) {
 
         if(transactions.length) {
             transactions.forEach((tx) => {
-                bucket.transactions.push(normalizeFolioTransaction(tx, bucket))
+                bucket.transactions.push(normalizeFolioTransaction(tx, bucket, reservation))
             })
         }
     })
@@ -393,9 +412,24 @@ function resolveGuestFolioRackRate(primaryGuestRow = {}, reservation = {}) {
     return totalAmount
 }
 
+function resolveCombinedGuestFolioRackRate(primaryGuestRow = {}, reservations = [], fallbackReservation = {}) {
+    const roomRate = Number(primaryGuestRow?.roomrate || 0)
+    if(roomRate) return roomRate
+    const validReservations = Array.isArray(reservations) && reservations.length ? reservations : [fallbackReservation].filter(Boolean)
+    let totalAmount = 0
+    let totalNights = 0
+    validReservations.forEach((reservation) => {
+        totalAmount += Number(reservation?.totalamount || 0)
+        totalNights += Number(reservation?.numberofnights || 0)
+    })
+    if(totalAmount && totalNights > 0) return totalAmount / totalNights
+    if(totalAmount) return totalAmount
+    return resolveGuestFolioRackRate(primaryGuestRow, fallbackReservation)
+}
+
 function formatGuestFolioVoucher(tx = {}, reservationReference = '') {
     const invoiceNumber = normalizeFolioText(tx?.reference || '')
-    const reservationNumber = normalizeFolioText(reservationReference || tx?.reservationReference || '')
+    const reservationNumber = normalizeFolioText(tx?.reservationReference || reservationReference || '')
     if(invoiceNumber === '-' && reservationNumber === '-') return '-'
     return `${invoiceNumber} :: ${reservationNumber}`
 }
@@ -426,6 +460,27 @@ function classifyGuestFolioSummary(description = '') {
     return 'Others'
 }
 
+function getComparableFolioDate(value = '') {
+    const time = new Date(String(value || '').replace(' ', 'T')).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+function getEarliestFolioDate(values = []) {
+    const dated = values
+        .map((value) => ({ value, time: getComparableFolioDate(value) }))
+        .filter((item) => item.time > 0)
+        .sort((a, b) => a.time - b.time)
+    return dated[0]?.value || ''
+}
+
+function getLatestFolioDate(values = []) {
+    const dated = values
+        .map((value) => ({ value, time: getComparableFolioDate(value) }))
+        .filter((item) => item.time > 0)
+        .sort((a, b) => b.time - a.time)
+    return dated[0]?.value || ''
+}
+
 function getGuestFolioPrintModel(guestId = '') {
     const lookupId = String(guestId || '').trim()
     const bucket = guestFolioBuckets.get(lookupId) || Array.from(guestFolioBuckets.values()).find(row => String(row?.guestid || '') === lookupId)
@@ -438,9 +493,18 @@ function getGuestFolioPrintModel(guestId = '') {
     })
     const primaryGuestRow = Array.isArray(bucket.guestRows) && bucket.guestRows.length ? bucket.guestRows[0] : {}
     const reservation = bucket.reservation || {}
-    const reservationNo = String(bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '').trim()
-    const rackRate = resolveGuestFolioRackRate(primaryGuestRow, reservation)
+    const reservations = Array.isArray(bucket.reservations) && bucket.reservations.length ? bucket.reservations : (reservation ? [reservation] : [])
+    const reservationNo = String(bucket.reservationReferences?.length ? bucket.reservationReferences.join(', ') : (bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '')).trim()
+    const rackRate = resolveCombinedGuestFolioRackRate(primaryGuestRow, reservations, reservation)
     const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], transactions })
+    const arrivalDate = getEarliestFolioDate([
+        ...reservations.map((item) => item?.arrivaldate),
+        primaryGuestRow?.arrivaldate
+    ])
+    const departureDate = getLatestFolioDate([
+        ...reservations.map((item) => item?.departuredate),
+        primaryGuestRow?.departuredate
+    ])
 
     const groupedDays = []
     const dayMap = new Map()
@@ -484,10 +548,11 @@ function getGuestFolioPrintModel(guestId = '') {
         guest: bucket.guest || {},
         guestRows: bucket.guestRows || [],
         reservation,
+        reservations,
         hideCredit: Boolean(bucket.company || bucket.travelagency),
         stayInfo: {
-            arrivalDate: reservation?.arrivaldate || primaryGuestRow?.arrivaldate || '',
-            departureDate: reservation?.departuredate || primaryGuestRow?.departuredate || '',
+            arrivalDate,
+            departureDate,
             rackRate,
             pax: Number(primaryGuestRow?.adult || 0) + Number(primaryGuestRow?.child || 0) + Number(primaryGuestRow?.infant || 0),
             roomNo,
