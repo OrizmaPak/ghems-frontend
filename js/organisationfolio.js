@@ -243,6 +243,19 @@ function normalizeOrganisationFolioRows(payload = []) {
 
     const normalized = []
     const organisationBuckets = new Map()
+    const extractRoomNumberFromDescription = (description = '') => {
+        const text = String(description || '')
+        const roomNumberMatch = text.match(/room\s*number\s*:\s*([^|,\s]+)/i)
+        if(roomNumberMatch?.[1]) return roomNumberMatch[1].trim()
+        const bookingChargeMatch = text.match(/booking\s*charge\s*:\s*([^|,\s]+)/i)
+        if(bookingChargeMatch?.[1]) return bookingChargeMatch[1].trim()
+        return ''
+    }
+    const addRoomNumberToBucket = (bucket, value = '') => {
+        if(!isFolioValidRoomNumber(value)) return
+        const room = String(value).trim()
+        if(!bucket.roomNumbers.includes(room)) bucket.roomNumbers.push(room)
+    }
     const ensureOrganisationBucket = (entry = {}, entryIndex = 0) => {
         const company = entry?.company || null
         const travelagency = entry?.travelagency || null
@@ -270,6 +283,7 @@ function normalizeOrganisationFolioRows(payload = []) {
                 guestname: orgName,
                 guest: {},
                 guestRows: [],
+                roomNumbers: [],
                 reservation: null,
                 reservations: [],
                 company,
@@ -290,40 +304,31 @@ function normalizeOrganisationFolioRows(payload = []) {
         }
         const guestRows = Array.isArray(entry?.guest) ? entry.guest : []
         if(guestRows.length) bucket.guestRows = guestRows
-        const roomNumbers = [
-            ...guestRows.map((row) => String(row?.roomnumber || '').trim()),
-            String(entry?.roomnumber || '').trim()
-        ].filter(Boolean)
-        const roomIdentifier = roomNumbers.join(', ')
+        guestRows.forEach((row) => addRoomNumberToBucket(bucket, row?.roomnumber))
+        addRoomNumberToBucket(bucket, entry?.roomnumber)
+        const roomIdentifier = bucket.roomNumbers.join(', ')
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
-
-        if(!transactions.length) {
-            const emptyRow = {
-                id: `org-${entryIndex + 1}`,
-                ownerid: roomIdentifier,
-                roomnumber: roomIdentifier,
-                guestid: bucket.guestid,
-                guestname: bucket.guestname,
-                description: 'No transactions available yet',
-                debit: 0,
-                credit: 0,
-                transactiondate: pickFirstDefined(guestRows[0]?.tlog, ''),
-                _emptyTransaction: true
-            }
-            normalized.push(emptyRow)
-            bucket.transactions.push(emptyRow)
-            return
-        }
+        const reservationReference = String(reservation?.reference || reservation?.id || '').trim()
 
         transactions.forEach((tx, txIndex) => {
             const source = tx?.saleentry || tx?.transaction || tx
+            const sourceRoomNumber = pickFirstDefined(source?.roomnumber, tx?.roomnumber, entry?.roomnumber)
+            const ownerRoom = pickFirstDefined(source?.ownerid, source?.owner, source?.receiptto)
+            const derivedRoom = extractRoomNumberFromDescription(pickFirstDefined(source?.description, tx?.description))
+            const rowRoomNumber = isFolioValidRoomNumber(sourceRoomNumber)
+                ? String(sourceRoomNumber).trim()
+                : isFolioValidRoomNumber(ownerRoom)
+                    ? String(ownerRoom).trim()
+                    : derivedRoom
+            addRoomNumberToBucket(bucket, rowRoomNumber)
             const row = {
                 ...source,
                 id: pickFirstDefined(source?.id, `org-${entryIndex + 1}-${txIndex + 1}`),
-                ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.roomnumber, source?.receiptto, roomIdentifier),
-                roomnumber: pickFirstDefined(source?.roomnumber, roomIdentifier),
+                ownerid: pickFirstDefined(source?.ownerid, source?.owner, source?.receiptto, rowRoomNumber, roomIdentifier),
+                roomnumber: pickFirstDefined(rowRoomNumber, roomIdentifier),
                 guestid: bucket.guestid,
                 guestname: bucket.guestname,
+                reservationReference,
                 debit: Number(source?.debit || tx?.debit || 0),
                 credit: Number(source?.credit || tx?.credit || 0),
                 transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
@@ -332,6 +337,25 @@ function normalizeOrganisationFolioRows(payload = []) {
             normalized.push(row)
             bucket.transactions.push(row)
         })
+    })
+
+    organisationBuckets.forEach((bucket) => {
+        if(bucket.transactions.length) return
+        const primaryGuestRow = Array.isArray(bucket.guestRows) && bucket.guestRows.length ? bucket.guestRows[0] : {}
+        const emptyRow = {
+            id: `org-empty-${bucket.guestid}`,
+            ownerid: bucket.roomNumbers.join(', '),
+            roomnumber: bucket.roomNumbers.join(', '),
+            guestid: bucket.guestid,
+            guestname: bucket.guestname,
+            description: 'No transactions available yet',
+            debit: 0,
+            credit: 0,
+            transactiondate: pickFirstDefined(primaryGuestRow?.tlog, bucket.reservation?.reservationdate, bucket.reservation?.tlog, ''),
+            _emptyTransaction: true
+        }
+        bucket.transactions.push(emptyRow)
+        normalized.push(emptyRow)
     })
 
     normalized.sort((a, b) => {
@@ -380,6 +404,8 @@ function extractFolioRoomNumberFromDescription(description = '') {
 }
 
 function resolveGuestFolioRoomNumber(model = {}) {
+    const roomNumbers = Array.isArray(model.roomNumbers) ? model.roomNumbers.filter(isFolioValidRoomNumber) : []
+    if(roomNumbers.length) return [...new Set(roomNumbers.map(room => String(room).trim()))].join(', ')
     const guestRoomNumber = model?.guest?.roomnumber
     if(isFolioValidRoomNumber(guestRoomNumber)) return String(guestRoomNumber).trim()
     const primaryGuestRow = Array.isArray(model.guestRows) && model.guestRows.length ? model.guestRows[0] : {}
@@ -404,9 +430,24 @@ function resolveGuestFolioRackRate(primaryGuestRow = {}, reservation = {}) {
     return totalAmount
 }
 
+function resolveCombinedGuestFolioRackRate(primaryGuestRow = {}, reservations = [], fallbackReservation = {}) {
+    const roomRate = Number(primaryGuestRow?.roomrate || 0)
+    if(roomRate) return roomRate
+    const validReservations = Array.isArray(reservations) && reservations.length ? reservations : [fallbackReservation].filter(Boolean)
+    let totalAmount = 0
+    let totalNights = 0
+    validReservations.forEach((reservation) => {
+        totalAmount += Number(reservation?.totalamount || 0)
+        totalNights += Number(reservation?.numberofnights || 0)
+    })
+    if(totalAmount && totalNights > 0) return totalAmount / totalNights
+    if(totalAmount) return totalAmount
+    return resolveGuestFolioRackRate(primaryGuestRow, fallbackReservation)
+}
+
 function formatGuestFolioVoucher(tx = {}, reservationReference = '') {
     const invoiceNumber = normalizeFolioText(tx?.reference || '')
-    const reservationNumber = normalizeFolioText(reservationReference || tx?.reservationReference || '')
+    const reservationNumber = normalizeFolioText(tx?.reservationReference || reservationReference || '')
     if(invoiceNumber === '-' && reservationNumber === '-') return '-'
     return `${invoiceNumber} :: ${reservationNumber}`
 }
@@ -480,8 +521,8 @@ function getGuestFolioPrintModel(guestId = '') {
     const reservations = Array.isArray(bucket.reservations) && bucket.reservations.length ? bucket.reservations : (reservation ? [reservation] : [])
     const reservationReferences = [...new Set(reservations.map((item) => String(item?.reference || item?.id || '').trim()).filter(Boolean))]
     const reservationNo = String(reservationReferences.join(', ') || bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '').trim()
-    const rackRate = resolveGuestFolioRackRate(primaryGuestRow, reservation)
-    const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], transactions })
+    const rackRate = resolveCombinedGuestFolioRackRate(primaryGuestRow, reservations, reservation)
+    const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], roomNumbers: bucket.roomNumbers || [], transactions })
     const arrivalDate = getEarliestFolioDate([
         ...reservations.map((item) => item?.arrivaldate),
         primaryGuestRow?.arrivaldate
@@ -532,6 +573,7 @@ function getGuestFolioPrintModel(guestId = '') {
         profile,
         guest: bucket.guest || {},
         guestRows: bucket.guestRows || [],
+        roomNumbers: bucket.roomNumbers || [],
         reservation,
         reservations,
         hideCredit: isGuestFolioRoute() && Boolean(bucket.company || bucket.travelagency),
