@@ -11,6 +11,7 @@ let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
 let pmReservationOwnerRows = []
+const salesItemDetailCache = new Map()
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -232,65 +233,104 @@ function relaxOrderItemInputs() {
     return
 }
 
+function setSalesLoadingStatus(message = '', hide = false) {
+    const loading = did('loading')
+    if(!loading) return
+    loading.innerHTML = message || ''
+    if(hide) loading.classList.add('hidden')
+    else loading.classList.remove('hidden')
+}
+
+function bindSalesEventOnce(selector, eventName, handler, key = '') {
+    const element = typeof selector === 'string' ? document.querySelector(selector) : selector
+    if(!element) return
+    const boundKey = key || `${eventName}`
+    const datasetKey = `bound${boundKey.replace(/[^a-z0-9]/gi, '')}`
+    if(element.dataset[datasetKey]) return
+    element.addEventListener(eventName, handler)
+    element.dataset[datasetKey] = '1'
+}
+
+async function preloadSalesCoreData() {
+    await Promise.allSettled([
+        hemsdepartment(),
+        hemscostcenter(),
+        hemsroomnumber()
+    ])
+}
+
+async function runSalesDeferredLoad(pendingOrderToBillData = null) {
+    const deferredTasks = []
+    setSalesLoadingStatus('Users loading...')
+    deferredTasks.push(getAllUsers())
+    deferredTasks.push(resolveBillDeletePermission())
+    deferredTasks.push(fetchtablenumber())
+    deferredTasks.push(fetchsales(null, { useInitialWindow: true }))
+    if(!isOrderWorkspaceMode() && !(isBillsWorkspaceMode() && pendingOrderToBillData)) {
+        setSalesLoadingStatus('Bills loading...')
+        deferredTasks.push(fetchsalesbills('', null, { useInitialWindow: true }))
+    }
+    if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') deferredTasks.push(splitbillActive())
+    if(isBillsWorkspaceMode() && typeof mergebillActive === 'function') deferredTasks.push(mergebillActive())
+    await Promise.allSettled(deferredTasks)
+    setSalesLoadingStatus('Sales form ready')
+    setTimeout(() => setSalesLoadingStatus('', true), 500)
+}
+
 async function salesActive() {
     configureOrderWorkspaceUi()
     configureBillsWorkspaceUi()
-    recalldatalist()
-    await resolveBillDeletePermission()
+    await preloadSalesCoreData()
     const form = document.querySelector('#salesform')
-    if(form.querySelector('#submit') && !isOrderWorkspaceMode() && !isBillsWorkspaceMode()) form.querySelector('#submit').addEventListener('click', () => salesFormSubmitHandler('', form.querySelector('#submit')))
-    if(form.querySelector('#bill')) form.querySelector('#bill').addEventListener('click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')))
+    if(form?.querySelector('#submit') && !isOrderWorkspaceMode() && !isBillsWorkspaceMode()) bindSalesEventOnce(form.querySelector('#submit'), 'click', () => salesFormSubmitHandler('', form.querySelector('#submit')), 'submit')
+    if(form?.querySelector('#bill')) bindSalesEventOnce(form.querySelector('#bill'), 'click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')), 'bill')
     datasource = []
-    await fetchsales()
-    await getAllUsers()
     removeMainStoreFromPosSalespointLists()
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
-    if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') await splitbillActive()
-    if(isBillsWorkspaceMode() && typeof mergebillActive === 'function') await mergebillActive()
-    if(did('salesviewsubmit')) did('salesviewsubmit').addEventListener('click', () => fetchsalesviewreport())
-    if(did('ordervieworder')) did('ordervieworder').addEventListener('click', () => setOrderViewStatusFilter('ORDER'))
-    if(did('orderviewcanceled')) did('orderviewcanceled').addEventListener('click', () => setOrderViewStatusFilter('CANCELED'))
-    if(did('orderviewfilled')) did('orderviewfilled').addEventListener('click', () => setOrderViewStatusFilter('FILLED'))
-    if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>handlesalesdepartment())
-    if(document.querySelector('#applyto'))document.querySelector('#applyto').addEventListener('change', e=>handlesalesapplyto())
-    if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', () => handleSalesOwnerSelectionChange())
-    if(document.querySelector('#pmownerselect'))document.querySelector('#pmownerselect').addEventListener('change', () => handleSalesOwnerSelectionChange())
-    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('click', checkotherbankdetails)
-    if(document.querySelector('#paymentmethod')) document.querySelector('#paymentmethod').addEventListener('change', checkotherbankdetails)
-    if(did('amountpaid')) did('amountpaid').addEventListener('input', () => {
+    bindSalesEventOnce('#salesviewsubmit', 'click', () => fetchsalesviewreport(), 'salesviewsubmit')
+    bindSalesEventOnce('#ordervieworder', 'click', () => setOrderViewStatusFilter('ORDER'), 'ordervieworder')
+    bindSalesEventOnce('#orderviewcanceled', 'click', () => setOrderViewStatusFilter('CANCELED'), 'orderviewcanceled')
+    bindSalesEventOnce('#orderviewfilled', 'click', () => setOrderViewStatusFilter('FILLED'), 'orderviewfilled')
+    bindSalesEventOnce('#salespointname', 'change', () => handlesalesdepartment(), 'salespointname')
+    bindSalesEventOnce('#applyto', 'change', () => handlesalesapplyto(), 'applyto')
+    bindSalesEventOnce('#owner1', 'change', () => handleSalesOwnerSelectionChange(), 'owner1')
+    bindSalesEventOnce('#pmownerselect', 'change', () => handleSalesOwnerSelectionChange(), 'pmownerselect')
+    bindSalesEventOnce('#paymentmethod', 'click', checkotherbankdetails, 'paymentmethodclick')
+    bindSalesEventOnce('#paymentmethod', 'change', checkotherbankdetails, 'paymentmethodchange')
+    bindSalesEventOnce('#amountpaid', 'input', () => {
         const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
         if(isOrderWorkspaceMode() || isBillsWorkspaceMode() || !applyto.includes('PM')) return
         if(Number(did('amountpaid')?.value || 0) > 0){
             did('amountpaid').value = ''
             notification('For PM, leave Amount Paid empty. Charge will go to PM folio.', 0)
         }
-    })
-    if(did('billreferencecode')) did('billreferencecode').addEventListener('input', () => handleSalesBillReferenceInput())
-    if(did('billreferencecode')) did('billreferencecode').addEventListener('keydown', (event) => {
+    }, 'amountpaid')
+    bindSalesEventOnce('#billreferencecode', 'input', () => handleSalesBillReferenceInput(), 'billreferencecodeinput')
+    bindSalesEventOnce('#billreferencecode', 'keydown', (event) => {
         if(event.key === 'Enter'){
             event.preventDefault()
             const reference = did('billreferencecode').value.trim()
             if(reference) fetchsalesbills(reference)
         }
-    })
-    if(did('retrievebillfromform')) did('retrievebillfromform').addEventListener('click', () => {
+    }, 'billreferencecodekeydown')
+    bindSalesEventOnce('#retrievebillfromform', 'click', () => {
         const reference = (did('billreferencecode')?.value || '').trim()
         if(!reference) return notification('Enter bill reference to retrieve', 0)
         fetchsalesbills(reference)
-    })
-    if(did('retrievebilllist')) did('retrievebilllist').addEventListener('click', () => fetchsalesbills())
-    if(did('clearbillfilters')) did('clearbillfilters').addEventListener('click', () => clearSalesBillFilters())
-    if(did('billfilterreference')) did('billfilterreference').addEventListener('input', () => applySalesBillFilters())
-    if(did('billfilterdatefrom')) did('billfilterdatefrom').addEventListener('change', () => applySalesBillFilters())
-    if(did('billfilterdateto')) did('billfilterdateto').addEventListener('change', () => applySalesBillFilters())
-    if(did('billfiltersalespoint')) did('billfiltersalespoint').addEventListener('change', () => applySalesBillFilters())
+    }, 'retrievebillfromform')
+    bindSalesEventOnce('#retrievebilllist', 'click', () => fetchsalesbills(), 'retrievebilllist')
+    bindSalesEventOnce('#clearbillfilters', 'click', () => clearSalesBillFilters(), 'clearbillfilters')
+    bindSalesEventOnce('#billfilterreference', 'input', () => applySalesBillFilters(), 'billfilterreference')
+    bindSalesEventOnce('#billfilterdatefrom', 'change', () => applySalesBillFilters(), 'billfilterdatefrom')
+    bindSalesEventOnce('#billfilterdateto', 'change', () => applySalesBillFilters(), 'billfilterdateto')
+    bindSalesEventOnce('#billfiltersalespoint', 'change', () => applySalesBillFilters(), 'billfiltersalespoint')
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
+    setSalesLoadingStatus('Preparing sales form...')
     if(!(isBillsWorkspaceMode() && pendingOrderToBillData)) await handlesalesdepartment(default_department)
     removeMainStoreFromPosSalespointLists()
-    await fetchtablenumber()
-    if(!isOrderWorkspaceMode() && !(isBillsWorkspaceMode() && pendingOrderToBillData)) await fetchsalesbills()
+    runSalesDeferredLoad(pendingOrderToBillData)
     if(isBillsWorkspaceMode() && pendingOrderToBillData){
         sessionStorage.removeItem('pendingOrderToBillData')
         try{
@@ -628,18 +668,24 @@ function normalizeSalesBillRows(data = []) {
     }).filter((entry) => entry.reference)
 }
 
-async function fetchsalesbills(reference = '', triggerButton = null) {
+async function fetchsalesbills(reference = '', triggerButton = null, options = {}) {
+    const { useInitialWindow = false } = options || {}
     const cleanedReference = String(reference || '').trim()
     const startdate = String(did('billfilterdatefrom')?.value || '').trim()
     const enddate = String(did('billfilterdateto')?.value || '').trim()
     const salespoint = String(did('billfiltersalespoint')?.value || '').trim()
     let payload = null
-    if(cleanedReference || startdate || enddate || salespoint){
+    const initialWindowDate = new Date().toISOString().slice(0, 10)
+    const initialSalespoint = String(did('salespointname')?.value || '').trim()
+    if(cleanedReference || startdate || enddate || salespoint || useInitialWindow){
         payload = new FormData()
         if(cleanedReference) payload.append('reference', cleanedReference)
         if(startdate) payload.append('startdate', startdate)
+        else if(useInitialWindow) payload.append('startdate', initialWindowDate)
         if(enddate) payload.append('enddate', enddate)
+        else if(useInitialWindow) payload.append('enddate', initialWindowDate)
         if(salespoint) payload.append('salespoint', salespoint)
+        else if(useInitialWindow && initialSalespoint) payload.append('salespoint', initialSalespoint)
     }
 
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json')
@@ -1265,7 +1311,7 @@ async function handlesalesdepartment(store) {
                 datasource = request.data
                 document.getElementById('hems_itemslist').innerHTML = request.data.map((data, index) =>`<option>${data.itemname.trim()}</option>`).join('')
                 hidesalesterminal(false)
-                did('loading').classList.add('hidden')
+                did('loading').innerHTML = 'Sales form ready'
                 syncSalesViewFilterSalespointOptions()
                 syncSalesBillFilterSalespointOptions()
                 // resolvePagination(datasource, onupdateinventoryTableDataSignal)
@@ -1421,7 +1467,13 @@ async function salesitempop(val,i,qty=0) {
         paramstr.append('salespoint', did('salespointname').value)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchitemdetail', ddid ? getparamm() : null, null, 'json')
+    const salespointValue = String(did('salespointname')?.value || '').trim()
+    const detailCacheKey = `${ddid}::${salespointValue}`
+    let request = salesItemDetailCache.get(detailCacheKey) || null
+    if(!request){
+        request = await httpRequest2('../controllers/fetchitemdetail', ddid ? getparamm() : null, null, 'json')
+        if(request?.status) salesItemDetailCache.set(detailCacheKey, request)
+    }
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status && Array.isArray(request.itemdata) && request.itemdata.length) {
         did(`type-${i}`).innerHTML = request.itemdata[0].itemtype
@@ -1505,14 +1557,25 @@ function removesalesrow(i){
     runCount()
 }
 
-async function fetchsales(id) {
+async function fetchsales(id, options = {}) {
+    const { useInitialWindow = false } = options || {}
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2(isOrderWorkspaceMode() ? '../controllers/fetchorders.php' : '../controllers/fetchsales', id ? getparamm() : null, null, 'json')
+    function getWindowedParamm(){
+        let paramstr = new FormData()
+        const today = new Date().toISOString().slice(0, 10)
+        const salespoint = String(did('salespointname')?.value || '').trim()
+        paramstr.append('startdate', today)
+        paramstr.append('enddate', today)
+        if(salespoint) paramstr.append('salespoint', salespoint)
+        return paramstr
+    }
+    const payload = id ? getparamm() : (useInitialWindow ? getWindowedParamm() : null)
+    let request = await httpRequest2(isOrderWorkspaceMode() ? '../controllers/fetchorders.php' : '../controllers/fetchsales', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

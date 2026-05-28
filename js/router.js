@@ -992,7 +992,7 @@ function intializePageJavascript() {
         clearInterval(timer)
         timer = null;
         attachPageDescriptionTrigger()
-        timer = setTimeout(() => window?.[startingFunction]?.(), 1000)
+        requestAnimationFrame(() => window?.[startingFunction]?.())
     }
     catch(e) {}
 }
