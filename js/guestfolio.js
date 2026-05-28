@@ -369,6 +369,8 @@ function extractFolioRoomNumberFromDescription(description = '') {
 }
 
 function resolveGuestFolioRoomNumber(model = {}) {
+    const guestRoomNumber = model?.guest?.roomnumber
+    if(isFolioValidRoomNumber(guestRoomNumber)) return String(guestRoomNumber).trim()
     const primaryGuestRow = Array.isArray(model.guestRows) && model.guestRows.length ? model.guestRows[0] : {}
     if(isFolioValidRoomNumber(primaryGuestRow?.roomnumber)) return String(primaryGuestRow.roomnumber).trim()
     for(const tx of model.transactions || []) {
@@ -438,7 +440,7 @@ function getGuestFolioPrintModel(guestId = '') {
     const reservation = bucket.reservation || {}
     const reservationNo = String(bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '').trim()
     const rackRate = resolveGuestFolioRackRate(primaryGuestRow, reservation)
-    const roomNo = resolveGuestFolioRoomNumber({ guestRows: bucket.guestRows || [], transactions })
+    const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], transactions })
 
     const groupedDays = []
     const dayMap = new Map()
