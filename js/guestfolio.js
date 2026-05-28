@@ -287,19 +287,19 @@ function normalizeOrganisationFolioRows(payload = []) {
 }
 
 function formatFolioAmount(value = 0) {
-    const numeric = Number(value || 0)
-    return numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const numeric = Math.round(Number(value || 0))
+    return numeric === 0 ? '' : formatNumber(numeric)
 }
 
 function maskCreditDisplayIfNeeded(value, shouldMask = false) {
     if(shouldMask) return '***'
-    const numeric = Number(value || 0)
+    const numeric = Math.round(Number(value || 0))
     return numeric === 0 ? '' : formatNumber(numeric)
 }
 
 function formatFolioAmountCell(value, shouldMask = false) {
     if(shouldMask) return '***'
-    const numeric = Number(value || 0)
+    const numeric = Math.round(Number(value || 0))
     return numeric === 0 ? '' : formatNumber(numeric)
 }
 
@@ -1021,7 +1021,7 @@ async function onreceiveablesTableDataSignal() {
                 <td>${formatReceivableDescription(item.description || (item._emptyTransaction ? 'No transactions available yet' : ''))}</td>
                 <td>${formatFolioAmountCell(item.debit)}</td>
                 <td>${maskCreditDisplayIfNeeded(item.credit || 0, item.hasHiddenCredit)}</td>
-                <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
+                <td><p class="text-black font-semibold">${formatFolioAmountCell(runningBalance)}</p></td>
             </tr>`)
         }).join('')
         injectPaginatatedTable(rows || `<tr><td colspan="100%" class="text-center opacity-70">No records found</td></tr>`)
@@ -1039,7 +1039,7 @@ async function onreceiveablesTableDataSignal() {
             <td>${formatReceivableDescription(item.description)}</td>
             <td>${formatFolioAmountCell(item.debit)}</td>
             <td>${formatFolioAmountCell(item.credit)}</td>
-            <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
+            <td><p class="text-black font-semibold">${formatFolioAmountCell(runningBalance)}</p></td>
             <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
         </tr>`)}
         )
@@ -1058,7 +1058,7 @@ async function onreceiveablesTableDataSignal() {
         <td> ROOM ${roomIdentifier}</td>
         <td>${formatFolioAmountCell(item.debit)}</td>
         <td>${formatFolioAmountCell(item.credit)}</td>
-        <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
+        <td><p class="text-black font-semibold">${formatFolioAmountCell(runningBalance)}</p></td>
         <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
     )
