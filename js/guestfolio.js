@@ -246,7 +246,6 @@ function normalizeOrganisationFolioRows(payload = []) {
                 roomnumber: roomIdentifier,
                 guestid: bucket.guestid,
                 guestname: bucket.guestname,
-                hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
                 description: 'No transactions available yet',
                 debit: 0,
                 credit: 0,
@@ -267,7 +266,6 @@ function normalizeOrganisationFolioRows(payload = []) {
                 roomnumber: pickFirstDefined(source?.roomnumber, roomIdentifier),
                 guestid: bucket.guestid,
                 guestname: bucket.guestname,
-                hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
                 debit: Number(source?.debit || tx?.debit || 0),
                 credit: Number(source?.credit || tx?.credit || 0),
                 transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
@@ -1040,7 +1038,7 @@ async function onreceiveablesTableDataSignal() {
             <td> ROOM ${roomIdentifier}</td>
             <td>${formatReceivableDescription(item.description)}</td>
             <td>${formatFolioAmountCell(item.debit)}</td>
-            <td>${maskCreditDisplayIfNeeded(item.credit, item.hasHiddenCredit)}</td>
+            <td>${formatFolioAmountCell(item.credit)}</td>
             <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
             <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
         </tr>`)}
@@ -1059,7 +1057,7 @@ async function onreceiveablesTableDataSignal() {
         <td>${item.index + 1 }</td>
         <td> ROOM ${roomIdentifier}</td>
         <td>${formatFolioAmountCell(item.debit)}</td>
-        <td>${maskCreditDisplayIfNeeded(item.credit, item.hasHiddenCredit)}</td>
+        <td>${formatFolioAmountCell(item.credit)}</td>
         <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
         <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
