@@ -143,6 +143,13 @@ function normalizeGuestFolioRows(payload = []) {
         }
     })
 
+    // If a guest is company/travel-agency backed on any source row, hide credit for all that guest's rows.
+    guestBuckets.forEach((bucket) => {
+        const shouldHideCredit = Boolean(bucket.company || bucket.travelagency)
+        if(!shouldHideCredit) return
+        bucket.transactions = bucket.transactions.map((tx) => ({ ...tx, hasHiddenCredit: true }))
+    })
+
     const normalized = []
     guestBuckets.forEach((bucket) => {
         if(!bucket.transactions.length) {
