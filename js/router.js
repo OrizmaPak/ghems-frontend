@@ -284,18 +284,18 @@ const routerTree = {
     },
     companyfolio: {
         template: 'companyfolio',
-        startingFunction: 'companyfolioActive',
-        scriptName: './js/guestfolio.js'
+        startingFunction: 'orgCompanyfolioActive',
+        scriptName: './js/organisationfolio.js'
     },
     agencyfolio: {
         template: 'agencyfolio',
-        startingFunction: 'agencyfolioActive',
-        scriptName: './js/guestfolio.js'
+        startingFunction: 'orgAgencyfolioActive',
+        scriptName: './js/organisationfolio.js'
     },
     groupfolio: {
         template: 'groupfolio',
-        startingFunction: 'groupfolioActive',
-        scriptName: './js/guestfolio.js'
+        startingFunction: 'orgGroupfolioActive',
+        scriptName: './js/organisationfolio.js'
     },
     directdebit: {
         template: 'directdebit',
