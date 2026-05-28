@@ -838,7 +838,7 @@ function collectCheckinTariffSummaryData(){
     const totalPlanDiscount = rooms.reduce((sum, room) => sum + room.planDiscount, 0)
     const otherDiscountTotal = (otherDiscountPerc / 100) * totalRoomRate
     const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscountTotal
-    const totalDue = Number(did('totalamount')?.value || Math.max(totalRoomRate - totalDiscount, 0))
+    const totalDue = Number(did('totalamount')?.value || Math.max(totalRoomRate, 0))
     const formDetails = [
         ['Arrival', String(did('arrivaldate')?.value || '').replace('T', ' ')],
         ['Departure', String(did('departuredate')?.value || '').replace('T', ' ')],
@@ -1203,7 +1203,7 @@ function calculatetotals(){
     const oneDayNetTariff = grossTotalAmount / nights
     const otherDiscountAmount = (otherdiscount / 100) * grossTotalAmount
     const totalDiscountAmount = trd + tpd + otherDiscountAmount
-    let totalamount = Math.max(grossTotalAmount - totalDiscountAmount, 0)
+    let totalamount = Math.max(grossTotalAmount, 0)
     did('totalrate').textContent = formatNumber(oneDayNetTariff)
     did('totaldiscount').textContent = formatNumber(totalDiscountAmount)
     did('totalplan').textContent = formatNumber(totalamount)
@@ -2790,7 +2790,7 @@ function opencheckinreceipt(id, ratee, rooms){
     const grossTotalAmount = totalRoomRate
     const otherDiscount = Math.max((Math.max(Math.min(otherDiscountPerc, 100), 0) / 100) * grossTotalAmount, 0)
     const totalDiscount = totalRoomDiscount + totalPlanDiscount + otherDiscount
-    const calculatedTotalAmount = Math.max(totalRoomRate - totalDiscount, 0)
+    const calculatedTotalAmount = Math.max(totalRoomRate, 0)
     const savedTotalAmount = Number(receiptdata?.reservations?.totalamount || 0)
     const finalTotalAmount = savedTotalAmount > 0 ? savedTotalAmount : calculatedTotalAmount
     // did('invoiceno').setAttribute('value', receiptdata.reservations.reference)
