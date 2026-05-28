@@ -246,6 +246,7 @@ function normalizeOrganisationFolioRows(payload = []) {
                 roomnumber: roomIdentifier,
                 guestid: bucket.guestid,
                 guestname: bucket.guestname,
+                hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
                 description: 'No transactions available yet',
                 debit: 0,
                 credit: 0,
@@ -266,6 +267,7 @@ function normalizeOrganisationFolioRows(payload = []) {
                 roomnumber: pickFirstDefined(source?.roomnumber, roomIdentifier),
                 guestid: bucket.guestid,
                 guestname: bucket.guestname,
+                hasHiddenCredit: Boolean(bucket.company || bucket.travelagency),
                 debit: Number(source?.debit || tx?.debit || 0),
                 credit: Number(source?.credit || tx?.credit || 0),
                 transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
@@ -292,8 +294,19 @@ function formatFolioAmount(value = 0) {
 }
 
 function maskCreditDisplayIfNeeded(value, shouldMask = false) {
-    if(!shouldMask) return formatNumber(value || 0)
-    return '***'
+    if(shouldMask) return '***'
+    const numeric = Number(value || 0)
+    return numeric === 0 ? '' : formatNumber(numeric)
+}
+
+function formatFolioAmountCell(value, shouldMask = false) {
+    if(shouldMask) return '***'
+    const numeric = Number(value || 0)
+    return numeric === 0 ? '' : formatNumber(numeric)
+}
+
+function getReceivableCreditValueForBalance(item = {}) {
+    return item?.hasHiddenCredit ? 0 : Number(item?.credit || 0)
 }
 
 function normalizeFolioText(value = '') {
@@ -352,22 +365,23 @@ function getGuestFolioPrintModel(guestId = '') {
         const row = dayMap.get(dayKey)
         const debit = Number(tx.debit || 0)
         const credit = Number(tx.credit || 0)
+        const effectiveCredit = tx?.hasHiddenCredit ? 0 : credit
         totalDebit += debit
-        totalCredit += credit
-        runningBalance += debit - credit
+        totalCredit += effectiveCredit
+        runningBalance += debit - effectiveCredit
         row.dayDebit += debit
-        row.dayCredit += credit
+        row.dayCredit += effectiveCredit
         row.dayClosingBalance = runningBalance
         row.rows.push({
             ...tx,
             debit,
-            credit,
+            credit: effectiveCredit,
             runningBalance
         })
 
         const summaryKey = classifyGuestFolioSummary(tx.description)
         const prev = Number(billSummary.get(summaryKey) || 0)
-        billSummary.set(summaryKey, prev + (debit - credit))
+        billSummary.set(summaryKey, prev + (debit - effectiveCredit))
     })
 
     return {
@@ -1007,7 +1021,7 @@ async function onreceiveablesTableDataSignal() {
                 <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
                 <td>${item.guestname || '-'}</td>
                 <td>${formatReceivableDescription(item.description || (item._emptyTransaction ? 'No transactions available yet' : ''))}</td>
-                <td>${formatNumber(item.debit || 0)}</td>
+                <td>${formatFolioAmountCell(item.debit)}</td>
                 <td>${maskCreditDisplayIfNeeded(item.credit || 0, item.hasHiddenCredit)}</td>
                 <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
             </tr>`)
@@ -1017,7 +1031,7 @@ async function onreceiveablesTableDataSignal() {
     }
     if(guestfolioReceiveablesFiltered || isPayPendingCheckoutBillsRoute()){
         let rows = getSignaledDatasource().map((item, index) =>{
-        const result = Number(item.debit) - Number(item.credit);
+        const result = Number(item.debit || 0) - getReceivableCreditValueForBalance(item);
         const roomIdentifier = item.ownerid || item.roomnumber || '';
         const runningBalance = getReceivableRunningBalance(item.index ?? index);
         return(`
@@ -1025,8 +1039,8 @@ async function onreceiveablesTableDataSignal() {
             <td>${formatReceivableTransactionDate(item.transactiondate)}</td>
             <td> ROOM ${roomIdentifier}</td>
             <td>${formatReceivableDescription(item.description)}</td>
-            <td>${formatNumber(item.debit)}</td>
-            <td>${formatNumber(item.credit)}</td>
+            <td>${formatFolioAmountCell(item.debit)}</td>
+            <td>${maskCreditDisplayIfNeeded(item.credit, item.hasHiddenCredit)}</td>
             <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
             <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
         </tr>`)}
@@ -1037,15 +1051,15 @@ async function onreceiveablesTableDataSignal() {
     }
 
     let rows = getSignaledDatasource().map((item, index) =>{
-    const result = Number(item.debit) - Number(item.credit);
+    const result = Number(item.debit || 0) - getReceivableCreditValueForBalance(item);
     const roomIdentifier = item.ownerid || item.roomnumber || '';
     const runningBalance = getReceivableRunningBalance(item.index ?? index);
     return(`
     <tr>
         <td>${item.index + 1 }</td>
         <td> ROOM ${roomIdentifier}</td>
-        <td>${formatNumber(item.debit)}</td>
-        <td>${formatNumber(item.credit)}</td>
+        <td>${formatFolioAmountCell(item.debit)}</td>
+        <td>${maskCreditDisplayIfNeeded(item.credit, item.hasHiddenCredit)}</td>
         <td><p class="text-black font-semibold">${formatNumber(runningBalance)}</p></td>
         <td><button onclick="openreceiveablemodalbyindex('${item.index ?? index}')" class="btn btn-sm btn-primary ${result > 0 ? '' : '!hidden'}">Pay Now</button></td>
     </tr>`)}
@@ -1124,7 +1138,7 @@ function getReceivableRunningBalance(index){
 
     for(let i = 0; i <= lastIndex && i < datasource.length; i++){
         balance += Number(datasource[i].debit || 0)
-        balance -= Number(datasource[i].credit || 0)
+        balance -= getReceivableCreditValueForBalance(datasource[i])
     }
 
     return balance
