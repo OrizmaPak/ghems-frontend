@@ -795,16 +795,16 @@ function openGuestFolioPrint(guestId = '') {
 
 async function receivablesActive(mode='') {
     guestfolioPageMode = mode || getCurrentRouteName() || 'receivables'
-    // const form = document.querySelector('#receiveablesform')
-    // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', receiveablesFormSubmitHandler)
-    if(document.querySelector('#submitreceiveablesfilter')) document.querySelector('#submitreceiveablesfilter').addEventListener('click', () => {
+    const submitFilterBtn = document.querySelector('#submitreceiveablesfilter')
+    if(submitFilterBtn) submitFilterBtn.onclick = () => {
         if(isGuestFolioRoute()) fetchreceiveables('', getSelectedReceivablesGuestId())
         else if(isOrganisationFolioRoute()) fetchreceiveables('', getSelectedOrganisationId())
         else fetchreceiveables('', did('receiveablesroomnumber').value)
-    })
+    }
     if(!isGuestFolioRoute() && !isOrganisationFolioRoute()) setupReceivablesRoomPicker()
     else if(did('openReceivablesRoomPicker')) did('openReceivablesRoomPicker').classList.add('hidden')
-    if(document.querySelector('#resetreceiveablesfilter')) document.querySelector('#resetreceiveablesfilter').addEventListener('click', resetreceiveablesfilter)
+    const resetFilterBtn = document.querySelector('#resetreceiveablesfilter')
+    if(resetFilterBtn) resetFilterBtn.onclick = resetreceiveablesfilter
     initGuestFolioViewTabs()
     configureReceivablesFilterMode()
     if(isGuestFolioRoute()) await initializeGuestFolioGuestPicker()
