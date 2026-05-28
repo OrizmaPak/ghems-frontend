@@ -442,7 +442,11 @@ function renderGuestFolioPrintTable() {
 function openGuestFolioPrint(guestId = '') {
     const model = getGuestFolioPrintModel(guestId)
     if(!model) return notification('Unable to load guest folio print data', 0)
-    did('modalreceipt').classList.remove('hidden')
+    const modalReceipt = did('modalreceipt')
+    const invoiceContainer = did('invoicecontainer')
+    if(!modalReceipt || !invoiceContainer) return notification('Unable to open folio print modal', 0)
+    modalReceipt.className = 'fixed w-screen h-screen top-0 z-[200] left-0 flex justify-center items-center overflow-hidden p-3 md:p-6 bg-[#00000052]'
+    invoiceContainer.className = 'w-[min(96vw,980px)] max-h-[92vh] mx-auto border rounded shadow bg-white overflow-hidden flex flex-col'
     const isAgencyFolioPrint = isAgencyFolioRoute()
 
     const firstTransaction = model.transactions[0] || {}
@@ -477,8 +481,10 @@ function openGuestFolioPrint(guestId = '') {
         `
     }).join('')
 
-    did('invoicecontainer').innerHTML = `
-        <div id="guestfolioprintcontainer" class="bg-white p-4 md:p-8" style="max-width:900px;margin:0 auto;">
+    invoiceContainer.innerHTML = `
+        <div class="flex min-h-0 flex-1 flex-col bg-white">
+            <div class="min-h-0 flex-1 overflow-auto p-3 md:p-5">
+                <div id="guestfolioprintcontainer" class="bg-white p-4 md:p-8" style="max-width:900px;margin:0 auto;">
             <style>
                 #guestfolioprintcontainer{font-family:Arial,sans-serif;color:#222;font-size:12px;line-height:1.25;}
                 #guestfolioprintcontainer .header{text-align:center;border-bottom:1px solid #bbb;padding-bottom:8px;margin-bottom:8px;}
@@ -588,11 +594,13 @@ function openGuestFolioPrint(guestId = '') {
                     <div class="signature-label">Guest Signature</div>
                 </div>
             </div>
-        </div>
+                </div>
+            </div>
 
-        <div class="flex justify-end mt-3 gap-2">
-            <button type="button" class="btn" onclick="printContent('HEMS GUEST FOLIO', null, 'guestfolioprintcontainer', true)">Print</button>
-            <button type="button" class="btn" onclick="did('modalreceipt').classList.add('hidden')">Close</button>
+            <div class="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-white/95 p-3">
+                <button type="button" class="btn" onclick="printContent('HEMS GUEST FOLIO', null, 'guestfolioprintcontainer', true)">Print</button>
+                <button type="button" class="btn" onclick="did('modalreceipt').classList.add('hidden')">Close</button>
+            </div>
         </div>
     `
 }

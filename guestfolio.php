@@ -122,9 +122,9 @@
                                 </div>
                             </div> 
                             
-                            <div id="modalreceipt" onclick="event.target.id == 'modalreceipt' ? this.classList.add('hidden') : ''" class="hidden fixed w-screen h-screen  top-0 z-[200] left-0 flex justify-center items-center overflow-auto">
+                            <div id="modalreceipt" onclick="event.target.id == 'modalreceipt' ? this.classList.add('hidden') : ''" class="hidden fixed w-screen h-screen top-0 z-[200] left-0 flex justify-center items-center overflow-hidden p-3 md:p-6 bg-[#00000052]">
                                 
-                                <div id="invoicecontainer" class="max-w-[90%] mx-auto border rounded shadow p-10 bg-white relative top-[30%]">
+                                <div id="invoicecontainer" class="w-[min(96vw,980px)] max-h-[92vh] mx-auto border rounded shadow bg-white overflow-hidden flex flex-col">
                                 
                                 </div>
                                 
