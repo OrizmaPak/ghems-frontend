@@ -136,6 +136,7 @@ function normalizeGuestFolioRows(payload = []) {
             hasHiddenCredit,
             debit: Number(source?.debit || tx?.debit || 0),
             credit: Number(source?.credit || tx?.credit || 0),
+            creditForBalance: hasHiddenCredit ? 0 : Number(source?.credit || tx?.credit || 0),
             transactiondate: pickFirstDefined(source?.transactiondate, source?.valuedate, source?.tlog, tx?.transactiondate, tx?.tlog),
             description: pickFirstDefined(source?.description, tx?.description)
         }
@@ -225,6 +226,7 @@ function normalizeGuestFolioRows(payload = []) {
                 description: 'No transactions available yet',
                 debit: 0,
                 credit: 0,
+                creditForBalance: 0,
                 transactiondate: bucket.createdAt || '',
                 _emptyTransaction: true
             })
@@ -374,6 +376,7 @@ function formatFolioAmountCell(value, shouldMask = false) {
 }
 
 function getReceivableCreditValueForBalance(item = {}) {
+    if(item?.creditForBalance !== undefined && item?.creditForBalance !== null) return Number(item.creditForBalance || 0)
     return item?.hasHiddenCredit ? 0 : Number(item?.credit || 0)
 }
 
@@ -530,7 +533,7 @@ function getGuestFolioPrintModel(guestId = '') {
         const row = dayMap.get(dayKey)
         const debit = Number(tx.debit || 0)
         const credit = Number(tx.credit || 0)
-        const effectiveCredit = tx?.hasHiddenCredit ? 0 : credit
+        const effectiveCredit = getReceivableCreditValueForBalance(tx)
         totalDebit += debit
         totalCredit += effectiveCredit
         runningBalance += debit - effectiveCredit
