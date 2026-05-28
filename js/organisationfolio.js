@@ -239,6 +239,8 @@ function normalizeOrganisationFolioRows(payload = []) {
         return ''
     }
 
+    const getReservationData = (entry = {}) => entry?.resrvationdata || entry?.reservationdata || entry?.reservations || null
+
     const normalized = []
     const organisationBuckets = new Map()
     const ensureOrganisationBucket = (entry = {}, entryIndex = 0) => {
@@ -269,6 +271,7 @@ function normalizeOrganisationFolioRows(payload = []) {
                 guest: {},
                 guestRows: [],
                 reservation: null,
+                reservations: [],
                 company,
                 travelagency,
                 groups,
@@ -280,10 +283,17 @@ function normalizeOrganisationFolioRows(payload = []) {
 
     payload.forEach((entry, entryIndex) => {
         const bucket = ensureOrganisationBucket(entry, entryIndex)
+        const reservation = getReservationData(entry)
+        if(reservation) {
+            bucket.reservation = bucket.reservation || reservation
+            bucket.reservations.push(reservation)
+        }
         const guestRows = Array.isArray(entry?.guest) ? entry.guest : []
         if(guestRows.length) bucket.guestRows = guestRows
-        if(entry?.reservations) bucket.reservation = entry.reservations
-        const roomNumbers = guestRows.map((row) => String(row?.roomnumber || '').trim()).filter(Boolean)
+        const roomNumbers = [
+            ...guestRows.map((row) => String(row?.roomnumber || '').trim()),
+            String(entry?.roomnumber || '').trim()
+        ].filter(Boolean)
         const roomIdentifier = roomNumbers.join(', ')
         const transactions = Array.isArray(entry?.transactions) ? entry.transactions : []
 
@@ -434,6 +444,27 @@ function classifyGuestFolioSummary(description = '') {
     return 'Others'
 }
 
+function getComparableFolioDate(value = '') {
+    const time = new Date(String(value || '').replace(' ', 'T')).getTime()
+    return Number.isFinite(time) ? time : 0
+}
+
+function getEarliestFolioDate(values = []) {
+    const dated = values
+        .map((value) => ({ value, time: getComparableFolioDate(value) }))
+        .filter((item) => item.time > 0)
+        .sort((a, b) => a.time - b.time)
+    return dated[0]?.value || ''
+}
+
+function getLatestFolioDate(values = []) {
+    const dated = values
+        .map((value) => ({ value, time: getComparableFolioDate(value) }))
+        .filter((item) => item.time > 0)
+        .sort((a, b) => b.time - a.time)
+    return dated[0]?.value || ''
+}
+
 function getGuestFolioPrintModel(guestId = '') {
     const lookupId = String(guestId || '').trim()
     const bucket = guestFolioBuckets.get(lookupId) || Array.from(guestFolioBuckets.values()).find(row => String(row?.guestid || '') === lookupId)
@@ -446,9 +477,19 @@ function getGuestFolioPrintModel(guestId = '') {
     })
     const primaryGuestRow = Array.isArray(bucket.guestRows) && bucket.guestRows.length ? bucket.guestRows[0] : {}
     const reservation = bucket.reservation || {}
-    const reservationNo = String(bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '').trim()
+    const reservations = Array.isArray(bucket.reservations) && bucket.reservations.length ? bucket.reservations : (reservation ? [reservation] : [])
+    const reservationReferences = [...new Set(reservations.map((item) => String(item?.reference || item?.id || '').trim()).filter(Boolean))]
+    const reservationNo = String(reservationReferences.join(', ') || bucket.reservationReference || reservation?.reference || reservation?.id || primaryGuestRow?.reservationid || '').trim()
     const rackRate = resolveGuestFolioRackRate(primaryGuestRow, reservation)
     const roomNo = resolveGuestFolioRoomNumber({ guest: bucket.guest || {}, guestRows: bucket.guestRows || [], transactions })
+    const arrivalDate = getEarliestFolioDate([
+        ...reservations.map((item) => item?.arrivaldate),
+        primaryGuestRow?.arrivaldate
+    ])
+    const departureDate = getLatestFolioDate([
+        ...reservations.map((item) => item?.departuredate),
+        primaryGuestRow?.departuredate
+    ])
 
     const groupedDays = []
     const dayMap = new Map()
@@ -492,10 +533,11 @@ function getGuestFolioPrintModel(guestId = '') {
         guest: bucket.guest || {},
         guestRows: bucket.guestRows || [],
         reservation,
+        reservations,
         hideCredit: isGuestFolioRoute() && Boolean(bucket.company || bucket.travelagency),
         stayInfo: {
-            arrivalDate: reservation?.arrivaldate || primaryGuestRow?.arrivaldate || '',
-            departureDate: reservation?.departuredate || primaryGuestRow?.departuredate || '',
+            arrivalDate,
+            departureDate,
             rackRate,
             pax: Number(primaryGuestRow?.adult || 0) + Number(primaryGuestRow?.child || 0) + Number(primaryGuestRow?.infant || 0),
             roomNo,
