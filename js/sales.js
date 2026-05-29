@@ -24,7 +24,13 @@ const salesLazyLoadState = {
     splitBillsLoaded: false,
     splitBillsLoading: false,
     mergeBillsLoaded: false,
-    mergeBillsLoading: false
+    mergeBillsLoading: false,
+    salesViewLoaded: false,
+    salesViewLoading: false,
+    usersLoaded: false,
+    usersLoading: null,
+    tableNumbersLoaded: false,
+    tableNumbersLoading: null
 }
 
 function recordSalesFetchDebug(name = '', details = {}) {
@@ -281,15 +287,58 @@ async function preloadSalesCoreData() {
     ])
 }
 
+async function ensureSalesUsersLoaded() {
+    if(salesLazyLoadState.usersLoaded) return true
+    if(salesLazyLoadState.usersLoading) return salesLazyLoadState.usersLoading
+    salesLazyLoadState.usersLoading = getAllUsers('user', { lightweight: true })
+        .then(() => {
+            salesLazyLoadState.usersLoaded = true
+            return true
+        })
+        .finally(() => {
+            salesLazyLoadState.usersLoading = null
+        })
+    return salesLazyLoadState.usersLoading
+}
+
+async function ensureSalesTableNumbersLoaded() {
+    const salespoint = String(did('salespointname')?.value || '')
+    if(!isTableServiceDepartment(salespoint)) return false
+    if(salesLazyLoadState.tableNumbersLoaded) return true
+    if(salesLazyLoadState.tableNumbersLoading) return salesLazyLoadState.tableNumbersLoading
+    salesLazyLoadState.tableNumbersLoading = fetchtablenumber({ lightweight: true })
+        .then(() => {
+            salesLazyLoadState.tableNumbersLoaded = true
+            return true
+        })
+        .finally(() => {
+            salesLazyLoadState.tableNumbersLoading = null
+        })
+    return salesLazyLoadState.tableNumbersLoading
+}
+
+async function ensureSalesViewDataLoaded() {
+    if(salesLazyLoadState.salesViewLoaded || salesLazyLoadState.salesViewLoading) return
+    salesLazyLoadState.salesViewLoading = true
+    setSalesLoadingStatus(isOrderWorkspaceMode() ? 'Orders loading...' : 'Sales view loading...')
+    try {
+        await Promise.allSettled([
+            ensureSalesUsersLoaded(),
+            fetchsales(null, { useInitialWindow: true, quietEmpty: true, lightweight: true })
+        ])
+        salesLazyLoadState.salesViewLoaded = true
+    } finally {
+        salesLazyLoadState.salesViewLoading = false
+        setSalesLoadingStatus('Form ready')
+        setTimeout(() => setSalesLoadingStatus('', true), 500)
+    }
+}
+
 async function runSalesDeferredLoad(pendingOrderToBillData = null) {
     const deferredTasks = []
-    setSalesLoadingStatus('Users loading...')
-    deferredTasks.push(getAllUsers('user', { lightweight: true }))
-    deferredTasks.push(resolveBillDeletePermission())
-    deferredTasks.push(fetchtablenumber({ lightweight: true }))
-    deferredTasks.push(fetchsales(null, { useInitialWindow: true, quietEmpty: true, lightweight: true }))
     if(isBillsWorkspaceMode() && !pendingOrderToBillData) {
         setSalesLoadingStatus('Bills loading...')
+        deferredTasks.push(resolveBillDeletePermission())
         deferredTasks.push(fetchsalesbills('', null, { useInitialWindow: true, lightweight: true }))
     }
     if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') deferredTasks.push(splitbillActive())
@@ -312,6 +361,12 @@ async function salesActive() {
     salesLazyLoadState.splitBillsLoading = false
     salesLazyLoadState.mergeBillsLoaded = false
     salesLazyLoadState.mergeBillsLoading = false
+    salesLazyLoadState.salesViewLoaded = false
+    salesLazyLoadState.salesViewLoading = false
+    salesLazyLoadState.usersLoaded = false
+    salesLazyLoadState.usersLoading = null
+    salesLazyLoadState.tableNumbersLoaded = false
+    salesLazyLoadState.tableNumbersLoading = null
     removeMainStoreFromPosSalespointLists()
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
@@ -319,7 +374,13 @@ async function salesActive() {
     bindSalesEventOnce('#ordervieworder', 'click', () => setOrderViewStatusFilter('ORDER'), 'ordervieworder')
     bindSalesEventOnce('#orderviewcanceled', 'click', () => setOrderViewStatusFilter('CANCELED'), 'orderviewcanceled')
     bindSalesEventOnce('#orderviewfilled', 'click', () => setOrderViewStatusFilter('FILLED'), 'orderviewfilled')
-    bindSalesEventOnce('#salespointname', 'change', () => handlesalesdepartment(), 'salespointname')
+    document.querySelectorAll("li[name='salesview']").forEach((tab, index) => {
+        bindSalesEventOnce(tab, 'click', () => ensureSalesViewDataLoaded(), `salesviewlazyload${index}`)
+    })
+    bindSalesEventOnce('#salespointname', 'change', () => {
+        salesLazyLoadState.salesViewLoaded = false
+        handlesalesdepartment()
+    }, 'salespointname')
     bindSalesEventOnce('#applyto', 'change', () => handlesalesapplyto(), 'applyto')
     bindSalesEventOnce('#owner1', 'change', () => handleSalesOwnerSelectionChange(), 'owner1')
     bindSalesEventOnce('#pmownerselect', 'change', () => handleSalesOwnerSelectionChange(), 'pmownerselect')
@@ -1405,6 +1466,7 @@ async function handlesalesdepartment(store) {
                 did('loading').innerHTML = 'Form ready'
                 syncSalesViewFilterSalespointOptions()
                 syncSalesBillFilterSalespointOptions()
+                ensureSalesTableNumbersLoaded()
                 // resolvePagination(datasource, onupdateinventoryTableDataSignal)
                 return notification(request.message, 1);
             }

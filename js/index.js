@@ -55,6 +55,18 @@ if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual'
 }
 
+function getWindowStartupRouteName() {
+    try {
+        return new URL(window.location.href).searchParams.get('r') || ''
+    } catch (_) {
+        return ''
+    }
+}
+
+function shouldSkipGlobalWarmupsForCurrentRoute() {
+    return ['sales', 'bills', 'order', 'splitbill', 'mergebill'].includes(getWindowStartupRouteName())
+}
+
 function formatCurrency(amount) {
   // Use the Intl.NumberFormat object for currency formatting
   const formatter = new Intl.NumberFormat('en-NG', {
@@ -97,11 +109,14 @@ window.onload = function() {
         scheduleSuperAdminNavigationStabilizer()
     }
     runPermissions()
-    rundashboard()
-    runavailablerooms()
+    const skipGlobalWarmups = shouldSkipGlobalWarmupsForCurrentRoute()
+    if(!skipGlobalWarmups) {
+        rundashboard()
+        runavailablerooms()
+    }
     resolveUrlPage() 
     entername()
-    recalldatalist()
+    if(!skipGlobalWarmups) recalldatalist()
     checkAccountForVerification()
     syncHeaderHeight()
     runpermissioncheck('state')

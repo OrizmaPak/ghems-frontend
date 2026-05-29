@@ -850,6 +850,7 @@ async function openRoute(url) {
                 } else {
                     console.error('Parameter "r" is missing from the URL.');
                 }
+        routeContentVersion++
         intializePageJavascript()
     } catch (error) {
         console.log(error)
@@ -941,6 +942,9 @@ function buildPageDescriptionModal(label, description) {
 }
 
 let timer;
+let activeRouteInitializationKey = ''
+let runningRouteInitializationKey = ''
+let routeContentVersion = 0
 
 function attachPageDescriptionTrigger() {
     try {
@@ -987,12 +991,28 @@ function attachPageDescriptionTrigger() {
 
 function intializePageJavascript() {
     let searchParams = new URLSearchParams(window.location.search)
-    let startingFunction = routerTree[searchParams.get('r').trim()].startingFunction
+    const routeName = searchParams.get('r')?.trim()
+    if(!routeName || !routerTree[routeName]) return
+    let startingFunction = routerTree[routeName].startingFunction
+    const routeInitializationKey = `${routeContentVersion}:${routeName}:${startingFunction}`
+    if(activeRouteInitializationKey === routeInitializationKey || runningRouteInitializationKey === routeInitializationKey) return
     try {
         clearInterval(timer)
         timer = null;
         attachPageDescriptionTrigger()
-        requestAnimationFrame(() => window?.[startingFunction]?.())
+        const starter = window?.[startingFunction]
+        if(typeof starter !== 'function') return
+        runningRouteInitializationKey = routeInitializationKey
+        requestAnimationFrame(async () => {
+            try {
+                await starter()
+                activeRouteInitializationKey = routeInitializationKey
+            } catch (error) {
+                console.log(error)
+            } finally {
+                if(runningRouteInitializationKey === routeInitializationKey) runningRouteInitializationKey = ''
+            }
+        })
     }
     catch(e) {}
 }

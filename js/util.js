@@ -813,7 +813,8 @@ const loadScript = function (resource) {
         const script = document.createElement('script');
         script.src = resource.url;
         script.addEventListener('load', function () {
-            intializePageJavascript()
+            const currentRoute = typeof getCurrentRouteName === 'function' ? getCurrentRouteName() : ''
+            if(currentRoute && routerTree?.[currentRoute]?.scriptName === resource.url) intializePageJavascript()
             resolve(true);
         });
         document.body.appendChild(script);
