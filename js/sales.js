@@ -61,9 +61,16 @@ function showMissingOrderItemsNotice(missingItems = []) {
     }
     holder.classList.remove('hidden')
     holder.innerHTML = `
-        <p class="font-semibold mb-1">Some ordered quantities are not fully available in stock:</p>
+        <p class="font-semibold mb-1">Some order items were adjusted because of stock availability:</p>
         <ul class="list-disc ml-5">
-            ${missingItems.map((item) => `<li>${item.itemname}: requested ${formatNumber(item.requested)}, available ${formatNumber(item.available)}, missing ${formatNumber(item.missing)}</li>`).join('')}
+            ${missingItems.map((item) => {
+                const added = Number(item.added || 0)
+                const available = Number(item.available || 0)
+                const action = added > 0
+                    ? `reduced to ${formatNumber(added)} available unit(s)`
+                    : 'not added because no stock is available'
+                return `<li>${item.itemname}: requested ${formatNumber(item.requested)}, available ${formatNumber(available)}, ${action}</li>`
+            }).join('')}
         </ul>
     `
 }
@@ -2500,14 +2507,14 @@ async function composeOrderToBill(orderEntry = null) {
         const resolvedItemClass = String(inventoryItem?.itemclass || source.itemclass || '').trim()
         const resolvedUnit = String(inventoryItem?.units || source.units || source.unit || '').trim()
         const resolvedPrice = Number(inventoryItem?.price || source.cost || 0)
-        const availableQtyRaw = Number(
-            inventoryItem?.balance ??
-            inventoryItem?.quantity ??
-            inventoryItem?.qty ??
-            inventoryItem?.stockbalance ??
-            inventoryItem?.instock ??
-            requestedQty
-        )
+        const availableQtyRaw = Number(inventoryItem ? (
+            inventoryItem.balance ??
+            inventoryItem.quantity ??
+            inventoryItem.qty ??
+            inventoryItem.stockbalance ??
+            inventoryItem.instock ??
+            0
+        ) : 0)
         const availableQty = Math.max(availableQtyRaw, 0)
         const enforceStock = !isNonStockItemClass(resolvedItemClass)
         const finalQty = enforceStock ? Math.min(requestedQty, availableQty) : requestedQty
@@ -2528,6 +2535,7 @@ async function composeOrderToBill(orderEntry = null) {
                 itemname: resolvedName,
                 requested: requestedQty,
                 available: 0,
+                added: 0,
                 missing: requestedQty
             })
             if(loadedRows > 0) removesalesrow(rowId)
@@ -2539,7 +2547,8 @@ async function composeOrderToBill(orderEntry = null) {
             missingItems.push({
                 itemname: resolvedName,
                 requested: requestedQty,
-                available: finalQty,
+                available: availableQty,
+                added: finalQty,
                 missing: requestedQty - finalQty
             })
         }
@@ -2556,6 +2565,11 @@ async function composeOrderToBill(orderEntry = null) {
 
     runCount()
     showMissingOrderItemsNotice(missingItems)
+    if(missingItems.length) {
+        const skipped = missingItems.filter((item) => Number(item.added || 0) <= 0).length
+        const reduced = missingItems.length - skipped
+        notification(`${missingItems.length} order item(s) adjusted by stock availability${skipped ? `; ${skipped} not added` : ''}${reduced ? `; ${reduced} reduced` : ''}.`, 0)
+    }
     return true
 }
 
