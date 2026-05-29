@@ -278,7 +278,7 @@ async function runSalesDeferredLoad(pendingOrderToBillData = null) {
     if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') deferredTasks.push(splitbillActive())
     if(isBillsWorkspaceMode() && typeof mergebillActive === 'function') deferredTasks.push(mergebillActive())
     await Promise.allSettled(deferredTasks)
-    setSalesLoadingStatus('Sales form ready')
+    setSalesLoadingStatus('Form ready')
     setTimeout(() => setSalesLoadingStatus('', true), 500)
 }
 
@@ -449,8 +449,11 @@ function removeMainStoreFromSelect(selectEl) {
 
 function removeMainStoreFromPosSalespointLists() {
     removeMainStoreFromSelect(did('salespointname'))
+    removeMainStoreFromSelect(did('salespointname1'))
     removeMainStoreFromSelect(did('salespointname2'))
     removeMainStoreFromSelect(did('billfiltersalespoint'))
+    removeMainStoreFromSelect(did('splitbill_salespoint'))
+    removeMainStoreFromSelect(did('mergebill_salespoint'))
 }
 
 function normalizeSalesTextValue(value) {
@@ -1357,7 +1360,7 @@ async function handlesalesdepartment(store) {
                 salesInventoryDatasource = request.data
                 document.getElementById('hems_itemslist').innerHTML = request.data.map((data, index) =>`<option>${data.itemname.trim()}</option>`).join('')
                 hidesalesterminal(false)
-                did('loading').innerHTML = 'Sales form ready'
+                did('loading').innerHTML = 'Form ready'
                 syncSalesViewFilterSalespointOptions()
                 syncSalesBillFilterSalespointOptions()
                 // resolvePagination(datasource, onupdateinventoryTableDataSignal)
