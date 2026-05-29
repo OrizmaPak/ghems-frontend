@@ -12,6 +12,18 @@ let availableRoomsLastUpdatedAt = null
 let availableRoomsRefreshClockInterval = null
 let availableRoomsLastHash = ''
 let availableRoomsDetail = null
+let unsettledBillsData = []
+let unsettledBillsLastUpdatedAt = null
+let unsettledBillsPollingTimer = null
+let unsettledBillsHash = ''
+let unsettledBillsInFlight = false
+let unsettledBillsRefreshDebounce = null
+let unsettledBillsPaginationLimit = 50
+const unsettledBillsState = {
+    search: '',
+    salespoint: 'ALL',
+    status: 'ALL'
+}
 const availableRoomsState = {
     search: '',
     status: 'ALL',
@@ -118,6 +130,8 @@ window.onload = function() {
     entername()
     if(!skipGlobalWarmups) recalldatalist()
     checkAccountForVerification()
+    fetchUnsettledBills({ lightweight: true })
+    startUnsettledBillsPolling()
     syncHeaderHeight()
     runpermissioncheck('state')
     window.addEventListener('popstate', resolveUrlPage);
@@ -410,6 +424,9 @@ async function getoccupiedroom(){
 const availableRoomOpener = document.getElementById('aropener')
 const availableRoomRemover = document.getElementById('arremover')
 const availableRoomContainerOverlay = document.getElementById('arcontainer')
+const unsettledBillsOpener = document.getElementById('unsettledbillsopener')
+const unsettledBillsRemover = document.getElementById('unsettledbillsremover')
+const unsettledBillsOverlay = document.getElementById('unsettledbillscontainer')
 
 if (availableRoomOpener && availableRoomContainerOverlay) {
     availableRoomOpener.addEventListener('click', () => {
@@ -455,6 +472,270 @@ if (availableRoomContainerOverlay) {
         }
     })
 }
+
+function normalizeUnsettledBillRows(data = []){
+    if(!Array.isArray(data) || !data.length) return []
+    if(data[0]?.saleentry){
+        return data.map((entry) => {
+            const saleEntry = entry.saleentry || {}
+            const reference = String(saleEntry.reference || '').trim()
+            const totalamount = Number(saleEntry.totalamount || saleEntry.servicecharge || 0)
+            const amountpaid = Number(entry.amountreceived || saleEntry.amountpaid || 0)
+            return {
+                id: saleEntry.id || '',
+                batchid: saleEntry.batchid || '',
+                reference,
+                transactiondate: saleEntry.transactiondate || '',
+                salespoint: saleEntry.salespoint || '',
+                owner: saleEntry.ownerdetail ?? saleEntry.ownerid ?? saleEntry.owner ?? '',
+                totalamount: Number.isFinite(totalamount) ? totalamount : 0,
+                amountpaid: Number.isFinite(amountpaid) ? amountpaid : 0
+            }
+        }).filter((entry) => entry.reference || entry.batchid)
+    }
+    const grouped = doBatch(data)
+    return grouped.map((batch) => {
+        const first = (Array.isArray(batch.data) ? batch.data[0] : {}) || {}
+        const reference = String(first.reference || '').trim()
+        return {
+            id: first.id || '',
+            batchid: batch.batchid || first.batchid || '',
+            reference,
+            transactiondate: first.transactiondate || '',
+            salespoint: first.salespoint || '',
+            owner: first.ownerdetail ?? first.ownerid ?? first.owner ?? '',
+            totalamount: Number(first.totalamount || first.servicecharge || 0),
+            amountpaid: Number(first.amountpaid || first.amountreceived || 0)
+        }
+    }).filter((entry) => entry.reference || entry.batchid)
+}
+
+function buildUnsettledBillsHash(rows = []){
+    return rows.map((row) => `${row.reference}|${row.batchid}|${row.totalamount}|${row.amountpaid}|${row.transactiondate}|${row.salespoint}`).join('::')
+}
+
+function getUnsettledStatus(row = {}){
+    const total = Number(row.totalamount || 0)
+    const paid = Number(row.amountpaid || 0)
+    const balance = Math.max(total - paid, 0)
+    if(paid <= 0) return { chip: 'UNPAID', balance }
+    return { chip: 'PARTIAL', balance }
+}
+
+function getUnsettledBadgeBreakdown(){
+    let unpaid = 0
+    let partial = 0
+    unsettledBillsData.forEach((row) => {
+        const status = getUnsettledStatus(row)
+        if(status.balance <= 0) return
+        if(status.chip === 'UNPAID') unpaid++
+        else partial++
+    })
+    return { unpaid, partial, total: unpaid + partial }
+}
+
+function renderUnsettledBillsBadge(){
+    const badge = did('unsettledbillsbadge')
+    if(!badge) return
+    const count = getUnsettledBadgeBreakdown()
+    badge.textContent = String(count.total || 0)
+    badge.classList.toggle('hidden', !count.total)
+    const opener = did('unsettledbillsopener')
+    if(opener) opener.title = `Unsettled Bills (${count.unpaid} unpaid / ${count.partial} partial)`
+}
+
+function getFilteredUnsettledBills(){
+    return unsettledBillsData.filter((row) => {
+        const ref = String(row.reference || '').toLowerCase()
+        const salespoint = String(row.salespoint || '').trim()
+        const owner = String(row.owner || '').toLowerCase()
+        const search = unsettledBillsState.search.toLowerCase()
+        const status = getUnsettledStatus(row)
+        if(status.balance <= 0) return false
+        if(unsettledBillsState.salespoint !== 'ALL' && salespoint !== unsettledBillsState.salespoint) return false
+        if(unsettledBillsState.status !== 'ALL' && status.chip !== unsettledBillsState.status) return false
+        if(search && !(`${ref} ${owner} ${salespoint}`.includes(search))) return false
+        return true
+    })
+}
+
+function renderUnsettledBillsDrawer(force = false){
+    const host = did('unsettledbillscontent')
+    if(!host) return
+    const rows = getFilteredUnsettledBills()
+    const count = getUnsettledBadgeBreakdown()
+    const currentHash = `${buildUnsettledBillsHash(rows)}|${unsettledBillsState.search}|${unsettledBillsState.salespoint}|${unsettledBillsState.status}|${unsettledBillsPaginationLimit}`
+    if(!force && host.dataset.hash === currentHash) return
+    host.dataset.hash = currentHash
+    const salespoints = Array.from(new Set(unsettledBillsData.map((item) => String(item.salespoint || '').trim()).filter(Boolean))).sort()
+    const slice = rows.slice(0, unsettledBillsPaginationLimit)
+    host.innerHTML = `
+        <div class="h-full flex flex-col bg-white rounded border border-slate-200">
+            <div class="p-3 border-b border-slate-200">
+                <div class="flex items-center justify-between gap-2">
+                    <p class="font-semibold text-slate-800">Unsettled Bills</p>
+                    <p class="text-xs text-slate-500">${count.unpaid} unpaid / ${count.partial} partial</p>
+                </div>
+                <div class="mt-2 grid grid-cols-1 md:grid-cols-4 gap-2">
+                    <input id="unsettled-search" value="${unsettledBillsState.search}" placeholder="Search reference/owner" class="form-control !text-xs">
+                    <select id="unsettled-salespoint" class="form-control !text-xs">
+                        <option value="ALL">All Salespoints</option>
+                        ${salespoints.map((sp) => `<option value="${sp}" ${unsettledBillsState.salespoint === sp ? 'selected' : ''}>${sp}</option>`).join('')}
+                    </select>
+                    <select id="unsettled-status" class="form-control !text-xs">
+                        <option value="ALL" ${unsettledBillsState.status === 'ALL' ? 'selected' : ''}>All Status</option>
+                        <option value="UNPAID" ${unsettledBillsState.status === 'UNPAID' ? 'selected' : ''}>Unpaid</option>
+                        <option value="PARTIAL" ${unsettledBillsState.status === 'PARTIAL' ? 'selected' : ''}>Partial</option>
+                    </select>
+                    <button type="button" id="unsettled-refresh" class="rounded bg-blue-600 text-white text-xs px-3 py-2">Refresh</button>
+                </div>
+                <p class="mt-2 text-[11px] text-slate-500">Last updated: ${unsettledBillsLastUpdatedAt ? specialformatDateTime(new Date(unsettledBillsLastUpdatedAt).toISOString().slice(0, 19).replace('T', ' ')) : 'Not yet'}</p>
+            </div>
+            <div class="flex-1 overflow-auto p-2">
+                ${slice.length ? `
+                    <table class="w-full text-xs">
+                        <thead><tr class="text-left"><th>#</th><th>Reference</th><th>Date</th><th>Salespoint</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+                        <tbody>
+                        ${slice.map((row, idx) => {
+                            const status = getUnsettledStatus(row)
+                            const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                            return `<tr class="border-t">
+                                <td>${idx + 1}</td>
+                                <td>${row.reference || '-'}</td>
+                                <td>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</td>
+                                <td>${row.salespoint || '-'}</td>
+                                <td>${row.owner || '-'}</td>
+                                <td>${formatCurrency(Number(row.totalamount || 0))}</td>
+                                <td>${formatCurrency(Number(row.amountpaid || 0))}</td>
+                                <td>${formatCurrency(Number(status.balance || 0))}</td>
+                                <td><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></td>
+                            </tr>`
+                        }).join('')}
+                        </tbody>
+                    </table>
+                ` : `<p class="text-center text-slate-500 py-10">No unsettled bills found</p>`}
+            </div>
+            <div class="p-2 border-t border-slate-200 flex items-center justify-between">
+                <p class="text-[11px] text-slate-500">Showing ${Math.min(slice.length, rows.length)} of ${rows.length}</p>
+                <button type="button" id="unsettled-loadmore" class="rounded border px-3 py-1 text-xs ${rows.length > unsettledBillsPaginationLimit ? '' : 'hidden'}">Load more</button>
+            </div>
+        </div>
+    `
+    bindUnsettledBillsUiHandlers()
+}
+
+function bindUnsettledBillsUiHandlers(){
+    const searchEl = did('unsettled-search')
+    const salespointEl = did('unsettled-salespoint')
+    const statusEl = did('unsettled-status')
+    const refreshEl = did('unsettled-refresh')
+    const loadMoreEl = did('unsettled-loadmore')
+    if(searchEl && searchEl.dataset.bound !== '1'){
+        searchEl.dataset.bound = '1'
+        searchEl.addEventListener('input', (event) => {
+            unsettledBillsState.search = String(event.target.value || '')
+            unsettledBillsPaginationLimit = 50
+            renderUnsettledBillsDrawer(true)
+        })
+    }
+    if(salespointEl && salespointEl.dataset.bound !== '1'){
+        salespointEl.dataset.bound = '1'
+        salespointEl.addEventListener('change', (event) => {
+            unsettledBillsState.salespoint = String(event.target.value || 'ALL')
+            unsettledBillsPaginationLimit = 50
+            renderUnsettledBillsDrawer(true)
+        })
+    }
+    if(statusEl && statusEl.dataset.bound !== '1'){
+        statusEl.dataset.bound = '1'
+        statusEl.addEventListener('change', (event) => {
+            unsettledBillsState.status = String(event.target.value || 'ALL')
+            unsettledBillsPaginationLimit = 50
+            renderUnsettledBillsDrawer(true)
+        })
+    }
+    if(refreshEl && refreshEl.dataset.bound !== '1'){
+        refreshEl.dataset.bound = '1'
+        refreshEl.addEventListener('click', () => fetchUnsettledBills({ forceRender: true, lightweight: true }))
+    }
+    if(loadMoreEl && loadMoreEl.dataset.bound !== '1'){
+        loadMoreEl.dataset.bound = '1'
+        loadMoreEl.addEventListener('click', () => {
+            unsettledBillsPaginationLimit += 50
+            renderUnsettledBillsDrawer(true)
+        })
+    }
+}
+
+async function fetchUnsettledBills(options = {}){
+    const { forceRender = false, lightweight = true } = options || {}
+    if(unsettledBillsInFlight) return
+    unsettledBillsInFlight = true
+    try{
+        const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', null, null, 'json', { lightweight })
+        if(!request?.status) return
+        const normalized = normalizeUnsettledBillRows(request.data).map((row) => {
+            const total = Number(row.totalamount || 0)
+            const paid = Number(row.amountpaid || 0)
+            return {
+                ...row,
+                totalamount: Number.isFinite(total) ? total : 0,
+                amountpaid: Number.isFinite(paid) ? paid : 0
+            }
+        }).filter((row) => Math.max(Number(row.totalamount || 0) - Number(row.amountpaid || 0), 0) > 0)
+        const nextHash = buildUnsettledBillsHash(normalized)
+        const changed = unsettledBillsHash !== nextHash
+        unsettledBillsData = normalized
+        unsettledBillsLastUpdatedAt = Date.now()
+        unsettledBillsHash = nextHash
+        renderUnsettledBillsBadge()
+        if(forceRender || changed || (unsettledBillsOverlay && unsettledBillsOverlay.classList.contains('!left-[0%]'))){
+            renderUnsettledBillsDrawer(true)
+        }
+    } finally {
+        unsettledBillsInFlight = false
+    }
+}
+
+function queueUnsettledBillsRefresh(delay = 600){
+    if(unsettledBillsRefreshDebounce) clearTimeout(unsettledBillsRefreshDebounce)
+    unsettledBillsRefreshDebounce = setTimeout(() => {
+        unsettledBillsRefreshDebounce = null
+        fetchUnsettledBills({ lightweight: true })
+    }, Math.max(Number(delay) || 0, 0))
+}
+
+function startUnsettledBillsPolling(){
+    if(unsettledBillsPollingTimer) clearInterval(unsettledBillsPollingTimer)
+    unsettledBillsPollingTimer = setInterval(() => {
+        if(document.hidden) return
+        fetchUnsettledBills({ lightweight: true })
+    }, 60000)
+}
+
+if (unsettledBillsOpener && unsettledBillsOverlay) {
+    unsettledBillsOpener.addEventListener('click', () => {
+        unsettledBillsOverlay.classList.add('!left-[0%]')
+        unsettledBillsPaginationLimit = 50
+        fetchUnsettledBills({ forceRender: true, lightweight: true })
+    })
+}
+
+if (unsettledBillsRemover && unsettledBillsOverlay) {
+    unsettledBillsRemover.addEventListener('click', () => unsettledBillsOverlay.classList.remove('!left-[0%]'))
+}
+
+if (unsettledBillsOverlay) {
+    unsettledBillsOverlay.addEventListener('click', (event) => {
+        if(event.target.id === 'unsettledbillscontainer'){
+            unsettledBillsOverlay.classList.remove('!left-[0%]')
+        }
+    })
+}
+
+document.addEventListener('visibilitychange', () => {
+    if(!document.hidden) fetchUnsettledBills({ lightweight: true })
+})
 
 function normalizeRoomStatus(rawStatus=''){
     const status = String(rawStatus || '').trim().toUpperCase()

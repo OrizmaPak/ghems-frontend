@@ -528,6 +528,7 @@ async function submitMergeBill() {
     } else {
         notification('Bills merged successfully', 1)
     }
+    if (typeof queueUnsettledBillsRefresh === 'function') queueUnsettledBillsRefresh()
 
     mergeBillSelectedRefs = []
     mergeBillPreviewItems = []

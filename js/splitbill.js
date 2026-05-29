@@ -336,6 +336,7 @@ async function submitSplitBill() {
     if (!newRequest.status) return notification(newRequest.message || 'Original bill updated, but split bill was not created', 0)
 
     notification('Bill split successfully', 1)
+    if (typeof queueUnsettledBillsRefresh === 'function') queueUnsettledBillsRefresh()
     splitBillActiveBill = null
     splitBillOriginalItems = []
     splitBillNewItems = []

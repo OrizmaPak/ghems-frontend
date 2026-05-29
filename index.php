@@ -89,6 +89,10 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                             </div>
                         </div>
                         <div class="portal-icon-stack">
+                            <button type="button" id="unsettledbillsopener" title="Unsettled Bills" class="portal-icon-btn relative flex items-center justify-center text-gray-500">
+                                <span class="material-symbols-outlined">receipt_long</span>
+                                <span id="unsettledbillsbadge" class="badge hidden">0</span>
+                            </button>
                             <button id="toggler"
                                 class="portal-icon-btn flex items-center justify-center transition ease-linear duration-300 text-gray-500">
                                 <span class="material-symbols-outlined">menu</span>
@@ -446,6 +450,12 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
                         <div id="arshadow" class="w-[50vw] h-full shadow-xs bg-[#ffffffa3] shadow py-4 px-2 relative glass-flyout">
                             <button type="button" id="arremover" class="absolute text-xs top-7 left-[-25px] shadow text-white opacity-[0.8] bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2"> X</button>
                             <div id="availableroomcontainer" class="my-1 h-full overflow-hidden"></div>
+                        </div>
+                    </div>
+            <div id="unsettledbillscontainer" class="fixed w-screen h-screen bg-[#00000042] top-0 left-[100%] flex justify-end transition-all duration-[0.5s] z-[700]">
+                        <div id="unsettledbillsshadow" class="w-[50vw] min-w-[340px] h-full shadow-xs bg-[#ffffffeb] shadow py-4 px-3 relative glass-flyout">
+                            <button type="button" id="unsettledbillsremover" class="absolute text-xs top-7 left-[-25px] shadow text-white opacity-[0.8] bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:outline-none font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2"> X</button>
+                            <div id="unsettledbillscontent" class="my-1 h-full overflow-hidden"></div>
                         </div>
                     </div>
 

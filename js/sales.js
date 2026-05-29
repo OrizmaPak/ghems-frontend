@@ -2633,7 +2633,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         if(request.status) {
             clearMissingOrderItemsNotice()
             notification(`${ttype == 'BILL' ? 'Bill' : ttype == 'ORDER' ? 'Order' : 'Record'} saved successfully!`, 1);
-            if(ttype === 'BILL') printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php', true, true)
+            if(ttype === 'BILL') {
+                printsalesreceiptsales(request.reference, '', 'fetchsalesbillsonly.php', true, true)
+                if(typeof queueUnsettledBillsRefresh === 'function') queueUnsettledBillsRefresh()
+            }
             else if(ttype === 'ORDER'){
                 const orderReceiptRows = buildReceiptRowsFromForm(request.reference, 'ORDER')
                 printsalesreceiptsales(request.reference, '', 'fetchorders.php', true, true, false, orderReceiptRows)
@@ -2818,6 +2821,7 @@ async function removeBillEntry(batchid = '') {
         notification(request.message || 'Bill deleted successfully', 1)
         fetchsalesbills()
         fetchsales()
+        if(typeof queueUnsettledBillsRefresh === 'function') queueUnsettledBillsRefresh()
         return
     }
     return notification(request.message || 'Unable to delete bill', 0)
