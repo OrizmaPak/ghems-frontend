@@ -458,8 +458,9 @@ async function httpRequest(url, payload=null, button=null) {
     }
  }
 
-async function httpRequest2(url, payload=null, button=null, type="text") {
+async function httpRequest2(url, payload=null, button=null, type="text", options={}) {
     runpermissioncheck()
+    const lightweight = !!options.lightweight
     
     const buildHttpFailure = (message = 'Unable to perform request.', extra = {}) => ({
         status: false,
@@ -501,7 +502,6 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
         }
 
         if(payload) {
-            console.log('payload', payload)
             result = await fetch(url, {method:'POST', body: payload, headers: new Headers()})
             if(result) {
                 // console.log('result', result)
@@ -516,7 +516,7 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
                         res = await result.text()
                     }
                 }
-                markallcomp()
+                if(!lightweight) markallcomp()
                 if(redirectToLoginOnInvalidSession(res, result))return
                 if(type == "json" && result.ok === false && (!res || typeof res !== 'object')) {
                     res = buildHttpFailure(`Request failed with status ${result.status}.`, { httpStatus: result.status, url })
@@ -538,7 +538,7 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
                 if(!res)res = buildHttpFailure('Unexpected server response format.', { raw: rawText, httpStatus: result.status, url })
              }
             //  let rest = await result.json()
-            markallcomp()
+            if(!lightweight) markallcomp()
             if(redirectToLoginOnInvalidSession(res, result))return
             if(type == "json" && result.ok === false && (!res || typeof res !== 'object')) {
                 res = buildHttpFailure(`Request failed with status ${result.status}.`, { httpStatus: result.status, url })
@@ -548,17 +548,19 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
            else return buildHttpFailure('Unable to perform request.', { url })
            
         }
-        var inputs = document.getElementsByTagName('input');
+        if(!lightweight) {
+            var inputs = document.getElementsByTagName('input');
 
-            // Loop through the inputs
-            for (var i = 0; i < inputs.length; i++) {
-                // Check if the input is of type "date"
-                if (inputs[i].type === 'date') {
-                    // Set the value to the current date (YYYY-MM-DD format)
-                    var currentDate = new Date().toISOString().split('T')[0];
-                    if(!inputs[i].value)inputs[i].value = currentDate;
+                // Loop through the inputs
+                for (var i = 0; i < inputs.length; i++) {
+                    // Check if the input is of type "date"
+                    if (inputs[i].type === 'date') {
+                        // Set the value to the current date (YYYY-MM-DD format)
+                        var currentDate = new Date().toISOString().split('T')[0];
+                        if(!inputs[i].value)inputs[i].value = currentDate;
+                    }
                 }
-            }
+        }
         return res
     }
     catch(e) { 
@@ -574,8 +576,10 @@ async function httpRequest2(url, payload=null, button=null, type="text") {
         }
         //  if(result.message == 'Invalid ssession data. Proceed to login')return window.location.reload()
         //  if(res.message == 'Invalid ssession data. Proceed to login')return window.location.reload()
-         setDepartureTimetotwelveoclock(); 
-         modifyButtons();
+         if(!lightweight) {
+            setDepartureTimetotwelveoclock(); 
+            modifyButtons();
+         }
     }
  }
 

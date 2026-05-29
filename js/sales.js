@@ -11,7 +11,14 @@ let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
 let pmReservationOwnerRows = []
+let salesInventoryDatasource = []
+let salesListingDatasource = []
 const salesItemDetailCache = new Map()
+const salesAuxiliaryLoadState = {
+    costCenters: null,
+    roomNumbers: null,
+    pmOwners: null
+}
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -103,8 +110,8 @@ function getOrderStatusOptions(currentStatus = '') {
 }
 
 function getFilteredDatasourceForCurrentView() {
-    if(!isOrderWorkspaceMode()) return datasource
-    return datasource.filter((row) => normalizeOrderStatusValue(row?.saleentry?.moredata, true) === orderViewStatusFilter)
+    if(!isOrderWorkspaceMode()) return salesListingDatasource
+    return salesListingDatasource.filter((row) => normalizeOrderStatusValue(row?.saleentry?.moredata, true) === orderViewStatusFilter)
 }
 
 function renderCurrentSalesDatasource() {
@@ -253,22 +260,20 @@ function bindSalesEventOnce(selector, eventName, handler, key = '') {
 
 async function preloadSalesCoreData() {
     await Promise.allSettled([
-        hemsdepartment(),
-        hemscostcenter(),
-        hemsroomnumber()
+        hemsdepartment()
     ])
 }
 
 async function runSalesDeferredLoad(pendingOrderToBillData = null) {
     const deferredTasks = []
     setSalesLoadingStatus('Users loading...')
-    deferredTasks.push(getAllUsers())
+    deferredTasks.push(getAllUsers('user', { lightweight: true }))
     deferredTasks.push(resolveBillDeletePermission())
-    deferredTasks.push(fetchtablenumber())
-    deferredTasks.push(fetchsales(null, { useInitialWindow: true }))
+    deferredTasks.push(fetchtablenumber({ lightweight: true }))
+    deferredTasks.push(fetchsales(null, { useInitialWindow: true, quietEmpty: true, lightweight: true }))
     if(!isOrderWorkspaceMode() && !(isBillsWorkspaceMode() && pendingOrderToBillData)) {
         setSalesLoadingStatus('Bills loading...')
-        deferredTasks.push(fetchsalesbills('', null, { useInitialWindow: true }))
+        deferredTasks.push(fetchsalesbills('', null, { useInitialWindow: true, lightweight: true }))
     }
     if(isBillsWorkspaceMode() && typeof splitbillActive === 'function') deferredTasks.push(splitbillActive())
     if(isBillsWorkspaceMode() && typeof mergebillActive === 'function') deferredTasks.push(mergebillActive())
@@ -284,7 +289,8 @@ async function salesActive() {
     const form = document.querySelector('#salesform')
     if(form?.querySelector('#submit') && !isOrderWorkspaceMode() && !isBillsWorkspaceMode()) bindSalesEventOnce(form.querySelector('#submit'), 'click', () => salesFormSubmitHandler('', form.querySelector('#submit')), 'submit')
     if(form?.querySelector('#bill')) bindSalesEventOnce(form.querySelector('#bill'), 'click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')), 'bill')
-    datasource = []
+    salesInventoryDatasource = []
+    salesListingDatasource = []
     removeMainStoreFromPosSalespointLists()
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
@@ -669,7 +675,7 @@ function normalizeSalesBillRows(data = []) {
 }
 
 async function fetchsalesbills(reference = '', triggerButton = null, options = {}) {
-    const { useInitialWindow = false } = options || {}
+    const { useInitialWindow = false, lightweight = false } = options || {}
     const cleanedReference = String(reference || '').trim()
     const startdate = String(did('billfilterdatefrom')?.value || '').trim()
     const enddate = String(did('billfilterdateto')?.value || '').trim()
@@ -688,7 +694,7 @@ async function fetchsalesbills(reference = '', triggerButton = null, options = {
         else if(useInitialWindow && initialSalespoint) payload.append('salespoint', initialSalespoint)
     }
 
-    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json')
+    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json', { lightweight })
     if(!request.status){
         if(cleanedReference) notification(request.message || 'No bill found for supplied reference', 0)
         salesBillDatasource = cleanedReference ? [] : salesBillDatasource
@@ -835,7 +841,7 @@ function openSalesFormTab() {
 function findOrderEntryByBatchOrReference(key = '') {
     const cleaned = String(key || '').trim()
     if(!cleaned) return null
-    return datasource.find((entry) => {
+    return salesListingDatasource.find((entry) => {
         const saleEntry = entry?.saleentry || {}
         return String(saleEntry.batchid || '').trim() === cleaned
             || String(saleEntry.reference || '').trim() === cleaned
@@ -883,7 +889,7 @@ async function loadSalesBillIntoForm(bill) {
             else if(String(bill.ttype || '').toUpperCase().includes('COST')) did('applyto').value = 'COST CENTER'
             else if(String(bill.ttype || '').toUpperCase().includes('PM')) did('applyto').value = 'PM'
             else did('applyto').value = 'OTHERS'
-            handlesalesapplyto()
+            await handlesalesapplyto()
         }
 
         if(did('description')) did('description').value = normalizeDescriptionByApplyTo(
@@ -942,7 +948,7 @@ async function loadSalesBillIntoForm(bill) {
             if(index > 0) addsalesrow(rowId)
             if(did(`item-${rowId}`)) did(`item-${rowId}`).value = item.itemname || ''
             if(did(`itemer-${rowId}`)) did(`itemer-${rowId}`).value = item.itemid || ''
-            const inventoryItem = (Array.isArray(datasource) ? datasource : []).find((inv) => {
+            const inventoryItem = salesInventoryDatasource.find((inv) => {
                 if(String(inv?.itemid || '') && String(item?.itemid || '')) return String(inv.itemid) === String(item.itemid)
                 return String(inv?.itemname || '').trim().toLowerCase() === String(item?.itemname || '').trim().toLowerCase()
             }) || {}
@@ -1050,22 +1056,28 @@ function populatePmReservationOwnerSelect(rows = []) {
 }
 
 async function fetchPmReservationOwnerOptions() {
+    if(salesAuxiliaryLoadState.pmOwners) return salesAuxiliaryLoadState.pmOwners
+    salesAuxiliaryLoadState.pmOwners = (async () => {
     const payload = new FormData()
     const now = new Date()
     const previousYear = now.getFullYear() - 1
     const nextYear = now.getFullYear() + 1
     payload.append('startdate', `${previousYear}-01-01`)
     payload.append('enddate', `${nextYear}-12-31`)
-    const request = await httpRequest2('../controllers/fetchpmreservationsbyfilter', payload, null, 'json')
+    const request = await httpRequest2('../controllers/fetchpmreservationsbyfilter', payload, null, 'json', { lightweight: true })
     if(!request?.status || !Array.isArray(request.data)) {
         pmReservationOwnerRows = []
         populatePmReservationOwnerDatalist([])
         populatePmReservationOwnerSelect([])
-        return notification(request?.message || 'Unable to load PM owners', 0)
+        notification(request?.message || 'Unable to load PM owners', 0)
+        return []
     }
     pmReservationOwnerRows = request.data
     populatePmReservationOwnerDatalist(pmReservationOwnerRows)
     populatePmReservationOwnerSelect(pmReservationOwnerRows)
+    return pmReservationOwnerRows
+    })()
+    return salesAuxiliaryLoadState.pmOwners
 }
 
 function getSelectedPmReservationId() {
@@ -1142,8 +1154,40 @@ async function handleSalesOwnerSelectionChange() {
     if(did('owner')) did('owner').value = getSelectedPmRoomNumber()
     await showPmOwnerBalanceForSelection()
 }
+
+async function ensureSalesCostCentersLoaded() {
+    if(salesAuxiliaryLoadState.costCenters) return salesAuxiliaryLoadState.costCenters
+    salesAuxiliaryLoadState.costCenters = (async () => {
+        const request = await httpRequest2('../controllers/fetchcostcenter', null, null, 'json', { lightweight: true })
+        if(request?.status && Array.isArray(request.data)) {
+            const list = did('hems_cost_center')
+            if(list) list.innerHTML = request.data.map(data=>`<option value="${data.costcenter}">${data.id}</option>`).join('')
+            return request.data
+        }
+        return []
+    })()
+    return salesAuxiliaryLoadState.costCenters
+}
+
+async function ensureSalesRoomNumbersLoaded(id="") {
+    if(!id && salesAuxiliaryLoadState.roomNumbers) return salesAuxiliaryLoadState.roomNumbers
+    const loadPromise = (async () => {
+        const request = await httpRequest2('../controllers/fetchrooms', null, null, 'json', { lightweight: true })
+        if(!request?.status || !Array.isArray(request.data)) return []
+        const rows = id ? request.data.filter(data=>data.categoryid == id) : request.data
+        const roomNumber = did('hems_roomnumber')
+        const roomNumberId = did('hems_roomnumber_id')
+        const roomNumberId1 = did('hems_roomnumber_id1')
+        if(roomNumber) roomNumber.innerHTML = rows.map(data=>`<option value="${data.roomnumber}">${data.roomname} ${data.categoryid}</option>`).join('')
+        if(roomNumberId) roomNumberId.innerHTML = rows.map(data=>`<option value="${data.roomnumber}">${data.roomname} | ${data.roomcategory || data.categoryid} | Floor ${data.floor || '-'} || ${data.roomnumber}</option>`).join('')
+        if(roomNumberId1) roomNumberId1.innerHTML = rows.map(data=>`<option value="${data.roomname} ${data.categoryid} || ${data.roomnumber}">${data.roomnumber}</option>`).join('')
+        return request.data
+    })()
+    if(!id) salesAuxiliaryLoadState.roomNumbers = loadPromise
+    return loadPromise
+}
  
-function handlesalesapplyto (){
+async function handlesalesapplyto (){
     if(!document.getElementById('applyto').value)return
     document.getElementById('owner').value = '';
     document.getElementById('owner1').value = '';
@@ -1153,16 +1197,18 @@ function handlesalesapplyto (){
     if(did('owner1')) did('owner1').classList.remove('hidden')
     if(did('pmownerselect')) did('pmownerselect').classList.add('hidden')
     if(document.getElementById('applyto').value == 'ROOMS'){
+        await ensureSalesRoomNumbersLoaded()
         document.getElementById('owner1').setAttribute('list', 'hems_roomnumber_id1')
     }
     markallcomp()
     if(document.getElementById('applyto').value == 'COST CENTER'){
+        await ensureSalesCostCentersLoaded()
         document.getElementById('owner1').setAttribute('list', 'hems_cost_center')
     }
     if(document.getElementById('applyto').value == 'PM'){
         if(did('owner1')) did('owner1').classList.add('hidden')
         if(did('pmownerselect')) did('pmownerselect').classList.remove('hidden')
-        fetchPmReservationOwnerOptions()
+        await fetchPmReservationOwnerOptions()
     } else {
         hidePmOwnerBalance()
     }
@@ -1308,7 +1354,7 @@ async function handlesalesdepartment(store) {
     let request = await httpRequest2('../controllers/fetchinventorybysalespoint', payload(), document.querySelector('#updateinventoryform #save'))
     if(request.status) {
             if(request.data.length) {
-                datasource = request.data
+                salesInventoryDatasource = request.data
                 document.getElementById('hems_itemslist').innerHTML = request.data.map((data, index) =>`<option>${data.itemname.trim()}</option>`).join('')
                 hidesalesterminal(false)
                 did('loading').innerHTML = 'Sales form ready'
@@ -1375,7 +1421,7 @@ function getSalesRowItemClass(rowId) {
 
     const itemId = String(did(`itemer-${rowId}`)?.value || '').trim()
     const itemName = String(did(`item-${rowId}`)?.value || '').trim().toLowerCase()
-    const inventoryItem = (Array.isArray(datasource) ? datasource : []).find((item) => {
+    const inventoryItem = salesInventoryDatasource.find((item) => {
         if(itemId && String(item?.itemid || '') === itemId) return true
         return itemName && String(item?.itemname || '').trim().toLowerCase() === itemName
     })
@@ -1448,7 +1494,7 @@ async function salesitempop(val,i,qty=0) {
     if(x>1)notification(`${val.value} is already listed`)
     if(x>1)return clearrow(i)
     const selectedName = String(val.value || '').trim().toLowerCase()
-    const sourceItems = Array.isArray(datasource) ? datasource : []
+    const sourceItems = salesInventoryDatasource
     const nameMatches = sourceItems.filter((item) => String(item?.itemname || '').trim().toLowerCase() === selectedName)
     const currentRowItemId = String(did(`itemer-${i}`)?.value || '').trim()
     const matchedByRowId = currentRowItemId
@@ -1558,7 +1604,7 @@ function removesalesrow(i){
 }
 
 async function fetchsales(id, options = {}) {
-    const { useInitialWindow = false } = options || {}
+    const { useInitialWindow = false, quietEmpty = false, lightweight = false } = options || {}
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
@@ -1575,14 +1621,17 @@ async function fetchsales(id, options = {}) {
         return paramstr
     }
     const payload = id ? getparamm() : (useInitialWindow ? getWindowedParamm() : null)
-    let request = await httpRequest2(isOrderWorkspaceMode() ? '../controllers/fetchorders.php' : '../controllers/fetchsales', payload, null, 'json')
+    let request = await httpRequest2(isOrderWorkspaceMode() ? '../controllers/fetchorders.php' : '../controllers/fetchsales', payload, null, 'json', { lightweight })
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
             if(request.data.length) {
-                datasource = isOrderWorkspaceMode()
+                salesListingDatasource = isOrderWorkspaceMode()
                     ? normalizeOrdersForSalesTable(request.data)
                     : normalizeSalesRowsForTable(request.data)
+                renderCurrentSalesDatasource()
+            } else {
+                salesListingDatasource = []
                 renderCurrentSalesDatasource()
             }
         }else{
@@ -1590,7 +1639,7 @@ async function fetchsales(id, options = {}) {
             populateData(request.data[0])
         }
     }
-    else return notification('No records retrieved')
+    else if(!quietEmpty) return notification('No records retrieved')
 }
 
 async function removesales(id) {
@@ -1737,7 +1786,7 @@ async function onsalesTableDataSignal() {
 async function openSalesReportModal(ref, room='', preferLocal=false){
     if(!ref)return
     const orderMode = isOrderWorkspaceMode()
-    const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || null
+    const localData = salesListingDatasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref)) || null
     if(preferLocal && !room && localData){
         const localOrderDetailsRaw = String(resolveOrderDetailsValue(localData.saleentry, localData.saledetail) ?? '').trim()
         const localOrderDetails = localOrderDetailsRaw && localOrderDetailsRaw !== '-1' ? localOrderDetailsRaw : '-'
@@ -1834,7 +1883,7 @@ function removewhsalesviewmodal(e){
  
 function viewsaleinvoice(batchid, view){
     if(document.getElementById("whsalesviewmodalcontainer") && view == 'view')document.getElementById("whsalesviewmodalcontainer").classList.remove('hidden')
-    let batchdata = datasource.filter(dat=>dat.batchid == batchid)[0]
+    let batchdata = salesListingDatasource.filter(dat=>dat.batchid == batchid)[0]
     console.log('batchdata', batchdata)
     if(document.getElementById("whsalesviewmodal"))document.getElementById("whsalesviewmodal").innerHTML = `
                             <div class="rounded-lg">
@@ -2137,7 +2186,7 @@ async function loadOrderIntoForm(orderEntry = null) {
         else if(applyto.includes('COST')) did('applyto').value = 'COST CENTER'
         else if(applyto.includes('PM')) did('applyto').value = 'PM'
         else did('applyto').value = 'OTHERS'
-        handlesalesapplyto()
+        await handlesalesapplyto()
     }
 
     const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
@@ -2192,7 +2241,7 @@ async function loadOrderIntoForm(orderEntry = null) {
             addsalesrow(rowId)
         }
 
-        const inventoryItem = (Array.isArray(datasource) ? datasource : []).find((inv) => {
+        const inventoryItem = salesInventoryDatasource.find((inv) => {
             if(String(inv?.itemid || '') && String(source?.itemid || '')) return String(inv.itemid) === String(source.itemid)
             return String(inv?.itemname || '').trim().toLowerCase() === String(source?.itemname || '').trim().toLowerCase()
         }) || {}
@@ -2251,7 +2300,7 @@ async function composeOrderToBill(orderEntry = null) {
         else if(applyto.includes('COST')) did('applyto').value = 'COST CENTER'
         else if(applyto.includes('PM')) did('applyto').value = 'PM'
         else did('applyto').value = 'OTHERS'
-        handlesalesapplyto()
+        await handlesalesapplyto()
     }
 
     const ownerValue = resolveOrderDetailsValue(orderEntry.saleentry, orderEntry.saledetail)
@@ -2294,7 +2343,7 @@ async function composeOrderToBill(orderEntry = null) {
             continue
         }
 
-        const inventoryPool = Array.isArray(datasource) ? datasource : []
+        const inventoryPool = salesInventoryDatasource
         const inventoryItem = inventoryPool.find((inv) => {
             if(String(inv?.itemid || '') && String(source?.itemid || '')){
                 return String(inv.itemid) === String(source.itemid)
@@ -2371,7 +2420,7 @@ function composeOrderToBillByReference(reference = '') {
     const cleaned = String(reference || '').trim()
     if(!cleaned) return notification('Order reference is required', 0)
     const orderEntry = orderRowsIndex.get(cleaned)
-        || datasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
+        || salesListingDatasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
     if(!orderEntry) return notification('Order not found in current list', 0)
     sessionStorage.setItem('pendingOrderToBillData', JSON.stringify(orderEntry))
     const billsNav = did('bills')
@@ -2554,13 +2603,15 @@ async function fetchsalesviewreport() {
     document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(request.data.length) {
-            datasource = isOrderWorkspaceMode()
+            salesListingDatasource = isOrderWorkspaceMode()
                 ? normalizeOrdersForSalesTable(request.data)
                 : normalizeSalesRowsForTable(request.data)
             renderCurrentSalesDatasource()
             return notification(request.message || 'Records retrieved', 1)
         }
     }
+    salesListingDatasource = []
+    renderCurrentSalesDatasource()
     return notification('No records retrieved')
 }
 
@@ -2579,7 +2630,7 @@ async function updateOrderStatus(batchid = '', newStatus = '', control = null, r
         return
     }
 
-    datasource = datasource.map((entry) => {
+    salesListingDatasource = salesListingDatasource.map((entry) => {
         if(String(entry?.saleentry?.batchid || '') !== cleanedBatchId) return entry
         return {
             ...entry,
@@ -2691,7 +2742,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
     let tt = 0;
     let rows = Array.isArray(rowsOverride) && rowsOverride.length ? rowsOverride : null
     if(preferLocal && !room){
-        const localData = datasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref))
+        const localData = salesListingDatasource.find(dat=>String(dat?.saleentry?.reference || '') == String(ref))
         if(localData){
             rows = (localData.saledetail || []).map((detail) => ({
                 reference: localData.saleentry.reference || ref,

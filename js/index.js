@@ -69,9 +69,9 @@ function formatCurrency(amount) {
   return formattedCurrency;
 }
 
-async function getAllUsers(id='user') {
+async function getAllUsers(id='user', options={}) {
     try {
-        let request = await httpRequest2('../controllers/fetchusers', null, null, 'json');
+        let request = await httpRequest2('../controllers/fetchusers', null, null, 'json', options);
         if (request.status) {
             const element = document.getElementById(id);
             if (element) {

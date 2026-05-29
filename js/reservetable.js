@@ -23,8 +23,8 @@ function setReservationDateFloor() {
     })
 }
 
-async function fetchtablenumber() {
-    let request = await httpRequest2('../controllers/fetchdiningtables', null, null, 'json')
+async function fetchtablenumber(options={}) {
+    let request = await httpRequest2('../controllers/fetchdiningtables', null, null, 'json', options)
     if(request.status) {
         document.getElementById('tablenumberlist').innerHTML = request.data.map(data=>`<option value="${data.tablenumber}">${data.tablenumber}</option>`).join('')
     }
