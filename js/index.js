@@ -623,45 +623,137 @@ function renderUnsettledBillItemRows(row = {}){
     }).join('')
 }
 
+function escapeUnsettledBillHtml(value = ''){
+    const div = document.createElement('div')
+    div.textContent = String(value ?? '')
+    return div.innerHTML
+}
+
+function buildUnsettledBillPrintMarkup(row = {}){
+    const items = Array.isArray(row.items) ? row.items : []
+    const status = getUnsettledStatus(row)
+    const owner = resolveUnsettledBillOwner(row)
+    const companyLogo = did('your_companylogo')?.value || ''
+    const companyName = did('your_companyname')?.value || ''
+    const companyAddress = did('your_companyaddress')?.value || ''
+    const companyPhone = did('your_companyphone')?.value || ''
+    const companyEmail = did('your_companyemail')?.value || ''
+    const itemRows = items.map((item, idx) => {
+        const qty = Number(item.qty || 0)
+        const cost = Number(item.cost || 0)
+        return `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${escapeUnsettledBillHtml(item.itemname || item.item || '-')}</td>
+                <td class="num">${formatNumber(qty)}</td>
+                <td class="num">${formatCurrency(cost)}</td>
+                <td class="num">${formatCurrency(qty * cost)}</td>
+            </tr>
+        `
+    }).join('')
+
+    return `
+        <style>
+            .unsettled-print-receipt{width:310px;margin:0 auto;padding:14px 12px;color:#111827;font-family:Arial,sans-serif;font-size:11px;line-height:1.35;background:#fff;}
+            .unsettled-print-receipt .logo{width:54px;height:54px;object-fit:contain;display:block;margin:0 auto 6px;}
+            .unsettled-print-receipt .center{text-align:center;}
+            .unsettled-print-receipt .name{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+            .unsettled-print-receipt .muted{color:#64748b;}
+            .unsettled-print-receipt .title{margin:10px 0 8px;padding:5px 0;border-top:1px dashed #94a3b8;border-bottom:1px dashed #94a3b8;text-align:center;font-weight:800;letter-spacing:.18em;}
+            .unsettled-print-receipt .line{display:flex;justify-content:space-between;gap:10px;margin:4px 0;}
+            .unsettled-print-receipt .line span:last-child{text-align:right;font-weight:700;}
+            .unsettled-print-receipt table{width:100%;border-collapse:collapse;margin-top:8px;}
+            .unsettled-print-receipt th,.unsettled-print-receipt td{border-bottom:1px solid #e5e7eb;padding:5px 2px;vertical-align:top;}
+            .unsettled-print-receipt th{text-align:left;font-size:10px;text-transform:uppercase;color:#475569;}
+            .unsettled-print-receipt .num{text-align:right;white-space:nowrap;}
+            .unsettled-print-receipt .totalbox{margin-top:9px;border-top:1px dashed #94a3b8;border-bottom:1px dashed #94a3b8;padding:6px 0;}
+            .unsettled-print-receipt .balance span:last-child{font-size:13px;}
+            .unsettled-print-receipt .footer{margin-top:12px;text-align:center;font-size:10px;color:#64748b;}
+        </style>
+        <div class="unsettled-print-receipt">
+            ${companyLogo ? `<img src="./images/${escapeUnsettledBillHtml(companyLogo)}" alt="logo" class="logo">` : ''}
+            <div class="center">
+                <div class="name">${escapeUnsettledBillHtml(companyName)}</div>
+                <div class="muted">${escapeUnsettledBillHtml(companyAddress)}</div>
+                <div class="muted">${escapeUnsettledBillHtml(companyPhone)}${companyEmail ? ` | ${escapeUnsettledBillHtml(companyEmail)}` : ''}</div>
+            </div>
+            <div class="title">BILL</div>
+            <div class="line"><small>Reference</small><span>${escapeUnsettledBillHtml(row.reference || '-')}</span></div>
+            <div class="line"><small>Date</small><span>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</span></div>
+            <div class="line"><small>Salespoint</small><span>${escapeUnsettledBillHtml(row.salespoint || '-')}</span></div>
+            <div class="line"><small>Apply To</small><span>${escapeUnsettledBillHtml(row.applyto || '-')}</span></div>
+            <div class="line"><small>Owner</small><span>${escapeUnsettledBillHtml(owner || '-')}</span></div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr>
+                </thead>
+                <tbody>${itemRows || '<tr><td colspan="5" class="center muted">No bill items</td></tr>'}</tbody>
+            </table>
+            <div class="totalbox">
+                <div class="line"><small>Total</small><span>${formatCurrency(Number(row.totalamount || 0))}</span></div>
+                <div class="line"><small>Paid</small><span>${formatCurrency(Number(row.amountpaid || 0))}</span></div>
+                <div class="line balance"><small>Balance</small><span>${formatCurrency(Number(status.balance || 0))}</span></div>
+                <div class="line"><small>Status</small><span>${escapeUnsettledBillHtml(status.chip || '')}</span></div>
+            </div>
+            ${row.description ? `<div class="footer">${escapeUnsettledBillHtml(row.description)}</div>` : ''}
+            <div class="footer">Thank you</div>
+        </div>
+    `
+}
+
+function printUnsettledBillFromLoadedData(key = ''){
+    const row = getUnsettledBillByKey(key) || getUnsettledBillByKey(unsettledBillsActiveDetailKey)
+    if(!row) return notification('Bill not found in loaded slider data', 0)
+    let printHost = did('unsettled-bill-print-host')
+    if(!printHost){
+        printHost = document.createElement('div')
+        printHost.id = 'unsettled-bill-print-host'
+        printHost.className = 'hidden'
+        document.body.appendChild(printHost)
+    }
+    printHost.innerHTML = buildUnsettledBillPrintMarkup(row)
+    printDomContent('BILL', 'unsettled-bill-print-host', '<script src="https://cdn.tailwindcss.com"></script>')
+}
+
 function renderUnsettledBillDetailPanel(row = {}){
     const status = getUnsettledStatus(row)
     const owner = resolveUnsettledBillOwner(row)
     const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
     const billKey = getUnsettledBillDetailKey(row)
     return `
-        <div class="h-full border-l border-cyan-200/60 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-3 overflow-auto">
+        <div class="h-full border-l border-slate-200 bg-white text-slate-800 p-3 overflow-auto">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="inline-flex h-2 w-2 rounded-full bg-cyan-400"></span>
-                    <p class="font-semibold text-cyan-100 tracking-wide">Bill Details</p>
+                    <span class="inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+                    <p class="font-semibold text-slate-900 tracking-wide">Bill Details</p>
                 </div>
-                <button type="button" id="unsettled-close-detail" class="rounded border border-cyan-300/40 bg-slate-900/70 px-2 py-1 text-xs text-cyan-100 hover:bg-slate-800">Back</button>
+                <button type="button" id="unsettled-close-detail" class="rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50">Back</button>
             </div>
             <div class="mt-2 flex items-center gap-2">
-                <button type="button" data-unsettled-print="${billKey}" class="rounded border border-emerald-300/50 bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-500/25">Print</button>
-                <button type="button" data-unsettled-load="${billKey}" class="rounded border border-blue-300/50 bg-blue-500/15 px-2 py-1 text-[11px] font-semibold text-blue-100 hover:bg-blue-500/25">Load To Sales</button>
+                <button type="button" data-unsettled-print="${billKey}" class="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100">Print</button>
+                <button type="button" data-unsettled-load="${billKey}" class="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Load To Sales</button>
             </div>
-            <div class="mt-3 grid grid-cols-2 gap-2 text-xs rounded border border-cyan-200/20 bg-slate-900/40 p-2">
-                <p class="font-semibold text-cyan-100">Reference:</p><p>${row.reference || '-'}</p>
-                <p class="font-semibold text-cyan-100">Apply To:</p><p>${row.applyto || '-'}</p>
-                <p class="font-semibold text-cyan-100">Owner:</p><p>${owner || ''}</p>
-                <p class="font-semibold text-cyan-100">Date:</p><p>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</p>
-                <p class="font-semibold text-cyan-100">Salespoint:</p><p>${row.salespoint || '-'}</p>
-                <p class="font-semibold text-cyan-100">Payment Method:</p><p>${row.paymentmethod || '-'}</p>
-                <p class="font-semibold text-cyan-100">Total:</p><p>${formatCurrency(Number(row.totalamount || 0))}</p>
-                <p class="font-semibold text-cyan-100">Paid:</p><p>${formatCurrency(Number(row.amountpaid || 0))}</p>
-                <p class="font-semibold text-cyan-100">Balance:</p><p>${formatCurrency(Number(status.balance || 0))}</p>
-                <p class="font-semibold text-cyan-100">Status:</p><p><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></p>
-            </div>
-            <div class="mt-3">
-                <p class="font-semibold text-xs mb-2 text-cyan-100">Description</p>
-                <p class="text-xs text-slate-200 rounded border border-cyan-200/20 bg-slate-900/30 p-2">${row.description || '-'}</p>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs rounded border border-slate-200 bg-slate-50 p-2">
+                <p class="font-semibold text-slate-600">Reference:</p><p>${row.reference || '-'}</p>
+                <p class="font-semibold text-slate-600">Apply To:</p><p>${row.applyto || '-'}</p>
+                <p class="font-semibold text-slate-600">Owner:</p><p>${owner || ''}</p>
+                <p class="font-semibold text-slate-600">Date:</p><p>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</p>
+                <p class="font-semibold text-slate-600">Salespoint:</p><p>${row.salespoint || '-'}</p>
+                <p class="font-semibold text-slate-600">Payment Method:</p><p>${row.paymentmethod || '-'}</p>
+                <p class="font-semibold text-slate-600">Total:</p><p>${formatCurrency(Number(row.totalamount || 0))}</p>
+                <p class="font-semibold text-slate-600">Paid:</p><p>${formatCurrency(Number(row.amountpaid || 0))}</p>
+                <p class="font-semibold text-slate-600">Balance:</p><p>${formatCurrency(Number(status.balance || 0))}</p>
+                <p class="font-semibold text-slate-600">Status:</p><p><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></p>
             </div>
             <div class="mt-3">
-                <p class="font-semibold text-xs mb-2 text-cyan-100">Items</p>
-                <div class="overflow-auto rounded border border-cyan-200/20 bg-slate-900/25">
+                <p class="font-semibold text-xs mb-2 text-slate-700">Description</p>
+                <p class="text-xs text-slate-600 rounded border border-slate-200 bg-white p-2">${row.description || '-'}</p>
+            </div>
+            <div class="mt-3">
+                <p class="font-semibold text-xs mb-2 text-slate-700">Items</p>
+                <div class="overflow-auto rounded border border-slate-200 bg-white">
                     <table class="w-full text-xs">
-                        <thead><tr class="text-left text-cyan-100"><th>#</th><th>Item</th><th>Qty</th><th>Cost</th><th>Amount</th></tr></thead>
+                        <thead><tr class="text-left text-slate-600 bg-slate-50"><th>#</th><th>Item</th><th>Qty</th><th>Cost</th><th>Amount</th></tr></thead>
                         <tbody>${renderUnsettledBillItemRows(row)}</tbody>
                     </table>
                 </div>
@@ -723,7 +815,7 @@ function renderUnsettledBillsDrawer(force = false){
                                 <td>${formatCurrency(Number(row.amountpaid || 0))}</td>
                                 <td>${formatCurrency(Number(status.balance || 0))}</td>
                                 <td><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></td>
-                                <td><button type="button" data-unsettled-view="${getUnsettledBillDetailKey(row)}" class="rounded bg-blue-600 text-white px-2 py-1 text-[10px]">View Bill</button></td>
+                                <td><button type="button" title="View Bill" data-unsettled-view="${getUnsettledBillDetailKey(row)}" class="material-symbols-outlined inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white shadow text-[18px] hover:bg-blue-700">visibility</button></td>
                             </tr>`
                         }).join('')}
                         </tbody>
@@ -809,12 +901,7 @@ function bindUnsettledBillsUiHandlers(){
         button.dataset.bound = '1'
         button.addEventListener('click', () => {
             const key = String(button.dataset.unsettledPrint || '')
-            if(typeof printBillEntryByBatch === 'function') return printBillEntryByBatch(key)
-            const row = getUnsettledBillByKey(key)
-            if(row?.reference && typeof printsalesreceiptsales === 'function'){
-                return printsalesreceiptsales(row.reference, '', 'fetchsalesbillsonly.php', false, true)
-            }
-            notification('Print action is unavailable', 0)
+            return printUnsettledBillFromLoadedData(key)
         })
     })
     loadButtons.forEach((button) => {
