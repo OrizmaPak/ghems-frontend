@@ -9,6 +9,20 @@ function recordSplitBillFetchDebug(details = {}) {
     }
 }
 
+function bindSplitBillControl(id, eventName, handler, key = '') {
+    const selector = `#${id}`
+    if (typeof bindSalesEventOnce === 'function') {
+        bindSalesEventOnce(selector, eventName, handler, key || id)
+        return
+    }
+    const control = did(id)
+    if (!control) return
+    const datasetKey = `splitbillBound${String(key || `${id}${eventName}`).replace(/[^a-z0-9]/gi, '')}`
+    if (control.dataset[datasetKey]) return
+    control.addEventListener(eventName, handler)
+    control.dataset[datasetKey] = '1'
+}
+
 function syncSplitBillSalespointOptions() {
     const source = did('salespointname')
     const target = did('splitbill_salespoint')
@@ -93,48 +107,53 @@ function normalizeSplitBillItem(item = {}, index = 0) {
 }
 
 async function splitbillActive() {
-    syncSplitBillSalespointOptions()
-    if (typeof bindSalesEventOnce === 'function') {
-        bindSalesEventOnce('#splitbill_fetch', 'click', fetchSplitBills, 'splitbillfetch')
-        bindSalesEventOnce('#splitbill_clear', 'click', clearSplitBillFilters, 'splitbillclear')
-        bindSalesEventOnce('#splitbill_salespoint', 'change', fetchSplitBills, 'splitbillsalespoint')
-        bindSalesEventOnce('#splitbill_reset', 'click', resetActiveSplitBill, 'splitbillreset')
-        bindSalesEventOnce('#splitbill_submit', 'click', submitSplitBill, 'splitbillsubmit')
-        bindSalesEventOnce('#splitbill_reference', 'keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault()
-                fetchSplitBills()
-            }
-        }, 'splitbillreferenceenter')
-    } else {
-        if (did('splitbill_fetch') && did('splitbill_fetch').dataset.splitbillBound !== '1') {
-            did('splitbill_fetch').addEventListener('click', fetchSplitBills)
-            did('splitbill_fetch').dataset.splitbillBound = '1'
-        }
+    const source = did('salespointname')
+    if (typeof bindSalesEventOnce !== 'function' && typeof hemsdepartment === 'function' && source && !source.options.length) {
+        await hemsdepartment()
     }
+    syncSplitBillSalespointOptions()
+    bindSplitBillControl('splitbill_fetch', 'click', fetchSplitBills, 'splitbillfetch')
+    bindSplitBillControl('splitbill_clear', 'click', clearSplitBillFilters, 'splitbillclear')
+    bindSplitBillControl('splitbill_salespoint', 'change', fetchSplitBills, 'splitbillsalespoint')
+    bindSplitBillControl('splitbill_reset', 'click', resetActiveSplitBill, 'splitbillreset')
+    bindSplitBillControl('splitbill_submit', 'click', submitSplitBill, 'splitbillsubmit')
+    bindSplitBillControl('splitbill_reference', 'keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault()
+            fetchSplitBills()
+        }
+    }, 'splitbillreferenceenter')
 }
 
-async function fetchSplitBills() {
+async function fetchSplitBills(options = {}) {
+    const { useInitialWindow = false, lightweight = false, silentEmpty = false } = options || {}
     const payload = new FormData()
     const reference = String(did('splitbill_reference')?.value || '').trim()
     const startdate = String(did('splitbill_startdate')?.value || '').trim()
     const enddate = String(did('splitbill_enddate')?.value || '').trim()
     const salespoint = String(did('splitbill_salespoint')?.value || '').trim()
+    const initialWindowDate = new Date().toISOString().slice(0, 10)
+    const initialSalespoint = String(did('salespointname')?.value || '').trim()
     if (reference) payload.append('reference', reference)
     if (startdate) payload.append('startdate', startdate)
+    else if (useInitialWindow) payload.append('startdate', initialWindowDate)
     if (enddate) payload.append('enddate', enddate)
+    else if (useInitialWindow) payload.append('enddate', initialWindowDate)
     if (salespoint) payload.append('salespoint', salespoint)
+    else if (useInitialWindow && initialSalespoint) payload.append('salespoint', initialSalespoint)
 
-    const requestPayload = reference || startdate || enddate || salespoint ? payload : null
-    recordSplitBillFetchDebug({ reference, startdate, enddate, salespoint })
-    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', requestPayload, did('splitbill_fetch'), 'json')
+    const requestPayload = reference || startdate || enddate || salespoint || useInitialWindow ? payload : null
+    recordSplitBillFetchDebug({ reference, startdate, enddate, salespoint: salespoint || initialSalespoint || '', useInitialWindow, lightweight })
+    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', requestPayload, did('splitbill_fetch'), 'json', { lightweight })
     if (!request.status) {
         splitBillDatasource = []
         renderSplitBillTable()
-        return notification(request.message || 'No bills retrieved', 0)
+        if (!silentEmpty) notification(request.message || 'No bills retrieved', 0)
+        return true
     }
     splitBillDatasource = normalizeSplitBillRows(request.data)
     renderSplitBillTable()
+    return true
 }
 
 function clearSplitBillFilters() {

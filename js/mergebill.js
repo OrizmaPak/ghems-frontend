@@ -3,6 +3,7 @@ let mergeBillSelectedRefs = []
 let mergeBillPreviewItems = []
 let mergeBillStockByItemId = {}
 let mergeBillStockByName = {}
+let mergeBillStockSalespoint = ''
 
 function recordMergeBillFetchDebug(details = {}) {
     if (typeof recordSalesFetchDebug === 'function') {
@@ -141,16 +142,21 @@ async function mergebillActive() {
     })
 }
 
-async function fetchMergeBillStockMap() {
-    const salespoint = String(did('mergebill_salespoint')?.value || '').trim()
+async function fetchMergeBillStockMap(salespointOverride = '') {
+    const salespoint = String(salespointOverride || did('mergebill_salespoint')?.value || '').trim()
+    if (!salespoint) return false
+    if (mergeBillStockSalespoint === salespoint && (Object.keys(mergeBillStockByItemId).length || Object.keys(mergeBillStockByName).length)) return true
     mergeBillStockByItemId = {}
     mergeBillStockByName = {}
-    if (!salespoint) return false
+    mergeBillStockSalespoint = salespoint
 
     const payload = new FormData()
     payload.append('salespoint', salespoint)
     const request = await httpRequest2('../controllers/fetchinventorybysalespoint', payload, null, 'json')
-    if (!request.status || !Array.isArray(request.data)) return false
+    if (!request.status || !Array.isArray(request.data)) {
+        mergeBillStockSalespoint = ''
+        return false
+    }
 
     request.data.forEach((entry) => {
         const itemid = String(entry?.itemid || '').trim()
@@ -162,40 +168,48 @@ async function fetchMergeBillStockMap() {
     return true
 }
 
-async function fetchMergeBills() {
+async function fetchMergeBills(options = {}) {
+    const { useInitialWindow = false, lightweight = false, silentEmpty = false } = options || {}
     const payload = new FormData()
     const reference = String(did('mergebill_reference')?.value || '').trim()
     const startdate = String(did('mergebill_startdate')?.value || '').trim()
     const enddate = String(did('mergebill_enddate')?.value || '').trim()
-    const salespoint = String(did('mergebill_salespoint')?.value || '').trim()
+    let salespoint = String(did('mergebill_salespoint')?.value || '').trim()
+    if (!salespoint && useInitialWindow) salespoint = String(did('salespointname')?.value || '').trim()
     if (!salespoint) {
         mergeBillDatasource = []
         mergeBillSelectedRefs = []
         mergeBillPreviewItems = []
         renderMergeBillTable()
         renderMergeBillWorkspace()
-        return notification('Select a department/salespoint to fetch merge bills', 0)
+        if (!silentEmpty) notification('Select a department/salespoint to fetch merge bills', 0)
+        return false
     }
+    const initialWindowDate = new Date().toISOString().slice(0, 10)
     if (reference) payload.append('reference', reference)
     if (startdate) payload.append('startdate', startdate)
+    else if (useInitialWindow) payload.append('startdate', initialWindowDate)
     if (enddate) payload.append('enddate', enddate)
+    else if (useInitialWindow) payload.append('enddate', initialWindowDate)
     if (salespoint) payload.append('salespoint', salespoint)
-    await fetchMergeBillStockMap()
+    await fetchMergeBillStockMap(salespoint)
 
-    recordMergeBillFetchDebug({ reference, startdate, enddate, salespoint })
-    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, did('mergebill_fetch'), 'json')
+    recordMergeBillFetchDebug({ reference, startdate, enddate, salespoint, useInitialWindow, lightweight })
+    const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, did('mergebill_fetch'), 'json', { lightweight })
     if (!request.status) {
         mergeBillDatasource = []
         mergeBillSelectedRefs = []
         mergeBillPreviewItems = []
         renderMergeBillTable()
         renderMergeBillWorkspace()
-        return notification(request.message || 'No bills retrieved', 0)
+        if (!silentEmpty) notification(request.message || 'No bills retrieved', 0)
+        return true
     }
     mergeBillDatasource = normalizeMergeBillRows(request.data)
     mergeBillSelectedRefs = mergeBillSelectedRefs.filter((ref) => mergeBillDatasource.some((bill) => bill.reference === ref))
     renderMergeBillTable()
     rebuildMergeBillPreview(false)
+    return true
 }
 
 function clearMergeBillFilters() {
@@ -208,6 +222,7 @@ function clearMergeBillFilters() {
     mergeBillPreviewItems = []
     mergeBillStockByItemId = {}
     mergeBillStockByName = {}
+    mergeBillStockSalespoint = ''
     renderMergeBillTable()
     renderMergeBillWorkspace()
 }

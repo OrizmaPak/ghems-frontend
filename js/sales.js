@@ -22,7 +22,9 @@ const salesAuxiliaryLoadState = {
 const SALES_FETCH_DEBUG = false
 const salesLazyLoadState = {
     splitBillsLoaded: false,
-    mergeBillsLoaded: false
+    splitBillsLoading: false,
+    mergeBillsLoaded: false,
+    mergeBillsLoading: false
 }
 
 function recordSalesFetchDebug(name = '', details = {}) {
@@ -30,7 +32,8 @@ function recordSalesFetchDebug(name = '', details = {}) {
     window.__salesFetchDebugCounters = window.__salesFetchDebugCounters || {}
     window.__salesFetchDebugCounters[name] = (window.__salesFetchDebugCounters[name] || 0) + 1
     const count = window.__salesFetchDebugCounters[name]
-    console.log(`[sales-fetch-debug] ${name} #${count}`, details)
+    const route = typeof getCurrentRouteName === 'function' ? getCurrentRouteName() : ''
+    console.log(`[sales-fetch-debug] ${name} #${count}`, { route, ...details })
     window.printSalesFetchDebugSummary = () => console.table(window.__salesFetchDebugCounters)
 }
 
@@ -285,7 +288,7 @@ async function runSalesDeferredLoad(pendingOrderToBillData = null) {
     deferredTasks.push(resolveBillDeletePermission())
     deferredTasks.push(fetchtablenumber({ lightweight: true }))
     deferredTasks.push(fetchsales(null, { useInitialWindow: true, quietEmpty: true, lightweight: true }))
-    if(!isOrderWorkspaceMode() && !(isBillsWorkspaceMode() && pendingOrderToBillData)) {
+    if(isBillsWorkspaceMode() && !pendingOrderToBillData) {
         setSalesLoadingStatus('Bills loading...')
         deferredTasks.push(fetchsalesbills('', null, { useInitialWindow: true, lightweight: true }))
     }
@@ -306,7 +309,9 @@ async function salesActive() {
     salesInventoryDatasource = []
     salesListingDatasource = []
     salesLazyLoadState.splitBillsLoaded = false
+    salesLazyLoadState.splitBillsLoading = false
     salesLazyLoadState.mergeBillsLoaded = false
+    salesLazyLoadState.mergeBillsLoading = false
     removeMainStoreFromPosSalespointLists()
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
@@ -347,15 +352,25 @@ async function salesActive() {
     bindSalesEventOnce('#billfilterdatefrom', 'change', () => applySalesBillFilters(), 'billfilterdatefrom')
     bindSalesEventOnce('#billfilterdateto', 'change', () => applySalesBillFilters(), 'billfilterdateto')
     bindSalesEventOnce('#billfiltersalespoint', 'change', () => applySalesBillFilters(), 'billfiltersalespoint')
-    bindSalesEventOnce("li[name='splitbillview']", 'click', () => {
-        if(!isBillsWorkspaceMode() || salesLazyLoadState.splitBillsLoaded || typeof fetchSplitBills !== 'function') return
-        salesLazyLoadState.splitBillsLoaded = true
-        fetchSplitBills()
+    bindSalesEventOnce("li[name='splitbillview']", 'click', async () => {
+        if(!isBillsWorkspaceMode() || salesLazyLoadState.splitBillsLoaded || salesLazyLoadState.splitBillsLoading || typeof fetchSplitBills !== 'function') return
+        salesLazyLoadState.splitBillsLoading = true
+        try {
+            const attempted = await fetchSplitBills({ useInitialWindow: true, lightweight: true, silentEmpty: true })
+            if(attempted !== false) salesLazyLoadState.splitBillsLoaded = true
+        } finally {
+            salesLazyLoadState.splitBillsLoading = false
+        }
     }, 'splitbillviewlazyload')
-    bindSalesEventOnce("li[name='mergebillview']", 'click', () => {
-        if(!isBillsWorkspaceMode() || salesLazyLoadState.mergeBillsLoaded || typeof fetchMergeBills !== 'function') return
-        salesLazyLoadState.mergeBillsLoaded = true
-        fetchMergeBills()
+    bindSalesEventOnce("li[name='mergebillview']", 'click', async () => {
+        if(!isBillsWorkspaceMode() || salesLazyLoadState.mergeBillsLoaded || salesLazyLoadState.mergeBillsLoading || typeof fetchMergeBills !== 'function') return
+        salesLazyLoadState.mergeBillsLoading = true
+        try {
+            const attempted = await fetchMergeBills({ useInitialWindow: true, lightweight: true, silentEmpty: true })
+            if(attempted !== false) salesLazyLoadState.mergeBillsLoaded = true
+        } finally {
+            salesLazyLoadState.mergeBillsLoading = false
+        }
     }, 'mergebillviewlazyload')
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
@@ -2562,7 +2577,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
                 printsalesreceiptsales(request.reference, '', 'fetchorders.php', true, true, false, orderReceiptRows)
             }
             else printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
-            if(!isOrderWorkspaceMode()) fetchsalesbills()
+            if(isBillsWorkspaceMode()) fetchsalesbills()
             if(isOrderWorkspaceMode()) {
                 orderEditBatchId = ''
                 fetchsales()
@@ -2754,7 +2769,7 @@ function resetSalesAfterReceipt() {
     if(did('salespointname') && typeof default_department !== 'undefined' && default_department) did('salespointname').value = default_department
     handlesalesdepartment(default_department || did('salespointname')?.value || '')
     fetchsales()
-    if(!isOrderWorkspaceMode()) fetchsalesbills()
+    if(isBillsWorkspaceMode()) fetchsalesbills()
 }
 
 function closeSalesReceiptModal() {
