@@ -502,6 +502,7 @@ function normalizeUnsettledBillRows(data = []){
     }
     const grouped = doBatch(data)
     return grouped.map((batch) => {
+        const rows = Array.isArray(batch.data) ? batch.data : []
         const first = (Array.isArray(batch.data) ? batch.data[0] : {}) || {}
         const reference = String(first.reference || '').trim()
         return {
@@ -732,6 +733,19 @@ function renderUnsettledBillsDrawer(force = false){
     bindUnsettledBillsUiHandlers()
 }
 
+function renderUnsettledBillsLoading(message = 'Loading unsettled bills...'){
+    const host = did('unsettledbillscontent')
+    if(!host) return
+    host.innerHTML = `
+        <div class="h-full flex items-center justify-center bg-white rounded border border-slate-200">
+            <div class="text-center">
+                <p class="font-semibold text-slate-800">${message}</p>
+                <p class="text-xs text-slate-500 mt-1">Please wait</p>
+            </div>
+        </div>
+    `
+}
+
 function bindUnsettledBillsUiHandlers(){
     const searchEl = did('unsettled-search')
     const salespointEl = did('unsettled-salespoint')
@@ -788,11 +802,23 @@ function bindUnsettledBillsUiHandlers(){
 
 async function fetchUnsettledBills(options = {}){
     const { forceRender = false, lightweight = true } = options || {}
-    if(unsettledBillsInFlight) return
+    if(unsettledBillsInFlight) {
+        if(forceRender && !did('unsettledbillscontent')?.innerHTML) renderUnsettledBillsLoading()
+        return
+    }
     unsettledBillsInFlight = true
+    if(forceRender && !unsettledBillsData.length) renderUnsettledBillsLoading()
     try{
         const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', null, null, 'json', { lightweight })
-        if(!request?.status) return
+        if(!request?.status) {
+            if(forceRender || (unsettledBillsOverlay && unsettledBillsOverlay.classList.contains('!left-[0%]'))) {
+                unsettledBillsData = []
+                unsettledBillsHash = ''
+                renderUnsettledBillsBadge()
+                renderUnsettledBillsDrawer(true)
+            }
+            return
+        }
         const normalized = normalizeUnsettledBillRows(request.data).map((row) => {
             const total = Number(row.totalamount || 0)
             const paid = Number(row.amountpaid || 0)
@@ -809,6 +835,14 @@ async function fetchUnsettledBills(options = {}){
         unsettledBillsHash = nextHash
         renderUnsettledBillsBadge()
         if(forceRender || changed || (unsettledBillsOverlay && unsettledBillsOverlay.classList.contains('!left-[0%]'))){
+            renderUnsettledBillsDrawer(true)
+        }
+    } catch (error) {
+        console.error('Unable to load unsettled bills:', error)
+        if(forceRender || (unsettledBillsOverlay && unsettledBillsOverlay.classList.contains('!left-[0%]'))) {
+            unsettledBillsData = []
+            unsettledBillsHash = ''
+            renderUnsettledBillsBadge()
             renderUnsettledBillsDrawer(true)
         }
     } finally {
@@ -837,6 +871,7 @@ if (unsettledBillsOpener && unsettledBillsOverlay) {
         unsettledBillsOverlay.classList.add('!left-[0%]')
         unsettledBillsPaginationLimit = 50
         unsettledBillsActiveDetailKey = ''
+        renderUnsettledBillsDrawer(true)
         fetchUnsettledBills({ forceRender: true, lightweight: true })
     })
 }
