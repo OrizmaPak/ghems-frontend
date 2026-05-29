@@ -627,33 +627,41 @@ function renderUnsettledBillDetailPanel(row = {}){
     const status = getUnsettledStatus(row)
     const owner = resolveUnsettledBillOwner(row)
     const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+    const billKey = getUnsettledBillDetailKey(row)
     return `
-        <div class="h-full border-l border-slate-200 bg-slate-50 p-3 overflow-auto">
+        <div class="h-full border-l border-cyan-200/60 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-3 overflow-auto">
             <div class="flex items-center justify-between">
-                <p class="font-semibold text-slate-800">Bill Details</p>
-                <button type="button" id="unsettled-close-detail" class="rounded border px-2 py-1 text-xs">Back</button>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-2 w-2 rounded-full bg-cyan-400"></span>
+                    <p class="font-semibold text-cyan-100 tracking-wide">Bill Details</p>
+                </div>
+                <button type="button" id="unsettled-close-detail" class="rounded border border-cyan-300/40 bg-slate-900/70 px-2 py-1 text-xs text-cyan-100 hover:bg-slate-800">Back</button>
             </div>
-            <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <p class="font-semibold">Reference:</p><p>${row.reference || '-'}</p>
-                <p class="font-semibold">Apply To:</p><p>${row.applyto || '-'}</p>
-                <p class="font-semibold">Owner:</p><p>${owner || ''}</p>
-                <p class="font-semibold">Date:</p><p>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</p>
-                <p class="font-semibold">Salespoint:</p><p>${row.salespoint || '-'}</p>
-                <p class="font-semibold">Payment Method:</p><p>${row.paymentmethod || '-'}</p>
-                <p class="font-semibold">Total:</p><p>${formatCurrency(Number(row.totalamount || 0))}</p>
-                <p class="font-semibold">Paid:</p><p>${formatCurrency(Number(row.amountpaid || 0))}</p>
-                <p class="font-semibold">Balance:</p><p>${formatCurrency(Number(status.balance || 0))}</p>
-                <p class="font-semibold">Status:</p><p><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></p>
+            <div class="mt-2 flex items-center gap-2">
+                <button type="button" data-unsettled-print="${billKey}" class="rounded border border-emerald-300/50 bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-500/25">Print</button>
+                <button type="button" data-unsettled-load="${billKey}" class="rounded border border-blue-300/50 bg-blue-500/15 px-2 py-1 text-[11px] font-semibold text-blue-100 hover:bg-blue-500/25">Load To Sales</button>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs rounded border border-cyan-200/20 bg-slate-900/40 p-2">
+                <p class="font-semibold text-cyan-100">Reference:</p><p>${row.reference || '-'}</p>
+                <p class="font-semibold text-cyan-100">Apply To:</p><p>${row.applyto || '-'}</p>
+                <p class="font-semibold text-cyan-100">Owner:</p><p>${owner || ''}</p>
+                <p class="font-semibold text-cyan-100">Date:</p><p>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</p>
+                <p class="font-semibold text-cyan-100">Salespoint:</p><p>${row.salespoint || '-'}</p>
+                <p class="font-semibold text-cyan-100">Payment Method:</p><p>${row.paymentmethod || '-'}</p>
+                <p class="font-semibold text-cyan-100">Total:</p><p>${formatCurrency(Number(row.totalamount || 0))}</p>
+                <p class="font-semibold text-cyan-100">Paid:</p><p>${formatCurrency(Number(row.amountpaid || 0))}</p>
+                <p class="font-semibold text-cyan-100">Balance:</p><p>${formatCurrency(Number(status.balance || 0))}</p>
+                <p class="font-semibold text-cyan-100">Status:</p><p><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></p>
             </div>
             <div class="mt-3">
-                <p class="font-semibold text-xs mb-2">Description</p>
-                <p class="text-xs text-slate-700">${row.description || '-'}</p>
+                <p class="font-semibold text-xs mb-2 text-cyan-100">Description</p>
+                <p class="text-xs text-slate-200 rounded border border-cyan-200/20 bg-slate-900/30 p-2">${row.description || '-'}</p>
             </div>
             <div class="mt-3">
-                <p class="font-semibold text-xs mb-2">Items</p>
-                <div class="overflow-auto">
+                <p class="font-semibold text-xs mb-2 text-cyan-100">Items</p>
+                <div class="overflow-auto rounded border border-cyan-200/20 bg-slate-900/25">
                     <table class="w-full text-xs">
-                        <thead><tr class="text-left"><th>#</th><th>Item</th><th>Qty</th><th>Cost</th><th>Amount</th></tr></thead>
+                        <thead><tr class="text-left text-cyan-100"><th>#</th><th>Item</th><th>Qty</th><th>Cost</th><th>Amount</th></tr></thead>
                         <tbody>${renderUnsettledBillItemRows(row)}</tbody>
                     </table>
                 </div>
@@ -699,7 +707,7 @@ function renderUnsettledBillsDrawer(force = false){
                 <div class="overflow-auto p-2">
                 ${slice.length ? `
                     <table class="w-full text-xs">
-                        <thead><tr class="text-left"><th>#</th><th>Action</th><th>Apply To</th><th>Date</th><th>Salespoint</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+                        <thead><tr class="text-left"><th>#</th><th>Apply To</th><th>Date</th><th>Salespoint</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
                         ${slice.map((row, idx) => {
                             const status = getUnsettledStatus(row)
@@ -707,7 +715,6 @@ function renderUnsettledBillsDrawer(force = false){
                             const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                             return `<tr class="border-t">
                                 <td>${idx + 1}</td>
-                                <td><button type="button" data-unsettled-view="${getUnsettledBillDetailKey(row)}" class="rounded bg-blue-600 text-white px-2 py-1 text-[10px]">View Bill</button></td>
                                 <td>${row.applyto || '-'}</td>
                                 <td>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</td>
                                 <td>${row.salespoint || '-'}</td>
@@ -716,6 +723,7 @@ function renderUnsettledBillsDrawer(force = false){
                                 <td>${formatCurrency(Number(row.amountpaid || 0))}</td>
                                 <td>${formatCurrency(Number(status.balance || 0))}</td>
                                 <td><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></td>
+                                <td><button type="button" data-unsettled-view="${getUnsettledBillDetailKey(row)}" class="rounded bg-blue-600 text-white px-2 py-1 text-[10px]">View Bill</button></td>
                             </tr>`
                         }).join('')}
                         </tbody>
@@ -754,6 +762,8 @@ function bindUnsettledBillsUiHandlers(){
     const loadMoreEl = did('unsettled-loadmore')
     const closeDetailEl = did('unsettled-close-detail')
     const viewButtons = document.querySelectorAll('[data-unsettled-view]')
+    const printButtons = document.querySelectorAll('[data-unsettled-print]')
+    const loadButtons = document.querySelectorAll('[data-unsettled-load]')
     if(searchEl && searchEl.dataset.bound !== '1'){
         searchEl.dataset.bound = '1'
         searchEl.addEventListener('input', (event) => {
@@ -793,6 +803,34 @@ function bindUnsettledBillsUiHandlers(){
         if(button.dataset.bound === '1') return
         button.dataset.bound = '1'
         button.addEventListener('click', () => openUnsettledBillDetail(button.dataset.unsettledView || ''))
+    })
+    printButtons.forEach((button) => {
+        if(button.dataset.bound === '1') return
+        button.dataset.bound = '1'
+        button.addEventListener('click', () => {
+            const key = String(button.dataset.unsettledPrint || '')
+            if(typeof printBillEntryByBatch === 'function') return printBillEntryByBatch(key)
+            const row = getUnsettledBillByKey(key)
+            if(row?.reference && typeof printsalesreceiptsales === 'function'){
+                return printsalesreceiptsales(row.reference, '', 'fetchsalesbillsonly.php', false, true)
+            }
+            notification('Print action is unavailable', 0)
+        })
+    })
+    loadButtons.forEach((button) => {
+        if(button.dataset.bound === '1') return
+        button.dataset.bound = '1'
+        button.addEventListener('click', () => {
+            const key = String(button.dataset.unsettledLoad || '')
+            if(typeof retrieveBillToSalesByBatch === 'function') return retrieveBillToSalesByBatch(key)
+            const row = getUnsettledBillByKey(key)
+            if(row?.reference){
+                sessionStorage.setItem('pendingSalesBillReference', row.reference)
+                window.location.href = 'index.php?r=sales'
+                return
+            }
+            notification('Load to sales is unavailable', 0)
+        })
     })
     if(closeDetailEl && closeDetailEl.dataset.bound !== '1'){
         closeDetailEl.dataset.bound = '1'
