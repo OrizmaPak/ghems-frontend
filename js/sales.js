@@ -10,6 +10,7 @@ let canDeleteBillsInView = false
 let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
+let orderKitchenReceiptCache = new Map()
 let pmReservationOwnerRows = []
 let salesInventoryDatasource = []
 let salesListingDatasource = []
@@ -643,6 +644,7 @@ function normalizeSalesRowsForTable(data = []) {
         grouped.get(reference).saledetail.push({
             itemid: row.itemid || '',
             itemname: row.itemname || row.description || '',
+            itemtype: row.itemtype || row.type || row.itemclass || '',
             qty: Number(row.qty || 0),
             cost: Number(row.cost || 0),
             salespoint: row.salespoint || ''
@@ -702,6 +704,7 @@ function normalizeOrdersForSalesTable(data = []) {
         group.saledetail.push({
             itemid: row.itemid || '',
             itemname: row.itemname || '',
+            itemtype: row.itemtype || row.type || row.itemclass || '',
             qty: Number(row.qty || 0),
             cost: Number(row.cost || 0),
             description: row.description || '',
@@ -1805,6 +1808,8 @@ async function onsalesTableDataSignal() {
         if(orderMode){
             const currentStatus = normalizeOrderStatusValue(item.saleentry.moredata, true) || 'ORDER'
             const statusOptions = getOrderStatusOptions(currentStatus)
+            const hasFoodItems = orderHasFoodItems(item)
+            const kitchenSent = isOrderKitchenSent(item.saleentry.reference)
             const safeComment = item.saleentry.description || item.saledetail?.[0]?.description || ''
             const safeOrderDetails = (() => {
                 const raw = String(resolveOrderDetailsValue(item.saleentry, item.saledetail) ?? '').trim()
@@ -1854,7 +1859,8 @@ async function onsalesTableDataSignal() {
                         <button title="View Item" onclick="openSalesReportModal('${safeRef}', '', true)" class="material-symbols-outlined rounded-full bg-green-400 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">visibility</button>
                         <button title="Edit Order" onclick="editOrderByBatch('${safeBatch}')" class="material-symbols-outlined rounded-full bg-blue-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">edit</button>
                         <button title="Generate Bill" onclick="composeOrderToBillByReference('${safeRef}')" class="material-symbols-outlined rounded-full bg-amber-500 h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">receipt_long</button>
-                        <button title="Print sales" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+                        <button title="Printed" onclick="printsalesreceiptsales('${safeRef}', '', 'fetchorders.php', false, false, true)" class="material-symbols-outlined rounded-full bg-primary-g h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">print</button>
+                        ${hasFoodItems ? `<button title="${kitchenSent ? 'Sent to kitchen' : 'Send food items to kitchen'}" onclick="printKitchenOrderByReference('${safeRef}')" class="material-symbols-outlined rounded-full ${kitchenSent ? 'bg-emerald-600' : 'bg-rose-500'} h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">restaurant</button>` : ''}
                     </td>
                 </tr>
             `
@@ -2546,6 +2552,92 @@ async function editOrderByBatch(batchid = '') {
     await loadOrderIntoForm(orderEntry)
 }
 
+function normalizeOrderItemType(value = '') {
+    return String(value || '').trim().toUpperCase()
+}
+
+function isFoodOrderItem(item = {}) {
+    return normalizeOrderItemType(item.itemtype || item.type || item.itemclass) === 'FOOD'
+}
+
+function getOrderKitchenStorageKey(reference = '') {
+    const cleaned = String(reference || '').trim()
+    return cleaned ? `orderKitchenSent:${cleaned}` : ''
+}
+
+function isOrderKitchenSent(reference = '') {
+    const key = getOrderKitchenStorageKey(reference)
+    return !!(key && localStorage.getItem(key) === '1')
+}
+
+function markOrderKitchenSent(reference = '') {
+    const key = getOrderKitchenStorageKey(reference)
+    if(key) localStorage.setItem(key, '1')
+}
+
+function getOrderFoodItems(orderEntry = {}) {
+    return (Array.isArray(orderEntry?.saledetail) ? orderEntry.saledetail : []).filter(isFoodOrderItem)
+}
+
+function orderHasFoodItems(orderEntry = {}) {
+    return getOrderFoodItems(orderEntry).length > 0
+}
+
+function buildKitchenRowsFromReceiptRows(rows = []) {
+    const foodRows = (Array.isArray(rows) ? rows : []).filter(isFoodOrderItem)
+    if(!foodRows.length) return []
+    const kitchenTotal = foodRows.reduce((sum, row) => sum + (Number(row.qty || 0) * Number(row.cost || 0)), 0)
+    return foodRows.map((row) => ({
+        ...row,
+        totalamount: kitchenTotal,
+        moredata: 'ORDER',
+        moredetails: 'ORDER',
+        status: 'ORDER',
+        kitchenprint: '1'
+    }))
+}
+
+function buildKitchenRowsFromOrderEntry(orderEntry = {}) {
+    const saleEntry = orderEntry.saleentry || {}
+    const rows = getOrderFoodItems(orderEntry).map((detail) => ({
+        reference: saleEntry.reference || '',
+        ownerdetail: saleEntry.ownerdetail ?? saleEntry.ownerid,
+        owner: saleEntry.ownerid,
+        ownerid: saleEntry.ownerid,
+        totalamount: saleEntry.servicecharge || 0,
+        amountpaid: orderEntry.amountreceived || 0,
+        amountreceived: orderEntry.amountreceived || 0,
+        paymentmethod: saleEntry.paymentmethod || '',
+        transactiondate: saleEntry.transactiondate || '',
+        moredata: 'ORDER',
+        moredetails: 'ORDER',
+        status: 'ORDER',
+        ttype: saleEntry.ttype || 'ORDER',
+        description: saleEntry.description || detail.description || '',
+        comment: saleEntry.description || detail.description || '',
+        itemid: detail.itemid || '',
+        itemname: detail.itemname || '',
+        itemtype: detail.itemtype || detail.type || '',
+        qty: Number(detail.qty || 0),
+        cost: Number(detail.cost || 0)
+    }))
+    return buildKitchenRowsFromReceiptRows(rows)
+}
+
+function printKitchenOrderByReference(reference = '') {
+    const cleaned = String(reference || '').trim()
+    if(!cleaned) return notification('Order reference is required', 0)
+    const orderEntry = orderRowsIndex.get(cleaned)
+        || salesListingDatasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned || String(entry?.saleentry?.batchid || '') === cleaned)
+    const kitchenRows = orderEntry
+        ? buildKitchenRowsFromOrderEntry(orderEntry)
+        : buildKitchenRowsFromReceiptRows(orderKitchenReceiptCache.get(cleaned) || [])
+    if(!kitchenRows.length) return notification('No food item found for this order', 0)
+    markOrderKitchenSent(kitchenRows[0].reference || cleaned)
+    renderCurrentSalesDatasource()
+    return printsalesreceiptsales(kitchenRows[0].reference || cleaned, '', 'fetchorders.php', false, false, false, kitchenRows)
+}
+
 function buildReceiptRowsFromForm(reference = '', ttype = '') {
     const rows = []
     const tableRows = did('thetabledata')?.querySelectorAll('tr') || []
@@ -2563,6 +2655,7 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
         const qtyInput = row.querySelector('.qqty')
         const costInput = row.querySelector('.pprice')
         const itemName = String(itemInput?.value || '').trim()
+        const itemType = String(row.querySelector('[id^="type-"]')?.textContent || row.querySelector('[id^="itemclass-"]')?.value || '').trim()
         const qty = Number(qtyInput?.value || 0)
         const cost = Number(costInput?.value || 0)
         if(!itemName || qty <= 0) return
@@ -2584,6 +2677,7 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
             comment: descriptionValue,
             itemid: String(itemIdInput?.value || '').trim(),
             itemname: itemName,
+            itemtype: itemType,
             qty,
             cost
         })
@@ -2873,6 +2967,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                 comment: localData.saleentry.description || detail.description || '',
                 itemid: detail.itemid || '',
                 itemname: detail.itemname || '',
+                itemtype: detail.itemtype || detail.type || '',
                 qty: Number(detail.qty || 0),
                 cost: Number(detail.cost || 0)
             }))
@@ -2911,9 +3006,14 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const firstRow = rows[0] || {}
             const orderPrintMode = salesFetchController === 'fetchorders.php'
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
-            const documentTypeLabel = orderPrintMode ? 'ORDER' : 'BILL'
+            const kitchenPrintMode = String(firstRow.kitchenprint || '') === '1'
+            const documentTypeLabel = kitchenPrintMode ? 'KITCHEN ORDER' : (orderPrintMode ? 'ORDER' : 'BILL')
             const ownerText = resolveReceiptOwnerDisplay(rows)
             const shouldShowOwner = true
+            if(orderPrintMode) {
+                orderKitchenReceiptCache.set(String(ref || firstRow.reference || '').trim(), rows)
+            }
+            const shouldShowKitchenButton = orderPrintMode && !kitchenPrintMode && buildKitchenRowsFromReceiptRows(rows).length > 0
             const receiptDescription = String(
                 firstRow.description
                 || firstRow.comment
@@ -2927,6 +3027,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                         <h4 class="font-semibold">${did('your_companyname').value}</h4>
                                         <p class="text-xs">${did('your_companyaddress').value}</p>
                                         <p class="text-[11px] font-bold tracking-[0.2em] uppercase border border-slate-300 px-3 py-1 rounded">${documentTypeLabel}</p>
+                                        ${shouldShowKitchenButton ? `<button type="button" onclick="printKitchenOrderByReference('${String(ref || firstRow.reference || '').replace(/'/g, "\\'")}')" class="mt-1 rounded bg-rose-600 px-3 py-1 text-[11px] font-semibold text-white shadow">Send food items to kitchen</button>` : ''}
                                     </div>
                                     <div class="flex flex-col gap-3 border-b py-6 text-xs">
                                       <p class="flex justify-between">
