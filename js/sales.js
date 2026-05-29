@@ -7,6 +7,7 @@ let isPopulatingSalesBill = false
 let salesSubmissionInFlight = false
 let salesReceiptResetOnClose = true
 let canDeleteBillsInView = false
+let sourceSalesBillContext = null
 let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
@@ -983,6 +984,11 @@ async function loadSalesBillIntoForm(bill) {
     isPopulatingSalesBill = true
     try {
         salesid = bill.id || ''
+        sourceSalesBillContext = {
+            id: bill.id || '',
+            batchid: bill.batchid || '',
+            reference: bill.reference || ''
+        }
         if(did('billreferencecode')) did('billreferencecode').value = bill.reference || ''
         if(did('salespointname') && bill.salespoint){
             did('salespointname').value = bill.salespoint
@@ -1075,6 +1081,30 @@ async function loadSalesBillIntoForm(bill) {
     } finally {
         isPopulatingSalesBill = false
     }
+}
+
+async function markSourceSalesBillFilled(sourceBill = null) {
+    const bill = sourceBill || sourceSalesBillContext || {}
+    const batchid = String(bill.batchid || '').trim()
+    const reference = String(bill.reference || '').trim()
+    const billKey = batchid || reference
+    if(!billKey) return false
+
+    const payload = new FormData()
+    payload.append('batchid', billKey)
+    payload.append('status', 'FILLED')
+    if(reference) payload.append('reference', reference)
+
+    const request = await httpRequest2('../controllers/removesalesbill.php', payload, null, 'json')
+    if(request?.status) {
+        salesBillDatasource = salesBillDatasource.filter((item) => String(item.batchid || item.reference || '') !== billKey)
+        salesBillFilteredDatasource = salesBillFilteredDatasource.filter((item) => String(item.batchid || item.reference || '') !== billKey)
+        if(typeof queueUnsettledBillsRefresh === 'function') queueUnsettledBillsRefresh()
+        return true
+    }
+
+    notification(request?.message || `Sale saved, but source bill ${reference || billKey} could not be marked as filled`, 0)
+    return false
 }
 
 function isTableServiceDepartment(value = '') {
@@ -2716,6 +2746,15 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         payload = getFormData2(document.querySelector('#salesform'), salesid ? [['id', salesid], ['rowsize', document.getElementsByClassName('pprice').length]] : [['rowsize', document.getElementsByClassName('pprice').length]])
         payload.set('ownerdetail', ownerPayloadValue || '-1')
         payload.set('owner', ownerPayloadValue || '-1')
+        const sourceBillForSale = (!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && ttype !== 'ORDER' && ttype !== 'BILL')
+            ? {
+                ...(sourceSalesBillContext || {}),
+                reference: sourceSalesBillContext?.reference || String(did('billreferencecode')?.value || '').trim()
+            }
+            : null
+        if(sourceBillForSale?.reference) payload.set('sourcebillreference', sourceBillForSale.reference)
+        if(sourceBillForSale?.batchid) payload.set('sourcebillbatchid', sourceBillForSale.batchid)
+        if(sourceBillForSale?.id) payload.set('sourcebillid', sourceBillForSale.id)
         if(ttype)payload.set('ttype', ttype)
         if((isOrderWorkspaceMode() || ttype === 'ORDER') && orderEditBatchId) payload.set('batchid', orderEditBatchId)
         if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && ttype !== 'ORDER' && ttype !== 'BILL') appendReceivingBankMoreData(payload)
@@ -2735,7 +2774,10 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
                 const orderReceiptRows = buildReceiptRowsFromForm(request.reference, 'ORDER')
                 printsalesreceiptsales(request.reference, '', 'fetchorders.php', true, true, false, orderReceiptRows)
             }
-            else printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
+            else {
+                if(sourceBillForSale?.batchid || sourceBillForSale?.reference) await markSourceSalesBillFilled(sourceBillForSale)
+                printsalesreceiptsales(request.reference, '', 'fetchsalesbyreference', true, false)
+            }
             if(isBillsWorkspaceMode()) fetchsalesbills()
             if(isOrderWorkspaceMode()) {
                 orderEditBatchId = ''
@@ -2753,6 +2795,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
 
 function emptysales(){
     orderEditBatchId = ''
+    sourceSalesBillContext = null
     const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `
                                             <tr id="row-919">
