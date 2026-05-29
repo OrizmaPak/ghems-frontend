@@ -19,6 +19,7 @@ let unsettledBillsHash = ''
 let unsettledBillsInFlight = false
 let unsettledBillsRefreshDebounce = null
 let unsettledBillsPaginationLimit = 50
+let unsettledBillsActiveDetailKey = ''
 const unsettledBillsState = {
     search: '',
     salespoint: 'ALL',
@@ -481,13 +482,19 @@ function normalizeUnsettledBillRows(data = []){
             const reference = String(saleEntry.reference || '').trim()
             const totalamount = Number(saleEntry.totalamount || saleEntry.servicecharge || 0)
             const amountpaid = Number(entry.amountreceived || saleEntry.amountpaid || 0)
+            const details = Array.isArray(entry.saledetail) ? entry.saledetail : []
             return {
                 id: saleEntry.id || '',
                 batchid: saleEntry.batchid || '',
                 reference,
                 transactiondate: saleEntry.transactiondate || '',
                 salespoint: saleEntry.salespoint || '',
-                owner: saleEntry.ownerdetail ?? saleEntry.ownerid ?? saleEntry.owner ?? '',
+                applyto: saleEntry.applyto || '',
+                owner: saleEntry.owner ?? saleEntry.ownerid ?? '',
+                ownerdetail: saleEntry.ownerdetail ?? '',
+                paymentmethod: saleEntry.paymentmethod || '',
+                description: saleEntry.description || '',
+                items: details.map((item) => ({ ...item })),
                 totalamount: Number.isFinite(totalamount) ? totalamount : 0,
                 amountpaid: Number.isFinite(amountpaid) ? amountpaid : 0
             }
@@ -503,7 +510,12 @@ function normalizeUnsettledBillRows(data = []){
             reference,
             transactiondate: first.transactiondate || '',
             salespoint: first.salespoint || '',
-            owner: first.ownerdetail ?? first.ownerid ?? first.owner ?? '',
+            applyto: first.applyto || '',
+            owner: first.owner ?? first.ownerid ?? '',
+            ownerdetail: first.ownerdetail ?? '',
+            paymentmethod: first.paymentmethod || '',
+            description: first.description || '',
+            items: rows.map((item) => ({ ...item })),
             totalamount: Number(first.totalamount || first.servicecharge || 0),
             amountpaid: Number(first.amountpaid || first.amountreceived || 0)
         }
@@ -511,7 +523,7 @@ function normalizeUnsettledBillRows(data = []){
 }
 
 function buildUnsettledBillsHash(rows = []){
-    return rows.map((row) => `${row.reference}|${row.batchid}|${row.totalamount}|${row.amountpaid}|${row.transactiondate}|${row.salespoint}`).join('::')
+    return rows.map((row) => `${row.reference}|${row.batchid}|${row.totalamount}|${row.amountpaid}|${row.transactiondate}|${row.salespoint}|${row.applyto}|${row.owner}|${row.ownerdetail}`).join('::')
 }
 
 function getUnsettledStatus(row = {}){
@@ -548,15 +560,105 @@ function getFilteredUnsettledBills(){
     return unsettledBillsData.filter((row) => {
         const ref = String(row.reference || '').toLowerCase()
         const salespoint = String(row.salespoint || '').trim()
-        const owner = String(row.owner || '').toLowerCase()
+        const owner = String(resolveUnsettledBillOwner(row) || '').toLowerCase()
+        const applyto = String(row.applyto || '').toLowerCase()
         const search = unsettledBillsState.search.toLowerCase()
         const status = getUnsettledStatus(row)
         if(status.balance <= 0) return false
         if(unsettledBillsState.salespoint !== 'ALL' && salespoint !== unsettledBillsState.salespoint) return false
         if(unsettledBillsState.status !== 'ALL' && status.chip !== unsettledBillsState.status) return false
-        if(search && !(`${ref} ${owner} ${salespoint}`.includes(search))) return false
+        if(search && !(`${ref} ${owner} ${salespoint} ${applyto}`.includes(search))) return false
         return true
     })
+}
+
+function normalizeUnsettledTextValue(value = ''){
+    const cleaned = String(value ?? '').trim()
+    if(!cleaned || cleaned.toLowerCase() === 'null' || cleaned === '-' || cleaned === '-1') return ''
+    return cleaned
+}
+
+function resolveUnsettledBillOwner(row = {}){
+    const owner = normalizeUnsettledTextValue(row.owner)
+    if(owner) return owner
+    const ownerDetail = normalizeUnsettledTextValue(row.ownerdetail)
+    return ownerDetail || ''
+}
+
+function getUnsettledBillDetailKey(row = {}){
+    return String(row.batchid || row.reference || '')
+}
+
+function getUnsettledBillByKey(key = ''){
+    const cleaned = String(key || '').trim()
+    if(!cleaned) return null
+    return unsettledBillsData.find((row) => getUnsettledBillDetailKey(row) === cleaned) || null
+}
+
+function openUnsettledBillDetail(key = ''){
+    unsettledBillsActiveDetailKey = String(key || '').trim()
+    renderUnsettledBillsDrawer(true)
+}
+
+function closeUnsettledBillDetail(){
+    unsettledBillsActiveDetailKey = ''
+    renderUnsettledBillsDrawer(true)
+}
+
+function renderUnsettledBillItemRows(row = {}){
+    const items = Array.isArray(row.items) ? row.items : []
+    if(!items.length) return `<tr><td colspan="5" class="text-center text-slate-500 py-2">No bill items</td></tr>`
+    return items.map((item, idx) => {
+        const qty = Number(item.qty || 0)
+        const cost = Number(item.cost || 0)
+        const amount = qty * cost
+        return `<tr class="border-t">
+            <td>${idx + 1}</td>
+            <td>${item.itemname || item.item || '-'}</td>
+            <td>${formatNumber(qty)}</td>
+            <td>${formatCurrency(cost)}</td>
+            <td>${formatCurrency(amount)}</td>
+        </tr>`
+    }).join('')
+}
+
+function renderUnsettledBillDetailPanel(row = {}){
+    const status = getUnsettledStatus(row)
+    const owner = resolveUnsettledBillOwner(row)
+    const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+    return `
+        <div class="h-full border-l border-slate-200 bg-slate-50 p-3 overflow-auto">
+            <div class="flex items-center justify-between">
+                <p class="font-semibold text-slate-800">Bill Details</p>
+                <button type="button" id="unsettled-close-detail" class="rounded border px-2 py-1 text-xs">Back</button>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <p class="font-semibold">Reference:</p><p>${row.reference || '-'}</p>
+                <p class="font-semibold">Apply To:</p><p>${row.applyto || '-'}</p>
+                <p class="font-semibold">Owner:</p><p>${owner || ''}</p>
+                <p class="font-semibold">Date:</p><p>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</p>
+                <p class="font-semibold">Salespoint:</p><p>${row.salespoint || '-'}</p>
+                <p class="font-semibold">Payment Method:</p><p>${row.paymentmethod || '-'}</p>
+                <p class="font-semibold">Total:</p><p>${formatCurrency(Number(row.totalamount || 0))}</p>
+                <p class="font-semibold">Paid:</p><p>${formatCurrency(Number(row.amountpaid || 0))}</p>
+                <p class="font-semibold">Balance:</p><p>${formatCurrency(Number(status.balance || 0))}</p>
+                <p class="font-semibold">Status:</p><p><span class="px-2 py-1 rounded text-[10px] font-semibold ${chipClass}">${status.chip}</span></p>
+            </div>
+            <div class="mt-3">
+                <p class="font-semibold text-xs mb-2">Description</p>
+                <p class="text-xs text-slate-700">${row.description || '-'}</p>
+            </div>
+            <div class="mt-3">
+                <p class="font-semibold text-xs mb-2">Items</p>
+                <div class="overflow-auto">
+                    <table class="w-full text-xs">
+                        <thead><tr class="text-left"><th>#</th><th>Item</th><th>Qty</th><th>Cost</th><th>Amount</th></tr></thead>
+                        <tbody>${renderUnsettledBillItemRows(row)}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `
 }
 
 function renderUnsettledBillsDrawer(force = false){
@@ -564,11 +666,12 @@ function renderUnsettledBillsDrawer(force = false){
     if(!host) return
     const rows = getFilteredUnsettledBills()
     const count = getUnsettledBadgeBreakdown()
-    const currentHash = `${buildUnsettledBillsHash(rows)}|${unsettledBillsState.search}|${unsettledBillsState.salespoint}|${unsettledBillsState.status}|${unsettledBillsPaginationLimit}`
+    const currentHash = `${buildUnsettledBillsHash(rows)}|${unsettledBillsState.search}|${unsettledBillsState.salespoint}|${unsettledBillsState.status}|${unsettledBillsPaginationLimit}|${unsettledBillsActiveDetailKey}`
     if(!force && host.dataset.hash === currentHash) return
     host.dataset.hash = currentHash
     const salespoints = Array.from(new Set(unsettledBillsData.map((item) => String(item.salespoint || '').trim()).filter(Boolean))).sort()
     const slice = rows.slice(0, unsettledBillsPaginationLimit)
+    const activeDetail = getUnsettledBillByKey(unsettledBillsActiveDetailKey)
     host.innerHTML = `
         <div class="h-full flex flex-col bg-white rounded border border-slate-200">
             <div class="p-3 border-b border-slate-200">
@@ -577,7 +680,7 @@ function renderUnsettledBillsDrawer(force = false){
                     <p class="text-xs text-slate-500">${count.unpaid} unpaid / ${count.partial} partial</p>
                 </div>
                 <div class="mt-2 grid grid-cols-1 md:grid-cols-4 gap-2">
-                    <input id="unsettled-search" value="${unsettledBillsState.search}" placeholder="Search reference/owner" class="form-control !text-xs">
+                    <input id="unsettled-search" value="${unsettledBillsState.search}" placeholder="Search apply to/owner/reference" class="form-control !text-xs">
                     <select id="unsettled-salespoint" class="form-control !text-xs">
                         <option value="ALL">All Salespoints</option>
                         ${salespoints.map((sp) => `<option value="${sp}" ${unsettledBillsState.salespoint === sp ? 'selected' : ''}>${sp}</option>`).join('')}
@@ -591,20 +694,23 @@ function renderUnsettledBillsDrawer(force = false){
                 </div>
                 <p class="mt-2 text-[11px] text-slate-500">Last updated: ${unsettledBillsLastUpdatedAt ? specialformatDateTime(new Date(unsettledBillsLastUpdatedAt).toISOString().slice(0, 19).replace('T', ' ')) : 'Not yet'}</p>
             </div>
-            <div class="flex-1 overflow-auto p-2">
+            <div class="flex-1 min-h-0 grid ${activeDetail ? 'grid-cols-1 lg:grid-cols-[1.45fr_1fr]' : 'grid-cols-1'}">
+                <div class="overflow-auto p-2">
                 ${slice.length ? `
                     <table class="w-full text-xs">
-                        <thead><tr class="text-left"><th>#</th><th>Reference</th><th>Date</th><th>Salespoint</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+                        <thead><tr class="text-left"><th>#</th><th>Action</th><th>Apply To</th><th>Date</th><th>Salespoint</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
                         <tbody>
                         ${slice.map((row, idx) => {
                             const status = getUnsettledStatus(row)
+                            const owner = resolveUnsettledBillOwner(row)
                             const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                             return `<tr class="border-t">
                                 <td>${idx + 1}</td>
-                                <td>${row.reference || '-'}</td>
+                                <td><button type="button" data-unsettled-view="${getUnsettledBillDetailKey(row)}" class="rounded bg-blue-600 text-white px-2 py-1 text-[10px]">View Bill</button></td>
+                                <td>${row.applyto || '-'}</td>
                                 <td>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</td>
                                 <td>${row.salespoint || '-'}</td>
-                                <td>${row.owner || '-'}</td>
+                                <td>${owner || ''}</td>
                                 <td>${formatCurrency(Number(row.totalamount || 0))}</td>
                                 <td>${formatCurrency(Number(row.amountpaid || 0))}</td>
                                 <td>${formatCurrency(Number(status.balance || 0))}</td>
@@ -614,6 +720,8 @@ function renderUnsettledBillsDrawer(force = false){
                         </tbody>
                     </table>
                 ` : `<p class="text-center text-slate-500 py-10">No unsettled bills found</p>`}
+                </div>
+                ${activeDetail ? renderUnsettledBillDetailPanel(activeDetail) : ''}
             </div>
             <div class="p-2 border-t border-slate-200 flex items-center justify-between">
                 <p class="text-[11px] text-slate-500">Showing ${Math.min(slice.length, rows.length)} of ${rows.length}</p>
@@ -630,6 +738,8 @@ function bindUnsettledBillsUiHandlers(){
     const statusEl = did('unsettled-status')
     const refreshEl = did('unsettled-refresh')
     const loadMoreEl = did('unsettled-loadmore')
+    const closeDetailEl = did('unsettled-close-detail')
+    const viewButtons = document.querySelectorAll('[data-unsettled-view]')
     if(searchEl && searchEl.dataset.bound !== '1'){
         searchEl.dataset.bound = '1'
         searchEl.addEventListener('input', (event) => {
@@ -664,6 +774,15 @@ function bindUnsettledBillsUiHandlers(){
             unsettledBillsPaginationLimit += 50
             renderUnsettledBillsDrawer(true)
         })
+    }
+    viewButtons.forEach((button) => {
+        if(button.dataset.bound === '1') return
+        button.dataset.bound = '1'
+        button.addEventListener('click', () => openUnsettledBillDetail(button.dataset.unsettledView || ''))
+    })
+    if(closeDetailEl && closeDetailEl.dataset.bound !== '1'){
+        closeDetailEl.dataset.bound = '1'
+        closeDetailEl.addEventListener('click', () => closeUnsettledBillDetail())
     }
 }
 
@@ -717,18 +836,23 @@ if (unsettledBillsOpener && unsettledBillsOverlay) {
     unsettledBillsOpener.addEventListener('click', () => {
         unsettledBillsOverlay.classList.add('!left-[0%]')
         unsettledBillsPaginationLimit = 50
+        unsettledBillsActiveDetailKey = ''
         fetchUnsettledBills({ forceRender: true, lightweight: true })
     })
 }
 
 if (unsettledBillsRemover && unsettledBillsOverlay) {
-    unsettledBillsRemover.addEventListener('click', () => unsettledBillsOverlay.classList.remove('!left-[0%]'))
+    unsettledBillsRemover.addEventListener('click', () => {
+        unsettledBillsOverlay.classList.remove('!left-[0%]')
+        unsettledBillsActiveDetailKey = ''
+    })
 }
 
 if (unsettledBillsOverlay) {
     unsettledBillsOverlay.addEventListener('click', (event) => {
         if(event.target.id === 'unsettledbillscontainer'){
             unsettledBillsOverlay.classList.remove('!left-[0%]')
+            unsettledBillsActiveDetailKey = ''
         }
     })
 }
