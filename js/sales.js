@@ -19,6 +19,20 @@ const salesAuxiliaryLoadState = {
     roomNumbers: null,
     pmOwners: null
 }
+const SALES_FETCH_DEBUG = false
+const salesLazyLoadState = {
+    splitBillsLoaded: false,
+    mergeBillsLoaded: false
+}
+
+function recordSalesFetchDebug(name = '', details = {}) {
+    if(!SALES_FETCH_DEBUG || !name || typeof window === 'undefined') return
+    window.__salesFetchDebugCounters = window.__salesFetchDebugCounters || {}
+    window.__salesFetchDebugCounters[name] = (window.__salesFetchDebugCounters[name] || 0) + 1
+    const count = window.__salesFetchDebugCounters[name]
+    console.log(`[sales-fetch-debug] ${name} #${count}`, details)
+    window.printSalesFetchDebugSummary = () => console.table(window.__salesFetchDebugCounters)
+}
 
 function clearMissingOrderItemsNotice() {
     const holder = did('missingorderitemsnotice')
@@ -291,6 +305,8 @@ async function salesActive() {
     if(form?.querySelector('#bill')) bindSalesEventOnce(form.querySelector('#bill'), 'click', () => salesFormSubmitHandler(isOrderWorkspaceMode() ? 'ORDER' : 'BILL', form.querySelector('#bill')), 'bill')
     salesInventoryDatasource = []
     salesListingDatasource = []
+    salesLazyLoadState.splitBillsLoaded = false
+    salesLazyLoadState.mergeBillsLoaded = false
     removeMainStoreFromPosSalespointLists()
     syncSalesViewFilterSalespointOptions()
     syncSalesBillFilterSalespointOptions()
@@ -331,6 +347,16 @@ async function salesActive() {
     bindSalesEventOnce('#billfilterdatefrom', 'change', () => applySalesBillFilters(), 'billfilterdatefrom')
     bindSalesEventOnce('#billfilterdateto', 'change', () => applySalesBillFilters(), 'billfilterdateto')
     bindSalesEventOnce('#billfiltersalespoint', 'change', () => applySalesBillFilters(), 'billfiltersalespoint')
+    bindSalesEventOnce("li[name='splitbillview']", 'click', () => {
+        if(!isBillsWorkspaceMode() || salesLazyLoadState.splitBillsLoaded || typeof fetchSplitBills !== 'function') return
+        salesLazyLoadState.splitBillsLoaded = true
+        fetchSplitBills()
+    }, 'splitbillviewlazyload')
+    bindSalesEventOnce("li[name='mergebillview']", 'click', () => {
+        if(!isBillsWorkspaceMode() || salesLazyLoadState.mergeBillsLoaded || typeof fetchMergeBills !== 'function') return
+        salesLazyLoadState.mergeBillsLoaded = true
+        fetchMergeBills()
+    }, 'mergebillviewlazyload')
     // if(document.querySelector('#owner1'))document.querySelector('#owner1').addEventListener('change', e=>handlesalesapplyto(/))
     const pendingOrderToBillData = sessionStorage.getItem('pendingOrderToBillData')
     setSalesLoadingStatus('Preparing sales form...')
@@ -697,6 +723,7 @@ async function fetchsalesbills(reference = '', triggerButton = null, options = {
         else if(useInitialWindow && initialSalespoint) payload.append('salespoint', initialSalespoint)
     }
 
+    recordSalesFetchDebug('fetchsalesbills', { cleanedReference, useInitialWindow, lightweight, salespoint: salespoint || initialSalespoint || '' })
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, triggerButton, 'json', { lightweight })
     if(!request.status){
         if(cleanedReference) notification(request.message || 'No bill found for supplied reference', 0)

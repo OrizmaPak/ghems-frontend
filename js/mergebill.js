@@ -4,6 +4,12 @@ let mergeBillPreviewItems = []
 let mergeBillStockByItemId = {}
 let mergeBillStockByName = {}
 
+function recordMergeBillFetchDebug(details = {}) {
+    if (typeof recordSalesFetchDebug === 'function') {
+        recordSalesFetchDebug('fetchMergeBills', details)
+    }
+}
+
 function mergeBillMoney(value = 0) {
     return typeof formatCurrency === 'function' ? formatCurrency(value || 0) : formatNumber(value || 0)
 }
@@ -133,7 +139,6 @@ async function mergebillActive() {
             fetchMergeBills()
         }
     })
-    await fetchMergeBills()
 }
 
 async function fetchMergeBillStockMap() {
@@ -177,6 +182,7 @@ async function fetchMergeBills() {
     if (salespoint) payload.append('salespoint', salespoint)
     await fetchMergeBillStockMap()
 
+    recordMergeBillFetchDebug({ reference, startdate, enddate, salespoint })
     const request = await httpRequest2('../controllers/fetchsalesbillsonly.php', payload, did('mergebill_fetch'), 'json')
     if (!request.status) {
         mergeBillDatasource = []
