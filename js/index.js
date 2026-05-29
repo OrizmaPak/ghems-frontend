@@ -799,7 +799,7 @@ function renderUnsettledBillsDrawer(force = false){
                 <div class="overflow-auto p-2">
                 ${slice.length ? `
                     <table class="w-full text-xs">
-                        <thead><tr class="text-left"><th>#</th><th>Apply To</th><th>Date</th><th>Salespoint</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+                        <thead><tr class="text-left"><th>#</th><th>Date</th><th>Salespoint</th><th>Apply To</th><th>Owner</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
                         ${slice.map((row, idx) => {
                             const status = getUnsettledStatus(row)
@@ -807,9 +807,9 @@ function renderUnsettledBillsDrawer(force = false){
                             const chipClass = status.chip === 'UNPAID' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                             return `<tr class="border-t">
                                 <td>${idx + 1}</td>
-                                <td>${row.applyto || '-'}</td>
                                 <td>${row.transactiondate ? specialformatDateTime(row.transactiondate) : '-'}</td>
                                 <td>${row.salespoint || '-'}</td>
+                                <td>${row.applyto || '-'}</td>
                                 <td>${owner || ''}</td>
                                 <td>${formatCurrency(Number(row.totalamount || 0))}</td>
                                 <td>${formatCurrency(Number(row.amountpaid || 0))}</td>
