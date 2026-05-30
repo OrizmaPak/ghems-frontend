@@ -11,6 +11,7 @@ let sourceSalesBillContext = null
 let orderViewStatusFilter = 'ORDER'
 let orderRowsIndex = new Map()
 let orderEditBatchId = ''
+const orderBillGenerationLocks = new Map()
 let orderKitchenReceiptCache = new Map()
 let pmReservationOwnerRows = []
 let salesInventoryDatasource = []
@@ -2635,19 +2636,41 @@ async function composeOrderToBill(orderEntry = null) {
     return true
 }
 
-function composeOrderToBillByReference(reference = '') {
+async function composeOrderToBillByReference(reference = '') {
     const cleaned = String(reference || '').trim()
     if(!cleaned) return notification('Order reference is required', 0)
+    if(orderBillGenerationLocks.get(cleaned)) return notification('Generate Bill already in progress for this order', 0)
+
     const orderEntry = orderRowsIndex.get(cleaned)
         || salesListingDatasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
     if(!orderEntry) return notification('Order not found in current list', 0)
-    sessionStorage.setItem('pendingOrderToBillData', JSON.stringify(orderEntry))
-    const billsNav = did('bills')
-    if(billsNav){
-        billsNav.click()
-        return
+
+    const batchid = String(orderEntry?.saleentry?.batchid || '').trim()
+    if(!batchid) return notification('Order batch id is missing; unable to generate bill', 0)
+
+    orderBillGenerationLocks.set(cleaned, true)
+    try{
+        const statusUpdated = await updateOrderStatusInternal(batchid, 'FILLED', null, { silent: true, suppressRender: true })
+        if(!statusUpdated){
+            notification('Unable to update order status to FILLED. Bill generation stopped.', 0)
+            return
+        }
+
+        const refreshedOrderEntry = orderRowsIndex.get(cleaned)
+            || salesListingDatasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned)
+            || orderEntry
+        sessionStorage.setItem('pendingOrderToBillData', JSON.stringify(refreshedOrderEntry))
+        renderCurrentSalesDatasource()
+
+        const billsNav = did('bills')
+        if(billsNav){
+            billsNav.click()
+            return
+        }
+        window.location.href = 'index.php?r=bills'
+    } finally {
+        orderBillGenerationLocks.delete(cleaned)
     }
-    window.location.href = 'index.php?r=bills'
 }
 
 async function editOrderByBatch(batchid = '') {
@@ -2986,31 +3009,42 @@ async function fetchsalesviewreport() {
     return notification('No records retrieved')
 }
 
-async function updateOrderStatus(batchid = '', newStatus = '', control = null, reopenReference = '') {
+async function updateOrderStatusInternal(batchid = '', newStatus = '', control = null, options = {}) {
     const cleanedBatchId = String(batchid || '').trim()
     const statusValue = normalizeOrderStatusValue(newStatus, true)
-    if(!cleanedBatchId || !statusValue) return
+    if(!cleanedBatchId || !statusValue) return false
 
     const payload = new FormData()
     payload.append('batchid', cleanedBatchId)
     payload.append('status', statusValue)
-    const request = await httpRequest2('../controllers/salescript', payload, control)
+    const request = await httpRequest2('../controllers/salescript', payload, control, 'json', { lightweight: !!options.lightweight })
     if(!request.status){
-        notification(request.message || 'Unable to update status', 0)
+        if(!options.silent) notification(request.message || 'Unable to update status', 0)
         if(control) control.value = ''
-        return
+        return false
     }
 
     salesListingDatasource = salesListingDatasource.map((entry) => {
         if(String(entry?.saleentry?.batchid || '') !== cleanedBatchId) return entry
-        return {
+        const updatedEntry = {
             ...entry,
             saleentry: {
                 ...entry.saleentry,
                 moredata: statusValue
             }
         }
+        const refKey = String(updatedEntry?.saleentry?.reference || '').trim()
+        if(refKey) orderRowsIndex.set(refKey, updatedEntry)
+        orderRowsIndex.set(cleanedBatchId, updatedEntry)
+        return updatedEntry
     })
+
+    return true
+}
+
+async function updateOrderStatus(batchid = '', newStatus = '', control = null, reopenReference = '') {
+    const statusUpdated = await updateOrderStatusInternal(batchid, newStatus, control, { silent: false })
+    if(!statusUpdated) return
 
     renderCurrentSalesDatasource()
     if(reopenReference){
