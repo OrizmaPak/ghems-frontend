@@ -2668,6 +2668,12 @@ function buildKitchenRowsFromOrderEntry(orderEntry = {}) {
     return buildKitchenRowsFromReceiptRows(rows)
 }
 
+function printFullOrderByReference(reference = '') {
+    const cleaned = String(reference || '').trim()
+    if(!cleaned) return notification('Order reference is required', 0)
+    return printsalesreceiptsales(cleaned, '', 'fetchorders.php', false, false)
+}
+
 function printKitchenOrderByReference(reference = '') {
     const cleaned = String(reference || '').trim()
     if(!cleaned) return notification('Order reference is required', 0)
@@ -3084,10 +3090,13 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             const documentTypeLabel = kitchenPrintMode ? 'KITCHEN ORDER' : (orderPrintMode ? 'ORDER' : 'BILL')
             const ownerText = resolveReceiptOwnerDisplay(rows)
             const shouldShowOwner = true
-            if(orderPrintMode) {
+            if(orderPrintMode && !kitchenPrintMode) {
                 orderKitchenReceiptCache.set(String(ref || firstRow.reference || '').trim(), rows)
             }
-            const shouldShowKitchenButton = orderPrintMode && !kitchenPrintMode && buildKitchenRowsFromReceiptRows(rows).length > 0
+            const effectiveReference = String(ref || firstRow.reference || '').trim()
+            const hasKitchenRows = buildKitchenRowsFromReceiptRows(rows).length > 0
+            const shouldShowKitchenButton = orderPrintMode && hasKitchenRows
+            const shouldShowFullOrderButton = orderPrintMode
             const receiptDescription = String(
                 firstRow.description
                 || firstRow.comment
@@ -3101,7 +3110,10 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                         <h4 class="font-semibold">${did('your_companyname').value}</h4>
                                         <p class="text-xs">${did('your_companyaddress').value}</p>
                                         <p class="text-[11px] font-bold tracking-[0.2em] uppercase border border-slate-300 px-3 py-1 rounded">${documentTypeLabel}</p>
-                                        ${shouldShowKitchenButton ? `<button type="button" onclick="printKitchenOrderByReference('${String(ref || firstRow.reference || '').replace(/'/g, "\\'")}')" class="mt-1 rounded bg-rose-600 px-3 py-1 text-[11px] font-semibold text-white shadow">Send food items to kitchen</button>` : ''}
+                                        ${orderPrintMode ? `<div class="mt-1 flex flex-wrap items-center justify-center gap-2">
+                                            ${shouldShowFullOrderButton ? `<button type="button" onclick="printFullOrderByReference('${effectiveReference.replace(/'/g, "\\'")}')" class="rounded bg-blue-600 px-3 py-1 text-[11px] font-semibold text-white shadow">Print Full Order</button>` : ''}
+                                            ${shouldShowKitchenButton ? `<button type="button" onclick="printKitchenOrderByReference('${effectiveReference.replace(/'/g, "\\'")}')" class="rounded bg-rose-600 px-3 py-1 text-[11px] font-semibold text-white shadow">Print Kitchen Order</button>` : ''}
+                                        </div>` : ''}
                                     </div>
                                     <div class="flex flex-col gap-3 border-b py-6 text-xs">
                                       <p class="flex justify-between">
