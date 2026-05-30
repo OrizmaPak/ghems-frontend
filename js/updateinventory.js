@@ -6,7 +6,10 @@ async function updateinventoryActive() {
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>updateinventoryFormSubmitHandler())
     if(document.querySelector('#save')) document.querySelector('#save').addEventListener('click', e=>saveupdatedprices())
     if(document.querySelector('#updateinventory-export-btn')) document.querySelector('#updateinventory-export-btn').addEventListener('click', exportUpdateInventoryRows)
-    if(document.querySelector('#updateinventory-import-btn')) document.querySelector('#updateinventory-import-btn').addEventListener('click', ()=>did('updateinventory-import-input')?.click())
+    if(document.querySelector('#updateinventory-import-btn')) document.querySelector('#updateinventory-import-btn').addEventListener('click', ()=>{
+        const importInput = did('updateinventory-import-input')
+        if(importInput) importInput.click()
+    })
     if(document.querySelector('#updateinventory-import-input')) document.querySelector('#updateinventory-import-input').addEventListener('change', handleUpdateInventoryImportFile)
     if(document.querySelector('#selectall')) document.querySelector('#selectall').addEventListener('click', e=>{
         for(let i=0;i<document.getElementsByName('itemer').length;i++){
@@ -61,16 +64,17 @@ function getUpdateInventoryTableRowsData(){
     const prices = document.getElementsByName('price')
     const priceTwos = document.getElementsByName('price_two')
     const minBalances = document.getElementsByName('minbalance')
-    const salespoint = did('salespointname')?.value || ''
+    const salespointControl = did('salespointname')
+    const salespoint = salespointControl ? salespointControl.value : ''
     for(let i=0;i<itemIds.length;i++){
         rows.push({
-            itemid: `${itemIds[i]?.value || ''}`.trim(),
-            itemname: `${itemNames[i]?.value || ''}`.trim(),
-            itemtype: `${itemTypes[i]?.value || ''}`.trim(),
-            price: `${prices[i]?.value || ''}`.trim(),
-            price_two: `${priceTwos[i]?.value || ''}`.trim(),
-            minbalance: `${minBalances[i]?.value || ''}`.trim(),
-            balance: `${datasource?.[i]?.balance ?? ''}`.trim(),
+            itemid: `${itemIds[i] && itemIds[i].value ? itemIds[i].value : ''}`.trim(),
+            itemname: `${itemNames[i] && itemNames[i].value ? itemNames[i].value : ''}`.trim(),
+            itemtype: `${itemTypes[i] && itemTypes[i].value ? itemTypes[i].value : ''}`.trim(),
+            price: `${prices[i] && prices[i].value ? prices[i].value : ''}`.trim(),
+            price_two: `${priceTwos[i] && priceTwos[i].value ? priceTwos[i].value : ''}`.trim(),
+            minbalance: `${minBalances[i] && minBalances[i].value ? minBalances[i].value : ''}`.trim(),
+            balance: `${datasource && datasource[i] && datasource[i].balance !== undefined && datasource[i].balance !== null ? datasource[i].balance : ''}`.trim(),
             salespoint
         })
     }
@@ -113,7 +117,8 @@ async function exportUpdateInventoryRows(){
         }
     }
     const dateStr = new Date().toISOString().slice(0,10)
-    const salespoint = updateInventoryExcelSafeName(did('salespointname')?.value)
+    const salespointControlForExport = did('salespointname')
+    const salespoint = updateInventoryExcelSafeName(salespointControlForExport ? salespointControlForExport.value : '')
     const filename = `update_inventory_${salespoint}_${dateStr}.xlsx`
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -146,8 +151,8 @@ function normalizeUpdateInventoryItemType(value=''){
 }
 
 async function handleUpdateInventoryImportFile(event){
-    const input = event?.target
-    const file = input?.files?.[0]
+    const input = event ? event.target : null
+    const file = input && input.files ? input.files[0] : null
     if(!file) return
     const currentRows = getUpdateInventoryTableRowsData()
     if(!currentRows.length){
@@ -173,10 +178,11 @@ async function handleUpdateInventoryImportFile(event){
         const domRowsByItemId = new Map()
         const itemIds = document.getElementsByName('itemid')
         for(let i=0;i<itemIds.length;i++){
-            domRowsByItemId.set(String(itemIds[i]?.value || '').trim(), i)
+            domRowsByItemId.set(String(itemIds[i] && itemIds[i].value ? itemIds[i].value : '').trim(), i)
         }
 
-        const currentSalespoint = String(did('salespointname')?.value || '').trim().toLowerCase()
+        const salespointControlForImport = did('salespointname')
+        const currentSalespoint = String(salespointControlForImport ? salespointControlForImport.value : '').trim().toLowerCase()
         let updated = 0
         let skipped = 0
         let invalidType = 0
@@ -242,7 +248,7 @@ async function fetchupdateinventorys(id) {
                 // resolvePagination(datasource, onupdateinventoryTableDataSignal)
             }
         }else{
-             updateinventoryid = items[0]?.id
+             updateinventoryid = items[0] ? items[0].id : null
             if(items[0])populateData(items[0])
         }
     }
