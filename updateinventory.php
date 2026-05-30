@@ -10,6 +10,15 @@
                                                 <option value="">Loading...</option>
                                             </select>
                                         </div>
+                                        <input type="file" id="updateinventory-import-input" accept=".xlsx,.xls,.csv" class="hidden" />
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <button id="updateinventory-export-btn" type="button" class="rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-emerald-700 px-6 py-2 shadow-md font-medium hover:opacity-80 transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                                                <span>Export Item Type Sheet</span>
+                                            </button>
+                                            <button id="updateinventory-import-btn" type="button" class="rounded-md text-white text-sm capitalize bg-gradient-to-tr from-amber-500 via-amber-600 to-amber-700 px-6 py-2 shadow-md font-medium hover:opacity-80 transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                                                <span>Import Updated Item Type</span>
+                                            </button>
+                                        </div>
                                     <!--<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">-->
                                         
                                     <!--    <div></div>-->
@@ -50,7 +59,9 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                    <div class="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                                        <div class="hidden lg:block"></div>
+                                        <div class="hidden lg:block"></div>
                                         
                                         
                                         <div class="flex justify-end mt-5">
