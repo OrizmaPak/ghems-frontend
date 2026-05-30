@@ -26,6 +26,7 @@ const restrictedSalesPaymentPermissions = {
     'NO CHARGE': 'NO CHARGE POSTING',
     'CHAIRMAN DISCOUNT': 'CHAIRMAN DISCOUNT POSTING'
 }
+const CHAIRMAN_DISCOUNT_RATE = 0.5
 const salesLazyLoadState = {
     splitBillsLoaded: false,
     splitBillsLoading: false,
@@ -398,7 +399,10 @@ async function salesActive() {
     bindSalesEventOnce('#owner1', 'change', () => handleSalesOwnerSelectionChange(), 'owner1')
     bindSalesEventOnce('#pmownerselect', 'change', () => handleSalesOwnerSelectionChange(), 'pmownerselect')
     bindSalesEventOnce('#paymentmethod', 'click', checkotherbankdetails, 'paymentmethodclick')
-    bindSalesEventOnce('#paymentmethod', 'change', checkotherbankdetails, 'paymentmethodchange')
+    bindSalesEventOnce('#paymentmethod', 'change', () => {
+        checkotherbankdetails()
+        renderSalesTotalSummary(Number(did('totalamount')?.value || 0))
+    }, 'paymentmethodchange')
     bindSalesEventOnce('#amountpaid', 'input', () => {
         const applyto = String(did('applyto')?.value || '').trim().toUpperCase()
         if(isOrderWorkspaceMode() || isBillsWorkspaceMode() || !applyto.includes('PM')) return
@@ -567,6 +571,32 @@ function syncSalesBillFilterSalespointOptions() {
     if(!source || !target) return
     target.innerHTML = `<option value="">-- ALL --</option>${source.innerHTML}`
     removeMainStoreFromPosSalespointLists()
+}
+
+function getChairmanDiscountContext(grossTotal = null, paymentMethod = '') {
+    const normalizedMethod = String(paymentMethod || did('paymentmethod')?.value || '').trim().toUpperCase()
+    const gross = Number.isFinite(Number(grossTotal)) ? Number(grossTotal) : Number(did('totalamount')?.value || 0)
+    const applies = !isOrderWorkspaceMode() && !isBillsWorkspaceMode() && normalizedMethod === 'CHAIRMAN DISCOUNT'
+    const discountAmount = applies ? (gross * CHAIRMAN_DISCOUNT_RATE) : 0
+    const netTotal = applies ? Math.max(gross - discountAmount, 0) : gross
+    return { applies, grossTotal: gross, discountAmount, netTotal }
+}
+
+function renderSalesTotalSummary(grossTotal = 0) {
+    const display = did('totalamountt')
+    if(!display) return
+    const context = getChairmanDiscountContext(grossTotal)
+    if(context.applies) {
+        display.innerHTML = `
+            <div class="flex flex-col text-right leading-tight">
+                <span class="text-xs text-slate-700">Gross: ${formatCurrency(context.grossTotal)}</span>
+                <span class="text-xs text-rose-700">Discount (50%): -${formatCurrency(context.discountAmount)}</span>
+                <span class="text-xl text-[blue] font-bold">Net: ${formatCurrency(context.netTotal)}</span>
+            </div>
+        `
+        return
+    }
+    display.textContent = formatCurrency(context.grossTotal)
 }
 
 function removeMainStoreFromSelect(selectEl) {
@@ -1475,7 +1505,7 @@ async function handlesalesdepartment(store) {
     // did('salesform').reset()
     checkifitisrestaurant();
     clearMissingOrderItemsNotice()
-    did('totalamountt').innerHTML = 0
+    renderSalesTotalSummary(0)
     did('totalamount').value = 0
     const itemInputMarkup = `<input autocomplete="off" onchange="checkdatalist(this);salesitempop(this,'1')" onblur="salesitempop(this,'1')" list="hems_itemslist" name="item" id="item-1" class="form-control iitem comp">`
     did('thetabledata').innerHTML = `<tr id="row-919">
@@ -1621,7 +1651,7 @@ function calsaleqty(i){
         x = x + Number(document.getElementsByClassName('ammount')[i].value)
     }
     did('totalamount').value = x
-    did('totalamountt').textContent = formatCurrency(x)
+    renderSalesTotalSummary(x)
     saletotalamount = x
 }
 
@@ -2762,6 +2792,8 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
     const transactionDateValue = String(did('transactiondate')?.value || new Date().toISOString().slice(0, 10))
     const moreDataValue = String(did('moredata')?.value || did('status')?.value || ttype || '').trim()
     const descriptionValue = String(did('description')?.value || '').trim()
+    const discountContext = getChairmanDiscountContext(totalAmountValue, paymentMethodValue)
+    const effectiveTotalAmount = discountContext.applies ? discountContext.netTotal : totalAmountValue
 
     tableRows.forEach((row) => {
         const itemInput = row.querySelector('.iitem')
@@ -2778,7 +2810,9 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
             ownerdetail: ownerValue || '-1',
             owner: ownerValue || '-1',
             ownerid: ownerValue || '-1',
-            totalamount: Number.isFinite(totalAmountValue) ? totalAmountValue : 0,
+            totalamount: Number.isFinite(effectiveTotalAmount) ? effectiveTotalAmount : 0,
+            grosstotal: discountContext.applies ? discountContext.grossTotal : 0,
+            discountamount: discountContext.applies ? discountContext.discountAmount : 0,
             amountpaid: Number.isFinite(amountPaidValue) ? amountPaidValue : 0,
             amountreceived: Number.isFinite(amountPaidValue) ? amountPaidValue : 0,
             paymentmethod: paymentMethodValue,
@@ -2846,6 +2880,11 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         if(isOrderWorkspaceMode() || ttype === 'ORDER' || isBillsWorkspaceMode() || ttype === 'BILL'){
             payload.delete('amountpaid')
             payload.delete('paymentmethod')
+        } else {
+            const salesDiscountContext = getChairmanDiscountContext(Number(did('totalamount')?.value || 0), did('paymentmethod')?.value || '')
+            if(salesDiscountContext.applies) {
+                payload.set('totalamount', salesDiscountContext.netTotal)
+            }
         }
         let request = await httpRequest2('../controllers/salescript', payload, triggerButton || document.querySelector('#salesform #submit'))
         if(request.status) {
@@ -2920,7 +2959,7 @@ function emptysales(){
     did('owner').value = '';
     did('description').value = '';
     did('amountpaid').value = '';
-    did('totalamountt').innerHTML = 0;
+    renderSalesTotalSummary(0);
     clearMissingOrderItemsNotice()
     if(did('billreferencecode')) did('billreferencecode').value = ''
 }
@@ -3169,6 +3208,14 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                 || rows.find((row) => String(row.description || row.comment || '').trim())?.comment
                 || ''
             ).trim()
+            const chairmanDiscountMode = !orderPrintMode && String(firstRow.paymentmethod || '').trim().toUpperCase() === 'CHAIRMAN DISCOUNT'
+            const chairmanNetTotal = Number(firstRow.totalamount || 0)
+            const chairmanGrossTotal = chairmanDiscountMode
+                ? Number(firstRow.grosstotal || (chairmanNetTotal / (1 - CHAIRMAN_DISCOUNT_RATE)))
+                : 0
+            const chairmanDiscountAmount = chairmanDiscountMode
+                ? Number(firstRow.discountamount || (chairmanGrossTotal * CHAIRMAN_DISCOUNT_RATE))
+                : 0
             const shouldShowSignatures = !orderPrintMode && !!showSignatures
             did('displaydetails').innerHTML = `<img src="../images/${did('your_companylogo').value}" alt="chippz" style="width: 70px" class="mx-auto w-16 py-4" />
                                     <div class="flex flex-col justify-center items-center gap-2">
@@ -3189,17 +3236,32 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                         <span class="text-gray-400">${orderPrintMode ? 'Order Details:' : 'Invoice / Receipt To:'}</span>
                                         <span>${ownerText}</span>
                                       </p>` : ''}
+                                      ${chairmanDiscountMode ? `
+                                      <p class="flex justify-between">
+                                        <span class="text-gray-400">Gross Total:</span>
+                                        <span>${formatNumber(chairmanGrossTotal || 0)}</span>
+                                      </p>
+                                      <p class="flex justify-between">
+                                        <span class="text-gray-400">Discount (50%):</span>
+                                        <span>-${formatNumber(chairmanDiscountAmount || 0)}</span>
+                                      </p>
+                                      <p class="flex justify-between">
+                                        <span class="text-gray-400">Final Total:</span>
+                                        <span class="">${formatNumber(chairmanNetTotal || 0)}</span>
+                                      </p>
+                                      ` : `
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Total Amount:</span>
                                         <span class="">${formatNumber(rows[0].totalamount || 0)}</span>
                                       </p>
+                                      `}
                                       ${orderPrintMode ? '' : `<p class="flex justify-between">
                                         <span class="text-gray-400">Amount Paid:</span>
                                         <span>${formatNumber(rows[0].amountpaid || rows[0].amountreceived || 0)}</span>
                                       </p>`}
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">${orderPrintMode ? 'Status:' : 'Payment Method:'}</span>
-                                        <span>${orderPrintMode ? (rows[0].moredata || rows[0].moredetails || rows[0].status || '') : (rows[0].paymentmethod || '')}</span>
+                                        <span>${orderPrintMode ? (rows[0].moredata || rows[0].moredetails || rows[0].status || '') : (rows[0].paymentmethod || '')}${chairmanDiscountMode ? ' | 50% discount was applied' : ''}</span>
                                       </p>
                                       <p class="flex justify-between">
                                         <span class="text-gray-400">Transaction Date:</span>
