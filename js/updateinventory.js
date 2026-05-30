@@ -5,18 +5,6 @@ async function updateinventoryActive() {
     updateinventoryFormSubmitHandler(default_department)
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>updateinventoryFormSubmitHandler())
     if(document.querySelector('#save')) document.querySelector('#save').addEventListener('click', e=>saveupdatedprices())
-    if(document.querySelector('#updateinventory-export-btn')) document.querySelector('#updateinventory-export-btn').addEventListener('click', exportUpdateInventoryRows)
-    if(document.querySelector('#updateinventory-import-btn')) document.querySelector('#updateinventory-import-btn').addEventListener('click', ()=>{
-        const importInput = did('updateinventory-import-input')
-        if(importInput) importInput.click()
-    })
-    if(document.querySelector('#updateinventory-import-input')) document.querySelector('#updateinventory-import-input').addEventListener('change', handleUpdateInventoryImportFile)
-    if(document.querySelector('#updateinventory-export-all-btn')) document.querySelector('#updateinventory-export-all-btn').addEventListener('click', exportUpdateInventoryAllDepartments)
-    if(document.querySelector('#updateinventory-import-all-btn')) document.querySelector('#updateinventory-import-all-btn').addEventListener('click', ()=>{
-        const importAllInput = did('updateinventory-import-all-input')
-        if(importAllInput) importAllInput.click()
-    })
-    if(document.querySelector('#updateinventory-import-all-input')) document.querySelector('#updateinventory-import-all-input').addEventListener('change', handleUpdateInventoryImportAllFile)
     if(document.querySelector('#selectall')) document.querySelector('#selectall').addEventListener('click', e=>{
         for(let i=0;i<document.getElementsByName('itemer').length;i++){
             document.getElementsByName('itemer')[i].checked = true
