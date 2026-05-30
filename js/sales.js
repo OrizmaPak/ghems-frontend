@@ -2989,9 +2989,26 @@ function resetSalesAfterReceipt() {
     if(isBillsWorkspaceMode()) fetchsalesbills()
 }
 
+function resetOrderFormAfterModalClose() {
+    if(!isOrderWorkspaceMode()) return
+    const form = did('salesform')
+    if(form) form.reset()
+    emptysales()
+    if(did('salespointname') && typeof default_department !== 'undefined' && default_department) {
+        did('salespointname').value = default_department
+    }
+    handlesalesdepartment(default_department || did('salespointname')?.value || '')
+}
+
+function closeSalesReportModal() {
+    if(did('salesreportmodal')) did('salesreportmodal').classList.add('hidden')
+    resetOrderFormAfterModalClose()
+}
+
 function closeSalesReceiptModal() {
     if(did('receiptsalesmodal')) did('receiptsalesmodal').classList.add('hidden')
     if(salesReceiptResetOnClose) resetSalesAfterReceipt()
+    else resetOrderFormAfterModalClose()
     salesReceiptResetOnClose = true
 }
 

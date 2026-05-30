@@ -322,14 +322,14 @@
                                 <div class="table-status"></div>
                             </div> 
 
-                            <div id="salesreportmodal" onclick="if(event.target.id === 'salesreportmodal')this.classList.add('hidden')" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
+                            <div id="salesreportmodal" onclick="if(event.target.id === 'salesreportmodal')closeSalesReportModal()" class="hidden w-full h-full bg-[#0000004a] fixed top-0 left-0 overflow-y-auto flex justify-center items-start">
                                 <div class="w-fit max-w-[90%] mt-8 min-w-[500px] h-fit min-h-[400px] bg-white p-2 rounded-md shadow-lg flex flex-col items-center">
                                     <div class="w-full py-2 flex justify-between mx-8">
                                         <p id="modaltitle" class="text-md font-bold">SALES REPORT</p>
                                         <div onclick="printDomContent('SALES REPORT', 'printer')" class="w-[100px] hover:scale-[1.1] transition-all flex justify-center mx-8 bg-white p-2 rounded bg-blue-500">
                                             <span class="cp material-symbols-outlined scale-[1.2] text-white" style="font-size: 20px;">print</span>
                                         </div>
-                                        <span onclick="document.getElementById('salesreportmodal').classList.add('hidden')" class="cp material-symbols-outlined text-red-600" style="font-size: 20px;">close</span>
+                                        <span onclick="closeSalesReportModal()" class="cp material-symbols-outlined text-red-600" style="font-size: 20px;">close</span>
                                     </div>
                                     <hr class="mb-4"/>
                                     <div id="printer">
