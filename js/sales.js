@@ -2288,8 +2288,18 @@ function viewsaleinvoice(batchid, view){
 }
 
 function preparesalesvalues(){
-    for(let i=0;i<document.getElementsByClassName('itemmerid').length;i++){
-        document.getElementsByClassName('itemmerid')[i].value = getLabelFromValue(document.getElementsByClassName('itemmerid')[i].previousElementSibling.value, 'hems_itemslist_getid');
+    const itemIdControls = document.getElementsByClassName('itemmerid')
+    for(let i=0;i<itemIdControls.length;i++){
+        const control = itemIdControls[i]
+        const itemName = String(control.previousElementSibling?.value || '').trim()
+        const existingItemId = String(control.value || '').trim()
+        const datalistItemId = String(getLabelFromValue(itemName, 'hems_itemslist_getid') || '').trim()
+        const inventoryMatch = salesInventoryDatasource.find((item) => {
+            if(existingItemId && String(item?.itemid || '').trim() === existingItemId) return true
+            return itemName && String(item?.itemname || '').trim().toLowerCase() === itemName.toLowerCase()
+        })
+        const resolvedItemId = datalistItemId || String(inventoryMatch?.itemid || '').trim() || existingItemId
+        control.value = resolvedItemId
     }
     givenamebyclass('iitem', 'itemname')
     givenamebyclass('itemmerid', 'itemid')
