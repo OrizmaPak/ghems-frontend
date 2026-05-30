@@ -2681,6 +2681,38 @@ function buildKitchenRowsFromOrderEntry(orderEntry = {}) {
 function printFullOrderByReference(reference = '') {
     const cleaned = String(reference || '').trim()
     if(!cleaned) return notification('Order reference is required', 0)
+    const cachedRows = orderKitchenReceiptCache.get(cleaned) || []
+    if(Array.isArray(cachedRows) && cachedRows.length) {
+        return printsalesreceiptsales(cleaned, '', 'fetchorders.php', false, false, false, cachedRows)
+    }
+    const orderEntry = orderRowsIndex.get(cleaned)
+        || salesListingDatasource.find((entry) => String(entry?.saleentry?.reference || '') === cleaned || String(entry?.saleentry?.batchid || '') === cleaned)
+    if(orderEntry) {
+        const saleEntry = orderEntry.saleentry || {}
+        const rows = (Array.isArray(orderEntry.saledetail) ? orderEntry.saledetail : []).map((detail) => ({
+            reference: saleEntry.reference || cleaned,
+            ownerdetail: saleEntry.ownerdetail ?? saleEntry.ownerid,
+            owner: saleEntry.ownerid,
+            ownerid: saleEntry.ownerid,
+            totalamount: saleEntry.servicecharge || saleEntry.totalamount || 0,
+            amountpaid: orderEntry.amountreceived || saleEntry.amountpaid || 0,
+            amountreceived: orderEntry.amountreceived || saleEntry.amountpaid || 0,
+            paymentmethod: saleEntry.paymentmethod || '',
+            transactiondate: saleEntry.transactiondate || '',
+            moredata: 'ORDER',
+            moredetails: 'ORDER',
+            status: 'ORDER',
+            ttype: saleEntry.ttype || 'ORDER',
+            description: saleEntry.description || detail.description || '',
+            comment: saleEntry.description || detail.description || '',
+            itemid: detail.itemid || '',
+            itemname: detail.itemname || '',
+            itemtype: detail.itemtype || detail.type || '',
+            qty: Number(detail.qty || 0),
+            cost: Number(detail.cost || 0)
+        }))
+        if(rows.length) return printsalesreceiptsales(cleaned, '', 'fetchorders.php', false, false, false, rows)
+    }
     return printsalesreceiptsales(cleaned, '', 'fetchorders.php', false, false)
 }
 
