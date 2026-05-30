@@ -22,6 +22,10 @@ const salesAuxiliaryLoadState = {
     pmOwners: null
 }
 const SALES_FETCH_DEBUG = false
+const restrictedSalesPaymentPermissions = {
+    'NO CHARGE': 'NO CHARGE POSTING',
+    'CHAIRMAN DISCOUNT': 'CHAIRMAN DISCOUNT POSTING'
+}
 const salesLazyLoadState = {
     splitBillsLoaded: false,
     splitBillsLoading: false,
@@ -529,6 +533,24 @@ async function resolveBillDeletePermission() {
         canDeleteBillsInView = false
         return false
     }
+}
+
+async function validateRestrictedSalesPaymentPermission() {
+    if(isOrderWorkspaceMode() || isBillsWorkspaceMode()) return true
+    const method = String(did('paymentmethod')?.value || '').trim().toUpperCase()
+    const requiredPermission = restrictedSalesPaymentPermissions[method]
+    if(!requiredPermission) return true
+    try{
+        const profile = await fetchCurrentUserProfileCached()
+        const granted = profile?.grantedPermissions instanceof Set
+            ? profile.grantedPermissions
+            : buildGrantedPermissionSet(profile?.permissions || '')
+        if(granted.has('*') || granted.has(normalizePermissionName(requiredPermission))) return true
+    }catch(error){
+        console.error('Restricted sales payment permission check failed:', error)
+    }
+    notification(`You do not have permission for ${method} posting`, 0)
+    return false
 }
 
 function syncSalesViewFilterSalespointOptions() {
@@ -2785,6 +2807,7 @@ async function salesFormSubmitHandler(ttype = '', triggerButton = null) {
         const requiredFields = getIdFromCls('comp').filter(id => !['amountpaid', 'paymentmethod'].includes(id))
         if(!validateForm('salesform', requiredFields))return notification('Please Ensure all compulsory fields are filled', 0)
         if(!isOrderWorkspaceMode() && !isBillsWorkspaceMode() && !validatePaymentMethodForAmount()) return
+        if(!await validateRestrictedSalesPaymentPermission()) return
         let t = true
         for(let i=0;i<document.getElementsByClassName('qqty').length;i++){
             if(document.getElementsByClassName('qqty')[i].value < 1)t = false;

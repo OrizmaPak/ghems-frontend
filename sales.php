@@ -148,6 +148,7 @@
                                                     <option>CASH</option>
                                                     <option>POS</option>
                                                     <option>NO CHARGE</option>
+                                                    <option>CHAIRMAN DISCOUNT</option>
                                                     <option>UNPAID</option>
                                                 </select>
                                             </div>
