@@ -11,6 +11,12 @@ async function updateinventoryActive() {
         if(importInput) importInput.click()
     })
     if(document.querySelector('#updateinventory-import-input')) document.querySelector('#updateinventory-import-input').addEventListener('change', handleUpdateInventoryImportFile)
+    if(document.querySelector('#updateinventory-export-all-btn')) document.querySelector('#updateinventory-export-all-btn').addEventListener('click', exportUpdateInventoryAllDepartments)
+    if(document.querySelector('#updateinventory-import-all-btn')) document.querySelector('#updateinventory-import-all-btn').addEventListener('click', ()=>{
+        const importAllInput = did('updateinventory-import-all-input')
+        if(importAllInput) importAllInput.click()
+    })
+    if(document.querySelector('#updateinventory-import-all-input')) document.querySelector('#updateinventory-import-all-input').addEventListener('change', handleUpdateInventoryImportAllFile)
     if(document.querySelector('#selectall')) document.querySelector('#selectall').addEventListener('click', e=>{
         for(let i=0;i<document.getElementsByName('itemer').length;i++){
             document.getElementsByName('itemer')[i].checked = true
@@ -32,6 +38,300 @@ async function updateinventoryActive() {
     // form.querySelector('#submit').click()
     datasource = []
     // await fetchupdateinventorys()
+}
+
+function setUpdateInventoryBulkStatus(message, isError){
+    const status = did('updateinventory-bulk-status')
+    if(!status) return
+    status.textContent = message || ''
+    status.style.color = isError ? '#b91c1c' : '#334155'
+}
+
+function flattenUpdateInventoryRows(items){
+    const flattened = []
+    ;(items || []).forEach(item=>{
+        if(item && Array.isArray(item.itemlist)){
+            item.itemlist.forEach(entry=>{
+                flattened.push({
+                    ...entry,
+                    salespoint: entry && entry.salespoint ? entry.salespoint : (item.salespoint || '')
+                })
+            })
+            return
+        }
+        flattened.push(item)
+    })
+    const normalized = typeof normalizeInventoryItems === 'function' ? normalizeInventoryItems(flattened) : flattened
+    return (normalized || []).map(entry=>({
+        itemid: `${entry && entry.itemid !== undefined ? entry.itemid : ''}`.trim(),
+        itemname: `${entry && entry.itemname !== undefined ? entry.itemname : ''}`.trim(),
+        itemtype: `${entry && entry.itemtype !== undefined ? entry.itemtype : ''}`.trim(),
+        price: `${entry && entry.price !== undefined ? entry.price : ''}`.trim(),
+        price_two: `${entry && entry.price_two !== undefined ? entry.price_two : ''}`.trim(),
+        minbalance: `${entry && entry.minbalance !== undefined ? entry.minbalance : ''}`.trim(),
+        salespoint: `${entry && entry.salespoint !== undefined ? entry.salespoint : ''}`.trim()
+    }))
+}
+
+function sanitizeSheetName(name, used){
+    let safe = String(name || 'UNKNOWN')
+        .replace(/[\\/*?:\[\]]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    if(!safe) safe = 'UNKNOWN'
+    safe = safe.slice(0, 31)
+    if(!used.has(safe)){
+        used.add(safe)
+        return safe
+    }
+    let idx = 2
+    while(idx < 1000){
+        const suffix = ` (${idx})`
+        const candidate = `${safe.slice(0, 31 - suffix.length)}${suffix}`
+        if(!used.has(candidate)){
+            used.add(candidate)
+            return candidate
+        }
+        idx++
+    }
+    return `SHEET_${Date.now().toString().slice(-6)}`
+}
+
+function mapUpdateInventoryHeadersForBulk(rawRow){
+    const mapped = {}
+    Object.keys(rawRow || {}).forEach(key=>{
+        const normalizedKey = String(key || '').trim().toLowerCase()
+        const value = rawRow[key]
+        if(normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
+        if(normalizedKey === 'item type' || normalizedKey === 'itemtype') mapped.itemtype = value
+        if(normalizedKey === 'sales point' || normalizedKey === 'salespoint' || normalizedKey === 'department') mapped.salespoint = value
+    })
+    return mapped
+}
+
+async function fetchAllInventoryRowsForBulk(){
+    const payload = new FormData()
+    payload.append('itemname', '')
+    payload.append('salespoint', 'ALL')
+    payload.append('itemclass', 'ALL')
+    const request = await httpRequest2('../controllers/fetchinventoryview.php', payload, null, 'json')
+    if(!request || !request.status) return { ok: false, message: request ? request.message : 'No records retrieved', rows: [] }
+    const rows = flattenUpdateInventoryRows(request.data)
+    return { ok: true, message: request.message || 'Successful', rows }
+}
+
+async function exportUpdateInventoryAllDepartments(){
+    setUpdateInventoryBulkStatus('Fetching all departments...')
+    const data = await fetchAllInventoryRowsForBulk()
+    if(!data.ok){
+        setUpdateInventoryBulkStatus(`Failed: ${data.message}`, true)
+        return notification(data.message || 'Unable to fetch all departments', 0)
+    }
+    if(!data.rows.length){
+        setUpdateInventoryBulkStatus('No inventory data found', true)
+        return notification('No records to export', 0)
+    }
+    const ok = await ensureExcelJsLoadedForUpdateInventory()
+    if(!ok){
+        setUpdateInventoryBulkStatus('Could not load Excel helper', true)
+        return notification('Could not load Excel helper. Check your connection.', 0)
+    }
+
+    const grouped = {}
+    data.rows.forEach(row=>{
+        const department = row.salespoint || 'UNASSIGNED'
+        if(!grouped[department]) grouped[department] = []
+        grouped[department].push(row)
+    })
+    const departments = Object.keys(grouped).sort((a,b)=>a.localeCompare(b))
+    const workbook = new ExcelJS.Workbook()
+    const usedSheetNames = new Set()
+
+    const infoSheet = workbook.addWorksheet('README')
+    infoSheet.getCell('A1').value = 'Update Inventory Bulk Item Type Template'
+    infoSheet.getCell('A2').value = 'Edit only Item Type. Allowed values: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS.'
+    infoSheet.getCell('A3').value = 'Each sheet represents one department (salespoint). Do not change Item ID/Sales Point.'
+    infoSheet.columns = [{ width: 130 }]
+    usedSheetNames.add('README')
+
+    setUpdateInventoryBulkStatus(`Building workbook (${departments.length} departments)...`)
+    for(let i=0; i<departments.length; i++){
+        const department = departments[i]
+        const sheetName = sanitizeSheetName(department, usedSheetNames)
+        const worksheet = workbook.addWorksheet(sheetName)
+        worksheet.columns = [
+            { header: 'Item ID', key: 'itemid', width: 20 },
+            { header: 'Item Name', key: 'itemname', width: 40 },
+            { header: 'Item Type', key: 'itemtype', width: 22 },
+            { header: 'Sales Point', key: 'salespoint', width: 30 }
+        ]
+        grouped[department].forEach(row=>{
+            worksheet.addRow({
+                itemid: row.itemid || '',
+                itemname: row.itemname || '',
+                itemtype: row.itemtype || '',
+                salespoint: row.salespoint || department
+            })
+        })
+        const maxRow = Math.max(grouped[department].length + 1, 2)
+        for(let rowIndex=2; rowIndex<=maxRow; rowIndex++){
+            worksheet.getCell(`C${rowIndex}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                showErrorMessage: true,
+                errorTitle: 'Invalid Item Type',
+                error: 'Select one of: FOOD, ALCOHOL, NON-ALCOHOL, MISCELLANEOUS',
+                formulae: [`"${updateInventoryAllowedItemTypes.join(',')}"`]
+            }
+        }
+    }
+
+    const dateStr = new Date().toISOString().slice(0,10)
+    const filename = `update_inventory_all_departments_${dateStr}.xlsx`
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    setUpdateInventoryBulkStatus(`Completed export (${departments.length} departments)`)
+    return notification('Export all departments completed', 1)
+}
+
+async function postBulkDepartmentUpdate(salespoint, rows){
+    if(!rows.length) return { ok: true, message: 'No rows to update' }
+    const payload = new FormData()
+    payload.append('salespoint', salespoint)
+    payload.append('itemid', rows.map(row=>row.itemid).join('|'))
+    payload.append('itemname', rows.map(row=>row.itemname).join('|'))
+    payload.append('price', rows.map(row=>row.price).join('|'))
+    payload.append('price_two', rows.map(row=>row.price_two).join('|'))
+    payload.append('minbalance', rows.map(row=>row.minbalance).join('|'))
+    payload.append('itemtype', rows.map(row=>row.itemtype).join('|'))
+    const request = await httpRequest2('../controllers/inventoryupdate', payload, null, 'json')
+    return { ok: !!(request && request.status), message: request ? request.message : 'Update failed' }
+}
+
+async function handleUpdateInventoryImportAllFile(event){
+    const input = event ? event.target : null
+    const file = input && input.files ? input.files[0] : null
+    if(!file) return
+    const ok = await ensureXLSXLoadedForUpdateInventory()
+    if(!ok){
+        if(input) input.value = ''
+        setUpdateInventoryBulkStatus('Could not load Excel helper', true)
+        return notification('Could not load Excel helper. Check your connection.', 0)
+    }
+
+    try{
+        setUpdateInventoryBulkStatus('Fetching current inventory...')
+        const data = await fetchAllInventoryRowsForBulk()
+        if(!data.ok || !data.rows.length){
+            setUpdateInventoryBulkStatus(`Failed: ${data.message || 'No records found'}`, true)
+            return notification(data.message || 'Unable to fetch current inventory', 0)
+        }
+
+        const inventoryByDept = {}
+        data.rows.forEach(row=>{
+            const dept = String(row.salespoint || '').trim()
+            const itemid = String(row.itemid || '').trim()
+            if(!dept || !itemid) return
+            if(!inventoryByDept[dept]) inventoryByDept[dept] = {}
+            inventoryByDept[dept][itemid] = row
+        })
+
+        setUpdateInventoryBulkStatus('Reading workbook...')
+        const buffer = await file.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const sheetNames = (workbook.SheetNames || []).filter(name=>String(name).trim().toUpperCase() !== 'README')
+        if(!sheetNames.length){
+            setUpdateInventoryBulkStatus('No department sheets found', true)
+            return notification('No department sheets found in workbook', 0)
+        }
+
+        const groupedUpdates = {}
+        let skipped = 0
+        let invalidType = 0
+        let unmatched = 0
+        let requestedRows = 0
+
+        for(let i=0; i<sheetNames.length; i++){
+            const sheetName = sheetNames[i]
+            const sheet = workbook.Sheets[sheetName]
+            const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+            rawRows.forEach(raw=>{
+                const mapped = mapUpdateInventoryHeadersForBulk(raw)
+                const itemid = String(mapped.itemid || '').trim()
+                const salespoint = String(mapped.salespoint || '').trim()
+                const itemtype = normalizeUpdateInventoryItemType(mapped.itemtype)
+                if(!itemid || !salespoint){
+                    skipped++
+                    return
+                }
+                requestedRows++
+                if(!itemtype){
+                    invalidType++
+                    return
+                }
+                if(!inventoryByDept[salespoint] || !inventoryByDept[salespoint][itemid]){
+                    unmatched++
+                    return
+                }
+                const current = inventoryByDept[salespoint][itemid]
+                if(String(current.itemtype || '').trim().toUpperCase() === itemtype) return
+                if(!groupedUpdates[salespoint]) groupedUpdates[salespoint] = []
+                groupedUpdates[salespoint].push({
+                    itemid: current.itemid,
+                    itemname: current.itemname || '',
+                    price: current.price || '',
+                    price_two: current.price_two || '',
+                    minbalance: current.minbalance || '',
+                    itemtype
+                })
+            })
+        }
+
+        const departments = Object.keys(groupedUpdates)
+        if(!departments.length){
+            setUpdateInventoryBulkStatus('No changes found to apply')
+            return notification(`No updates detected. Skipped: ${skipped}, Invalid Type: ${invalidType}, Unmatched: ${unmatched}`, 0)
+        }
+
+        let updatedRows = 0
+        const failedDepartments = []
+        setUpdateInventoryBulkStatus(`Updating ${departments.length} departments...`)
+        for(let i=0; i<departments.length; i++){
+            const department = departments[i]
+            setUpdateInventoryBulkStatus(`Updating ${department} (${i + 1}/${departments.length})...`)
+            const response = await postBulkDepartmentUpdate(department, groupedUpdates[department])
+            if(response.ok){
+                updatedRows += groupedUpdates[department].length
+            }else{
+                failedDepartments.push(`${department}: ${response.message}`)
+            }
+        }
+
+        if(failedDepartments.length){
+            setUpdateInventoryBulkStatus('Completed with partial failures', true)
+            return notification(
+                `Completed with failures. Departments: ${departments.length}, Updated Rows: ${updatedRows}, Invalid: ${invalidType}, Unmatched: ${unmatched}, Skipped: ${skipped}. Failed -> ${failedDepartments.join(' | ')}`,
+                0
+            )
+        }
+
+        setUpdateInventoryBulkStatus(`Completed. Updated ${updatedRows} row(s) in ${departments.length} department(s).`)
+        notification(`Import all completed. Processed: ${requestedRows}, Updated: ${updatedRows}, Invalid: ${invalidType}, Unmatched: ${unmatched}, Skipped: ${skipped}`, 1)
+    }catch(error){
+        console.error(error)
+        setUpdateInventoryBulkStatus('Import failed', true)
+        notification('Unable to process workbook. Please confirm headers and format.', 0)
+    }finally{
+        if(input) input.value = ''
+    }
 }
 
 async function ensureXLSXLoadedForUpdateInventory(){

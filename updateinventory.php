@@ -18,6 +18,14 @@
                                             <button id="updateinventory-import-btn" type="button" class="rounded-md text-white text-sm capitalize bg-gradient-to-tr from-amber-500 via-amber-600 to-amber-700 px-6 py-2 shadow-md font-medium hover:opacity-80 transition duration-300 ease-in-out flex items-center justify-center gap-2">
                                                 <span>Import Updated Item Type</span>
                                             </button>
+                                            <input type="file" id="updateinventory-import-all-input" accept=".xlsx,.xls,.csv" class="hidden" />
+                                            <button id="updateinventory-export-all-btn" type="button" class="rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-violet-700 px-6 py-2 shadow-md font-medium hover:opacity-80 transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                                                <span>Export All Departments</span>
+                                            </button>
+                                            <button id="updateinventory-import-all-btn" type="button" class="rounded-md text-white text-sm capitalize bg-gradient-to-tr from-sky-500 via-sky-600 to-sky-700 px-6 py-2 shadow-md font-medium hover:opacity-80 transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                                                <span>Import All Departments</span>
+                                            </button>
+                                            <span id="updateinventory-bulk-status" class="text-xs font-semibold text-slate-600"></span>
                                         </div>
                                     <!--<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">-->
                                         
