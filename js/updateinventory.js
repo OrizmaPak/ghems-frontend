@@ -50,13 +50,28 @@ function setUpdateInventoryBulkStatus(message, isError){
 function flattenUpdateInventoryRows(items){
     const flattened = []
     ;(items || []).forEach(item=>{
+        function pushEntry(entry, salespoint){
+            const copied = {}
+            Object.keys(entry || {}).forEach(key=>{
+                copied[key] = entry[key]
+            })
+            copied.salespoint = copied.salespoint || salespoint || ''
+            flattened.push(copied)
+        }
         if(item && Array.isArray(item.itemlist)){
             item.itemlist.forEach(entry=>{
-                flattened.push({
-                    ...entry,
-                    salespoint: entry && entry.salespoint ? entry.salespoint : (item.salespoint || '')
-                })
+                pushEntry(entry, item.salespoint || '')
             })
+            return
+        }
+        if(item && Array.isArray(item.item)){
+            item.item.forEach(entry=>{
+                pushEntry(entry, item.salespoint || '')
+            })
+            return
+        }
+        if(item && item.item && typeof item.item === 'object'){
+            pushEntry(item.item, item.salespoint || '')
             return
         }
         flattened.push(item)
@@ -283,15 +298,8 @@ async function handleUpdateInventoryImportAllFile(event){
                 }
                 const current = inventoryByDept[salespoint][itemid]
                 if(String(current.itemtype || '').trim().toUpperCase() === itemtype) return
-                if(!groupedUpdates[salespoint]) groupedUpdates[salespoint] = []
-                groupedUpdates[salespoint].push({
-                    itemid: current.itemid,
-                    itemname: current.itemname || '',
-                    price: current.price || '',
-                    price_two: current.price_two || '',
-                    minbalance: current.minbalance || '',
-                    itemtype
-                })
+                if(!groupedUpdates[salespoint]) groupedUpdates[salespoint] = {}
+                groupedUpdates[salespoint][itemid] = itemtype
             })
         }
 
@@ -307,9 +315,22 @@ async function handleUpdateInventoryImportAllFile(event){
         for(let i=0; i<departments.length; i++){
             const department = departments[i]
             setUpdateInventoryBulkStatus(`Updating ${department} (${i + 1}/${departments.length})...`)
-            const response = await postBulkDepartmentUpdate(department, groupedUpdates[department])
+            const fullDepartmentRows = []
+            const departmentRows = inventoryByDept[department] || {}
+            Object.keys(departmentRows).forEach(itemid=>{
+                const row = departmentRows[itemid]
+                fullDepartmentRows.push({
+                    itemid: row.itemid,
+                    itemname: row.itemname || '',
+                    price: row.price || '',
+                    price_two: row.price_two || '',
+                    minbalance: row.minbalance || '',
+                    itemtype: groupedUpdates[department][itemid] || row.itemtype || ''
+                })
+            })
+            const response = await postBulkDepartmentUpdate(department, fullDepartmentRows)
             if(response.ok){
-                updatedRows += groupedUpdates[department].length
+                updatedRows += Object.keys(groupedUpdates[department]).length
             }else{
                 failedDepartments.push(`${department}: ${response.message}`)
             }
