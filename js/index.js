@@ -267,35 +267,51 @@ function scheduleSuperAdminNavigationStabilizer(){
     })
 }
 
+function syncNavGroupVisibility(navItem, grantedPermissions){
+    if(!navItem) return
+
+    const title = navItem.querySelector(':scope > .navitem-title')
+    const childrenWrap = navItem.querySelector(':scope > ul')
+    const children = childrenWrap ? Array.from(childrenWrap.children).filter(child => child.classList.contains('navitem-child')) : []
+
+    if(children.length < 1){
+        navItem.classList.remove('hidden')
+        if(title) title.classList.remove('hidden')
+        return
+    }
+
+    let hasVisibleChild = false
+    children.forEach(child => {
+        const isGranted = grantedPermissions.has(getNavPermissionKeyFromNode(child))
+        if(isGranted){
+            child.classList.remove('hidden')
+            hasVisibleChild = true
+        } else {
+            child.classList.add('hidden')
+        }
+    })
+
+    if(title){
+        if(hasVisibleChild) title.classList.remove('hidden')
+        else title.classList.add('hidden')
+    }
+    if(hasVisibleChild) navItem.classList.remove('hidden')
+    else navItem.classList.add('hidden')
+}
+
 function applyGrantedPermissionsToNavigation(grantedPermissions, permissionSwitch='ON'){
     if(grantedPermissions?.has('*')){
         showAllNavigationItems()
         return
     }
 
-    let subitems = document.getElementsByClassName('navitem-child')
-    for(let i=0; i<subitems.length; i++){
-        if(grantedPermissions.has(getNavPermissionKeyFromNode(subitems[i]))){
-            if(permissionSwitch === 'ON') subitems[i].classList.remove('hidden')
-        }else{
-            if(permissionSwitch === 'ON') subitems[i].classList.add('hidden')
-        }
-
-        if(permissionSwitch === 'OFF') subitems[i].classList.remove('hidden')
+    if(permissionSwitch === 'OFF'){
+        showAllNavigationItems()
+        return
     }
 
-    let titles = document.getElementsByClassName('navitem-title')
-    for(let i=0; i<titles.length; i++){
-        if(titles[i].nextElementSibling){
-            let children = titles[i].nextElementSibling.children
-            let hasVisibleChild = false
-            for(let j=0; j<children.length; j++){
-                if(!children[j].classList.contains('hidden')) hasVisibleChild = true
-            }
-            if(!hasVisibleChild) titles[i].classList.add('hidden')
-            if(hasVisibleChild) titles[i].classList.remove('hidden')
-        }
-    }
+    const navItems = document.querySelectorAll('#navigation .nav-item')
+    navItems.forEach(item => syncNavGroupVisibility(item, grantedPermissions))
 }
 
 function buildNavDescriptionMarkup(label, description){
