@@ -3017,7 +3017,7 @@ async function updateOrderStatusInternal(batchid = '', newStatus = '', control =
     const payload = new FormData()
     payload.append('batchid', cleanedBatchId)
     payload.append('status', statusValue)
-    const request = await httpRequest2('../controllers/salescript', payload, control, 'json', { lightweight: !!options.lightweight })
+    const request = await httpRequest2('../controllers/updateorder.php', payload, control, 'json', { lightweight: !!options.lightweight })
     if(!request.status){
         if(!options.silent) notification(request.message || 'Unable to update status', 0)
         if(control) control.value = ''
