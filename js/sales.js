@@ -2730,6 +2730,7 @@ function buildKitchenRowsFromOrderEntry(orderEntry = {}) {
     const saleEntry = orderEntry.saleentry || {}
     const rows = getOrderFoodItems(orderEntry).map((detail) => ({
         reference: saleEntry.reference || '',
+        salespoint: saleEntry.salespoint || '',
         ownerdetail: saleEntry.ownerdetail ?? saleEntry.ownerid,
         owner: saleEntry.ownerid,
         ownerid: saleEntry.ownerid,
@@ -2766,6 +2767,7 @@ function printFullOrderByReference(reference = '') {
         const saleEntry = orderEntry.saleentry || {}
         const rows = (Array.isArray(orderEntry.saledetail) ? orderEntry.saledetail : []).map((detail) => ({
             reference: saleEntry.reference || cleaned,
+            salespoint: saleEntry.salespoint || '',
             ownerdetail: saleEntry.ownerdetail ?? saleEntry.ownerid,
             owner: saleEntry.ownerid,
             ownerid: saleEntry.ownerid,
@@ -2817,6 +2819,7 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
     const descriptionValue = String(did('description')?.value || '').trim()
     const discountContext = getChairmanDiscountContext(totalAmountValue, paymentMethodValue)
     const effectiveTotalAmount = discountContext.applies ? discountContext.netTotal : totalAmountValue
+    const salespointValue = String(did('salespointname')?.value || '').trim()
 
     tableRows.forEach((row) => {
         const itemInput = row.querySelector('.iitem')
@@ -2830,6 +2833,7 @@ function buildReceiptRowsFromForm(reference = '', ttype = '') {
         if(!itemName || qty <= 0) return
         rows.push({
             reference: String(reference || '').trim(),
+            salespoint: salespointValue,
             ownerdetail: ownerValue || '-1',
             owner: ownerValue || '-1',
             ownerid: ownerValue || '-1',
@@ -3169,6 +3173,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
         if(localData){
             rows = (localData.saledetail || []).map((detail) => ({
                 reference: localData.saleentry.reference || ref,
+                salespoint: localData.saleentry.salespoint || '',
                 ownerdetail: localData.saleentry.ownerdetail ?? localData.saleentry.ownerid,
                 owner: localData.saleentry.ownerid,
                 ownerid: localData.saleentry.ownerid,
@@ -3192,6 +3197,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
             if(!rows.length){
                 rows = [{
                     reference: localData.saleentry.reference || ref,
+                    salespoint: localData.saleentry.salespoint || '',
                     ownerdetail: localData.saleentry.ownerdetail ?? localData.saleentry.ownerid,
                     owner: localData.saleentry.ownerid,
                     ownerid: localData.saleentry.ownerid,
@@ -3226,6 +3232,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const kitchenPrintMode = String(firstRow.kitchenprint || '') === '1'
             const documentTypeLabel = kitchenPrintMode ? 'KITCHEN ORDER' : (orderPrintMode ? 'ORDER' : 'BILL')
+            const sourceSalespoint = String(firstRow.salespoint || rows.find((row) => String(row.salespoint || '').trim())?.salespoint || '').trim()
             const ownerText = resolveReceiptOwnerDisplay(rows)
             const shouldShowOwner = true
             if(orderPrintMode && !kitchenPrintMode) {
@@ -3269,6 +3276,10 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                                       ${shouldShowOwner ? `<p class="flex justify-between">
                                         <span class="text-gray-400">${orderPrintMode ? 'Order Details:' : 'Invoice / Receipt To:'}</span>
                                         <span>${ownerText}</span>
+                                      </p>` : ''}
+                                      ${kitchenPrintMode ? `<p class="flex justify-between">
+                                        <span class="text-gray-400">Source:</span>
+                                        <span>${sourceSalespoint || '-'}</span>
                                       </p>` : ''}
                                       ${chairmanDiscountMode ? `
                                       <p class="flex justify-between">
