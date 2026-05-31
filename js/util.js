@@ -808,13 +808,43 @@ function mapValidationErrors(errorElements, controls) {
 
 
 
+function stripQueryString(url='') {
+    return String(url || '').split('?')[0]
+}
+
+function appendAssetVersion(url='') {
+    const originalUrl = String(url || '').trim()
+    if(!originalUrl) return originalUrl
+    if(/^https?:\/\//i.test(originalUrl)) return originalUrl
+
+    const version = String(window.__ASSET_VERSION__ || '').trim()
+    if(!version) return originalUrl
+
+    try {
+        const parsed = new URL(originalUrl, window.location.origin)
+        if(parsed.searchParams.has('v')) return originalUrl
+        parsed.searchParams.set('v', version)
+        const withVersion = `${parsed.pathname}${parsed.search}${parsed.hash}`
+        if(originalUrl.startsWith('./')) return `.${withVersion}`
+        if(originalUrl.startsWith('../')) return `..${withVersion}`
+        return withVersion
+    }
+    catch (error) {
+        if(originalUrl.includes('v=')) return originalUrl
+        const separator = originalUrl.includes('?') ? '&' : '?'
+        return `${originalUrl}${separator}v=${encodeURIComponent(version)}`
+    }
+}
+
 const loadScript = function (resource) {
     return new Promise(function (resolve, reject) {
         const script = document.createElement('script');
-        script.src = resource.url;
+        const sourceUrl = resource?.url || ''
+        script.src = appendAssetVersion(sourceUrl);
         script.addEventListener('load', function () {
             const currentRoute = typeof getCurrentRouteName === 'function' ? getCurrentRouteName() : ''
-            if(currentRoute && routerTree?.[currentRoute]?.scriptName === resource.url) intializePageJavascript()
+            const routeScript = routerTree?.[currentRoute]?.scriptName || ''
+            if(currentRoute && stripQueryString(routeScript) === stripQueryString(sourceUrl)) intializePageJavascript()
             resolve(true);
         });
         document.body.appendChild(script);

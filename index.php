@@ -5,6 +5,21 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
 	header('Location: login');
 }
 
+$cacheBustMode = strtolower(trim((string)getenv('CACHE_BUST_MODE')));
+if($cacheBustMode !== 'always_fresh') $cacheBustMode = 'version';
+
+$configuredAssetVersion = trim((string)getenv('ASSET_VERSION'));
+if($cacheBustMode === 'always_fresh') {
+    $assetVersion = (string)(time() . mt_rand(1000, 9999));
+}
+else if($configuredAssetVersion !== '') {
+    $assetVersion = $configuredAssetVersion;
+}
+else {
+    $versionFile = __DIR__ . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'router.js';
+    $assetVersion = file_exists($versionFile) ? (string)filemtime($versionFile) : '1';
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -23,7 +38,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
     <link rel="icon" type="image/x-icon" href="./hems%20icon/favicon.ico">
     <link rel="manifest" href="./hems%20icon/site.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="./css/style.js"></script>
+    <script src="./css/style.js?v=<?php echo urlencode($assetVersion); ?>"></script>
     <link rel="stylesheet" href="./css/index.css">
     <link rel="stylesheet" href="./css/css_vanilla.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
@@ -51,7 +66,9 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
     href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    
+    <script>
+        window.__ASSET_VERSION__ = "<?php echo htmlspecialchars($assetVersion, ENT_QUOTES, 'UTF-8'); ?>";
+    </script>
 
 </head>
 
@@ -483,10 +500,10 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
     <datalist id="hems_rate_code"></datalist>
     <datalist id="hems_rate_code_id"></datalist>
     
-    <script src="./js/util.js"></script>
-    <script src="./js/oreutil.js"></script>
-    <script src="./js/router.js"></script>
-    <script src="./js/index.js"></script>
+    <script src="./js/util.js?v=<?php echo urlencode($assetVersion); ?>"></script>
+    <script src="./js/oreutil.js?v=<?php echo urlencode($assetVersion); ?>"></script>
+    <script src="./js/router.js?v=<?php echo urlencode($assetVersion); ?>"></script>
+    <script src="./js/index.js?v=<?php echo urlencode($assetVersion); ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
