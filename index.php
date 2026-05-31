@@ -6,7 +6,7 @@ if(!isset($_SESSION["user_id"]) && !isset($_SESSION["user_id"]))
 }
 
 $cacheBustMode = strtolower(trim((string)getenv('CACHE_BUST_MODE')));
-if($cacheBustMode !== 'always_fresh') $cacheBustMode = 'version';
+if($cacheBustMode !== 'version' && $cacheBustMode !== 'always_fresh') $cacheBustMode = 'always_fresh';
 
 $configuredAssetVersion = trim((string)getenv('ASSET_VERSION'));
 if($cacheBustMode === 'always_fresh') {
