@@ -2726,6 +2726,20 @@ function buildKitchenRowsFromReceiptRows(rows = []) {
     }))
 }
 
+function resolveKitchenPrintSource(ref = '', rows = []) {
+    const sourceFromRows = String(rows[0]?.salespoint || rows.find((row) => String(row?.salespoint || '').trim())?.salespoint || '').trim()
+    if(sourceFromRows) return sourceFromRows
+    const cleanedRef = String(ref || rows[0]?.reference || '').trim()
+    if(!cleanedRef) return ''
+    const indexed = orderRowsIndex.get(cleanedRef)
+    if(indexed?.saleentry?.salespoint) return String(indexed.saleentry.salespoint).trim()
+    const listed = salesListingDatasource.find((entry) =>
+        String(entry?.saleentry?.reference || '').trim() === cleanedRef
+        || String(entry?.saleentry?.batchid || '').trim() === cleanedRef
+    )
+    return String(listed?.saleentry?.salespoint || '').trim()
+}
+
 function buildKitchenRowsFromOrderEntry(orderEntry = {}) {
     const saleEntry = orderEntry.saleentry || {}
     const rows = getOrderFoodItems(orderEntry).map((detail) => ({
@@ -3232,7 +3246,7 @@ async function printsalesreceiptsales(ref, room='', salesFetchController='fetchs
                 || String(firstRow.moredata || firstRow.moredetails || '').toUpperCase() === 'ORDER'
             const kitchenPrintMode = String(firstRow.kitchenprint || '') === '1'
             const documentTypeLabel = kitchenPrintMode ? 'KITCHEN ORDER' : (orderPrintMode ? 'ORDER' : 'BILL')
-            const sourceSalespoint = String(firstRow.salespoint || rows.find((row) => String(row.salespoint || '').trim())?.salespoint || '').trim()
+            const sourceSalespoint = resolveKitchenPrintSource(ref, rows)
             const ownerText = resolveReceiptOwnerDisplay(rows)
             const shouldShowOwner = true
             if(orderPrintMode && !kitchenPrintMode) {
