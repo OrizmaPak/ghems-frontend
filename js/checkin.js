@@ -13,6 +13,7 @@ const checkinRateSourceByCard = {}
 const checkinSubmitLocks = {}
 const CHECKIN_PENDING_PAYMENT_RECEIPT_KEY = 'checkin_pending_payment_receipt'
 const AVAILABLE_ROOM_CHECKIN_PREFILL_KEY = 'available_room_checkin_prefill'
+const AVAILABLE_ROOM_RESERVATION_PREFILL_KEY = 'available_room_reservation_prefill'
 let checkinOrgContextChangeLock = false
 let checkinViewTableSource = []
 
@@ -590,6 +591,20 @@ function clearAvailableRoomCheckinPrefill() {
     sessionStorage.removeItem('roomsetting')
 }
 
+function getAvailableRoomReservationPrefillPayload() {
+    const structuredValue = sessionStorage.getItem(AVAILABLE_ROOM_RESERVATION_PREFILL_KEY)
+    if(!structuredValue) return null
+    try {
+        const parsed = JSON.parse(structuredValue)
+        if(parsed && typeof parsed === 'object') return parsed
+    } catch (_) {}
+    return null
+}
+
+function clearAvailableRoomReservationPrefill() {
+    sessionStorage.removeItem(AVAILABLE_ROOM_RESERVATION_PREFILL_KEY)
+}
+
 function formatCheckinDateTimeLocal(date = new Date()) {
     const pad = value => String(value).padStart(2, '0')
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
@@ -608,6 +623,61 @@ function seedAvailableRoomCheckinDates() {
     arrivalInput.value = formatCheckinDateTimeLocal(now)
     departureInput.value = formatCheckinDateTimeLocal(tomorrow)
     if(did('numberofnights')) did('numberofnights').value = 1
+}
+
+function seedAvailableRoomReservationDates() {
+    const arrivalInput = did('arrivaldate')
+    const departureInput = did('departuredate')
+    if(!arrivalInput || !departureInput) return
+
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const dayAfterTomorrow = new Date(tomorrow)
+    dayAfterTomorrow.setDate(tomorrow.getDate() + 1)
+    dayAfterTomorrow.setHours(12, 0, 0, 0)
+
+    arrivalInput.value = formatCheckinDateTimeLocal(tomorrow)
+    departureInput.value = formatCheckinDateTimeLocal(dayAfterTomorrow)
+    if(did('numberofnights')) did('numberofnights').value = 1
+}
+
+async function applyAvailableRoomReservationPrefill() {
+    const prefill = getAvailableRoomReservationPrefillPayload()
+    if(!prefill) return false
+
+    const roomNumber = String(prefill.roomnumber || '').trim()
+    const categoryId = resolveAvailableRoomPrefillCategoryId(prefill)
+    if(!roomNumber || !categoryId) {
+        clearAvailableRoomReservationPrefill()
+        notification('Selected room data is incomplete. Please select the room manually.', 0)
+        return false
+    }
+
+    const cardId = getFirstCheckinRoomCardId()
+    if(!cardId || !did('roomcategory-'+cardId) || !did('roomnumber-'+cardId)) return false
+
+    seedAvailableRoomReservationDates()
+    actionid = cardId
+    did('roomcategory-'+cardId).value = categoryId
+    notification('Loading selected room into Guests & Reservations...')
+    await controlroomlist(cardId, 'roomcategory')
+
+    const availableRoomButton = document.getElementsByName(roomNumber)[0]
+    if(availableRoomButton) {
+        availableRoomButton.click()
+    } else {
+        notification('Selected room could not be loaded for the reservation date range.', 0)
+        return false
+    }
+
+    if(String(did('roomnumber-'+cardId)?.value || '').trim() === roomNumber) {
+        clearAvailableRoomReservationPrefill()
+        notification(`Room ${roomNumber} loaded into Guests & Reservations`, 1)
+        return true
+    }
+
+    notification('Selected room could not be loaded for the reservation date range.', 0)
+    return false
 }
 
 async function applyAvailableRoomCheckinPrefill() {

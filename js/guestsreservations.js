@@ -38,6 +38,7 @@ if(document.querySelector('#company'))document.querySelector('#company').addEven
     await fetchgroupsres()
     checksessionstorage()
     did('initialroombtn').click()
+    await applyAvailableRoomReservationPrefill()
     flushSubmittedCheckinPaymentReceipt()
 }
 // every functions can be found in the index.js checkin.js and oreutil.js

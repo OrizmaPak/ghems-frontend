@@ -1237,6 +1237,21 @@ function openCheckinFromAvailableRoom(room){
     did('checkin')?.click()
 }
 
+function openReservationFromAvailableRoom(room){
+    if(!room) return
+    const payload = {
+        roomnumber: String(room.roomnumber || '').trim(),
+        categoryid: String(room.categoryid || room.roomcategoryid || '').trim(),
+        roomcategory: String(room.roomcategory || room.category || '').trim(),
+        roomname: String(room.roomname || '').trim(),
+        floor: String(room.floor || '').trim(),
+        building: String(room.building || '').trim(),
+        source: 'available_rooms_slider'
+    }
+    sessionStorage.setItem('available_room_reservation_prefill', JSON.stringify(payload))
+    did('guestsreservations')?.click()
+}
+
 function setAvailableRoomsAutoRefresh(enabled){
     availableRoomsState.autoRefresh = !!enabled
     renderAvailableRoomsBoard()
@@ -1413,6 +1428,10 @@ function ensureAvailableRoomSliderEventsBound(){
             const selected = availableRoomsDataset.find(item => String(item.roomnumber || '').trim() === String(roomNo).trim())
             openCheckinFromAvailableRoom(selected)
         }
+        if(action === 'open-reservation'){
+            const selected = availableRoomsDataset.find(item => String(item.roomnumber || '').trim() === String(roomNo).trim())
+            openReservationFromAvailableRoom(selected)
+        }
     })
 }
 
@@ -1576,6 +1595,10 @@ function renderAvailableRoomsBoard(){
                                 <button data-ar-action="open-checkin" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-[11px] font-black text-white transition hover:bg-slate-800">
                                     <span class="material-symbols-outlined" style="font-size:15px;">login</span>
                                     Go To Check-In
+                                </button>
+                                <button data-ar-action="open-reservation" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-[11px] font-black text-white transition hover:bg-blue-700">
+                                    <span class="material-symbols-outlined" style="font-size:15px;">event_available</span>
+                                    Make Reservation
                                 </button>
                                 <button data-ar-action="open-room-status" data-room-number="${availableRoomsDetail.roomnumber || ''}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-700 transition hover:bg-slate-50" title="Open Room Status">
                                     <span class="material-symbols-outlined" style="font-size:17px;">fact_check</span>
