@@ -590,6 +590,26 @@ function clearAvailableRoomCheckinPrefill() {
     sessionStorage.removeItem('roomsetting')
 }
 
+function formatCheckinDateTimeLocal(date = new Date()) {
+    const pad = value => String(value).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function seedAvailableRoomCheckinDates() {
+    const arrivalInput = did('arrivaldate')
+    const departureInput = did('departuredate')
+    if(!arrivalInput || !departureInput) return
+
+    const now = new Date()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(now.getDate() + 1)
+    tomorrow.setHours(12, 0, 0, 0)
+
+    arrivalInput.value = formatCheckinDateTimeLocal(now)
+    departureInput.value = formatCheckinDateTimeLocal(tomorrow)
+    if(did('numberofnights')) did('numberofnights').value = 1
+}
+
 async function applyAvailableRoomCheckinPrefill() {
     const prefill = getAvailableRoomCheckinPrefillPayload()
     if(!prefill) return false
@@ -606,9 +626,7 @@ async function applyAvailableRoomCheckinPrefill() {
     if(!cardId || !did('roomcategory-'+cardId) || !did('roomnumber-'+cardId)) return false
 
     if(!did('arrivaldate')?.value || !did('departuredate')?.value) {
-        did('roomcategory-'+cardId).value = categoryId
-        notification('Selected room is ready. Enter arrival and departure dates to load availability.', 0)
-        return false
+        seedAvailableRoomCheckinDates()
     }
 
     actionid = cardId
