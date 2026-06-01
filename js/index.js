@@ -1115,6 +1115,15 @@ function getAvailableRoomsFilterOptions(){
     return { buildings, floors, categories }
 }
 
+function getAvailableRoomCategoryCounts(){
+    return availableRoomsDataset.reduce((counts, room)=>{
+        const category = String(room.roomcategory || '').trim()
+        if(!category) return counts
+        counts[category] = (counts[category] || 0) + 1
+        return counts
+    }, {})
+}
+
 function filterAvailableRoomsData(){
     return availableRoomsDataset.filter((room)=>{
         const normalizedStatus = normalizeRoomStatus(room.roomstatus)
@@ -1324,6 +1333,18 @@ function ensureAvailableRoomSliderEventsBound(){
         if(event.target.id === 'ar-auto-refresh'){
             setAvailableRoomsAutoRefresh(event.target.checked)
         }
+        if(event.target.id === 'ar-filter-building'){
+            availableRoomsState.building = event.target.value || 'ALL'
+            renderAvailableRoomsBoard()
+        }
+        if(event.target.id === 'ar-filter-floor'){
+            availableRoomsState.floor = event.target.value || 'ALL'
+            renderAvailableRoomsBoard()
+        }
+        if(event.target.id === 'ar-filter-category'){
+            availableRoomsState.category = event.target.value || 'ALL'
+            renderAvailableRoomsBoard()
+        }
     })
     did('arshadow').addEventListener('click', (event)=>{
         const statusButton = event.target.closest('[data-ar-status]')
@@ -1335,6 +1356,12 @@ function ensureAvailableRoomSliderEventsBound(){
         const layoutButton = event.target.closest('[data-ar-layout]')
         if(layoutButton){
             availableRoomsState.layout = layoutButton.getAttribute('data-ar-layout') || 'compact'
+            renderAvailableRoomsBoard()
+            return
+        }
+        const categoryButton = event.target.closest('[data-ar-category]')
+        if(categoryButton){
+            availableRoomsState.category = categoryButton.getAttribute('data-ar-category') || 'ALL'
             renderAvailableRoomsBoard()
             return
         }
@@ -1359,6 +1386,7 @@ function renderAvailableRoomsBoard(){
     const host = did('availableroomcontainer')
     if(!host) return
     const { buildings, floors, categories } = getAvailableRoomsFilterOptions()
+    const categoryCounts = getAvailableRoomCategoryCounts()
     const filtered = filterAvailableRoomsData()
     const groupedByFloor = groupAvailableRoomsByFloor(filtered)
     const summary = {
@@ -1422,6 +1450,16 @@ function renderAvailableRoomsBoard(){
                         Cards
                     </button>
                     <button data-ar-action="clear-filters" class="px-2 py-1 text-[10px] rounded border border-slate-300 text-slate-600">Clear</button>
+                </div>
+                <div class="mb-2 border-y border-slate-100 py-2">
+                    <div class="mb-1 flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-wide text-slate-500">View by room category</span>
+                        <span class="text-[10px] font-bold text-slate-400">${availableRoomsState.category === 'ALL' ? 'All categories' : availableRoomsState.category}</span>
+                    </div>
+                    <div class="flex gap-1 overflow-x-auto pb-1">
+                        <button data-ar-category="ALL" class="shrink-0 rounded border px-2 py-1 text-[10px] font-bold ${availableRoomsState.category === 'ALL' ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-300 bg-white text-slate-600'}">All <span class="opacity-70">${summary.total}</span></button>
+                        ${categories.map(value => `<button data-ar-category="${value}" class="shrink-0 rounded border px-2 py-1 text-[10px] font-bold ${availableRoomsState.category === value ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-300 bg-white text-slate-600'}">${value} <span class="opacity-70">${categoryCounts[value] || 0}</span></button>`).join('')}
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-1">
                     <input id="searchavailableroom" value="${availableRoomsState.search}" class="form-control !p-2 text-xs" placeholder="Search room, category, building">
