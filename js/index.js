@@ -1163,6 +1163,16 @@ function groupAvailableRoomsByFloor(rooms=[]){
         })
 }
 
+function groupAvailableRoomsByCategory(rooms=[]){
+    const grouped = new Map()
+    rooms.forEach((room)=>{
+        const categoryKey = String(room.roomcategory || room.category || '').trim() || 'UNCATEGORIZED'
+        if(!grouped.has(categoryKey)) grouped.set(categoryKey, [])
+        grouped.get(categoryKey).push(room)
+    })
+    return Array.from(grouped.entries()).sort((a, b)=>String(a[0]).localeCompare(String(b[0])))
+}
+
 function groupAvailableRoomsByStatus(rooms=[]){
     const order = ['AVAILABLE', 'RESERVED', 'OCCUPIED', 'OTHER']
     const grouped = new Map(order.map(status => [status, []]))
@@ -1265,7 +1275,7 @@ function renderAvailableRoomCardButton(data = {}){
     `
 }
 
-function renderAvailableRoomsLayout(filtered = [], groupedByFloor = []){
+function renderAvailableRoomsLayout(filtered = [], groupedByFloor = [], groupedByCategory = []){
     const layout = availableRoomsState.layout || 'compact'
     if(!filtered.length) return `<div class="h-full w-full flex items-center justify-center text-sm text-slate-500">No rooms match current filters</div>`
 
@@ -1299,6 +1309,20 @@ function renderAvailableRoomsLayout(filtered = [], groupedByFloor = []){
                 </div>
                 <div class="flex flex-wrap gap-1">
                     ${floorRooms.map(room => renderAvailableRoomCompactButton(room, 'flex-none w-[46px]')).join('')}
+                </div>
+            </section>
+        `).join('')
+    }
+
+    if(layout === 'category') {
+        return groupedByCategory.map(([categoryLabel, categoryRooms]) => `
+            <section class="mb-2 rounded-md border border-slate-200 bg-white p-2">
+                <div class="mb-2 flex items-center justify-between bg-slate-950 text-white rounded px-2 py-1 text-[10px] font-black uppercase">
+                    <span>${categoryLabel === 'UNCATEGORIZED' ? 'Uncategorized' : categoryLabel}</span>
+                    <span class="text-white/70">${categoryRooms.length}</span>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                    ${categoryRooms.map(room => renderAvailableRoomCompactButton(room, 'flex-none w-[46px]')).join('')}
                 </div>
             </section>
         `).join('')
@@ -1399,6 +1423,7 @@ function renderAvailableRoomsBoard(){
     const categoryCounts = getAvailableRoomCategoryCounts()
     const filtered = filterAvailableRoomsData()
     const groupedByFloor = groupAvailableRoomsByFloor(filtered)
+    const groupedByCategory = groupAvailableRoomsByCategory(filtered)
     const summary = {
         total: availableRoomsDataset.length,
         available: availableRoomsDataset.filter(item => normalizeRoomStatus(item.roomstatus) === 'AVAILABLE').length,
@@ -1451,6 +1476,10 @@ function renderAvailableRoomsBoard(){
                         <span class="material-symbols-outlined" style="font-size:14px;">view_stream</span>
                         Floor Map
                     </button>
+                    <button data-ar-layout="category" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${currentLayout === 'category' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Category layout">
+                        <span class="material-symbols-outlined" style="font-size:14px;">category</span>
+                        Category
+                    </button>
                     <button data-ar-layout="status" class="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] rounded border ${currentLayout === 'status' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-300'}" title="Status columns layout">
                         <span class="material-symbols-outlined" style="font-size:14px;">view_column</span>
                         Status
@@ -1489,7 +1518,7 @@ function renderAvailableRoomsBoard(){
             </div>
             <div class="flex-1 min-h-0 grid ${availableRoomsDetail ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'} gap-2 overflow-hidden">
                 <div class="border border-slate-200 rounded-md p-2 ${currentLayout === 'compact' || currentLayout === 'status' ? 'overflow-hidden' : 'overflow-y-auto'} bg-white">
-                    ${renderAvailableRoomsLayout(filtered, groupedByFloor)}
+                    ${renderAvailableRoomsLayout(filtered, groupedByFloor, groupedByCategory)}
                 </div>
                 ${availableRoomsDetail ? `
                     <div class="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-[0_16px_36px_rgba(15,23,42,0.12)] overflow-y-auto">
