@@ -12,6 +12,7 @@ const checkinRateDataByCard = {}
 const checkinRateSourceByCard = {}
 const checkinSubmitLocks = {}
 const CHECKIN_PENDING_PAYMENT_RECEIPT_KEY = 'checkin_pending_payment_receipt'
+const AVAILABLE_ROOM_CHECKIN_PREFILL_KEY = 'available_room_checkin_prefill'
 let checkinOrgContextChangeLock = false
 let checkinViewTableSource = []
 
@@ -550,6 +551,89 @@ function bindCheckinSubmitButton(formId = '') {
     }
 }
 
+function getAvailableRoomCheckinPrefillPayload() {
+    const structuredValue = sessionStorage.getItem(AVAILABLE_ROOM_CHECKIN_PREFILL_KEY)
+    if(structuredValue) {
+        try {
+            const parsed = JSON.parse(structuredValue)
+            if(parsed && typeof parsed === 'object') return parsed
+        } catch (_) {}
+    }
+
+    const legacyValue = sessionStorage.getItem('roomsetting')
+    if(!legacyValue) return null
+    const [categoryid = '', roomnumber = ''] = String(legacyValue || '').split('_')
+    return {
+        categoryid: String(categoryid || '').trim(),
+        roomnumber: String(roomnumber || '').trim(),
+        source: 'legacy_roomsetting'
+    }
+}
+
+function resolveAvailableRoomPrefillCategoryId(prefill = {}) {
+    const categoryId = String(prefill.categoryid || prefill.roomcategoryid || '').trim()
+    if(categoryId) return categoryId
+
+    const categoryName = String(prefill.roomcategory || prefill.category || '').trim().toUpperCase()
+    if(!categoryName || !Array.isArray(rumcat)) return ''
+    const match = rumcat.find(item => String(item.category || item.categoryname || '').trim().toUpperCase() === categoryName)
+    return String(match?.id || match?.categoryid || '').trim()
+}
+
+function getFirstCheckinRoomCardId() {
+    const firstCategory = document.querySelector('#checkinform .roomcategory') || document.querySelector('.roomcategory')
+    return String(firstCategory?.id || '').replace('roomcategory-', '').trim()
+}
+
+function clearAvailableRoomCheckinPrefill() {
+    sessionStorage.removeItem(AVAILABLE_ROOM_CHECKIN_PREFILL_KEY)
+    sessionStorage.removeItem('roomsetting')
+}
+
+async function applyAvailableRoomCheckinPrefill() {
+    const prefill = getAvailableRoomCheckinPrefillPayload()
+    if(!prefill) return false
+
+    const roomNumber = String(prefill.roomnumber || '').trim()
+    const categoryId = resolveAvailableRoomPrefillCategoryId(prefill)
+    if(!roomNumber || !categoryId) {
+        clearAvailableRoomCheckinPrefill()
+        notification('Selected room data is incomplete. Please select the room manually.', 0)
+        return false
+    }
+
+    const cardId = getFirstCheckinRoomCardId()
+    if(!cardId || !did('roomcategory-'+cardId) || !did('roomnumber-'+cardId)) return false
+
+    if(!did('arrivaldate')?.value || !did('departuredate')?.value) {
+        did('roomcategory-'+cardId).value = categoryId
+        notification('Selected room is ready. Enter arrival and departure dates to load availability.', 0)
+        return false
+    }
+
+    actionid = cardId
+    did('roomcategory-'+cardId).value = categoryId
+    notification('Loading selected room into Direct Check-In...')
+    await controlroomlist(cardId, 'roomcategory')
+
+    const availableRoomButton = document.getElementsByName(roomNumber)[0]
+    if(availableRoomButton) {
+        availableRoomButton.click()
+    } else {
+        notification('Selected room could not be loaded for the current date range.', 0)
+        return false
+    }
+
+    if(String(did('roomnumber-'+cardId)?.value || '').trim() === roomNumber) {
+        clearAvailableRoomCheckinPrefill()
+        notification(`Room ${roomNumber} loaded into Direct Check-In`, 1)
+        return true
+    }
+
+    notification('Selected room could not be loaded for the current date range.', 0)
+    return false
+}
+
 async function checkinActive() {
     notification('Loading...')
     checkinid = ''
@@ -590,6 +674,7 @@ async function checkinActive() {
     await fetchgroupsres()
     await populateReceivingBankSelects()
     did('initialroombtn').click()
+    await applyAvailableRoomCheckinPrefill()
     if(sessionStorage.getItem('checkinfromsomewhere')){
         let id = sessionStorage.getItem('checkinfromsomewhere')
         fetchcheckinn(id)
@@ -687,6 +772,7 @@ async function recalculateCheckinFormFromDates() {
         calculatetotals()
         return
     }
+    await applyAvailableRoomCheckinPrefill()
     await recalculateAllRoomCardsForRateContext('date-change')
 }
 
@@ -722,37 +808,7 @@ function datedifference() {
             }
 
             nightInput.value = dayDifference;
-            // if a room is selected prior to entering the page this set of code below sets
-            if(sessionStorage.getItem('roomsetting')){
-                try{
-                    let roomsetting = sessionStorage.getItem('roomsetting')
-                    sessionStorage.removeItem('roomsetting')
-                    document.getElementsByName('roomcategory')[0].value = roomsetting.split('_')[0]
-                    document.getElementsByName('roomnumber')[0].parentElement.nextElementSibling.classList.remove('hidden')
-                    document.getElementsByName('roomnumber')[0].parentElement.nextElementSibling.click()
-                    notification('Please wait Loading selected room...')
-                    // Set an interval to check the condition every 0.5 seconds
-                    let checkInterval = setInterval(function() {
-                        // Check if the innerHTML of the element with id 'roomtable' is 'Loading...'
-                        if (document.getElementById('roomtable').innerHTML !== 'Loading...') {
-                            // Clear the interval once the condition is met
-                            clearInterval(checkInterval);
-                    
-                    
-                            // Run the code below when the condition is met
-                            if (document.getElementsByName(`${roomsetting.split('_')[1]}`)[0]) {
-                                document.getElementsByName(`${roomsetting.split('_')[1]}`)[0].click();
-                                notification('Room selected has been successfully loaded...', 1);
-                            } else {
-                                notification('Room selected could not be loaded, maybe the date range doesn\'t fall within the room\'s availability', 0);
-                            }
-                        }
-                    }, 1500); // 500 milliseconds equals 0.5 seconds
-
-                }catch(err){
-                    notification('Room selected could not be loaded, maybe the date range doesnt fall within the rooms availability', 0)
-                }
-            } 
+            applyAvailableRoomCheckinPrefill()
         }
 
 function getCheckinSummarySelectText(id = '') {
@@ -1614,8 +1670,9 @@ const renderRoomTable = (data) => {
                   </p>
                 </div>
                 <button 
+                  name="${room.roomnumber}"
                   class="mt-4 w-full py-2 rounded-lg text-white ${getButtonClass(room.roomstatus)}"
-                  onclick="handleRoomClick(${room.roomstatus === 'AVAILABLE' || room.roomstatus === 'CHECKED OUT'}, ${room.roomnumber}, ${actionid})"
+                  onclick="handleRoomClick(${room.roomstatus === 'AVAILABLE' || room.roomstatus === 'CHECKED OUT'}, '${room.roomnumber}', ${actionid})"
                 >
                   Select Room
                 </button>

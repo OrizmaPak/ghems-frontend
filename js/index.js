@@ -1213,7 +1213,17 @@ function openRoomStatusFromAvailableRoom(){
 
 function openCheckinFromAvailableRoom(room){
     if(!room) return
-    sessionStorage.setItem('roomsetting', `${room.categoryid || ''}_${room.roomnumber || ''}`)
+    const payload = {
+        roomnumber: String(room.roomnumber || '').trim(),
+        categoryid: String(room.categoryid || room.roomcategoryid || '').trim(),
+        roomcategory: String(room.roomcategory || room.category || '').trim(),
+        roomname: String(room.roomname || '').trim(),
+        floor: String(room.floor || '').trim(),
+        building: String(room.building || '').trim(),
+        source: 'available_rooms_slider'
+    }
+    sessionStorage.setItem('available_room_checkin_prefill', JSON.stringify(payload))
+    sessionStorage.setItem('roomsetting', `${payload.categoryid}_${payload.roomnumber}`)
     did('checkin')?.click()
 }
 
