@@ -605,6 +605,23 @@ function clearAvailableRoomReservationPrefill() {
     sessionStorage.removeItem(AVAILABLE_ROOM_RESERVATION_PREFILL_KEY)
 }
 
+function getRenderedRoomButton(roomNumber) {
+    const expectedRoomNumber = String(roomNumber || '').trim()
+    if(!expectedRoomNumber) return null
+    return Array.from(document.querySelectorAll('#roomtable button[data-room-number]')).find(button => {
+        const buttonRoomNumber = String(button.dataset.roomNumber || '').trim()
+        return buttonRoomNumber === expectedRoomNumber || normalizeRoomNumberDisplay(buttonRoomNumber) === expectedRoomNumber
+    }) || null
+}
+
+async function selectRenderedRoomForCard(roomNumber, cardId) {
+    const roomButton = getRenderedRoomButton(roomNumber)
+    if(!roomButton) return false
+    if(roomButton.dataset.roomSelectable !== '1') return false
+    await handleRoomClick(true, roomButton.dataset.roomNumber, String(cardId))
+    return String(did('roomnumber-'+cardId)?.value || '').trim() === String(roomButton.dataset.roomNumber || '').trim()
+}
+
 function formatCheckinDateTimeLocal(date = new Date()) {
     const pad = value => String(value).padStart(2, '0')
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
@@ -662,10 +679,8 @@ async function applyAvailableRoomReservationPrefill() {
     notification('Loading selected room into Guests & Reservations...')
     await controlroomlist(cardId, 'roomcategory')
 
-    const availableRoomButton = document.getElementsByName(roomNumber)[0]
-    if(availableRoomButton) {
-        availableRoomButton.click()
-    } else {
+    const selected = await selectRenderedRoomForCard(roomNumber, cardId)
+    if(!selected) {
         notification('Selected room could not be loaded for the reservation date range.', 0)
         return false
     }
@@ -704,10 +719,8 @@ async function applyAvailableRoomCheckinPrefill() {
     notification('Loading selected room into Direct Check-In...')
     await controlroomlist(cardId, 'roomcategory')
 
-    const availableRoomButton = document.getElementsByName(roomNumber)[0]
-    if(availableRoomButton) {
-        availableRoomButton.click()
-    } else {
+    const selected = await selectRenderedRoomForCard(roomNumber, cardId)
+    if(!selected) {
         notification('Selected room could not be loaded for the current date range.', 0)
         return false
     }
@@ -1759,8 +1772,10 @@ const renderRoomTable = (data) => {
                 </div>
                 <button 
                   name="${room.roomnumber}"
+                  data-room-number="${room.roomnumber}"
+                  data-room-selectable="${room.roomstatus === 'AVAILABLE' || room.roomstatus === 'CHECKED OUT' ? '1' : '0'}"
                   class="mt-4 w-full py-2 rounded-lg text-white ${getButtonClass(room.roomstatus)}"
-                  onclick="handleRoomClick(${room.roomstatus === 'AVAILABLE' || room.roomstatus === 'CHECKED OUT'}, '${room.roomnumber}', ${actionid})"
+                  onclick="handleRoomClick(this.dataset.roomSelectable === '1', this.dataset.roomNumber, '${actionid}')"
                 >
                   Select Room
                 </button>
