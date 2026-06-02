@@ -28,6 +28,10 @@
     </form>
 
     <div class="my-4 flex justify-end items-start gap-3">
+        <button id="processnightauditbutton" type="button" class="btn bg-emerald-600 text-white">
+            <div class="btnloader" style="display: none;"></div>
+            <span>Process Night Audit</span>
+        </button>
         <button onclick="exportToExcel('nightauditreporttable', 'HEMS NIGHT AUDIT REPORT')" type="button" class="btn">
             <span>Export Excel</span>
         </button>
@@ -35,6 +39,8 @@
             <span>Print</span>
         </button>
     </div>
+
+    <div id="nightauditprocessmessages" class="hidden mb-4 rounded border border-slate-200 bg-white p-4 shadow-sm"></div>
 
     <div id="nightauditreportcontainer" class="bg-white rounded-sm p-5 xl:p-8">
         <div id="nightauditreportcontent" class="text-center opacity-70 py-8">No records retrieved</div>
