@@ -234,17 +234,21 @@ async function fetchviewinventorys(id) {
     return notification('No records retrieved')
 }
 
+async function deleteViewInventoryItem(itemid) {
+    function getparamm() {
+        let paramstr = new FormData()
+        paramstr.append('itemid', itemid)
+        return paramstr
+    }
+
+    return await httpRequest2('../controllers/removeitem', getparamm(), null, 'json')
+}
+
 async function removeviewinventory(id) {
     const confirmed = window.confirm('Are you sure you want to remove this item?')
     if (!confirmed) return
 
-    function getparamm() {
-        let paramstr = new FormData()
-        paramstr.append('itemid', id)
-        return paramstr
-    }
-
-    let request = await httpRequest2('../controllers/removeitem', getparamm(), null, 'json')
+    let request = await deleteViewInventoryItem(id)
     await viewinventoryFormSubmitHandler()
     return notification(request?.message || 'No records retrieved', request?.status ? 1 : 0)
 }
@@ -463,6 +467,18 @@ function mapViewInventoryImportHeaders(rawRow = {}) {
     return mapped
 }
 
+function mapViewInventoryDeleteHeaders(rawRow = {}) {
+    const mapped = {}
+    Object.keys(rawRow || {}).forEach(key => {
+        const normalizedKey = String(key || '').trim().toLowerCase()
+        const value = rawRow[key]
+        if (normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
+        if (normalizedKey === 'item name' || normalizedKey === 'itemname') mapped.itemname = value
+        if (normalizedKey === 'original row' || normalizedKey === 'row') mapped.originalrow = value
+    })
+    return mapped
+}
+
 function normalizeViewInventoryItemType(value) {
     const normalized = String(value || '').trim().toUpperCase()
     if (!normalized) return ''
@@ -504,12 +520,9 @@ async function updateViewInventoryItemTypeByRow(sourceItem, newItemType, salesPo
 async function handleViewInventoryExcelUpload(event) {
     const input = event?.target
     const uploadBtn = did('viewinventory-upload-excel-btn')
+    const statusBox = did('viewinventory-upload-status')
     const file = input?.files?.[0]
     if (!file) return
-    if (!viewinventoryItems.length) {
-        input.value = ''
-        return notification('Load inventory first before uploading Excel', 0)
-    }
 
     const ok = await ensureXLSXLoadedViewInventory()
     if (!ok) {
@@ -518,10 +531,23 @@ async function handleViewInventoryExcelUpload(event) {
     }
 
     if (uploadBtn) uploadBtn.disabled = true
-    let updated = 0
+    let deleted = 0
     let skipped = 0
     let failed = 0
-    let resubmit = 0
+    const failures = []
+
+    const setStatus = (message, tone = 'violet') => {
+        if (!statusBox) return
+        const palette = {
+            violet: 'border-violet-200 bg-violet-50 text-violet-900',
+            emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+            amber: 'border-amber-200 bg-amber-50 text-amber-900',
+            rose: 'border-rose-200 bg-rose-50 text-rose-900'
+        }
+        statusBox.className = `mb-4 rounded-md px-4 py-3 text-sm ${palette[tone] || palette.violet}`
+        statusBox.classList.remove('hidden')
+        statusBox.innerHTML = message
+    }
 
     try {
         const buffer = await file.arrayBuffer()
@@ -532,60 +558,38 @@ async function handleViewInventoryExcelUpload(event) {
             return notification('No rows found in uploaded Excel', 0)
         }
 
+        setStatus(`Preparing delete run for ${rawRows.length} row(s)...`)
+
         for (let i = 0; i < rawRows.length; i++) {
-            const row = mapViewInventoryImportHeaders(rawRows[i])
+            const row = mapViewInventoryDeleteHeaders(rawRows[i])
             const itemid = String(row.itemid || '').trim()
-            const normalizedType = normalizeViewInventoryItemType(row.itemtype)
-            const salesPoint = String(row.salespoint || '').trim()
-            const departmentsRaw = String(row.departments || '').trim()
-            const normalizedSalesPoint = normalizeViewInventorySalesPoint(salesPoint)
-            const normalizedDepartments = parseViewInventoryDepartments(departmentsRaw)
-            if (!itemid || !normalizedSalesPoint) {
-                if (!itemid) {
-                    skipped++
-                    continue
-                }
-            }
-            if (!normalizedType) {
-                resubmit++
-                continue
-            }
-
-            let matchedItems = []
-            if (normalizedSalesPoint) {
-                matchedItems = viewinventoryItems.filter(entry =>
-                    String(entry?.itemid || '').trim() === itemid
-                    && normalizeViewInventorySalesPoint(entry?.salespoint) === normalizedSalesPoint
-                )
-            } else if (normalizedDepartments.length) {
-                matchedItems = viewinventoryItems.filter(entry =>
-                    String(entry?.itemid || '').trim() === itemid
-                    && normalizedDepartments.includes(normalizeViewInventorySalesPoint(entry?.salespoint))
-                )
-            } else {
-                matchedItems = viewinventoryItems.filter(entry => String(entry?.itemid || '').trim() === itemid)
-            }
-
-            if (!matchedItems.length) {
+            if (!itemid) {
                 skipped++
+                setStatus(`Processing ${i + 1}/${rawRows.length} ... skipped blank Item ID row`, 'amber')
                 continue
             }
 
-            for (const item of matchedItems) {
-                const successful = await updateViewInventoryItemTypeByRow(item, normalizedType, item?.salespoint || salesPoint)
-                if (successful) {
-                    item.itemtype = normalizedType
-                    updated++
-                } else {
-                    failed++
-                }
+            setStatus(`Deleting ${i + 1}/${rawRows.length}: Item ID ${safeText(itemid)}${row.itemname ? ` (${safeText(row.itemname)})` : ''}`)
+            const request = await deleteViewInventoryItem(itemid)
+            if (request?.status) {
+                deleted++
+            } else {
+                failed++
+                failures.push(`Item ID ${itemid}${row.itemname ? ` (${row.itemname})` : ''}: ${request?.message || 'Delete failed'}`)
             }
         }
 
         await viewinventoryFormSubmitHandler()
-        return notification(`Item type upload completed. Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}, Resubmit Rows (invalid item type): ${resubmit}`, (failed || resubmit) ? 0 : 1)
+        const summaryMessage = `Delete run completed. Deleted: ${deleted}, Skipped: ${skipped}, Failed: ${failed}`
+        if (failed) {
+            setStatus(`${summaryMessage}<br><br>${failures.map(item => safeText(item)).join('<br>')}`, 'rose')
+        } else {
+            setStatus(summaryMessage, deleted ? 'emerald' : 'amber')
+        }
+        return notification(summaryMessage, failed ? 0 : 1)
     } catch (error) {
         console.log(error)
+        setStatus('Unable to process uploaded Excel file for delete run', 'rose')
         return notification('Unable to process uploaded Excel file', 0)
     } finally {
         if (uploadBtn) uploadBtn.disabled = false

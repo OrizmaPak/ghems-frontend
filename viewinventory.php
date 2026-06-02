@@ -200,10 +200,11 @@
                                         <span>Export All to Excel</span>
                                     </button>
                                     <button id="viewinventory-upload-excel-btn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                        <span>Upload Excel</span>
+                                        <span>Delete From Excel</span>
                                     </button>
                                     <input id="viewinventory-upload-excel-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
                                 </div>
+                                <div id="viewinventory-upload-status" class="hidden mb-4 rounded-md border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900"></div>
                                 <div class="table-content" style="overflow-x: auto;">
                                     <table style="min-width: 1660px;">
                                         <thead>
