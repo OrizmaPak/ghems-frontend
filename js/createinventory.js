@@ -1,5 +1,6 @@
 let createinventoryid
 let departmenthtml
+let inventoryDepartmentNames = []
 const inventoryImportHeaderMap = {
     'item name': 'itemname',
     'item type': 'itemtype',
@@ -22,6 +23,10 @@ async function createinventoryActive() {
     datasource = []
     let request = await httpRequest2('../controllers/fetchdepartments', null, null, 'json')
     if(request.status) {
+        inventoryDepartmentNames = request.data
+            .filter(dat=>dat.applyforsales == 'NON STOCK' || dat.applyforsales == 'STOCK')
+            .map(data => String(data.department || '').trim())
+            .filter(Boolean)
         departmenthtml = request.data.filter(dat=>dat.applyforsales == 'NON STOCK' || dat.applyforsales == 'STOCK').map(data=>`<div class="border  p-2 flex items-center m-1 gap-3 w-fit pr-4">
                             <input class="cp" name="${data.department}"  type="checkbox"/> 
                             <label class="cp" onclick="this.previousElementSibling.click()">${data.department}</label>
@@ -34,7 +39,6 @@ async function createinventoryActive() {
         }
     }else return notification(request.message, 0);
     wireInventoryImport()
-    wireInventoryTemplate()
     // await fetchcreateinventorys()
 }
 
@@ -47,11 +51,6 @@ function wireInventoryImport(){
     }
 }
 
-function wireInventoryTemplate(){
-    const templateBtn = document.getElementById('downloadInventoryTemplate')
-    if(templateBtn) templateBtn.addEventListener('click', downloadInventoryTemplate)
-}
-
 async function ensureXLSXLoaded(){
     if(window.XLSX) return true
     return await new Promise(resolve=>{
@@ -61,51 +60,6 @@ async function ensureXLSXLoaded(){
         script.onerror = ()=>resolve(false)
         document.head.appendChild(script)
     })
-}
-
-async function downloadInventoryTemplate(){
-    const ok = await ensureXLSXLoaded()
-    if(!ok) return notification('Could not load Excel helper. Check your connection.', 0)
-    const sampleRows = [
-        {
-            'Item Name': 'Sample Item 1',
-            'Item Type': 'FOOD',
-            'Units': 'PCS',
-            'Cost': 10,
-            'Price': 15,
-            'Price Two': 14,
-            'Begin Balance': 5,
-            'Min Balance': 1,
-            'Group Name': 'GENERAL',
-            'Apply To': 'FOR SALE',
-            'Item Class': 'STOCK-ITEM',
-            'Reorder Level': 3,
-            'Composite': 'NO',
-            'Description': 'Example description',
-            'Sales Points': 'BAR|RESTAURANT'
-        },
-        {
-            'Item Name': 'Sample Item 2',
-            'Item Type': 'MISCELLANEOUS',
-            'Units': 'KG',
-            'Cost': 20,
-            'Price': 28,
-            'Price Two': '',
-            'Begin Balance': 0,
-            'Min Balance': 0,
-            'Group Name': 'SUPPLIES',
-            'Apply To': 'NOT FOR SALE',
-            'Item Class': 'NON STOCK-ITEM',
-            'Reorder Level': '',
-            'Composite': 'NO',
-            'Description': 'Second example item',
-            'Sales Points': 'KITCHEN'
-        }
-    ]
-    const ws = XLSX.utils.json_to_sheet(sampleRows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Inventory')
-    XLSX.writeFile(wb, 'inventory_import_template.xlsx')
 }
 
 async function handleInventoryExcelImport(event){
@@ -124,7 +78,7 @@ async function handleInventoryExcelImport(event){
             const sheet = workbook.Sheets[workbook.SheetNames[0]]
             const rawRows = XLSX.utils.sheet_to_json(sheet, {defval: ''})
             const normalizedRows = normalizeInventoryRows(rawRows)
-            populateInventoryForm(normalizedRows)
+            importInventoryRows(normalizedRows)
         }catch(err){
             notification('Unable to read Excel file. Please confirm the template.', 0)
             console.error(err)
@@ -149,56 +103,143 @@ function normalizeInventoryRows(rawRows){
     return rows
 }
 
-function populateInventoryForm(rows){
-    if(!rows.length) return notification('No rows found in Excel. Please confirm headers match the template.', 0)
-    const container = did('createinventorycontainer')
-    container.innerHTML = ''
-    for(let i=0;i<rows.length;i++) addform()
-    rows.forEach((row, idx)=>{
-        const form = container.children[idx]
-        setInventoryField(form, 'itemname', row.itemname)
-        setInventoryField(form, 'itemtype', row.itemtype)
-        setInventoryField(form, 'units', row.units)
-        setInventoryField(form, 'cost', row.cost)
-        setInventoryField(form, 'price', row.price)
-        setInventoryField(form, 'price_two', row.price_two)
-        setInventoryField(form, 'beginbalance', row.beginbalance)
-        setInventoryField(form, 'minbalance', row.minbalance)
-        setInventoryField(form, 'groupname', row.groupname)
-        setInventoryField(form, 'applyto', row.applyto)
-        setInventoryField(form, 'itemclass', row.itemclass)
-        setInventoryField(form, 'rlevel', row.rlevel)
-        setInventoryField(form, 'composite', row.composite || 'NO')
-        setInventoryField(form, 'description', row.description)
-        setSalesPoints(form, row.salespoint)
+function normalizeInventoryImportSalesPoints(value = ''){
+    const requested = String(value || '')
+        .split(/[,|;]/)
+        .map(item => item.trim())
+        .filter(Boolean)
+    if(!requested.length) return []
+
+    const availableMap = new Map(
+        inventoryDepartmentNames.map(name => [name.toLowerCase(), name])
+    )
+    const resolved = []
+    requested.forEach(point => {
+        const match = availableMap.get(point.toLowerCase())
+        if(match && !resolved.includes(match)) resolved.push(match)
     })
-    runItemNo()
-    notification(`${rows.length} item(s) loaded from Excel. Review and submit.`, 1)
+    return resolved
 }
 
-function setInventoryField(form, name, value){
-    const el = form?.querySelector(`[name=\"${name}\"]`)
-    if(!el) return
-    let val = value
-    if(val === undefined || val === null) val = ''
-    if(typeof val === 'string') val = val.trim()
-    if(el.tagName === 'SELECT'){
-        const targetVal = `${val}`.toUpperCase()
-        const match = Array.from(el.options).find(opt=>opt.value.toUpperCase() === targetVal || opt.text.toUpperCase() === targetVal)
-        el.value = match ? match.value : ''
-    }else{
-        el.value = val
+function normalizeInventoryImportRow(row = {}){
+    const itemclass = String(row.itemclass || '').trim().toUpperCase()
+    const itemtype = String(row.itemtype || '').trim().toUpperCase()
+    const composite = String(row.composite || '').trim().toUpperCase()
+    const normalizedSalesPoints = normalizeInventoryImportSalesPoints(row.salespoint)
+
+    return {
+        itemname: String(row.itemname || '').trim(),
+        itemtype,
+        units: String(row.units || '').trim().toUpperCase(),
+        cost: row.cost ?? '',
+        price: row.price ?? '',
+        price_two: row.price_two ?? '',
+        beginbalance: row.beginbalance ?? '',
+        minbalance: row.minbalance ?? '',
+        groupname: String(row.groupname || '').trim(),
+        applyto: String(row.applyto || '').trim().toUpperCase() || 'FOR SALE',
+        itemclass: itemclass || 'STOCK-ITEM',
+        rlevel: row.rlevel ?? '',
+        composite: composite || 'NO',
+        description: String(row.description || '').trim(),
+        salespoint: normalizedSalesPoints.join('|'),
+        salespointList: normalizedSalesPoints
     }
 }
 
-function setSalesPoints(form, salesPoints){
-    const points = (salesPoints || '').toString().split(/[,|;]/).map(p=>p.trim().toLowerCase()).filter(Boolean)
-    if(!points.length) return
-    const set = new Set(points)
-    form.querySelectorAll('#departmt input[type=\"checkbox\"]').forEach(cb=>{
-        const key = (cb.getAttribute('name') || '').trim().toLowerCase()
-        cb.checked = set.has(key)
+function validateImportedInventoryRows(rows = []){
+    const validRows = []
+    const errors = []
+    rows.forEach((rawRow, idx) => {
+        const rowNo = idx + 2
+        const row = normalizeInventoryImportRow(rawRow)
+        if(!row.itemname) errors.push(`Row ${rowNo}: Item Name is required`)
+        if(!row.itemtype) errors.push(`Row ${rowNo}: Item Type is required`)
+        if(!row.units) errors.push(`Row ${rowNo}: Units is required`)
+        if(!row.itemclass) errors.push(`Row ${rowNo}: Item Class is required`)
+        if(!row.applyto) errors.push(`Row ${rowNo}: Apply To is required`)
+        if(!row.salespointList.length) errors.push(`Row ${rowNo}: Sales Points must match an existing department`)
+        if(row.itemtype && !['FOOD','ALCOHOL','NON-ALCOHOL','MISCELLANEOUS','SERVICE'].includes(row.itemtype)) {
+            errors.push(`Row ${rowNo}: Item Type "${row.itemtype}" is invalid`)
+        }
+        if(row.itemclass && !['STOCK-ITEM','NON STOCK-ITEM'].includes(row.itemclass)) {
+            errors.push(`Row ${rowNo}: Item Class "${row.itemclass}" is invalid`)
+        }
+        if(row.applyto && !['FOR SALE','NOT FOR SALE'].includes(row.applyto)) {
+            errors.push(`Row ${rowNo}: Apply To "${row.applyto}" is invalid`)
+        }
+        if(row.composite && !['YES','NO'].includes(row.composite)) {
+            errors.push(`Row ${rowNo}: Composite "${row.composite}" is invalid`)
+        }
+        if(!errors.filter(message => message.startsWith(`Row ${rowNo}:`)).length) validRows.push(row)
     })
+    return { validRows, errors }
+}
+
+function buildInventoryImportPayload(rows = []){
+    const payload = new FormData()
+    payload.append('rowsize', rows.length)
+    rows.forEach((row, idx) => {
+        const n = idx + 1
+        payload.append(`itemname${n}`, row.itemname)
+        payload.append(`itemtype${n}`, row.itemtype)
+        payload.append(`units${n}`, row.units)
+        payload.append(`cost${n}`, row.cost)
+        payload.append(`price${n}`, row.price)
+        payload.append(`price_two${n}`, row.price_two)
+        payload.append(`beginbalance${n}`, row.beginbalance)
+        payload.append(`groupname${n}`, row.groupname)
+        payload.append(`applyto${n}`, row.applyto)
+        payload.append(`reorderlevel${n}`, row.rlevel)
+        payload.append(`composite${n}`, row.composite)
+        payload.append(`description${n}`, row.description)
+        payload.append(`itemclass${n}`, row.itemclass)
+        payload.append(`minbalance${n}`, row.minbalance)
+        payload.append(`salespoint${n}`, row.salespoint)
+    })
+    return payload
+}
+
+function renderCreateInventoryImportStatus(messages = [], status = true){
+    const host = did('createinventory-import-status')
+    if(!host) return
+    const tone = status
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+        : 'border-red-200 bg-red-50 text-red-900'
+    host.className = `mt-3 rounded-md border p-4 text-sm shadow-sm ${tone}`
+    host.innerHTML = `
+        <div class="font-semibold mb-2">${status ? 'Inventory import result' : 'Inventory import could not continue'}</div>
+        <ul class="list-disc pl-5 space-y-1">
+            ${messages.map(message => `<li>${String(message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}
+        </ul>
+    `
+}
+
+async function importInventoryRows(rows){
+    if(!rows.length) {
+        renderCreateInventoryImportStatus(['No rows found in Excel. Please confirm the headers match the expected template.'], false)
+        return notification('No rows found in Excel.', 0)
+    }
+
+    const { validRows, errors } = validateImportedInventoryRows(rows)
+    if(errors.length) {
+        renderCreateInventoryImportStatus(errors, false)
+        return notification('Excel import has validation errors.', 0)
+    }
+
+    const request = await httpRequest2('../controllers/inventoryscript', buildInventoryImportPayload(validRows), did('importExcelBtn'))
+    if(request?.status) {
+        const successMessages = [
+            `${validRows.length} item(s) imported and created successfully.`,
+            request.message || 'Record saved successfully.'
+        ]
+        renderCreateInventoryImportStatus(successMessages, true)
+        notification('Inventory items created successfully.', 1)
+        return
+    }
+
+    renderCreateInventoryImportStatus([request?.message || 'Unable to import inventory items.'], false)
+    return notification(request?.message || 'Unable to import inventory items.', 0)
 }
 
 async function createinventoryFormSubmitHandler(){
@@ -222,35 +263,33 @@ async function createinventoryFormSubmitHandler(){
     
     function params(){
         const items = Array.from(document.getElementById('createinventorycontainer').children)
-        const param = new FormData();
-        param.append(`rowsize`, items.length)
-        items.forEach((item, idx)=>{
-            const n = idx + 1
+        const rows = items.map((item)=>{
             const get = name => (item.querySelector(`[name=\"${name}\"]`)?.value ?? '').toString()
-            param.append(`itemname${n}`, get('itemname'))
-            param.append(`itemtype${n}`, get('itemtype'))
-            param.append(`units${n}`, get('units'))
-            param.append(`cost${n}`, get('cost'))
-            param.append(`price${n}`, get('price'))
-            param.append(`price_two${n}`, get('price_two'))
-            param.append(`beginbalance${n}`, get('beginbalance'))
-            param.append(`groupname${n}`, get('groupname'))
-            param.append(`applyto${n}`, get('applyto'))
-            param.append(`reorderlevel${n}`, get('rlevel'))
-            param.append(`composite${n}`, get('composite'))
-            param.append(`description${n}`, get('description'))
-            param.append(`itemclass${n}`, get('itemclass'))
-            param.append(`minbalance${n}`, get('minbalance'))
             let salespoints = []
             item.querySelectorAll('#departmt input[type=\"checkbox\"]').forEach(cb=>{
                 if(cb.checked) salespoints.push(cb.getAttribute('name'))
             })
-            param.append(`salespoint${n}`, salespoints.join('|'))
+            return {
+                itemname: get('itemname'),
+                itemtype: get('itemtype'),
+                units: get('units'),
+                cost: get('cost'),
+                price: get('price'),
+                price_two: get('price_two'),
+                beginbalance: get('beginbalance'),
+                groupname: get('groupname'),
+                applyto: get('applyto'),
+                rlevel: get('rlevel'),
+                composite: get('composite'),
+                description: get('description'),
+                itemclass: get('itemclass'),
+                minbalance: get('minbalance'),
+                salespoint: salespoints.join('|')
+            }
         })
-        return param
+        return buildInventoryImportPayload(rows)
     }
-    params()
-    let request = await httpRequest2('../controllers/inventoryscript', params(), document.querySelector('#productitemsform #submit'))
+    let request = await httpRequest2('../controllers/inventoryscript', params(), did('submit'))
     if(request.status) {
         notification('Record saved successfully!', 1);
         document.querySelector('#createinventory').click()

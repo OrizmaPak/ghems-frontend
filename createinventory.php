@@ -16,20 +16,21 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                             <p class="page-title flex justify-between">
                                 <span>CREATE INVENTORY</span>
                             </p>
-                            <div class="w-full flex justify-end items-start">
+                            <div class="w-full flex justify-end items-start gap-3">
                                 <div onclick="addform()" title="Add Item" class="bg-[#f5f5f6] z-[100] flex justify-end items-center p-3 gap-2 cp hover:scale-[1.1] transition-all">
                                     <button title="Add Item" class="relative material-symbols-outlined rounded-full bg-[green] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">add</button>
                                     <p class="font-bold">Add</p>
                                 </div>
-                                <div title="Import from excel" class="bg-[#f5f5f6] z-[100] flex flex-col justify-end items-end p-3 gap-2 cp  transition-all">
-                                    <div class="flex gap-2 items-center">
-                                        <button id="downloadInventoryTemplate" class="relative bg-[#3b82f6] p-2 rounded-md text-white drop-shadow-md text-xs hover:scale-[1.05]" style="font-size: 13px;">Template</button>
-                                        <button id="importExcelBtn" class="relative bg-primary-g p-2 rounded-md text-white drop-shadow-md text-xs hover:scale-[1.1]" style="font-size: 13px;">Import Excel</button>
-                                        <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="hidden" />
-                                    </div>
-                                    <p class="text-xs text-[orange]">NB: Excel 97-2003+. Columns must match template.</p>
+                                <div title="Import items from Excel and create inventory records" class="bg-white border border-slate-200 z-[100] flex flex-col justify-end items-end p-3 gap-2 rounded-md shadow-sm">
+                                    <button id="importExcelBtn" type="button" class="relative bg-primary-g px-4 py-2 rounded-md text-white drop-shadow-md text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-2">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
+                                        <span>Import Items</span>
+                                    </button>
+                                    <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" class="hidden" />
+                                    <p class="text-xs text-slate-500">Imports the workbook and creates the items directly.</p>
                                 </div>
                             </div>
+                            <div id="createinventory-import-status" class="hidden mt-3 rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm"></div>
                             <!--start container-->
                             
                             <div id="createinventoryform" class=""> 
