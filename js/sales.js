@@ -23,6 +23,16 @@ const salesAuxiliaryLoadState = {
     pmOwners: null
 }
 const SALES_FETCH_DEBUG = false
+
+function isNotForSaleInventoryItem(item = {}) {
+    return String(item?.applyto || '').trim().toUpperCase() === 'NOT FOR SALE'
+}
+
+function filterSalesInventoryItems(items = []) {
+    if(!Array.isArray(items)) return []
+    return items.filter((item) => !isNotForSaleInventoryItem(item))
+}
+
 const restrictedSalesPaymentPermissions = {
     'NO CHARGE': 'NO CHARGE POSTING',
     'CHAIRMAN DISCOUNT': 'CHAIRMAN DISCOUNT POSTING'
@@ -1553,8 +1563,9 @@ async function handlesalesdepartment(store) {
     let request = await httpRequest2('../controllers/fetchinventorybysalespoint', payload(), document.querySelector('#updateinventoryform #save'))
     if(request.status) {
             if(request.data.length) {
-                salesInventoryDatasource = request.data
-                document.getElementById('hems_itemslist').innerHTML = request.data.map((data, index) =>`<option>${data.itemname.trim()}</option>`).join('')
+                const filteredItems = filterSalesInventoryItems(request.data)
+                salesInventoryDatasource = filteredItems
+                document.getElementById('hems_itemslist').innerHTML = filteredItems.map((data, index) =>`<option>${data.itemname.trim()}</option>`).join('')
                 hidesalesterminal(false)
                 did('loading').innerHTML = 'Form ready'
                 syncSalesViewFilterSalespointOptions()
@@ -1580,7 +1591,7 @@ async function populatesalesitems(id) {
     let request = await httpRequest2('../controllers/fetchinventorylist', id ? getparamm() : null, null, 'json')
     // if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
-        const items = normalizeInventoryItems(request.data)
+        const items = filterSalesInventoryItems(normalizeInventoryItems(request.data))
         if(!id){
             if(items.length) {
                 // datasource = request.data
@@ -1694,7 +1705,7 @@ async function salesitempop(val,i,qty=0) {
     if(x>1)notification(`${val.value} is already listed`)
     if(x>1)return clearrow(i)
     const selectedName = String(val.value || '').trim().toLowerCase()
-    const sourceItems = salesInventoryDatasource
+    const sourceItems = filterSalesInventoryItems(salesInventoryDatasource)
     const nameMatches = sourceItems.filter((item) => String(item?.itemname || '').trim().toLowerCase() === selectedName)
     const currentRowItemId = String(did(`itemer-${i}`)?.value || '').trim()
     const matchedByRowId = currentRowItemId
