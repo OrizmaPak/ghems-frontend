@@ -29,6 +29,21 @@ function prettifyNightAuditLabel(raw = '') {
     return toTitleCase(monthStripped)
 }
 
+const NIGHT_AUDIT_TAX_LABELS = {
+    consumptioncharges: 'Consumption Tax',
+    servicecharges: 'Service Charge 10%',
+    taxcharges: 'VAT 7.5%'
+}
+
+function normalizeNightAuditKey(value = '') {
+    return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function getNightAuditLabel(raw = '', labelMap = {}) {
+    const mappedLabel = labelMap[normalizeNightAuditKey(raw)]
+    return mappedLabel || prettifyNightAuditLabel(raw)
+}
+
 function extractTodayMonthAmountFromEntry(entry = {}, key = '') {
     const todayKeyDirect = key
     const monthKeySuffix = `${key}month`
@@ -53,7 +68,7 @@ function extractTodayMonthAmountFromEntry(entry = {}, key = '') {
     return { todayAmount, monthAmount }
 }
 
-function normalizeSectionRows(sectionData, fallbackSingleLabel = '') {
+function normalizeSectionRows(sectionData, fallbackSingleLabel = '', labelMap = {}) {
     const rows = []
     if(Array.isArray(sectionData)) {
         sectionData.forEach((entry) => {
@@ -64,7 +79,7 @@ function normalizeSectionRows(sectionData, fallbackSingleLabel = '') {
                 if(lowered.endsWith('month') || lowered.startsWith('month')) return
                 const amounts = extractTodayMonthAmountFromEntry(entry, key)
                 rows.push({
-                    label: prettifyNightAuditLabel(key),
+                    label: getNightAuditLabel(key, labelMap),
                     todayAmount: amounts.todayAmount,
                     todayAllowance: 0,
                     todayNet: amounts.todayAmount,
@@ -81,11 +96,12 @@ function normalizeSectionRows(sectionData, fallbackSingleLabel = '') {
         const keys = Object.keys(sectionData)
             .filter((key) => !['title'].includes(String(key).toLowerCase()))
             .filter((key) => !String(key).toLowerCase().endsWith('month'))
+            .filter((key) => !String(key).toLowerCase().startsWith('month'))
 
         keys.forEach((key) => {
             const amounts = extractTodayMonthAmountFromEntry(sectionData, key)
             rows.push({
-                label: fallbackSingleLabel || prettifyNightAuditLabel(key),
+                label: fallbackSingleLabel || getNightAuditLabel(key, labelMap),
                 todayAmount: amounts.todayAmount,
                 todayAllowance: 0,
                 todayNet: amounts.todayAmount,
@@ -99,14 +115,36 @@ function normalizeSectionRows(sectionData, fallbackSingleLabel = '') {
     return rows
 }
 
-function buildNightAuditSections(payload = {}) {
+function getNightAuditPayloadSection(payload = {}, keys = []) {
+    const payloadKeys = Object.keys(payload || {})
+    const expectedKeys = keys.map(normalizeNightAuditKey)
+    const matchedKey = payloadKeys.find((key) => expectedKeys.includes(normalizeNightAuditKey(key)))
+    return matchedKey ? payload[matchedKey] : undefined
+}
+
+function buildNightAuditMainSections(payload = {}) {
     return [
         { title: 'Room Revenue', rows: normalizeSectionRows(payload.roomrevenue, 'Room Revenue') },
         { title: 'Food & Beverages', rows: normalizeSectionRows(payload.foodandbeverages) },
         { title: 'Minor Operative Div', rows: normalizeSectionRows(payload.othersectors) },
         { title: 'Miscellaneous', rows: normalizeSectionRows(payload.miscellaneous) },
-        { title: 'Taxes', rows: normalizeSectionRows(payload.taxes) }
+        { title: 'Taxes', rows: normalizeSectionRows(payload.taxes, '', NIGHT_AUDIT_TAX_LABELS) }
     ]
+}
+
+function buildNightAuditPostRevenueSections(payload = {}) {
+    const reservationAdvance = getNightAuditPayloadSection(payload, ['reservationadvance', 'reservationAdvance', 'reservation_advance'])
+    const cashCollection = getNightAuditPayloadSection(payload, ['cashcollection', 'cashCollection', 'cash_collection'])
+    const sections = []
+
+    if(reservationAdvance !== undefined) {
+        sections.push({ title: 'Reservation Advance', rows: normalizeSectionRows(reservationAdvance) })
+    }
+    if(cashCollection !== undefined) {
+        sections.push({ title: 'Cash Collection', rows: normalizeSectionRows(cashCollection) })
+    }
+
+    return sections
 }
 
 function getSectionTotals(rows = []) {
@@ -122,10 +160,11 @@ function getSectionTotals(rows = []) {
 }
 
 function renderNightAuditReport(payload = {}) {
-    const sections = buildNightAuditSections(payload)
+    const sections = buildNightAuditMainSections(payload)
+    const postRevenueSections = buildNightAuditPostRevenueSections(payload)
     const grandTotals = { todayAmount: 0, todayAllowance: 0, todayNet: 0, monthAmount: 0, monthAllowance: 0, monthNet: 0 }
 
-    const bodyRows = sections.map((section) => {
+    const renderSection = (section, addToGrandTotal = false) => {
         const itemRows = section.rows.map((row) => `
             <tr>
                 <td>${row.label}</td>
@@ -139,12 +178,14 @@ function renderNightAuditReport(payload = {}) {
         `).join('')
 
         const subtotals = getSectionTotals(section.rows)
-        grandTotals.todayAmount += subtotals.todayAmount
-        grandTotals.todayAllowance += subtotals.todayAllowance
-        grandTotals.todayNet += subtotals.todayNet
-        grandTotals.monthAmount += subtotals.monthAmount
-        grandTotals.monthAllowance += subtotals.monthAllowance
-        grandTotals.monthNet += subtotals.monthNet
+        if(addToGrandTotal) {
+            grandTotals.todayAmount += subtotals.todayAmount
+            grandTotals.todayAllowance += subtotals.todayAllowance
+            grandTotals.todayNet += subtotals.todayNet
+            grandTotals.monthAmount += subtotals.monthAmount
+            grandTotals.monthAllowance += subtotals.monthAllowance
+            grandTotals.monthNet += subtotals.monthNet
+        }
 
         return `
             <tr class="bg-slate-100 font-semibold">
@@ -161,7 +202,22 @@ function renderNightAuditReport(payload = {}) {
                 <td class="text-left">${formatNightAuditAmount(subtotals.monthNet)}</td>
             </tr>
         `
-    }).join('')
+    }
+
+    const mainRows = sections.map((section) => renderSection(section, true)).join('')
+    const postRevenueRows = postRevenueSections.map((section) => renderSection(section, false)).join('')
+    const totalRevenueRow = `
+        <tr class="font-semibold">
+            <td class="text-left">TOTAL REVENUE</td>
+            <td class="text-left">${formatNightAuditAmount(grandTotals.todayAmount)}</td>
+            <td class="text-left">${formatNightAuditAmount(grandTotals.todayAllowance)}</td>
+            <td class="text-left">${formatNightAuditAmount(grandTotals.todayNet)}</td>
+            <td class="text-left">${formatNightAuditAmount(grandTotals.monthAmount)}</td>
+            <td class="text-left">${formatNightAuditAmount(grandTotals.monthAllowance)}</td>
+            <td class="text-left">${formatNightAuditAmount(grandTotals.monthNet)}</td>
+        </tr>
+    `
+    const bodyRows = `${mainRows}${totalRevenueRow}${postRevenueRows}`
 
     did('nightauditreportcontent').innerHTML = `
         <style>
@@ -220,17 +276,6 @@ function renderNightAuditReport(payload = {}) {
                 <tbody>
                     ${bodyRows || `<tr><td colspan="7" class="text-left opacity-70">No data</td></tr>`}
                 </tbody>
-                <tfoot>
-                    <tr class="font-semibold">
-                        <td class="text-left">TOTAL REVENUE</td>
-                        <td class="text-left">${formatNightAuditAmount(grandTotals.todayAmount)}</td>
-                        <td class="text-left">${formatNightAuditAmount(grandTotals.todayAllowance)}</td>
-                        <td class="text-left">${formatNightAuditAmount(grandTotals.todayNet)}</td>
-                        <td class="text-left">${formatNightAuditAmount(grandTotals.monthAmount)}</td>
-                        <td class="text-left">${formatNightAuditAmount(grandTotals.monthAllowance)}</td>
-                        <td class="text-left">${formatNightAuditAmount(grandTotals.monthNet)}</td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     `
