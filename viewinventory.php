@@ -199,7 +199,7 @@
                                     <button id="viewinventory-export-all" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-sky-500 via-sky-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                         <span>Export All to Excel</span>
                                     </button>
-                                    <button id="viewinventory-upload-excel-btn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                    <button id="viewinventory-upload-excel-btn" type="button" class="hidden w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                         <span>Delete From Excel</span>
                                     </button>
                                     <input id="viewinventory-upload-excel-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
