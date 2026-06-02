@@ -1,4 +1,4 @@
-       <form id="updateinventoryform" class="animate__animated animate__fadeIn">
+       <form id="openstockform" class="animate__animated animate__fadeIn">
                             <p class="page-title">
                                 <span>open stock</span>
                             </p>
@@ -46,7 +46,20 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                    <div class="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                                        <div class="flex justify-end mt-5">
+                                             <button id="openstockTemplateBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-slate-600 via-slate-700 to-slate-800 px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                <div class="btnloader" style="display: none;"></div>
+                                                <span>Template</span>
+                                            </button>
+                                        </div>
+                                        <div class="flex justify-end mt-5">
+                                             <button id="openstockImportBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-emerald-700 px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                <div class="btnloader" style="display: none;"></div>
+                                                <span>Import</span>
+                                            </button>
+                                            <input id="openstockImportInput" type="file" accept=".xlsx,.xls,.csv" class="hidden">
+                                        </div>
                                         
                                         
                                         <div class="flex justify-end mt-5 ">
@@ -81,6 +94,7 @@
                                     </div> 
                                 </div>
                                 <div class="table-status"></div>
+                                <p id="openstock-bulk-status" class="mt-4 text-sm text-slate-600"></p>
                             </div>
                         
                                 </form> 
