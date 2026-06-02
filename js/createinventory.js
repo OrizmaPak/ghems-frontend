@@ -200,6 +200,28 @@ function buildInventoryImportPayload(rows = []){
     return payload
 }
 
+function buildSingleInventoryImportPayload(row = {}){
+    return buildInventoryImportPayload([row])
+}
+
+async function submitInventoryRowsSequentially(rows = [], button = null){
+    const successes = []
+    const failures = []
+
+    for(let i = 0; i < rows.length; i++){
+        const row = rows[i]
+        const label = row.itemname || `Row ${i + 1}`
+        const request = await httpRequest2('../controllers/inventoryscript', buildSingleInventoryImportPayload(row), button)
+        if(request?.status) {
+            successes.push(label)
+        } else {
+            failures.push(`${label}: ${request?.message || 'Unable to save item'}`)
+        }
+    }
+
+    return { successes, failures }
+}
+
 function renderCreateInventoryImportStatus(messages = [], status = true){
     const host = did('createinventory-import-status')
     if(!host) return
@@ -227,19 +249,24 @@ async function importInventoryRows(rows){
         return notification('Excel import has validation errors.', 0)
     }
 
-    const request = await httpRequest2('../controllers/inventoryscript', buildInventoryImportPayload(validRows), did('importExcelBtn'))
-    if(request?.status) {
+    const result = await submitInventoryRowsSequentially(validRows, did('importExcelBtn'))
+    if(result.failures.length === 0) {
         const successMessages = [
             `${validRows.length} item(s) imported and created successfully.`,
-            request.message || 'Record saved successfully.'
+            'All items were submitted one after the other.'
         ]
         renderCreateInventoryImportStatus(successMessages, true)
         notification('Inventory items created successfully.', 1)
         return
     }
 
-    renderCreateInventoryImportStatus([request?.message || 'Unable to import inventory items.'], false)
-    return notification(request?.message || 'Unable to import inventory items.', 0)
+    const messages = [
+        `${result.successes.length} item(s) created successfully.`,
+        `${result.failures.length} item(s) failed.`,
+        ...result.failures
+    ]
+    renderCreateInventoryImportStatus(messages, false)
+    return notification('Inventory import completed with some failures.', 0)
 }
 
 async function createinventoryFormSubmitHandler(){
@@ -261,9 +288,9 @@ async function createinventoryFormSubmitHandler(){
         }
     }
     
-    function params(){
+    function rows(){
         const items = Array.from(document.getElementById('createinventorycontainer').children)
-        const rows = items.map((item)=>{
+        return items.map((item)=>{
             const get = name => (item.querySelector(`[name=\"${name}\"]`)?.value ?? '').toString()
             let salespoints = []
             item.querySelectorAll('#departmt input[type=\"checkbox\"]').forEach(cb=>{
@@ -287,16 +314,15 @@ async function createinventoryFormSubmitHandler(){
                 salespoint: salespoints.join('|')
             }
         })
-        return buildInventoryImportPayload(rows)
     }
-    let request = await httpRequest2('../controllers/inventoryscript', params(), did('submit'))
-    if(request.status) {
-        notification('Record saved successfully!', 1);
+    const result = await submitInventoryRowsSequentially(rows(), did('submit'))
+    if(result.failures.length === 0) {
+        notification('Records saved successfully!', 1);
         document.querySelector('#createinventory').click()
         return
     }
-    document.querySelector('#createinventory').click();
-    return notification(request.message, 0);
+    did('submit').children[0].style.display = 'none'
+    return notification(`Saved ${result.successes.length} item(s). ${result.failures.length} failed.`, 0);
 }
 
 function runItemNo(){
