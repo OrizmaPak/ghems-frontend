@@ -1408,12 +1408,6 @@ function ensureAvailableRoomSliderEventsBound(){
             renderAvailableRoomsBoard()
             return
         }
-        const categoryButton = event.target.closest('[data-ar-category]')
-        if(categoryButton){
-            availableRoomsState.category = categoryButton.getAttribute('data-ar-category') || 'ALL'
-            renderAvailableRoomsBoard()
-            return
-        }
         const actionButton = event.target.closest('[data-ar-action]')
         if(!actionButton) return
         const action = actionButton.getAttribute('data-ar-action')
@@ -1439,7 +1433,6 @@ function renderAvailableRoomsBoard(){
     const host = did('availableroomcontainer')
     if(!host) return
     const { buildings, floors, categories } = getAvailableRoomsFilterOptions()
-    const categoryCounts = getAvailableRoomCategoryCounts()
     const filtered = filterAvailableRoomsData()
     const groupedByFloor = groupAvailableRoomsByFloor(filtered)
     const groupedByCategory = groupAvailableRoomsByCategory(filtered)
@@ -1508,16 +1501,6 @@ function renderAvailableRoomsBoard(){
                         Cards
                     </button>
                     <button data-ar-action="clear-filters" class="px-2 py-1 text-[10px] rounded border border-slate-300 text-slate-600">Clear</button>
-                </div>
-                <div class="mb-2 border-y border-slate-100 py-2">
-                    <div class="mb-1 flex items-center justify-between gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-wide text-slate-500">View by room category</span>
-                        <span class="text-[10px] font-bold text-slate-400">${availableRoomsState.category === 'ALL' ? 'All categories' : availableRoomsState.category}</span>
-                    </div>
-                    <div class="flex gap-1 overflow-x-auto pb-1">
-                        <button data-ar-category="ALL" class="shrink-0 rounded border px-2 py-1 text-[10px] font-bold ${availableRoomsState.category === 'ALL' ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-300 bg-white text-slate-600'}">All <span class="opacity-70">${summary.total}</span></button>
-                        ${categories.map(value => `<button data-ar-category="${value}" class="shrink-0 rounded border px-2 py-1 text-[10px] font-bold ${availableRoomsState.category === value ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-300 bg-white text-slate-600'}">${value} <span class="opacity-70">${categoryCounts[value] || 0}</span></button>`).join('')}
-                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-1">
                     <input id="searchavailableroom" value="${availableRoomsState.search}" class="form-control !p-2 text-xs" placeholder="Search room, category, building">
