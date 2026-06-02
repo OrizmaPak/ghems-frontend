@@ -117,6 +117,16 @@
                                                         </div> 
                                                     </div>
                                                     <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
+                                                        <div class="grid grid-cols-1 gap-6">
+                                                            <div class="form-group">
+                                                                <label class="control-label">Departments / Sales Points</label>
+                                                                <div id="viewinventorydepartments" class="min-h-[100px] h-fit flex flex-wrap items-center rounded bg-[#5757570f] p-4">
+                                                                    <div class="text-sm text-slate-500">Loading departments...</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 !pt-0 rounded-sm">
                                                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                                             <div class="form-group">
                                                                 <label for="logoname" class="control-label">Item Type</label>
@@ -199,8 +209,8 @@
                                     <button id="viewinventory-export-all" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-sky-500 via-sky-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                         <span>Export All to Excel</span>
                                     </button>
-                                    <button id="viewinventory-upload-excel-btn" type="button" class="hidden w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
-                                        <span>Delete From Excel</span>
+                                    <button id="viewinventory-upload-excel-btn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-violet-500 via-violet-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                        <span>Import Department Update</span>
                                     </button>
                                     <input id="viewinventory-upload-excel-input" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
                                 </div>
