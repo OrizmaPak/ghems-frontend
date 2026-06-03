@@ -30,7 +30,7 @@ else {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#051937">
-    <meta name="description" content="Guest Harmony Engine Management System - Hotel management system for guest operations, inventory, and financial management">
+    <meta name="description" content="Hotel Management System - Hotel management system for guest operations, inventory, and financial management">
     <title>User | Hems</title>
     <link rel="apple-touch-icon" sizes="180x180" href="./hems%20icon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./hems%20icon/favicon-32x32.png">
@@ -90,7 +90,7 @@ else {
                             class="xl:w-[250px] font-bold text-base block py-3 pl-5 selection:bg-white uppercase font-heebo text-primary-g">He<span
                                 class="text-gray-400">ms</span></span>
                         <div class="portal-brand-meta">
-                            <span>Guest Harmony Engine</span>
+                            <span>Hotel Management System</span>
                             <span><?php echo $_SESSION["companyname"] ?? 'Hotel Ops' ?></span>
                         </div>
                     </div>
