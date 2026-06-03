@@ -200,6 +200,8 @@ function bindViewInventoryEvents() {
     const tableBody = did('tabledata')
     const exportPageBtn = did('viewinventory-export-page')
     const exportAllBtn = did('viewinventory-export-all')
+    const deleteUploadBtn = did('viewinventory-delete-excel-btn')
+    const deleteUploadInput = did('viewinventory-delete-excel-input')
     const uploadBtn = did('viewinventory-upload-excel-btn')
     const uploadInput = did('viewinventory-upload-excel-input')
 
@@ -263,6 +265,12 @@ function bindViewInventoryEvents() {
     if (exportAllBtn && !exportAllBtn.dataset.bound) {
         exportAllBtn.addEventListener('click', () => exportViewInventoryAllExcel())
         exportAllBtn.dataset.bound = '1'
+    }
+
+    if (deleteUploadBtn && deleteUploadInput && !deleteUploadBtn.dataset.bound) {
+        deleteUploadBtn.addEventListener('click', () => deleteUploadInput.click())
+        deleteUploadInput.addEventListener('change', handleViewInventoryDeleteExcelUpload)
+        deleteUploadBtn.dataset.bound = '1'
     }
 
     if (uploadBtn && uploadInput && !uploadBtn.dataset.bound) {
@@ -332,6 +340,13 @@ async function deleteViewInventoryItem(itemid) {
     }
 
     return await httpRequest2('../controllers/removeitem', getparamm(), null, 'json')
+}
+
+async function deleteViewInventoryExcelItem(itemid, salespoint = '') {
+    const payload = new FormData()
+    payload.append('itemid', String(itemid || '').trim())
+    if (String(salespoint || '').trim()) payload.append('salespoint', String(salespoint || '').trim())
+    return await httpRequest2('../controllers/removeitem', payload, null, 'json')
 }
 
 async function removeviewinventory(id) {
@@ -567,8 +582,9 @@ function mapViewInventoryDeleteHeaders(rawRow = {}) {
     Object.keys(rawRow || {}).forEach(key => {
         const normalizedKey = String(key || '').trim().toLowerCase()
         const value = rawRow[key]
-        if (normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
+        if (normalizedKey === 'delete item id' || normalizedKey === 'item id' || normalizedKey === 'itemid') mapped.itemid = value
         if (normalizedKey === 'item name' || normalizedKey === 'itemname') mapped.itemname = value
+        if (normalizedKey === 'sales point' || normalizedKey === 'salespoint' || normalizedKey === 'department') mapped.salespoint = value
         if (normalizedKey === 'original row' || normalizedKey === 'row') mapped.originalrow = value
     })
     return mapped
@@ -700,6 +716,103 @@ async function handleViewInventoryExcelUpload(event) {
     } catch (error) {
         console.log(error)
         setStatus('Unable to process uploaded Excel file for department update run', 'rose')
+        return notification('Unable to process uploaded Excel file', 0)
+    } finally {
+        if (uploadBtn) uploadBtn.disabled = false
+        if (input) input.value = ''
+    }
+}
+
+async function handleViewInventoryDeleteExcelUpload(event) {
+    const input = event?.target
+    const uploadBtn = did('viewinventory-delete-excel-btn')
+    const statusBox = did('viewinventory-upload-status')
+    const file = input?.files?.[0]
+    if (!file) return
+
+    const ok = await ensureXLSXLoadedViewInventory()
+    if (!ok) {
+        input.value = ''
+        return notification('Could not load Excel helper. Check your connection.', 0)
+    }
+
+    const setStatus = (message, tone = 'rose') => {
+        if (!statusBox) return
+        const palette = {
+            violet: 'border-violet-200 bg-violet-50 text-violet-900',
+            emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+            amber: 'border-amber-200 bg-amber-50 text-amber-900',
+            rose: 'border-rose-200 bg-rose-50 text-rose-900'
+        }
+        statusBox.className = `mb-4 rounded-md px-4 py-3 text-sm ${palette[tone] || palette.rose}`
+        statusBox.classList.remove('hidden')
+        statusBox.innerHTML = message
+    }
+
+    if (uploadBtn) uploadBtn.disabled = true
+    let deleted = 0
+    let failed = 0
+    const failures = []
+
+    try {
+        const buffer = await file.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        if (!rawRows.length) {
+            setStatus('No rows found in uploaded Excel', 'amber')
+            return notification('No rows found in uploaded Excel', 0)
+        }
+
+        const uniqueRows = []
+        const seen = new Set()
+        rawRows.forEach(rawRow => {
+            const row = mapViewInventoryDeleteHeaders(rawRow)
+            const itemid = String(row.itemid || '').trim()
+            const salespoint = String(row.salespoint || '').trim()
+            if (!itemid) return
+            const dedupeKey = `${itemid}||${salespoint}`
+            if (seen.has(dedupeKey)) return
+            seen.add(dedupeKey)
+            uniqueRows.push({
+                itemid,
+                itemname: String(row.itemname || '').trim(),
+                salespoint
+            })
+        })
+
+        if (!uniqueRows.length) {
+            setStatus('No valid delete rows found. Ensure the Excel contains Delete Item ID or Item ID.', 'amber')
+            return notification('No valid delete rows found in Excel', 0)
+        }
+
+        setStatus(`Preparing delete run for ${uniqueRows.length} row(s)...`)
+
+        for (let i = 0; i < uniqueRows.length; i++) {
+            const row = uniqueRows[i]
+            const label = row.itemname || row.itemid
+            const suffix = row.salespoint ? ` from ${safeText(row.salespoint)}` : ''
+            setStatus(`Deleting ${i + 1}/${uniqueRows.length}: ${safeText(label)}${suffix}`)
+            const request = await deleteViewInventoryExcelItem(row.itemid, row.salespoint)
+            if (request?.status) {
+                deleted++
+            } else {
+                failed++
+                failures.push(`Item ID ${row.itemid}${row.salespoint ? ` / ${row.salespoint}` : ''}: ${request?.message || 'Delete failed'}`)
+            }
+        }
+
+        await viewinventoryFormSubmitHandler()
+        const summaryMessage = `Delete import completed. Deleted: ${deleted}, Failed: ${failed}`
+        if (failed) {
+            setStatus(`${summaryMessage}<br><br>${failures.map(item => safeText(item)).join('<br>')}`, 'rose')
+        } else {
+            setStatus(summaryMessage, deleted ? 'emerald' : 'amber')
+        }
+        return notification(summaryMessage, failed ? 0 : 1)
+    } catch (error) {
+        console.log(error)
+        setStatus('Unable to process uploaded Excel file for delete run', 'rose')
         return notification('Unable to process uploaded Excel file', 0)
     } finally {
         if (uploadBtn) uploadBtn.disabled = false
