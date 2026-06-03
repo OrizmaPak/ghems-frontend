@@ -168,32 +168,12 @@ function getSectionTotals(rows = []) {
     }, { todayAmount: 0, todayAllowance: 0, todayNet: 0, monthAmount: 0, monthAllowance: 0, monthNet: 0 })
 }
 
-function flattenNightAuditMessages(value, prefix = '') {
-    if(value === null || value === undefined || value === '') return []
-    if(typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-        return [`${prefix}${value}`]
-    }
-    if(Array.isArray(value)) {
-        return value.flatMap((item) => flattenNightAuditMessages(item, prefix))
-    }
-    if(typeof value === 'object') {
-        return Object.entries(value).flatMap(([key, val]) => {
-            const label = prettifyNightAuditLabel(key)
-            const nextPrefix = prefix ? `${prefix}${label}: ` : `${label}: `
-            return flattenNightAuditMessages(val, nextPrefix)
-        })
-    }
-    return []
-}
-
 function collectNightAuditProcessMessages(response = {}) {
-    const candidates = []
-    if(response?.message) candidates.push(response.message)
-    if(response?.messages) candidates.push(response.messages)
-    if(response?.data) candidates.push(response.data)
-    if(response?.result && response.result !== response.message) candidates.push(response.result)
-    const messages = candidates.flatMap((item) => flattenNightAuditMessages(item))
-    return messages.length ? messages : [response?.status ? 'Night audit processed successfully.' : 'Night audit processing completed with no message.']
+    return [
+        `Code: ${response?.code ?? '-'}`,
+        `Status: ${response?.status === undefined ? '-' : response.status}`,
+        `Message: ${response?.message ?? '-'}`
+    ]
 }
 
 function renderNightAuditProcessMessages(messages = [], status = true) {
@@ -374,11 +354,14 @@ async function fetchnightauditreport() {
 }
 
 async function processnightauditreport() {
+    const confirmed = window.confirm('Do you want to go ahead with the night audit calculations?')
+    if(!confirmed) return
+
     const payload = new FormData()
     const selectedDate = String(did('nightauditcurrentdate')?.value || '').trim()
     if(selectedDate) payload.append('currentdate', selectedDate)
 
-    const request = await httpRequest2('../controllers/processnightaudit.php', payload, did('processnightauditbutton'), 'json')
+    const request = await httpRequest2('../controllers/debitrooms.php', payload, did('processnightauditbutton'), 'json')
     if(!request) {
         renderNightAuditProcessMessages(['Unable to process night audit. Please check your network or session and try again.'], false)
         return
