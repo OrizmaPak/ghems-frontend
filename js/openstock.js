@@ -71,10 +71,19 @@ async function ensureXLSXLoadedOpenstock(){
     return await new Promise(resolve=>{
         const script = document.createElement('script')
         script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
-        script.onload = ()=>resolve(true)
+        script.onload = ()=>resolve(!!window.XLSX)
         script.onerror = ()=>resolve(false)
         document.head.appendChild(script)
     })
+}
+
+function getOpenstockActiveSalesPoint(){
+    return String(
+        did('salespointname')?.value ||
+        openstockDatasource?.[0]?.salespoint ||
+        default_department ||
+        ''
+    ).trim()
 }
 
 function getOpenstockRowsForTemplate(){
@@ -89,19 +98,31 @@ function getOpenstockRowsForTemplate(){
 }
 
 async function downloadOpenstockTemplate(){
-    if(!did('salespointname')?.value) return notification('Please select a Department / Sales Point', 0)
+    const salespoint = getOpenstockActiveSalesPoint()
+    if(!salespoint) return notification('Please select a Department / Sales Point', 0)
+
+    if(!openstockDatasource.length){
+        await openstockFormSubmitHandler(salespoint)
+    }
+
     if(!openstockDatasource.length) return notification('No items available for template export', 0)
     const ok = await ensureXLSXLoadedOpenstock()
     if(!ok) return notification('Could not load Excel helper. Check your connection.', 0)
 
-    const rows = getOpenstockRowsForTemplate()
-    const worksheet = XLSX.utils.json_to_sheet(rows)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Opening Stock')
-    const salespoint = String(did('salespointname')?.value || 'opening_stock').trim().replace(/[\\/:*?"<>|]/g, '_')
-    XLSX.writeFile(workbook, `opening_stock_template_${salespoint}.xlsx`)
-    setOpenstockBulkStatus(`Template exported for ${did('salespointname')?.value || ''}`)
-    return notification('Opening stock template exported', 1)
+    try{
+        const rows = getOpenstockRowsForTemplate()
+        const worksheet = XLSX.utils.json_to_sheet(rows)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Opening Stock')
+        const safeSalespoint = salespoint.replace(/[\\/:*?"<>|]/g, '_')
+        XLSX.writeFile(workbook, `opening_stock_template_${safeSalespoint}.xlsx`)
+        setOpenstockBulkStatus(`Template exported for ${salespoint}`)
+        return notification('Opening stock template exported', 1)
+    }catch(err){
+        console.error(err)
+        setOpenstockBulkStatus('Template export failed.', true)
+        return notification('Template export failed', 0)
+    }
 }
 
 function normalizeOpenstockImportRows(rawRows){
