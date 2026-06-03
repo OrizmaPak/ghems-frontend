@@ -59,7 +59,7 @@ function togglePasswordVisibility() {
      if(result.status) {
          notification('Login Successful', 1)
          sessionStorage.setItem('user', JSON.stringify(result.data.data))
-         setTimeout(() => window.location.href = getAppUrl('index.php?r=dashboard'), 1000)
+         setTimeout(() => window.location.href = './index.php?r=dashboard', 1000)
      }else { 
          if(result.code == 204) return notification('Incorrect email or password', 0)
          else if(result.code == 300) return notification('Account is unverified', 0)

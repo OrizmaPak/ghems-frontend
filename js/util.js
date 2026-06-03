@@ -315,7 +315,7 @@ async function runpermissioncheck(state=''){
     if(permissionRedirectTriggered) return false
     permissionRedirectTriggered = true
     notification('You do not have permission to access this page', 0)
-    window.location.href = getAppUrl('index.php?r=dashboard')
+    window.location.href = 'index.php?r=dashboard'
     return false
 }
 
@@ -352,7 +352,7 @@ function redirectToLoginOnInvalidSession(payload=null, response=null) {
     if(!isInvalidSessionPayload(payload, response))return false
     if(sessionInvalidRedirectTriggered)return true
     sessionInvalidRedirectTriggered = true
-    window.location.href = getAppUrl('login.php')
+    window.location.href = 'login.php'
     return true
 }
 
@@ -812,32 +812,6 @@ function stripQueryString(url='') {
     return String(url || '').split('?')[0]
 }
 
-function getAppBaseUrl() {
-    if(window.location.origin === 'https://ghems.com.ng') {
-        return `${window.location.origin}/hems/view/`
-    }
-
-    const utilScript = document.querySelector('script[src*="/js/util.js"], script[src$="js/util.js"]')
-    const source = utilScript?.src || ''
-
-    if(source) {
-        try {
-            const parsed = new URL(source, window.location.href)
-            return parsed.href.replace(/\/js\/util\.js(?:\?.*)?$/i, '/')
-        }
-        catch (error) {}
-    }
-
-    const pathname = String(window.location.pathname || '/').replace(/\\/g, '/')
-    const basePath = pathname.replace(/\/[^\/?#]*$/, '/')
-    return `${window.location.origin}${basePath}`
-}
-
-function getAppUrl(path='') {
-    const cleanPath = String(path || '').replace(/^\/+/, '')
-    return new URL(cleanPath, getAppBaseUrl()).href
-}
-
 function appendAssetVersion(url='') {
     const originalUrl = String(url || '').trim()
     if(!originalUrl) return originalUrl
@@ -1052,7 +1026,7 @@ function injectPaginatatedTable(rows) {
 
 function logoff() {
     let request = httpRequest('')
-    window.location.href = getAppUrl('login.php')
+    window.location.href = './login.php'
 }
 
 
