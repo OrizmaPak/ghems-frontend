@@ -315,7 +315,7 @@ async function runpermissioncheck(state=''){
     if(permissionRedirectTriggered) return false
     permissionRedirectTriggered = true
     notification('You do not have permission to access this page', 0)
-    window.location.href = 'index.php?r=dashboard'
+    window.location.href = 'index?r=dashboard'
     return false
 }
 
@@ -352,7 +352,7 @@ function redirectToLoginOnInvalidSession(payload=null, response=null) {
     if(!isInvalidSessionPayload(payload, response))return false
     if(sessionInvalidRedirectTriggered)return true
     sessionInvalidRedirectTriggered = true
-    window.location.href = 'login.php'
+    window.location.href = 'login'
     return true
 }
 
@@ -1026,7 +1026,7 @@ function injectPaginatatedTable(rows) {
 
 function logoff() {
     let request = httpRequest('')
-    window.location.href = './login.php'
+    window.location.href = './login'
 }
 
 

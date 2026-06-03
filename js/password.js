@@ -10,7 +10,7 @@ async function passwordRecoverSubmitHander() {
     let result = await httpRequest('../controllers/pfscript', paramstr, document.querySelector('button#submit'))
     if(result.status) {
         notification('Successful! Please check your email for new password', 1)
-        setTimeout(() => window.location = './login.php', 3000)
+        setTimeout(() => window.location = './login', 3000)
     }
     else {
         if(result.message) return notification(result.message, 0)

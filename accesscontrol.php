@@ -2,10 +2,10 @@
 session_start();
 if(!isset($_SESSION["user_id"]) || !isset($_SESSION["user_id"]))
 {
-	header('Location: login.php');
+	header('Location: login');
 }
 if($_SESSION["role"] !== "SUPERADMIN"){
-    header('Location: index.php');
+    header('Location: index');
 }
 
 ?>
