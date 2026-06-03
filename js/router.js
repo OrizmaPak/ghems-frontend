@@ -728,7 +728,7 @@ const personnelPayrollRouteAliases = {
     pp_viewpersonnel: 'pp_personnel',
     pp_viewstaffadvance: 'pp_advance'
 }
-const ext = ''
+const ext = '.php'
 
 function routerEvent(route) {
     if(route) {

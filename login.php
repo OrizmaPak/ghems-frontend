@@ -96,7 +96,7 @@
                             <div class="btnloader" style="display: none;"></div>
                             <span>Login</span>
                         </button>
-                        <a href="./signup" class="w-full md:w-max rounded-full text-gray-600 text-sm capitalize bg-white px-6 py-3 lg:py-2 shadow-sm font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                        <a href="./signup.php" class="w-full md:w-max rounded-full text-gray-600 text-sm capitalize bg-white px-6 py-3 lg:py-2 shadow-sm font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                             <span>Create account</span>
                         </a>
                     </div>

@@ -943,7 +943,7 @@ function retrieveBillToSalesByBatch(batchKey = '') {
         salesNav.click()
         return
     }
-    window.location.href = 'index?r=sales'
+    window.location.href = 'index.php?r=sales'
 }
 
 function buildReceiptRowsFromBillEntry(bill = {}) {
@@ -1033,7 +1033,7 @@ async function retrieveSalesBillToForm(reference, fromEdit = false) {
     if(!cleanedReference) return notification('Bill reference is required', 0)
     if(isBillsWorkspaceMode()){
         sessionStorage.setItem('pendingSalesBillReference', cleanedReference)
-        window.location.href = 'index?r=sales'
+        window.location.href = 'index.php?r=sales'
         return
     }
 
@@ -2678,7 +2678,7 @@ async function composeOrderToBillByReference(reference = '') {
             billsNav.click()
             return
         }
-        window.location.href = 'index?r=bills'
+        window.location.href = 'index.php?r=bills'
     } finally {
         orderBillGenerationLocks.delete(cleaned)
     }

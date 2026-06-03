@@ -929,7 +929,7 @@ function bindUnsettledBillsUiHandlers(){
             const row = getUnsettledBillByKey(key)
             if(row?.reference){
                 sessionStorage.setItem('pendingSalesBillReference', row.reference)
-                window.location.href = 'index?r=sales'
+                window.location.href = 'index.php?r=sales'
                 return
             }
             notification('Load to sales is unavailable', 0)
@@ -1936,7 +1936,7 @@ async function hemsdepartment2(stock='') {
 
 
 function entername(){
-    if(!sessionStorage.getItem('user'))return window.location.href = './login'
+    if(!sessionStorage.getItem('user'))return window.location.href = './login.php'
     let x = JSON.parse(sessionStorage.getItem('user'))
     for(let i=0;i<document.getElementsByName('user_name').length;i++){
         if(document.getElementsByName('user_name')[i])document.getElementsByName('user_name')[i].innerHTML = `<span class="capitalize">${x.firstname}&nbsp;${x.lastname}</span>`

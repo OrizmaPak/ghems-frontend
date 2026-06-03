@@ -40,7 +40,7 @@ window.onload = function() {
      if(result) {
         if(result.status && result.code == 200) {
             notification('Account created successfull', 1)
-            setTimeout(() => window.location = './login', 2000)
+            setTimeout(() => window.location = './login.php', 2000)
         }
         else {
              if(result.message) return  notification(result.message, 0)
