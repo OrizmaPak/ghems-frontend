@@ -21,7 +21,7 @@ if($_SESSION["role"] !== "SUPERADMIN"){
                                     <button title="Add Item" class="relative material-symbols-outlined rounded-full bg-[green] h-8 w-8 text-white drop-shadow-md text-xs" style="font-size: 18px;">add</button>
                                     <p class="font-bold">Add</p>
                                 </div>
-                                <div title="Import items from Excel and create inventory records" class="hidden bg-white border border-slate-200 z-[100] flex flex-col justify-end items-end p-3 gap-2 rounded-md shadow-sm">
+                                <div title="Import items from Excel and create inventory records" class="bg-white border border-slate-200 z-[100] flex flex-col justify-end items-end p-3 gap-2 rounded-md shadow-sm">
                                     <button id="importExcelBtn" type="button" class="relative bg-primary-g px-4 py-2 rounded-md text-white drop-shadow-md text-sm font-semibold hover:opacity-90 transition-all flex items-center gap-2">
                                         <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
                                         <span>Import Items</span>
