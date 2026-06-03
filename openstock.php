@@ -47,13 +47,13 @@
                                         </tbody>
                                     </table>
                                     <div class="grid grid-cols-1 lg:grid-cols-6 gap-6">
-                                        <div class="hidden flex justify-end mt-5">
+                                        <div class="flex justify-end mt-5">
                                              <button id="openstockTemplateBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-slate-600 via-slate-700 to-slate-800 px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Template</span>
                                             </button>
                                         </div>
-                                        <div class="hidden flex justify-end mt-5">
+                                        <div class="flex justify-end mt-5">
                                              <button id="openstockImportBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-emerald-500 via-emerald-600 to-emerald-700 px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
                                                 <div class="btnloader" style="display: none;"></div>
                                                 <span>Import</span>
