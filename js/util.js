@@ -813,6 +813,10 @@ function stripQueryString(url='') {
 }
 
 function getAppBaseUrl() {
+    if(window.location.origin === 'https://ghems.com.ng') {
+        return `${window.location.origin}/hems/view/`
+    }
+
     const utilScript = document.querySelector('script[src*="/js/util.js"], script[src$="js/util.js"]')
     const source = utilScript?.src || ''
 
