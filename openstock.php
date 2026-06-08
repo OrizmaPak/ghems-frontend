@@ -4,11 +4,19 @@
                             </p>
                             <div>
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
-                                        <div class="form-group">
-                                            <label for="logoname" class="control-label">Department / Sales Point</label>
-                                            <select name="salespoint" id="salespointname" class="form-control comp" >
-                                                <option value="">Loading...</option>
-                                            </select>
+                                        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
+                                            <div class="form-group mb-0">
+                                                <label for="logoname" class="control-label">Department / Sales Point</label>
+                                                <select name="salespoint" id="salespointname" class="form-control comp" >
+                                                    <option value="">Loading...</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex justify-end">
+                                                <button id="openstockfetchbtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-500 via-blue-600 to-primary-g px-8 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                    <div class="btnloader" style="display: none;"></div>
+                                                    <span>Fetch</span>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="form-group">
                                             <label for="openstockitempicker" class="control-label">Item Picker</label>

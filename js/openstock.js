@@ -81,6 +81,24 @@ function resetOpenstockDepartmentState(){
     setOpenstockBulkStatus('')
 }
 
+function handleOpenstockDepartmentSelectionChange(){
+    const selectedDepartment = getOpenstockSelectedDepartment()
+    if(!selectedDepartment){
+        resetOpenstockDepartmentState()
+        return
+    }
+    openstockActiveDepartment = ''
+    openstockAllDepartmentItems = []
+    openstockAvailableItems = []
+    openstockDatasource = []
+    datasource = []
+    openstockSelectedItems.clear()
+    renderOpenstockItemPicker()
+    renderUnfilteredListPrompt('tabledata', 'Click Fetch to load items for the selected department')
+    setOpenstockItemPickerStatus(`Selected department: ${selectedDepartment}. Click Fetch to load items.`)
+    setOpenstockBulkStatus('')
+}
+
 function openstockEnsureTomSelectAssets() {
     if (window.TomSelect) return Promise.resolve()
     if (openstockTomSelectAssetsPromise) return openstockTomSelectAssetsPromise
@@ -459,7 +477,8 @@ async function openstockActive() {
     wireOpenstockImport()
     await initializeOpenstockItemPicker()
     resetOpenstockDepartmentState()
-    if(document.querySelector('#salespointname')) document.querySelector('#salespointname').addEventListener('change', ()=>loadOpenstockDepartmentItems())
+    if(document.querySelector('#salespointname')) document.querySelector('#salespointname').addEventListener('change', handleOpenstockDepartmentSelectionChange)
+    if(document.querySelector('#openstockfetchbtn')) document.querySelector('#openstockfetchbtn').addEventListener('click', ()=>loadOpenstockDepartmentItems())
     if(document.querySelector('#save')) document.querySelector('#save').addEventListener('click', saveopenstock, false)
     datasource = []
 }
