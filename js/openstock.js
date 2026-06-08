@@ -1,6 +1,11 @@
 let openstockid
 let openstockDatasource = []
 let openstockImportEventsBound = false
+let openstockDepartmentSelect = null
+let openstockTomSelectAssetsPromise = null
+let openstockAllDepartments = []
+let openstockAvailableDepartments = []
+let openstockActiveDepartment = ''
 const openstockImportHeaderMap = {
     'item id': 'itemid',
     'itemid': 'itemid',
@@ -19,11 +24,169 @@ const openstockImportHeaderMap = {
     'department': 'salespoint'
 }
 
+function normalizeOpenstockDepartmentLabel(value){
+    const label = String(value || '').trim()
+    if(label === 'FRONT-DESK/BOOKING') return 'Booking/Reservation'
+    return label
+}
+
+function setOpenstockActiveDepartmentStatus(message = ''){
+    const status = did('openstock-active-department-status')
+    if(!status) return
+    status.textContent = message
+}
+
+function getOpenstockSelectedDepartment(){
+    const control = did('salespointname')
+    if(!control) return ''
+    if(control.tomselect && typeof control.tomselect.getValue === 'function'){
+        return String(control.tomselect.getValue() || '').trim()
+    }
+    return String(control.value || '').trim()
+}
+
+function clearOpenstockSelectedDepartment(){
+    const control = did('salespointname')
+    if(!control) return
+    if(control.tomselect && typeof control.tomselect.clear === 'function'){
+        control.tomselect.clear(true)
+        return
+    }
+    control.value = ''
+}
+
+function openstockEnsureTomSelectAssets() {
+    if (window.TomSelect) return Promise.resolve()
+    if (openstockTomSelectAssetsPromise) return openstockTomSelectAssetsPromise
+    openstockTomSelectAssetsPromise = new Promise((resolve, reject) => {
+        if (!document.querySelector('link[data-openstock-tom-select]')) {
+            const css = document.createElement('link')
+            css.rel = 'stylesheet'
+            css.href = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css'
+            css.dataset.openstockTomSelect = '1'
+            document.head.appendChild(css)
+        }
+        const existingScript = document.querySelector('script[data-openstock-tom-select]')
+        if (existingScript) {
+            if (window.TomSelect) resolve()
+            else existingScript.addEventListener('load', () => resolve(), { once: true })
+            return
+        }
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js'
+        script.dataset.openstockTomSelect = '1'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Unable to load Tom Select'))
+        document.head.appendChild(script)
+    })
+    return openstockTomSelectAssetsPromise
+}
+
+function getOpenstockDepartmentOptions(departments = []){
+    return departments.map(item=>({
+        value: String(item?.value || '').trim(),
+        label: String(item?.label || '').trim()
+    })).filter(item=>item.value)
+}
+
+function renderOpenstockDepartmentOptions(){
+    const control = did('salespointname')
+    if(!control) return
+    const options = getOpenstockDepartmentOptions(openstockAvailableDepartments)
+    control.innerHTML = `<option value="">-- Select Department / Sales Point --</option>${
+        options.map(item=>`<option value="${item.value.replace(/"/g, '&quot;')}">${item.label}</option>`).join('')
+    }`
+    if(openstockDepartmentSelect){
+        openstockDepartmentSelect.clearOptions()
+        openstockDepartmentSelect.addOptions(options.map(item=>({ value: item.value, text: item.label })))
+        openstockDepartmentSelect.refreshOptions(false)
+        openstockDepartmentSelect.clear(true)
+    }
+}
+
+async function initializeOpenstockDepartmentPicker(){
+    await openstockEnsureTomSelectAssets()
+    const control = did('salespointname')
+    if(!control || !window.TomSelect) return
+    if(openstockDepartmentSelect){
+        openstockDepartmentSelect.destroy()
+        openstockDepartmentSelect = null
+    }
+    openstockDepartmentSelect = new window.TomSelect(control, {
+        create: false,
+        persist: false,
+        maxOptions: 1000,
+        placeholder: 'Search department / sales point'
+    })
+}
+
+async function fetchOpenstockDepartments(){
+    const request = await httpRequest2('../controllers/fetchdepartments', null, null, 'json')
+    if(!request?.status || !Array.isArray(request.data)){
+        renderOpenstockDepartmentOptions()
+        return notification(request?.message || 'Unable to load departments', 0)
+    }
+    const normalized = request.data
+        .filter(item=>item?.applyforsales == 'STOCK' || item?.applyforsales == 'NON STOCK')
+        .map(item=>({
+            value: normalizeOpenstockDepartmentLabel(item?.department),
+            label: normalizeOpenstockDepartmentLabel(item?.department),
+            raw: item
+        }))
+        .filter(item=>item.value)
+    const uniqueMap = new Map()
+    normalized.forEach(item=>{
+        if(!uniqueMap.has(item.value)) uniqueMap.set(item.value, item)
+    })
+    openstockAllDepartments = Array.from(uniqueMap.values())
+    openstockAvailableDepartments = [...openstockAllDepartments]
+    renderOpenstockDepartmentOptions()
+}
+
+function removeOpenstockDepartmentFromPicker(department){
+    const normalized = normalizeOpenstockDepartmentLabel(department)
+    if(!normalized) return
+    openstockAvailableDepartments = openstockAvailableDepartments.filter(item=>item.value !== normalized)
+    renderOpenstockDepartmentOptions()
+}
+
+function restoreOpenstockDepartmentToPicker(department){
+    const normalized = normalizeOpenstockDepartmentLabel(department)
+    if(!normalized) return
+    const existing = openstockAvailableDepartments.some(item=>item.value === normalized)
+    if(existing) return
+    const source = openstockAllDepartments.find(item=>item.value === normalized)
+    if(source){
+        openstockAvailableDepartments.push(source)
+        openstockAvailableDepartments.sort((a, b)=>String(a.label).localeCompare(String(b.label)))
+        renderOpenstockDepartmentOptions()
+    }
+}
+
+function clearOpenstockTableState(options = {}){
+    const { restoreActiveDepartment = true } = options
+    if(restoreActiveDepartment && openstockActiveDepartment){
+        restoreOpenstockDepartmentToPicker(openstockActiveDepartment)
+    }
+    openstockDatasource = []
+    datasource = []
+    openstockActiveDepartment = ''
+    clearOpenstockSelectedDepartment()
+    setOpenstockActiveDepartmentStatus('')
+    renderUnfilteredListPrompt('tabledata')
+    setOpenstockBulkStatus('')
+}
+
 async function openstockActive() {
-    recalldatalist()
     wireOpenstockImport()
     renderUnfilteredListPrompt('tabledata')
-    if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>openstockFormSubmitHandler())
+    openstockDatasource = []
+    openstockActiveDepartment = ''
+    setOpenstockActiveDepartmentStatus('')
+    await initializeOpenstockDepartmentPicker()
+    await fetchOpenstockDepartments()
+    if(document.querySelector('#openstockAddDepartmentBtn')) document.querySelector('#openstockAddDepartmentBtn').addEventListener('click', ()=>openstockFormSubmitHandler())
+    if(document.querySelector('#openstockClearDepartmentBtn')) document.querySelector('#openstockClearDepartmentBtn').addEventListener('click', ()=>clearOpenstockTableState())
     if(document.querySelector('#save')) document.querySelector('#save').addEventListener('click',saveopenstock, false)
     if(document.querySelector('#selectall')) document.querySelector('#selectall').addEventListener('click', e=>{
         for(let i=0;i<document.getElementsByName('itemer').length;i++){
@@ -45,7 +208,6 @@ async function openstockActive() {
     })
     // form.querySelector('#submit').click()
     datasource = []
-    // await fetchopenstocks()
 }
 
 function setOpenstockBulkStatus(message, isError){
@@ -79,7 +241,8 @@ async function ensureXLSXLoadedOpenstock(){
 
 function getOpenstockActiveSalesPoint(){
     return String(
-        did('salespointname')?.value ||
+        openstockActiveDepartment ||
+        getOpenstockSelectedDepartment() ||
         openstockDatasource?.[0]?.salespoint ||
         default_department ||
         ''
@@ -93,7 +256,7 @@ function getOpenstockRowsForTemplate(){
         'Item Name': String(item?.itemname || '').trim(),
         'Item Type': String(item?.itemtype || '').trim(),
         'Stock Value': '',
-        'Sales Point': String(item?.salespoint || did('salespointname')?.value || '').trim()
+        'Sales Point': String(item?.salespoint || openstockActiveDepartment || getOpenstockSelectedDepartment() || '').trim()
     }))
 }
 
@@ -148,7 +311,7 @@ function normalizeOpenstockImportRows(rawRows){
 
 function buildOpenstockImportPayload(row){
     const payload = new FormData()
-    payload.append('salespoint', row.salespoint || did('salespointname')?.value || '')
+    payload.append('salespoint', row.salespoint || openstockActiveDepartment || getOpenstockSelectedDepartment() || '')
     payload.append('itemname', row.itemname || '')
     payload.append('itemid', row.itemid || '')
     payload.append('qty', row.qty || '0')
@@ -214,7 +377,7 @@ async function handleOpenstockImport(event){
 
             if(!normalizedRows.length) return notification('No valid stock rows found in the import file', 0)
 
-            const activeSalesPoint = String(did('salespointname')?.value || '').trim()
+            const activeSalesPoint = String(openstockActiveDepartment || getOpenstockSelectedDepartment() || '').trim()
             normalizedRows.forEach(row=>{
                 if(!row.salespoint) row.salespoint = activeSalesPoint
             })
@@ -302,21 +465,33 @@ async function removeopenstock(id) {
 // }
 
 async function openstockFormSubmitHandler(store) {
-    if(!did('salespointname').value && !store)return notification('Please enter a Department / Sales Point')
-    did('tabledata').innerHTML = 'Loading...'
+    const selectedDepartment = normalizeOpenstockDepartmentLabel(store || getOpenstockSelectedDepartment())
+    if(!selectedDepartment) return notification('Please select a Department / Sales Point', 0)
+    const previousActiveDepartment = openstockActiveDepartment
+    const previousDatasource = Array.isArray(openstockDatasource) ? [...openstockDatasource] : []
+    const previousTableMarkup = String(did('tabledata')?.innerHTML || '')
+    did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">Loading...</td></tr>`
     setOpenstockBulkStatus('')
+    if(document.querySelector('#openstockAddDepartmentBtn')) document.querySelector('#openstockAddDepartmentBtn').setAttribute('disabled', 'disabled')
     function payload(){
         let param = new FormData()
-        if(!store)param.append('salespoint', did('salespointname').value)
-        if(store)param.append('salespoint', store)
+        param.append('salespoint', selectedDepartment)
         return param
     }
     let request = await httpRequest2('../controllers/fetchinventorybysalespoint', payload(), document.querySelector('#openstockform #save'))
-    document.getElementById('tabledata').innerHTML = `<p class="text-center w-full">No records retrieved</p>`
+    document.getElementById('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">No records retrieved</td></tr>`
+    if(document.querySelector('#openstockAddDepartmentBtn')) document.querySelector('#openstockAddDepartmentBtn').removeAttribute('disabled')
     if(request.status) {
             if(request.data.length) {
+                if(previousActiveDepartment && previousActiveDepartment !== selectedDepartment){
+                    restoreOpenstockDepartmentToPicker(previousActiveDepartment)
+                }
                 datasource = request.data
                 openstockDatasource = request.data
+                openstockActiveDepartment = selectedDepartment
+                removeOpenstockDepartmentFromPicker(selectedDepartment)
+                clearOpenstockSelectedDepartment()
+                setOpenstockActiveDepartmentStatus(`Loaded Department: ${selectedDepartment}`)
                 document.getElementById('tabledata').innerHTML = request.data.map((item, index) => `
                 <tr>
                     <input value="${item.itemid ? Number(item.itemid) : ''}" type="hidden" name="itemid" id="itemid-${index}" class="form-control comp" placeholder="Enter Price">
@@ -332,9 +507,37 @@ async function openstockFormSubmitHandler(store) {
                 return notification(request.message, 1);
             }
             openstockDatasource = []
+            if(previousActiveDepartment && previousDatasource.length){
+                datasource = previousDatasource
+                openstockDatasource = previousDatasource
+                openstockActiveDepartment = previousActiveDepartment
+                setOpenstockActiveDepartmentStatus(`Loaded Department: ${previousActiveDepartment}`)
+                did('tabledata').innerHTML = previousTableMarkup
+                clearOpenstockSelectedDepartment()
+            }else{
+                restoreOpenstockDepartmentToPicker(selectedDepartment)
+                openstockActiveDepartment = ''
+                clearOpenstockSelectedDepartment()
+                setOpenstockActiveDepartmentStatus('')
+                renderUnfilteredListPrompt('tabledata')
+            }
+            return notification('No records retrieved', 0)
     }else {
                 openstockDatasource = []
-                did('tabledata').innerHTML = request.message
+                if(previousActiveDepartment && previousDatasource.length){
+                    datasource = previousDatasource
+                    openstockDatasource = previousDatasource
+                    openstockActiveDepartment = previousActiveDepartment
+                    setOpenstockActiveDepartmentStatus(`Loaded Department: ${previousActiveDepartment}`)
+                    did('tabledata').innerHTML = previousTableMarkup
+                    clearOpenstockSelectedDepartment()
+                }else{
+                    restoreOpenstockDepartmentToPicker(selectedDepartment)
+                    openstockActiveDepartment = ''
+                    clearOpenstockSelectedDepartment()
+                    setOpenstockActiveDepartmentStatus('')
+                    did('tabledata').innerHTML = `<tr><td colspan="100%" class="text-center opacity-70">${request.message || 'No records retrieved'}</td></tr>`
+                }
             return notification('No records retrieved')
             }
 }
@@ -342,6 +545,7 @@ async function openstockFormSubmitHandler(store) {
 async function saveopenstock() {
     // if(!validateForm('openstockform', getIdFromCls('comp'))) return
     if(!document.getElementsByName('beginbalance')[0])return notification('Nothing to save', 0)
+    if(!openstockActiveDepartment) return notification('Please add a Department / Sales Point first', 0)
     let m = false
     for(let l=0;l<document.getElementsByName('beginbalance').length;l++){
         if(document.getElementsByName('beginbalance')[l].value == '')document.getElementsByName('beginbalance')[l].value = 0
@@ -350,7 +554,7 @@ async function saveopenstock() {
     if(!m)return notification('Please enter atleast one item quantity', 0)
     function payload(){
         let param = new FormData()
-        param.append('salespoint', did('salespointname').value)
+        param.append('salespoint', openstockActiveDepartment)
         let itemid = ''
         let itemname = ''
         let beginbalance = '' 
@@ -374,23 +578,17 @@ async function saveopenstock() {
     let request = await httpRequest2('../controllers/openingstock', payload(),  document.querySelector('#openstockform #save'))
     // document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
-                did('openstock').click()
-                did('salespointname').value = ''
-                document.getElementById('tabledata').innerHTML = ''
+                clearOpenstockTableState()
                 return notification(request.message, 1);
     }else{
-                did('openstock').click()
-                did('salespointname').value = ''
-        document.getElementById('tabledata').innerHTML = `<tr>
-                                                <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
-                                            </tr>`;
-        return notification('No records retrieved')}
+        return notification(request.message || 'No records retrieved', 0)}
 }
 
 async function deleteitemopenstock() {
+    if(!openstockActiveDepartment) return notification('Please add a Department / Sales Point first', 0)
     function payload(){
         let param = new FormData()
-        param.append('salespoint', did('salespointname').value) 
+        param.append('salespoint', openstockActiveDepartment) 
         let itemid = ''
         let id = ''
         for(let i=0;i<document.getElementsByName('itemer').length;i++){
@@ -405,7 +603,7 @@ async function deleteitemopenstock() {
     }
     let request = await httpRequest2('../controllers/deleteinventoryfromupdate', payload(),  document.querySelector('#openstockform #delete'))
     if(request.status) {
-                openstockFormSubmitHandler()
+                openstockFormSubmitHandler(openstockActiveDepartment)
                 return notification(request.message, 1);
     }else return notification('No records retrieved')
 }

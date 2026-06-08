@@ -4,12 +4,26 @@
                             </p>
                             <div>
                                 <div class="flex flex-col space-y-3 bg-white/90 p-5 xl:p-10 rounded-sm">
-                                        <div class="form-group">
-                                            <label for="logoname" class="control-label">Department / Sales Point</label>
-                                            <select name="salespoint" id="salespointname" class="form-control comp" >
-                                                <option value="">Loading...</option>
-                                            </select>
+                                        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_auto] gap-4 items-end">
+                                            <div class="form-group mb-0">
+                                                <label for="logoname" class="control-label">Department / Sales Point</label>
+                                                <select name="salespoint" id="salespointname" class="form-control comp">
+                                                    <option value="">Loading...</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex justify-end">
+                                                <button id="openstockAddDepartmentBtn" type="button" class="w-full md:w-max rounded-md text-white text-sm capitalize bg-gradient-to-tr from-blue-500 via-blue-600 to-primary-g px-6 py-3 lg:py-2 shadow-md font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                    <div class="btnloader" style="display: none;"></div>
+                                                    <span>Add Department</span>
+                                                </button>
+                                            </div>
+                                            <div class="flex justify-end">
+                                                <button id="openstockClearDepartmentBtn" type="button" class="w-full md:w-max rounded-md text-slate-700 text-sm capitalize bg-white border border-slate-300 px-6 py-3 lg:py-2 shadow-sm font-medium hover:opacity-75 transition duration-300 ease-in-out flex items-center justify-center gap-3">
+                                                    <span>Clear</span>
+                                                </button>
+                                            </div>
                                         </div>
+                                        <p id="openstock-active-department-status" class="text-sm text-slate-600"></p>
                                     <!--<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">-->
                                         
                                     <!--    <div></div>-->
