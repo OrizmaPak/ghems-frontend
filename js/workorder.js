@@ -5,7 +5,7 @@ async function workorderActive() {
     datasource = []
     await putusersvalue('requestedby')
     await populateWorkorderDepartments()
-    await fetchworkorder()
+    renderUnfilteredListPrompt('tabledata')
 }
 
 async function populateWorkorderDepartments() {
@@ -17,14 +17,17 @@ async function populateWorkorderDepartments() {
     }
 }
 
-async function fetchworkorder(id) {
+async function fetchworkorder(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchworkorder', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchworkorder', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

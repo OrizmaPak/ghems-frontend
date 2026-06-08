@@ -3,10 +3,11 @@ async function viewmaintenancerequestActive() {
     const form = document.querySelector('#viewmaintenancerequestform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', viewmaintenancerequestFormSubmitHandler)
     datasource = []
-    await fetchviewmaintenancerequest()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchviewmaintenancerequest(id) {
+async function fetchviewmaintenancerequest(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     if(id){
         sessionStorage.setItem('viewmaintenancerequestdata', id)
         did('maintenancerequest').click()
@@ -17,7 +18,9 @@ async function fetchviewmaintenancerequest(id) {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchmaintenancebyfilters', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchmaintenancebyfilters', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

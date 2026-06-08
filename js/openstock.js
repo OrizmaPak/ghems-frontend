@@ -22,7 +22,7 @@ const openstockImportHeaderMap = {
 async function openstockActive() {
     recalldatalist()
     wireOpenstockImport()
-    openstockFormSubmitHandler(default_department)
+    renderUnfilteredListPrompt('tabledata')
     if(document.querySelector('#salespointname'))document.querySelector('#salespointname').addEventListener('change', e=>openstockFormSubmitHandler())
     if(document.querySelector('#save')) document.querySelector('#save').addEventListener('click',saveopenstock, false)
     if(document.querySelector('#selectall')) document.querySelector('#selectall').addEventListener('click', e=>{
@@ -240,7 +240,9 @@ async function fetchopenstocks(id) {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchinventorylist', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: true })) return
+    let request = await httpRequest2('../controllers/fetchinventorylist', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `<tr>
                                                 <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
                                             </tr>`

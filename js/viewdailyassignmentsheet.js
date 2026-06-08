@@ -3,18 +3,21 @@ async function viewdailyassignmentsheetActive() {
     const form = document.querySelector('#viewdailyassignmentsheetform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', viewdailyassignmentsheetFormSubmitHandler)
     datasource = []
-    form.querySelector('#submit').click()
+    renderUnfilteredListPrompt('tabledata')
     // await fetchviewdailyassignmentsheet()
 }
 
-async function fetchviewdailyassignmentsheet(id) {
+async function fetchviewdailyassignmentsheet(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchviewdailyassignmentsheet', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchviewdailyassignmentsheet', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
@@ -157,6 +160,7 @@ async function viewdailyassignmentsheetFormSubmitHandler() {
     let payload
 
     payload = getFormData2(document.querySelector('#viewdailyassignmentsheetform'), viewdailyassignmentsheetid ? [['id', viewdailyassignmentsheetid]] : null)
+    if(shouldBlockUnfilteredListFetch({ payload, notifyOnBlock: true })) return
     let request = await httpRequest2('../controllers/fetchassignmentsheetbyfilters', payload, document.querySelector('#viewdailyassignmentsheetform #submit'))
     if(request.status) {
       if(request.data.length) {

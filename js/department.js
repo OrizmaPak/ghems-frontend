@@ -27,17 +27,23 @@ async function departmentActive() {
     })
     datasource = []
     departmentBaseDatasource = []
-    await fetchdepartment()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchdepartment(id) {
+async function fetchdepartment(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchdepartments', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) {
+        departmentBaseDatasource = []
+        return
+    }
+    let request = await httpRequest2('../controllers/fetchdepartments', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

@@ -4,17 +4,20 @@ async function cancellationActive() {
     // if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', cancellationFormSubmitHandler)
     datasource = []
     // await fetchcancellation()
-    await fetchcancellationview()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchcancellationview(id) {
+async function fetchcancellationview(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('searchtext', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchcancelledreservations', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchcancelledreservations', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

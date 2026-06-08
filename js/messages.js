@@ -4,10 +4,11 @@ async function messagesActive() {
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', messagesFormSubmitHandler)
     datasource = []
     recalldatalist()
-    await fetchmessages()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchmessages(id) {
+async function fetchmessages(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     if(id)did('messagestatuscontainer').classList.remove('hidden')
     if(!id)did('messagestatuscontainer').classList.add('hidden')
     // scrollToTop('scrolldiv')
@@ -16,7 +17,9 @@ async function fetchmessages(id) {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchmessages', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchmessages', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

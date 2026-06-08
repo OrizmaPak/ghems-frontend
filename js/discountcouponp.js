@@ -3,17 +3,20 @@ async function discountcouponActive() {
     const form = document.querySelector('#discountcouponform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', discountcouponFormSubmitHandler)
     datasource = []
-    await fetchdiscountcoupon()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchdiscountcoupon(id) {
+async function fetchdiscountcoupon(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchdiscountcoupon', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchdiscountcoupon', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

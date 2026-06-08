@@ -3,17 +3,20 @@ async function bookplanActive() {
     const form = document.querySelector('#bookplanform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', bookplanFormSubmitHandler)
     datasource = []
-    await fetchbookplan()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchbookplan(id) {
+async function fetchbookplan(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchbookingplan', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchbookingplan', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){

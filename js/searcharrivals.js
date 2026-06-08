@@ -12,7 +12,7 @@ async function searcharrivalsActive() {
     if(form2.querySelector('#submit')) form2.querySelector('#submit').addEventListener('click', searcharrivalscheckinFormSubmitHandler)
     datasource = []
     await populateReceivingBankSelects()
-    await fetchsearcharrivals()
+    renderUnfilteredListPrompt('tabledata')
 }
 
 function openarrivaltab(where){
@@ -26,14 +26,17 @@ function openarrivaltab(where){
     }
 }
 
-async function fetchsearcharrivals(id) {
+async function fetchsearcharrivals(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchreservationsbyfilter', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
@@ -451,6 +454,7 @@ async function searcharrivalsFormSubmitHandler(id) {
     let payload
 
     payload = getFormData2(document.querySelector('#searcharrivalsform'), null)
+    if(shouldBlockUnfilteredListFetch({ payload, notifyOnBlock: true })) return
     let request = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, document.querySelector('#searcharrivalsform #submit'))
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {

@@ -544,7 +544,9 @@ async function fetchupdateinventorys(id) {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchinventorylist', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: true })) return
+    let request = await httpRequest2('../controllers/fetchinventorylist', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `<tr>
                                                 <td colspan="100%" class="text-center opacity-70"> Table is empty</td>
                                             </tr>`

@@ -781,6 +781,46 @@ function notification(message, type=undefined, timeout=5000) {
     setTimeout(() => document.getElementById('toast')?.remove(), timeout)
 }
 
+function formDataHasEntries(payload) {
+    if(!payload) return false
+    if(payload instanceof FormData){
+        return Array.from(payload.entries()).some(([, value]) => {
+            if(value instanceof File) return !!String(value.name || '').trim()
+            return String(value ?? '').trim() !== ''
+        })
+    }
+    if(typeof payload === 'object'){
+        return Object.values(payload).some(value => String(value ?? '').trim() !== '')
+    }
+    return String(payload).trim() !== ''
+}
+
+function renderUnfilteredListPrompt(targetId='tabledata', message='Set a filter to load records') {
+    const target = document.getElementById(targetId)
+    if(!target) return
+    const tagName = String(target.tagName || '').toLowerCase()
+    const isTableLike = tagName === 'tbody' || tagName === 'table' || String(targetId).toLowerCase().includes('tabledata')
+    target.innerHTML = isTableLike
+        ? `<tr><td colspan="100%" class="text-center opacity-70">${message}</td></tr>`
+        : `<p class="text-center w-full opacity-70">${message}</p>`
+}
+
+function shouldBlockUnfilteredListFetch({
+    id='',
+    payload=null,
+    isInitialLoad=false,
+    notifyOnBlock=false,
+    targetId='tabledata',
+    message='Set a filter to load records'
+} = {}) {
+    if(String(id || '').trim()) return false
+    if(formDataHasEntries(payload)) return false
+    if(!isInitialLoad && !notifyOnBlock) return false
+    renderUnfilteredListPrompt(targetId, message)
+    if(notifyOnBlock) notification(message, 0)
+    return true
+}
+
 function controlHasValue(form, selector) {
     if(form.querySelector(selector))return form.querySelector(selector).value.length < 1
 }

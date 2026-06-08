@@ -36,14 +36,17 @@ function openarrivaltab(where){
     }
 }
 
-async function fetchgroupreservations(id) {
+async function fetchgroupreservations(id, options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     // scrollToTop('scrolldiv')
     function getparamm(){
         let paramstr = new FormData()
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchreservationsbyfilter', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
@@ -461,6 +464,7 @@ async function groupreservationsFormSubmitHandler(id) {
     let payload
 
     payload = getFormData2(document.querySelector('#groupreservationsform'), null)
+    if(shouldBlockUnfilteredListFetch({ payload, notifyOnBlock: true })) return
     let request = await httpRequest2('../controllers/fetchreservationsbyfilter', payload, document.querySelector('#groupreservationsform #submit'))
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {

@@ -3,10 +3,11 @@ async function lostfoundregisterActive() {
     const form = document.querySelector('#lostfoundregisterform')
     if(form.querySelector('#submit')) form.querySelector('#submit').addEventListener('click', lostfoundregisterFormSubmitHandler)
     datasource = []
-    await fetchlostfoundregister()
+    renderUnfilteredListPrompt('tabledata')
 }
 
-async function fetchlostfoundregister(id='') {
+async function fetchlostfoundregister(id='', options = {}) {
+    const { initial = false, notifyOnEmpty = false } = options
     if(id)document.getElementsByClassName('updater')[0].click(id)
     // scrollToTop('scrolldiv')
     function getparamm(){
@@ -14,7 +15,9 @@ async function fetchlostfoundregister(id='') {
         paramstr.append('id', id)
         return paramstr
     }
-    let request = await httpRequest2('../controllers/fetchlostandfounditems', id ? getparamm() : null, null, 'json')
+    const payload = id ? getparamm() : null
+    if(shouldBlockUnfilteredListFetch({ id, payload, isInitialLoad: initial, notifyOnBlock: notifyOnEmpty })) return
+    let request = await httpRequest2('../controllers/fetchlostandfounditems', payload, null, 'json')
     if(!id)document.getElementById('tabledata').innerHTML = `No records retrieved`
     if(request.status) {
         if(!id){
